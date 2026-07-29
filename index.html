@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>프리미엄 정산 시스템</title>
+    <title>JTFAG League - 프리미엄 정산 시스템</title>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
@@ -30,7 +30,7 @@
             background: linear-gradient(180deg, #edf2f7 0%, #e2e8f0 100%);
             color: var(--text-main);
             margin: 0;
-            padding: 12px 8px 30px 8px;
+            padding: 12px 6px 30px 6px;
             min-height: 100vh;
         }
 
@@ -67,12 +67,12 @@
             opacity: 0.95;
         }
 
-        /* 🏆 누적 정산 요약 카드 */
+        /* 🏆 누적 정산 요약 카드 (줄바꿈 및 여백 수정) */
         .total-summary-card {
             background: linear-gradient(145deg, #ffffff, #fefce8);
             border: 1px solid var(--card-border);
             border-radius: 18px;
-            padding: 14px 10px;
+            padding: 12px 6px;
             margin-bottom: 12px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
@@ -89,14 +89,14 @@
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            gap: 4px;
         }
 
         .summary-item {
             background: #ffffff;
             border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 12px;
-            padding: 8px 2px;
+            border-radius: 10px;
+            padding: 8px 1px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -105,26 +105,31 @@
         }
 
         .summary-item .name {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 800;
             color: var(--text-main);
             margin-bottom: 4px;
             border-bottom: 1px solid #f1f5f9;
             padding-bottom: 3px;
+            white-space: nowrap;
         }
 
         .summary-item .detail-line {
-            font-size: 0.63rem;
+            font-size: 0.6rem;
             color: var(--text-sub);
             margin-top: 2px;
+            white-space: nowrap;
         }
 
+        /* 💡 '만' 단위 줄바꿈 방지 (nowrap) 적용 */
         .summary-item .final-total {
-            font-size: 0.82rem;
+            font-size: 0.75rem;
             font-weight: 900;
             margin-top: 6px;
             padding-top: 4px;
             border-top: 1px dashed #e2e8f0;
+            white-space: nowrap;
+            letter-spacing: -0.5px;
         }
 
         /* 💵 타당 내기 카드 */
@@ -132,7 +137,7 @@
             background: var(--card-bg);
             border: 1px solid rgba(0, 0, 0, 0.06);
             border-radius: 18px;
-            padding: 12px 8px;
+            padding: 12px 6px;
             margin-bottom: 12px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.04);
         }
@@ -156,8 +161,8 @@
             color: white;
             border: none;
             border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 0.7rem;
+            padding: 6px 10px;
+            font-size: 0.68rem;
             font-weight: 800;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
@@ -184,13 +189,13 @@
         }
 
         .money-table td {
-            padding: 6px 2px;
+            padding: 6px 1px;
             vertical-align: middle;
         }
 
         .money-input {
             width: 95% !important;
-            max-width: 85px !important;
+            max-width: 80px !important;
             height: 32px !important;
             background-color: var(--input-bg) !important;
             border: 1px solid #cbd5e1 !important;
@@ -210,10 +215,11 @@
 
         .money-result-badge {
             display: inline-block;
-            padding: 3px 6px;
+            padding: 3px 4px;
             border-radius: 6px;
             font-weight: 800;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
+            white-space: nowrap;
         }
 
         /* 💡 정보 탭 & 상태 바 */
@@ -333,7 +339,6 @@
             border-right: 1px solid #cbd5e1;
         }
 
-        /* 💡 평균 타수 글씨 굵게 (Bold) 스타일 적용 */
         .avg-cell {
             font-weight: 900 !important;
             font-size: 0.88rem !important;
@@ -358,7 +363,6 @@
             outline: none;
         }
 
-        /* ⛳ 골프장 입력창 */
         input.course-input {
             width: 58px;
             padding: 4px 2px;
@@ -382,7 +386,6 @@
             outline: none;
         }
 
-        /* 🚀 계산 및 저장 버튼 */
         .calc-btn {
             display: block;
             width: 100%;
@@ -403,7 +406,6 @@
             transform: scale(0.97);
         }
 
-        /* 🦅 계급 배지 */
         .rank-badge {
             display: inline-block;
             padding: 3px 7px;
@@ -435,7 +437,6 @@
             border: 1px solid #94a3b8;
         }
 
-        /* 🎯 최종 계급 셀 레이아웃 */
         .rank-cell-box {
             display: flex;
             flex-direction: column;
@@ -453,7 +454,6 @@
             letter-spacing: -0.3px;
         }
 
-        /* 🤝 핸디캡 및 히스토리 카드 */
         .match-card, .history-card {
             background: var(--card-bg);
             border: 1px solid rgba(0, 0, 0, 0.06);
@@ -529,7 +529,6 @@
             font-size: 0.7rem;
         }
 
-        /* 🔔 토스트 메시지 */
         #customToast {
             position: fixed;
             bottom: 30px;
@@ -568,8 +567,8 @@
     <!-- 💵 개별 타당 내기 현금 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
-            <h3>💵 개인별 현금 정산</h3>
-            <button type="button" class="reset-money-btn" onclick="startNewGameBet()">🔄 금액 리셋</button>
+            <h3>💵 타당 내기 현금 정산</h3>
+            <button type="button" class="reset-money-btn" onclick="startNewGameBet()">🔄 내기 금액 리셋 (0원)</button>
         </div>
         <table class="money-table">
             <thead>
@@ -577,7 +576,7 @@
                     <th style="width: 18%;">이름</th>
                     <th style="width: 32%;">시작 금액</th>
                     <th style="width: 32%;">남은 잔액</th>
-                    <th style="width: 18%;">손익계산</th>
+                    <th style="width: 18%;">이번 손익</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -1048,7 +1047,7 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
-        /* 🏆 상단 통합 정산 요약 카드 */
+        /* 🏆 상단 통합 정산 요약 카드 (줄바꿈 방지 적용) */
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
