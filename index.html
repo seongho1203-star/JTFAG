@@ -184,7 +184,6 @@
             white-space: nowrap;
         }
 
-        /* ✨ 리셋 버튼 우측 바짝 정렬 추가 */
         .reset-money-btn {
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
@@ -194,7 +193,7 @@
             font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             font-weight: 800;
             cursor: pointer;
-            margin-left: auto; /* 오른쪽 끝으로 밀어내기 */
+            margin-left: auto;
             white-space: nowrap;
         }
 
@@ -236,19 +235,21 @@
             white-space: nowrap;
         }
 
+        /* 📱 안내 카드 및 실시간 동기화 우측 배치 */
         .info-card {
             background: #ffffff;
             border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 10px;
-            padding: 6px 8px;
+            padding: 6px 10px;
             margin-bottom: 8px;
             display: flex;
             justify-space: space-between;
             align-items: center;
             font-size: clamp(0.65rem, 2.5vw, 0.75rem);
+            gap: 6px;
         }
 
-        .info-text { color: var(--primary-gold); font-weight: 700; }
+        .info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }
 
         .save-status {
             font-size: clamp(0.6rem, 2.2vw, 0.68rem);
@@ -258,6 +259,7 @@
             padding: 2px 6px;
             border-radius: 10px;
             white-space: nowrap;
+            margin-left: auto; /* 확실하게 우측 밀착 */
         }
 
         .btn-group {
@@ -312,7 +314,6 @@
             font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
         }
 
-        /* 이름열 세로 쏠림 방지 */
         table th:first-child,
         table td:first-child,
         .golfer-name { 
@@ -450,7 +451,7 @@
 
     <div class="info-card">
         <span class="info-text" id="infoText">💡 <b>최근 2경기 스코어</b> 기준 1:1 핸디캡 산출</span>
-        <span class="save-status" id="saveStatus">🔄 실시간 동기화중</span>
+        <span class="save-status" id="saveStatus">⚡ 실시간 동기화 완료</span>
     </div>
 
     <div class="btn-group">
@@ -501,15 +502,15 @@
             courses: ["함평엘리체", "함평엘리체", "어등산", ""],
             scores: {
                 "이관교": [90, 83, 97, 88],
-                "김지명": [87, 87, 86, 87],
-                "신성호": [88, 85, 85, 86],
-                "박승수": [96, 96, 88, 90]
+                "김지명": [87, 87, 86, 89],
+                "신성호": [88, 85, 85, 89],
+                "박승수": [96, 96, 88, 92]
             },
             money: {
-                "이관교": { start: 0, end: 0, accumulatedDiff: 0 },
-                "김지명": { start: 0, end: 0, accumulatedDiff: 0 },
-                "신성호": { start: 0, end: 0, accumulatedDiff: 0 },
-                "박승수": { start: 0, end: 0, accumulatedDiff: 0 }
+                "이관교": { start: 200000, end: 100000, accumulatedDiff: 0 },
+                "김지명": { start: 200000, end: 100000, accumulatedDiff: 0 },
+                "신성호": { start: 200000, end: 50000, accumulatedDiff: 0 },
+                "박승수": { start: 200000, end: 100000, accumulatedDiff: 0 }
             }
         };
     }
@@ -860,6 +861,7 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
+        /* 💡 수정된 부분: 계급 제외 내기 금액 계산 */
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
@@ -869,10 +871,15 @@
                 
                 const currentGameDiff = m.end - m.start;
                 const totalGameDiff = (m.accumulatedDiff || 0) + currentGameDiff;
+                
+                // ✨ 순수 타당 내기 손익 = 총 현금 손익 + 계급 차감 금액
+                const pureBetDiff = totalGameDiff + rankPrice;
+                
+                // 최종 합산 금액 = 현금 손익 총액 - 계급 금액 (결국 totalGameDiff - rankPrice)
                 const finalBalance = totalGameDiff - rankPrice;
                 
-                const gameDiffText = (totalGameDiff >= 0 ? "+" : "") + (totalGameDiff / 10000).toFixed(1) + "만";
                 const rankPriceText = (rankPrice / 10000).toFixed(1) + "만";
+                const betDiffText = (pureBetDiff >= 0 ? "+" : "") + (pureBetDiff / 10000).toFixed(1) + "만";
                 
                 let finalColor = "#b8860b";
                 let finalText = (finalBalance >= 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
@@ -884,7 +891,7 @@
                     <div class="summary-item">
                         <div class="name">${g}</div>
                         <div class="detail-line">계급: -${rankPriceText}</div>
-                        <div class="detail-line">내기: ${gameDiffText}</div>
+                        <div class="detail-line">내기: ${betDiffText}</div>
                         <div class="final-total" style="color: ${finalColor};">
                             합산: ${finalText}
                         </div>
