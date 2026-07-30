@@ -453,7 +453,7 @@
     <!-- 현금 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
-            <h3>💵 현금 정산</h3>
+            <h3>💵 차수별 정산</h3>
             <span class="current-round-badge" id="currentMoneyRoundBadge">차전 기준 입력</span>
         </div>
         <table class="money-table">
@@ -462,7 +462,7 @@
                     <th style="width: 20%;">이름</th>
                     <th style="width: 30%;">시작 금액</th>
                     <th style="width: 30%;">남은 잔액</th>
-                    <th style="width: 20%;">이번 손익</th>
+                    <th style="width: 20%;">금액 결과</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -612,7 +612,7 @@
         if (!tbody) return;
 
         const currentRoundIdx = appData.totalRounds - 1;
-        if (badge) badge.textContent = `${currentRoundIdx + 1}차전 내기 정산 입력`;
+        if (badge) badge.textContent = `${currentRoundIdx + 1}차전 정산 입력`;
 
         if (!appData.roundMoney) appData.roundMoney = [];
         if (!appData.roundMoney[currentRoundIdx]) {
