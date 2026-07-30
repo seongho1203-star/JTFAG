@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JTFAG League - 반응형 프리미엄 정산</title>
 
-    <!-- 📱 파비콘 및 앱 아이콘 설정 -->
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
-    <!-- Firebase SDK (v10 Modular via CDN) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 🔑 Firebase 프로젝트 설정
         const firebaseConfig = {
             apiKey: "AIzaSyATsVxoLIkjK2DMPyaWeWE8rPC8ym2a9qQ",
             authDomain: "jtfag-8967b.firebaseapp.com",
@@ -25,11 +22,8 @@
             measurementId: "G-K5PHFVZYYC"
         };
 
-        // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // Firestore 문서 참조
         const gameDocRef = doc(db, "jtfag_league", "current_game");
 
         window.db = db;
@@ -98,7 +92,6 @@
             letter-spacing: 1px;
         }
 
-        /* 📱 반응형 통합 요약 카드 */
         .total-summary-card {
             background: linear-gradient(145deg, #ffffff, #fefce8);
             border: 1px solid var(--card-border);
@@ -159,7 +152,6 @@
             white-space: nowrap;
         }
 
-        /* 📱 현금 정산 카드 반응형 및 리셋 버튼 우측 정렬 */
         .money-card {
             background: var(--card-bg);
             border: 1px solid rgba(0, 0, 0, 0.06);
@@ -235,7 +227,6 @@
             white-space: nowrap;
         }
 
-        /* 📱 안내 카드 및 실시간 동기화 우측 배치 */
         .info-card {
             background: #ffffff;
             border: 1px solid rgba(0, 0, 0, 0.05);
@@ -262,10 +253,9 @@
             margin-left: auto;
         }
 
-        /* 📱 버튼 그룹 양끝 정렬 수정 */
         .btn-group {
             display: flex;
-            justify-content: space-between;
+            justify-space: space-between;
             align-items: center;
             gap: 4px;
             margin-bottom: 8px;
@@ -292,7 +282,6 @@
         .reset-btn { background: #dc2626; color: white; }
         .undo-btn { background: #475569; color: white; }
 
-        /* 📱 가로 스크롤 및 표 정렬 */
         .table-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -462,7 +451,6 @@
         <span class="save-status" id="saveStatus">⚡ 실시간 동기화 완료</span>
     </div>
 
-    <!-- 📱 요구사항 반영: 차수 관련(좌측) / 초기화·되돌리기(우측) -->
     <div class="btn-group">
         <div class="left-btns">
             <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
@@ -511,15 +499,15 @@
             totalRounds: 4,
             courses: ["함평엘리체", "함평엘리체", "어등산", ""],
             scores: {
-                "이관교": [90, 83, 97, 88],
-                "김지명": [87, 87, 86, 89],
-                "신성호": [88, 85, 85, 89],
+                "이관교": [90, 83, 97, 89],
+                "김지명": [87, 87, 86, 86],
+                "신성호": [88, 85, 85, 85],
                 "박승수": [96, 96, 88, 92]
             },
             money: {
                 "이관교": { start: 0, end: 0, accumulatedDiff: 0 },
                 "김지명": { start: 0, end: 0, accumulatedDiff: 0 },
-                "신성호": { start: 0, end: 0, accumulatedDiff: 0 },
+                "신성호": { start: 100000, end: 20000, accumulatedDiff: 0 },
                 "박승수": { start: 0, end: 0, accumulatedDiff: 0 }
             }
         };
@@ -527,6 +515,7 @@
 
     let appData = getDefaultData();
     let historyStack = [];
+    let currentRoundRankPrices = {};
 
     function saveState() {
         if (historyStack.length >= 10) historyStack.shift();
@@ -589,8 +578,8 @@
 
     function renderAll() {
         renderTable();
-        renderMoneyTable();
         calculateAndRender();
+        renderMoneyTable();
     }
 
     function renderMoneyTable() {
@@ -600,10 +589,14 @@
 
         golfers.forEach(g => {
             const m = (appData.money && appData.money[g]) ? appData.money[g] : { start: 0, end: 0, accumulatedDiff: 0 };
-            const diff = m.end - m.start;
-            const diffText = (diff > 0 ? "+" : "") + (diff / 10000).toFixed(1) + "만";
-            const diffBg = diff > 0 ? "rgba(22, 163, 74, 0.1)" : (diff < 0 ? "rgba(220, 38, 38, 0.1)" : "rgba(0, 0, 0, 0.03)");
-            const diffColor = diff > 0 ? "#16a34a" : (diff < 0 ? "#dc2626" : "#64748b");
+            
+            // 현금 잔액 차액(남은잔액 - 시작금액)에서 당회차 계급비를 공제하여 '순수 내기 손익'을 계산
+            const rankPrice = currentRoundRankPrices[g] || 0;
+            const pureBetDiff = (m.end - m.start) + rankPrice;
+
+            const diffText = (pureBetDiff > 0 ? "+" : "") + (pureBetDiff / 10000).toFixed(1) + "만";
+            const diffBg = pureBetDiff > 0 ? "rgba(22, 163, 74, 0.1)" : (pureBetDiff < 0 ? "rgba(220, 38, 38, 0.1)" : "rgba(0, 0, 0, 0.03)");
+            const diffColor = pureBetDiff > 0 ? "#16a34a" : (pureBetDiff < 0 ? "#dc2626" : "#64748b");
 
             tbody.innerHTML += `
                 <tr>
@@ -633,8 +626,10 @@
         golfers.forEach(g => {
             if (!appData.money[g]) appData.money[g] = { start: 0, end: 0, accumulatedDiff: 0 };
             const m = appData.money[g];
-            const currentDiff = m.end - m.start;
-            m.accumulatedDiff = (m.accumulatedDiff || 0) + currentDiff;
+            const rankPrice = currentRoundRankPrices[g] || 0;
+            const pureBetDiff = (m.end - m.start) + rankPrice;
+            
+            m.accumulatedDiff = (m.accumulatedDiff || 0) + pureBetDiff;
             m.start = 0;
             m.end = 0;
         });
@@ -779,7 +774,11 @@
     function processAllRoundSettlements() {
         const totalRounds = appData.totalRounds;
         const totalPayments = {};
-        golfers.forEach(g => totalPayments[g] = 0);
+        currentRoundRankPrices = {};
+        golfers.forEach(g => {
+            totalPayments[g] = 0;
+            currentRoundRankPrices[g] = 0;
+        });
 
         const historyList = document.getElementById('historyList');
         if (historyList) historyList.innerHTML = "";
@@ -863,6 +862,11 @@
             sortedGolfers.forEach((golferName, index) => {
                 const rankInfo = RANK_PRICES[index];
                 totalPayments[golferName] += rankInfo.price;
+                
+                // 최근 라운드의 계급 지출 기록 저장
+                if (r === totalRounds - 1) {
+                    currentRoundRankPrices[golferName] = rankInfo.price;
+                }
 
                 const priceDisplay = (rankInfo.price === 0) ? '0원' : `${(rankInfo.price / 10000)}만`;
 
@@ -894,18 +898,20 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
-        /* 💡 연산 오류 수정 부분 */
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
             golfers.forEach(g => {
-                const rankPrice = totalPayments[g] || 0; // 지불해야 할 계급 금액 (음수 처리)
+                const rankPrice = totalPayments[g] || 0; 
                 const rankDiff = -rankPrice;
 
                 const m = (appData.money && appData.money[g]) ? appData.money[g] : { start: 0, end: 0, accumulatedDiff: 0 };
-                const betDiff = (m.accumulatedDiff || 0) + (m.end - m.start); // 순수 내기 손익
                 
-                // 최종 합산 = 계급 손익(- 지출) + 내기 손익
+                // 순수 내기 손익 = 기존 누적 내기 + (남은잔액 - 시작금액 + 당회차 계급비)
+                const currentRankPrice = currentRoundRankPrices[g] || 0;
+                const currentBetDiff = (m.end - m.start) + currentRankPrice;
+                const betDiff = (m.accumulatedDiff || 0) + currentBetDiff; 
+                
                 const finalBalance = rankDiff + betDiff; 
                 
                 const rankPriceText = (rankDiff === 0 ? "" : "-") + (rankPrice / 10000).toFixed(1) + "만";
