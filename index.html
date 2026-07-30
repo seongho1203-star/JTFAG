@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JTFAG League - 차전 연동형 자동 정산</title>
+    <title>JTFAG League - 통합 정산 보정 완료</title>
 
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
@@ -776,7 +776,7 @@
     function processAllRoundSettlements() {
         const totalRounds = appData.totalRounds;
         const totalRankProfit = {};
-        const roundRankProfit = {}; // 라운드별 각 인원의 계급 손익 저장용
+        const roundRankProfit = {};
 
         golfers.forEach(g => {
             totalRankProfit[g] = 0;
@@ -899,29 +899,37 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
-        // 통합 정산 요약 카드 업데이트 (수정된 내기 금액 분리식 적용)
+        // 통합 정산 요약 카드 업데이트 (정확한 현금 정산 입력 유무 검증 적용)
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
             golfers.forEach(g => {
                 const rankProfit = totalRankProfit[g] || 0; 
-
-                let pureBetProfit = 0; // 계급 벌금을 뺀 순수 내기 손익
-                let totalCashDiff = 0; // 총 현금 잔액 차이 (남은돈 - 시작돈)
+                let pureBetProfit = 0; 
 
                 if (appData.roundMoney) {
-                    appData.roundMoney.forEach((rMoney, rIdx) => {
-                        const m = rMoney[g] || { start: 0, end: 0 };
-                        const netCashDiff = m.end - m.start; // 총 정산 손익
-                        totalCashDiff += netCashDiff;
+                    // 현재 활성화된 라운드 범위 내에서만 정산 수행
+                    for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                        const rMoney = appData.roundMoney[rIdx];
+                        if (!rMoney) continue;
 
-                        const roundRank = roundRankProfit[g][rIdx] || 0; // 해당 차전 계급 손익
-                        pureBetProfit += (netCashDiff - roundRank); // 순수 내기 = 총손익 - 계급손익
-                    });
+                        const m = rMoney[g] || { start: 0, end: 0 };
+                        
+                        // 해당 차전 현금 입력 여부 판별 (시작금과 잔액이 둘 다 0이 아닌 경우 입력된 것으로 간주)
+                        const isMoneyEntered = (m.start !== 0 || m.end !== 0);
+
+                        if (isMoneyEntered) {
+                            const netCashDiff = m.end - m.start; // 현금 손익
+                            const roundRank = roundRankProfit[g][rIdx] || 0; // 해당 라운드 계급 벌금
+                            
+                            // 순수 내기 = 총 현금 손익 - 계급 손익
+                            pureBetProfit += (netCashDiff - roundRank);
+                        }
+                    }
                 }
                 
-                // 합산 = 실제 최종 현금 손익 (계급 손익 + 순수 내기)
-                const finalBalance = totalCashDiff; 
+                // 최종 주머니 합산 = 계급 벌금 + 순수 내기
+                const finalBalance = rankProfit + pureBetProfit; 
                 
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
                 const betProfitText = pureBetProfit === 0 ? "0.0만" : (pureBetProfit > 0 ? "+" : "") + (pureBetProfit / 10000).toFixed(1) + "만";
