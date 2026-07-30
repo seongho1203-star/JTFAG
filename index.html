@@ -66,7 +66,7 @@
             margin: 0;
             padding: 8px 4px 24px 4px;
             min-height: 100vh;
-            overflow-x: hidden; /* 화면 잘림 방지 */
+            overflow-x: hidden;
         }
 
         .container {
@@ -170,7 +170,7 @@
 
         .money-header-flex {
             display: flex;
-            justify-content: space-between;
+            justify-space: space-between;
             align-items: center;
             padding: 0 4px 6px 4px;
         }
@@ -277,7 +277,7 @@
         .remove-btn { background: #d97706; color: white; }
         .reset-btn { background: #dc2626; color: white; }
 
-        /* 📱 가로 스크롤 및 표 정렬 완벽 조절 */
+        /* 📱 가로 스크롤 및 표 정렬 */
         .table-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -307,7 +307,7 @@
             font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
         }
 
-        /* 이름열 세로 쏠림 완전 차단 및 고정 */
+        /* 이름열 세로 쏠림 방지 */
         table th:first-child,
         table td:first-child,
         .golfer-name { 
@@ -353,6 +353,13 @@
             background-color: #fef9e7;
         }
 
+        /* ✨ 평균 스코어 굵은 글씨 적용 */
+        .avg-cell {
+            font-weight: 900 !important;
+            font-size: clamp(0.8rem, 3vw, 0.9rem) !important;
+            color: var(--text-main);
+        }
+
         .rank-badge {
             display: inline-block; 
             padding: 2px 4px; 
@@ -384,11 +391,26 @@
         .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px; }
         .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 4px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
 
+        /* ✨ 토스트 알림 팝업 글씨 끊김(줄바꿈) 완전 방지 */
         #customToast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(30, 41, 59, 0.95); border: 1px solid var(--primary-gold); color: #ffffff;
-            padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;
-            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95); 
+            border: 1px solid var(--primary-gold); 
+            color: #ffffff;
+            padding: 10px 18px; 
+            border-radius: 20px; 
+            font-size: 0.78rem; 
+            font-weight: 800;
+            z-index: 9999; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease;
+            white-space: nowrap !important; /* 줄바꿈 절대 방지 */
+            max-width: 90vw;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
     </style>
 </head>
@@ -438,7 +460,6 @@
         </div>
     </div>
 
-    <!-- 📱 자동 반응형 및 스크롤 감싸기 -->
     <div class="table-wrapper">
         <table id="scoreTable">
             <thead>
