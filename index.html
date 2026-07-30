@@ -159,12 +159,12 @@
             white-space: nowrap;
         }
 
-        /* 📱 현금 정산 카드 반응형 */
+        /* 📱 현금 정산 카드 반응형 및 리셋 버튼 우측 정렬 */
         .money-card {
             background: var(--card-bg);
             border: 1px solid rgba(0, 0, 0, 0.06);
             border-radius: 14px;
-            padding: 10px 4px;
+            padding: 10px 6px;
             margin-bottom: 10px;
         }
 
@@ -172,7 +172,8 @@
             display: flex;
             justify-space: space-between;
             align-items: center;
-            padding: 0 4px 6px 4px;
+            padding: 2px 0 8px 2px;
+            width: 100%;
         }
 
         .money-card h3 {
@@ -180,17 +181,21 @@
             font-size: clamp(0.75rem, 3vw, 0.88rem);
             color: var(--text-main);
             font-weight: 800;
+            white-space: nowrap;
         }
 
+        /* ✨ 리셋 버튼 우측 바짝 정렬 추가 */
         .reset-money-btn {
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
             border: none;
             border-radius: 16px;
-            padding: 4px 8px;
+            padding: 5px 10px;
             font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             font-weight: 800;
             cursor: pointer;
+            margin-left: auto; /* 오른쪽 끝으로 밀어내기 */
+            white-space: nowrap;
         }
 
         .money-table {
@@ -238,7 +243,7 @@
             padding: 6px 8px;
             margin-bottom: 8px;
             display: flex;
-            justify-content: space-between;
+            justify-space: space-between;
             align-items: center;
             font-size: clamp(0.65rem, 2.5vw, 0.75rem);
         }
@@ -257,7 +262,7 @@
 
         .btn-group {
             display: flex;
-            justify-content: space-between;
+            justify-space: space-between;
             gap: 4px;
             margin-bottom: 8px;
         }
@@ -353,7 +358,6 @@
             background-color: #fef9e7;
         }
 
-        /* ✨ 평균 스코어 굵은 글씨 적용 */
         .avg-cell {
             font-weight: 900 !important;
             font-size: clamp(0.8rem, 3vw, 0.9rem) !important;
@@ -391,7 +395,6 @@
         .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px; }
         .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 4px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
 
-        /* ✨ 토스트 알림 팝업 글씨 끊김(줄바꿈) 완전 방지 */
         #customToast {
             position: fixed; 
             bottom: 20px; 
@@ -408,7 +411,7 @@
             opacity: 0; 
             pointer-events: none; 
             transition: opacity 0.3s ease;
-            white-space: nowrap !important; /* 줄바꿈 절대 방지 */
+            white-space: nowrap !important;
             max-width: 90vw;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
