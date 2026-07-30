@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JTFAG League - 프리미엄 정산 시스템</title>
+    <title>JTFAG League - 반응형 프리미엄 정산</title>
 
     <!-- 📱 파비콘 및 앱 아이콘 설정 -->
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
@@ -39,7 +39,6 @@
     </script>
 
     <style>
-        /* 웹폰트 표준 통일 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
         :root {
@@ -65,27 +64,27 @@
             background: linear-gradient(180deg, #edf2f7 0%, #e2e8f0 100%);
             color: var(--text-main);
             margin: 0;
-            padding: 12px 6px 30px 6px;
+            padding: 8px 4px 24px 4px;
             min-height: 100vh;
+            overflow-x: hidden; /* 화면 잘림 방지 */
         }
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
         }
 
         .header-area {
             text-align: center;
-            padding: 12px 0 16px 0;
-            position: relative;
+            padding: 8px 0 12px 0;
         }
 
         h1 {
             background: linear-gradient(135deg, #1e293b 20%, #b8860b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 1.8rem;
+            font-size: clamp(1.4rem, 5vw, 1.8rem);
             font-weight: 900;
             margin: 0;
             letter-spacing: -0.5px;
@@ -93,25 +92,25 @@
 
         p.subtitle {
             color: var(--primary-gold);
-            font-size: 0.78rem;
+            font-size: clamp(0.65rem, 2.5vw, 0.78rem);
             font-weight: 700;
-            margin: 4px 0 0 0;
-            letter-spacing: 1.5px;
-            opacity: 0.95;
+            margin: 2px 0 0 0;
+            letter-spacing: 1px;
         }
 
+        /* 📱 반응형 통합 요약 카드 */
         .total-summary-card {
             background: linear-gradient(145deg, #ffffff, #fefce8);
             border: 1px solid var(--card-border);
-            border-radius: 18px;
-            padding: 12px 6px;
-            margin-bottom: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border-radius: 14px;
+            padding: 10px 4px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
         }
 
         .total-summary-card h2 {
-            font-size: 0.88rem;
-            margin: 0 0 10px 0;
+            font-size: clamp(0.75rem, 3vw, 0.88rem);
+            margin: 0 0 8px 0;
             text-align: center;
             color: var(--primary-gold);
             font-weight: 800;
@@ -120,14 +119,14 @@
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
+            gap: 3px;
         }
 
         .summary-item {
             background: #ffffff;
             border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 10px;
-            padding: 8px 1px;
+            border-radius: 8px;
+            padding: 6px 1px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -135,49 +134,50 @@
         }
 
         .summary-item .name {
-            font-size: 0.78rem;
+            font-size: clamp(0.68rem, 2.8vw, 0.78rem);
             font-weight: 800;
             color: var(--text-main);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 3px;
+            padding-bottom: 2px;
             white-space: nowrap;
         }
 
         .summary-item .detail-line {
-            font-size: 0.6rem;
+            font-size: clamp(0.55rem, 2.1vw, 0.65rem);
             color: var(--text-sub);
-            margin-top: 2px;
+            margin-top: 1px;
             white-space: nowrap;
         }
 
         .summary-item .final-total {
-            font-size: 0.75rem;
+            font-size: clamp(0.65rem, 2.6vw, 0.75rem);
             font-weight: 900;
-            margin-top: 6px;
-            padding-top: 4px;
+            margin-top: 4px;
+            padding-top: 2px;
             border-top: 1px dashed #e2e8f0;
             white-space: nowrap;
         }
 
+        /* 📱 현금 정산 카드 반응형 */
         .money-card {
             background: var(--card-bg);
             border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 18px;
-            padding: 12px 6px;
-            margin-bottom: 12px;
+            border-radius: 14px;
+            padding: 10px 4px;
+            margin-bottom: 10px;
         }
 
         .money-header-flex {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 4px 8px 4px;
+            padding: 0 4px 6px 4px;
         }
 
         .money-card h3 {
             margin: 0;
-            font-size: 0.88rem;
+            font-size: clamp(0.75rem, 3vw, 0.88rem);
             color: var(--text-main);
             font-weight: 800;
         }
@@ -186,9 +186,9 @@
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
             border: none;
-            border-radius: 20px;
-            padding: 6px 10px;
-            font-size: 0.68rem;
+            border-radius: 16px;
+            padding: 4px 8px;
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             font-weight: 800;
             cursor: pointer;
         }
@@ -196,80 +196,80 @@
         .money-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.78rem;
+            font-size: clamp(0.7rem, 2.6vw, 0.78rem);
             text-align: center;
         }
 
         .money-table th {
-            padding: 6px 0;
+            padding: 4px 0;
             color: var(--text-sub);
             font-weight: 700;
-            font-size: 0.68rem;
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             border-bottom: 1px solid #f1f5f9;
         }
 
-        .money-table td { padding: 6px 1px; }
+        .money-table td { padding: 4px 1px; }
 
         .money-input {
-            width: 95% !important;
-            max-width: 80px !important;
-            height: 32px !important;
+            width: 90% !important;
+            max-width: 65px !important;
+            height: 28px !important;
             background-color: var(--input-bg) !important;
             border: 1px solid #cbd5e1 !important;
-            border-radius: 8px !important;
+            border-radius: 6px !important;
             text-align: center !important;
-            font-size: 0.78rem !important;
+            font-size: clamp(0.7rem, 2.6vw, 0.78rem) !important;
             font-weight: 700 !important;
         }
 
         .money-result-badge {
             display: inline-block;
-            padding: 3px 4px;
-            border-radius: 6px;
+            padding: 2px 4px;
+            border-radius: 4px;
             font-weight: 800;
-            font-size: 0.7rem;
+            font-size: clamp(0.62rem, 2.4vw, 0.7rem);
             white-space: nowrap;
         }
 
         .info-card {
             background: #ffffff;
             border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 12px;
-            padding: 8px 12px;
-            margin-bottom: 12px;
+            border-radius: 10px;
+            padding: 6px 8px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.75rem;
+            font-size: clamp(0.65rem, 2.5vw, 0.75rem);
         }
 
         .info-text { color: var(--primary-gold); font-weight: 700; }
 
         .save-status {
-            font-size: 0.68rem;
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             color: #16a34a;
             font-weight: 700;
             background: rgba(22, 163, 74, 0.1);
-            padding: 3px 8px;
-            border-radius: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
             white-space: nowrap;
         }
 
         .btn-group {
             display: flex;
             justify-content: space-between;
-            gap: 6px;
-            margin-bottom: 12px;
+            gap: 4px;
+            margin-bottom: 8px;
         }
 
-        .left-btns, .right-btns { display: flex; gap: 6px; }
+        .left-btns, .right-btns { display: flex; gap: 4px; }
 
         .action-btn {
-            padding: 8px 10px;
+            padding: 6px 8px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-weight: 800;
-            font-size: 0.72rem;
+            font-size: clamp(0.62rem, 2.3vw, 0.72rem);
             cursor: pointer;
         }
 
@@ -277,13 +277,13 @@
         .remove-btn { background: #d97706; color: white; }
         .reset-btn { background: #dc2626; color: white; }
 
-        /* 📱 가로 스크롤 및 고정 최적화 영역 */
+        /* 📱 가로 스크롤 및 표 정렬 완벽 조절 */
         .table-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid rgba(0, 0, 0, 0.06);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             background: var(--card-bg);
             width: 100%;
         }
@@ -292,11 +292,10 @@
             width: 100%; 
             border-collapse: collapse; 
             text-align: center; 
-            min-width: 340px;
         }
         
         th, td { 
-            padding: 8px 4px; 
+            padding: 6px 2px; 
             border-bottom: 1px solid #f1f5f9; 
             vertical-align: middle; 
         }
@@ -305,55 +304,61 @@
             background-color: #f8fafc; 
             color: var(--text-sub); 
             font-weight: 700; 
-            font-size: 0.75rem; 
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
         }
 
-        /* ⭐️ 이름 세로 쏠림 완전 방지 및 가로 고정 */
+        /* 이름열 세로 쏠림 완전 차단 및 고정 */
         table th:first-child,
         table td:first-child,
         .golfer-name { 
             white-space: nowrap !important;
             word-break: keep-all !important;
-            min-width: 60px !important;
+            min-width: 52px !important;
             font-weight: 800; 
+            font-size: clamp(0.72rem, 2.8vw, 0.8rem);
             position: sticky; 
             left: 0; 
             background-color: #f1f5f9 !important; 
             z-index: 2; 
-            padding-left: 6px !important;
-            padding-right: 6px !important;
+            padding-left: 4px !important;
+            padding-right: 4px !important;
         }
 
-        .header-round-title { font-size: 0.78rem; color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
+        .header-round-title { 
+            font-size: clamp(0.68rem, 2.5vw, 0.78rem); 
+            color: var(--primary-gold); 
+            font-weight: 900; 
+            white-space: nowrap; 
+        }
 
         input.score-input {
-            width: 38px; 
-            height: 32px; 
+            width: 34px; 
+            height: 28px; 
             border: 1px solid #cbd5e1; 
-            border-radius: 8px;
+            border-radius: 6px;
             text-align: center; 
-            font-size: 0.85rem; 
+            font-size: clamp(0.75rem, 2.8vw, 0.85rem); 
             font-weight: 800; 
             background-color: var(--input-bg);
         }
 
         input.course-input {
-            width: 56px; 
-            padding: 4px 2px; 
+            width: 48px; 
+            padding: 2px 1px; 
             border: 1px solid rgba(184, 134, 11, 0.4);
-            border-radius: 6px; 
+            border-radius: 4px; 
             text-align: center; 
-            font-size: 0.7rem; 
+            font-size: clamp(0.58rem, 2.1vw, 0.65rem); 
             font-weight: 800; 
             background-color: #fef9e7;
         }
 
         .rank-badge {
             display: inline-block; 
-            padding: 3px 6px; 
-            border-radius: 6px; 
+            padding: 2px 4px; 
+            border-radius: 4px; 
             font-weight: 900; 
-            font-size: 0.72rem;
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             white-space: nowrap;
         }
         .rank-eagle { background: linear-gradient(135deg, #fef08a, #eab308); color: #713f12; }
@@ -361,28 +366,28 @@
         .rank-crane { background: linear-gradient(135deg, #f3e8ff, #9333ea); color: #ffffff; }
         .rank-sparrow { background: linear-gradient(135deg, #f1f5f9, #64748b); color: #ffffff; }
 
-        .rank-cell-box { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 65px; }
-        .price-text { font-size: 0.72rem; font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
+        .rank-cell-box { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 55px; }
+        .price-text { font-size: clamp(0.6rem, 2.2vw, 0.68rem); font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
 
         .match-card, .history-card {
             background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 14px; padding: 10px; margin-top: 10px;
+            border-radius: 12px; padding: 8px; margin-top: 8px;
         }
 
-        .match-card h3, .history-card h3 { margin: 0 0 8px 0; font-size: 0.82rem; color: var(--primary-gold); text-align: center; }
-        .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .match-item { background: #f8fafc; padding: 8px 6px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; font-size: 0.78rem; }
+        .match-card h3, .history-card h3 { margin: 0 0 6px 0; font-size: clamp(0.72rem, 2.8vw, 0.8rem); color: var(--primary-gold); text-align: center; }
+        .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+        .match-item { background: #f8fafc; padding: 6px 4px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
-        .history-list { display: flex; flex-direction: column; gap: 6px; }
-        .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; }
-        .history-header { font-size: 0.68rem; font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 2px 6px; border-radius: 6px; }
-        .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
-        .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; }
+        .history-list { display: flex; flex-direction: column; gap: 4px; }
+        .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; }
+        .history-header { font-size: clamp(0.6rem, 2.2vw, 0.68rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 2px 4px; border-radius: 4px; }
+        .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px; }
+        .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 4px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
 
         #customToast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(30, 41, 59, 0.95); border: 1px solid var(--primary-gold); color: #ffffff;
-            padding: 10px 20px; border-radius: 30px; font-size: 0.8rem; font-weight: 800;
+            padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;
             z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
     </style>
@@ -408,10 +413,10 @@
         <table class="money-table">
             <thead>
                 <tr>
-                    <th style="width: 18%;">이름</th>
-                    <th style="width: 32%;">시작 금액</th>
-                    <th style="width: 32%;">남은 잔액</th>
-                    <th style="width: 18%;">이번 손익</th>
+                    <th style="width: 20%;">이름</th>
+                    <th style="width: 30%;">시작 금액</th>
+                    <th style="width: 30%;">남은 잔액</th>
+                    <th style="width: 20%;">이번 손익</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -433,7 +438,7 @@
         </div>
     </div>
 
-    <!-- 📱 스크롤 지원 표 영역 -->
+    <!-- 📱 자동 반응형 및 스크롤 감싸기 -->
     <div class="table-wrapper">
         <table id="scoreTable">
             <thead>
@@ -487,7 +492,6 @@
 
     let appData = getDefaultData();
 
-    // Firebase 실시간 리스너
     window.addEventListener('DOMContentLoaded', () => {
         const checkFirebase = setInterval(() => {
             if (window.onSnapshot && window.gameDocRef) {
@@ -807,7 +811,7 @@
                 roundHistoryHtml += `
                     <div class="history-member">
                         <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
-                        <div style="display:flex; align-items:center; gap:4px;">
+                        <div style="display:flex; align-items:center; gap:2px;">
                             <span class="rank-badge ${rankInfo.class}">${rankInfo.name.split(' ')[0]}</span>
                             <span style="font-weight:800; color:var(--primary-gold);">${priceDisplay}</span>
                         </div>
@@ -893,9 +897,9 @@
 
                 let matchText = "";
                 if (diff > 0) {
-                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: 0.88rem;">${diff}타</b> 받음`;
+                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음`;
                 } else if (diff < 0) {
-                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: 0.88rem;">${Math.abs(diff)}타</b> 받음`;
+                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음`;
                 } else {
                     matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
                 }
