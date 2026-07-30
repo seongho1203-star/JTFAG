@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JTFAG League - 통합 정산 보정 완료</title>
+    <title>JTFAG League - 프리미엄 UI 디자인 적용</title>
 
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
@@ -358,18 +358,44 @@
             color: var(--text-main);
         }
 
+        /* 👑 리뉴얼된 등급 배지 스타일 */
         .rank-badge {
-            display: inline-block; 
-            padding: 2px 4px; 
-            border-radius: 4px; 
-            font-weight: 900; 
-            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: clamp(0.62rem, 2.3vw, 0.72rem);
             white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            letter-spacing: -0.3px;
         }
-        .rank-eagle { background: linear-gradient(135deg, #fef08a, #eab308); color: #713f12; }
-        .rank-hawk { background: linear-gradient(135deg, #e0f2fe, #0284c7); color: #ffffff; }
-        .rank-crane { background: linear-gradient(135deg, #f3e8ff, #9333ea); color: #ffffff; }
-        .rank-sparrow { background: linear-gradient(135deg, #f1f5f9, #64748b); color: #ffffff; }
+
+        .rank-eagle {
+            background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
+            color: #451a03;
+            border: 1px solid #fbbf24;
+        }
+
+        .rank-hawk {
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            color: #ffffff;
+            border: 1px solid #0ea5e9;
+        }
+
+        .rank-crane {
+            background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%);
+            color: #ffffff;
+            border: 1px solid #a855f7;
+        }
+
+        .rank-sparrow {
+            background: linear-gradient(135deg, #94a3b8 0%, #475569 100%);
+            color: #ffffff;
+            border: 1px solid #64748b;
+        }
 
         .rank-cell-box { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 55px; }
         .price-text { font-size: clamp(0.6rem, 2.2vw, 0.68rem); font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
@@ -484,12 +510,12 @@
 <script>
     const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
-    // 계급 정산액: 독수리 0원, 매 -4만, 학 -6만, 참새 -10만
+    // 👑 예쁘게 가공된 등급 정보
     const RANK_CONFIG = {
-        0: { name: "독수리 🦅", penalty: 0, class: "rank-eagle" },
-        1: { name: "매 🦅", penalty: -40000, class: "rank-hawk" },
-        2: { name: "학 🦩", penalty: -60000, class: "rank-crane" },
-        3: { name: "참새 🐦", penalty: -100000, class: "rank-sparrow" }
+        0: { name: "독수리", icon: "🦅", penalty: 0, class: "rank-eagle" },
+        1: { name: "매", icon: "⚡", penalty: -40000, class: "rank-hawk" },
+        2: { name: "학", icon: "🦩", penalty: -60000, class: "rank-crane" },
+        3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
     };
 
     function getDefaultData() {
@@ -875,7 +901,7 @@
                     <div class="history-member">
                         <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
                         <div style="display:flex; align-items:center; gap:2px;">
-                            <span class="rank-badge ${rankInfo.class}">${rankInfo.name.split(' ')[0]}</span>
+                            <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
                             <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
                         </div>
                     </div>
@@ -887,7 +913,7 @@
                     if (rc) {
                         rc.innerHTML = `
                             <div class="rank-cell-box">
-                                <span class="rank-badge ${rankInfo.class}">${rankInfo.name}</span>
+                                <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
                                 <div class="price-text" style="color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</div>
                             </div>
                         `;
@@ -899,7 +925,6 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
-        // 통합 정산 요약 카드 업데이트 (정확한 현금 정산 입력 유무 검증 적용)
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
@@ -908,27 +933,21 @@
                 let pureBetProfit = 0; 
 
                 if (appData.roundMoney) {
-                    // 현재 활성화된 라운드 범위 내에서만 정산 수행
                     for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
                         const rMoney = appData.roundMoney[rIdx];
                         if (!rMoney) continue;
 
                         const m = rMoney[g] || { start: 0, end: 0 };
-                        
-                        // 해당 차전 현금 입력 여부 판별 (시작금과 잔액이 둘 다 0이 아닌 경우 입력된 것으로 간주)
                         const isMoneyEntered = (m.start !== 0 || m.end !== 0);
 
                         if (isMoneyEntered) {
-                            const netCashDiff = m.end - m.start; // 현금 손익
-                            const roundRank = roundRankProfit[g][rIdx] || 0; // 해당 라운드 계급 벌금
-                            
-                            // 순수 내기 = 총 현금 손익 - 계급 손익
+                            const netCashDiff = m.end - m.start;
+                            const roundRank = roundRankProfit[g][rIdx] || 0;
                             pureBetProfit += (netCashDiff - roundRank);
                         }
                     }
                 }
                 
-                // 최종 주머니 합산 = 계급 벌금 + 순수 내기
                 const finalBalance = rankProfit + pureBetProfit; 
                 
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
