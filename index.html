@@ -262,14 +262,20 @@
             margin-left: auto;
         }
 
+        /* 📱 버튼 그룹 양끝 정렬 수정 */
         .btn-group {
             display: flex;
-            justify-space: space-between;
+            justify-content: space-between;
+            align-items: center;
             gap: 4px;
             margin-bottom: 8px;
+            width: 100%;
         }
 
-        .left-btns, .right-btns { display: flex; gap: 4px; }
+        .left-btns, .right-btns { 
+            display: flex; 
+            gap: 4px; 
+        }
 
         .action-btn {
             padding: 6px 8px;
@@ -278,6 +284,7 @@
             font-weight: 800;
             font-size: clamp(0.62rem, 2.3vw, 0.72rem);
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .add-btn { background: #2563eb; color: white; }
@@ -455,6 +462,7 @@
         <span class="save-status" id="saveStatus">⚡ 실시간 동기화 완료</span>
     </div>
 
+    <!-- 📱 요구사항 반영: 차수 관련(좌측) / 초기화·되돌리기(우측) -->
     <div class="btn-group">
         <div class="left-btns">
             <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
@@ -886,26 +894,22 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
-        /* 💡 수정된 부분: 정확한 순수 내기 손익 및 계급 표시 로직 */
+        /* 💡 연산 오류 수정 부분 */
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
             golfers.forEach(g => {
-                const rankPrice = totalPayments[g] || 0; // 지불해야할 계급 금액 (양수값)
+                const rankPrice = totalPayments[g] || 0; // 지불해야 할 계급 금액 (음수 처리)
+                const rankDiff = -rankPrice;
+
                 const m = (appData.money && appData.money[g]) ? appData.money[g] : { start: 0, end: 0, accumulatedDiff: 0 };
+                const betDiff = (m.accumulatedDiff || 0) + (m.end - m.start); // 순수 내기 손익
                 
-                // 총 지출/수익 현금 손익 (남은 금액 - 시작 금액)
-                const totalCashDiff = (m.accumulatedDiff || 0) + (m.end - m.start);
+                // 최종 합산 = 계급 손익(- 지출) + 내기 손익
+                const finalBalance = rankDiff + betDiff; 
                 
-                // 순수 타당 내기 손익 = 총 현금 손익 + 계급 차감 금액
-                // (예: 현금손익 -10만, 계급 -4만 => -10만 + 4만 = -6만)
-                const pureBetDiff = totalCashDiff + rankPrice;
-                
-                // 최종 정산 합산 금액 = 현금 손익 총액 - 계급 금액
-                const finalBalance = totalCashDiff - rankPrice;
-                
-                const rankPriceText = "-" + (rankPrice / 10000).toFixed(1) + "만";
-                const betDiffText = (pureBetDiff > 0 ? "+" : "") + (pureBetDiff / 10000).toFixed(1) + "만";
+                const rankPriceText = (rankDiff === 0 ? "" : "-") + (rankPrice / 10000).toFixed(1) + "만";
+                const betDiffText = (betDiff > 0 ? "+" : "") + (betDiff / 10000).toFixed(1) + "만";
                 
                 let finalColor = "#b8860b";
                 let finalText = (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
