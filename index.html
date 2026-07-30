@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JTFAG League - 프리미엄 정산 시스템</title>
 
-    <!-- 📱 앱 아이콘 설정 -->
+    <!-- 📱 파비콘 및 앱 아이콘 설정 -->
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
@@ -14,7 +14,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 🔑 성호님의 Firebase 프로젝트 설정 완료!
+        // 🔑 Firebase 프로젝트 설정
         const firebaseConfig = {
             apiKey: "AIzaSyATsVxoLIkjK2DMPyaWeWE8rPC8ym2a9qQ",
             authDomain: "jtfag-8967b.firebaseapp.com",
@@ -29,7 +29,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Firestore 단일 문서 참조 ('jtfag_league' 모임의 'current_game' 데이터)
+        // Firestore 문서 참조
         const gameDocRef = doc(db, "jtfag_league", "current_game");
 
         window.db = db;
@@ -39,6 +39,7 @@
     </script>
 
     <style>
+        /* 웹폰트 표준 통일 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
         :root {
@@ -57,7 +58,7 @@
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', sans-serif !important;
         }
 
         body {
@@ -140,12 +141,14 @@
             margin-bottom: 4px;
             border-bottom: 1px solid #f1f5f9;
             padding-bottom: 3px;
+            white-space: nowrap;
         }
 
         .summary-item .detail-line {
             font-size: 0.6rem;
             color: var(--text-sub);
             margin-top: 2px;
+            white-space: nowrap;
         }
 
         .summary-item .final-total {
@@ -154,6 +157,7 @@
             margin-top: 6px;
             padding-top: 4px;
             border-top: 1px dashed #e2e8f0;
+            white-space: nowrap;
         }
 
         .money-card {
@@ -224,6 +228,7 @@
             border-radius: 6px;
             font-weight: 800;
             font-size: 0.7rem;
+            white-space: nowrap;
         }
 
         .info-card {
@@ -247,6 +252,7 @@
             background: rgba(22, 163, 74, 0.1);
             padding: 3px 8px;
             border-radius: 12px;
+            white-space: nowrap;
         }
 
         .btn-group {
@@ -271,41 +277,92 @@
         .remove-btn { background: #d97706; color: white; }
         .reset-btn { background: #dc2626; color: white; }
 
+        /* 📱 가로 스크롤 및 고정 최적화 영역 */
         .table-wrapper {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             border-radius: 16px;
             border: 1px solid rgba(0, 0, 0, 0.06);
             margin-bottom: 12px;
             background: var(--card-bg);
+            width: 100%;
         }
 
-        table { width: 100%; border-collapse: collapse; text-align: center; }
-        th, td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: 0.75rem; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            text-align: center; 
+            min-width: 340px;
+        }
+        
+        th, td { 
+            padding: 8px 4px; 
+            border-bottom: 1px solid #f1f5f9; 
+            vertical-align: middle; 
+        }
 
-        .header-round-title { font-size: 0.78rem; color: var(--primary-gold); font-weight: 900; }
-        .golfer-name { font-weight: 800; position: sticky; left: 0; background-color: #f1f5f9 !important; z-index: 1; }
+        th { 
+            background-color: #f8fafc; 
+            color: var(--text-sub); 
+            font-weight: 700; 
+            font-size: 0.75rem; 
+        }
+
+        /* ⭐️ 이름 세로 쏠림 완전 방지 및 가로 고정 */
+        table th:first-child,
+        table td:first-child,
+        .golfer-name { 
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            min-width: 60px !important;
+            font-weight: 800; 
+            position: sticky; 
+            left: 0; 
+            background-color: #f1f5f9 !important; 
+            z-index: 2; 
+            padding-left: 6px !important;
+            padding-right: 6px !important;
+        }
+
+        .header-round-title { font-size: 0.78rem; color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
         input.score-input {
-            width: 40px; height: 32px; border: 1px solid #cbd5e1; border-radius: 8px;
-            text-align: center; font-size: 0.85rem; font-weight: 800; background-color: var(--input-bg);
+            width: 38px; 
+            height: 32px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px;
+            text-align: center; 
+            font-size: 0.85rem; 
+            font-weight: 800; 
+            background-color: var(--input-bg);
         }
 
         input.course-input {
-            width: 58px; padding: 4px 2px; border: 1px solid rgba(184, 134, 11, 0.4);
-            border-radius: 6px; text-align: center; font-size: 0.72rem; font-weight: 800; background-color: #fef9e7;
+            width: 56px; 
+            padding: 4px 2px; 
+            border: 1px solid rgba(184, 134, 11, 0.4);
+            border-radius: 6px; 
+            text-align: center; 
+            font-size: 0.7rem; 
+            font-weight: 800; 
+            background-color: #fef9e7;
         }
 
         .rank-badge {
-            display: inline-block; padding: 3px 7px; border-radius: 6px; font-weight: 900; font-size: 0.73rem;
+            display: inline-block; 
+            padding: 3px 6px; 
+            border-radius: 6px; 
+            font-weight: 900; 
+            font-size: 0.72rem;
+            white-space: nowrap;
         }
         .rank-eagle { background: linear-gradient(135deg, #fef08a, #eab308); color: #713f12; }
         .rank-hawk { background: linear-gradient(135deg, #e0f2fe, #0284c7); color: #ffffff; }
         .rank-crane { background: linear-gradient(135deg, #f3e8ff, #9333ea); color: #ffffff; }
         .rank-sparrow { background: linear-gradient(135deg, #f1f5f9, #64748b); color: #ffffff; }
 
-        .rank-cell-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .price-text { font-size: 0.75rem; font-weight: 900; color: var(--primary-gold); }
+        .rank-cell-box { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 65px; }
+        .price-text { font-size: 0.72rem; font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
 
         .match-card, .history-card {
             background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
@@ -314,7 +371,7 @@
 
         .match-card h3, .history-card h3 { margin: 0 0 8px 0; font-size: 0.82rem; color: var(--primary-gold); text-align: center; }
         .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .match-item { background: #f8fafc; padding: 8px 6px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; font-size: 0.8rem; }
+        .match-item { background: #f8fafc; padding: 8px 6px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; font-size: 0.78rem; }
 
         .history-list { display: flex; flex-direction: column; gap: 6px; }
         .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; }
@@ -376,6 +433,7 @@
         </div>
     </div>
 
+    <!-- 📱 스크롤 지원 표 영역 -->
     <div class="table-wrapper">
         <table id="scoreTable">
             <thead>
@@ -429,18 +487,16 @@
 
     let appData = getDefaultData();
 
-    // 🔥 Firebase 실시간 리스너 시작
+    // Firebase 실시간 리스너
     window.addEventListener('DOMContentLoaded', () => {
         const checkFirebase = setInterval(() => {
             if (window.onSnapshot && window.gameDocRef) {
                 clearInterval(checkFirebase);
                 
-                // Firestore 문서 실시간 구독 (누군가 데이터 변경 시 자동 실행)
                 window.onSnapshot(window.gameDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         appData = docSnap.data();
                     } else {
-                        // DB 데이터가 비어있을 경우 기본 초기 데이터 저장
                         syncToFirebase(getDefaultData());
                     }
                     renderAll();
@@ -453,7 +509,6 @@
         }, 100);
     });
 
-    // DB에 데이터 저장
     function syncToFirebase(dataToSave) {
         if (!window.setDoc || !window.gameDocRef) return;
         window.setDoc(window.gameDocRef, dataToSave, { merge: true });
@@ -544,7 +599,7 @@
                 </th>`;
         }
 
-        headerHtml += `<th id="avgHeaderTitle">- 평균</th><th>최종 계급</th>`;
+        headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th><th style="white-space:nowrap;">최종 계급</th>`;
         headerRow.innerHTML = headerHtml;
 
         tbody.innerHTML = "";
