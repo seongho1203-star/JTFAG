@@ -259,7 +259,7 @@
             padding: 2px 6px;
             border-radius: 10px;
             white-space: nowrap;
-            margin-left: auto; /* 확실하게 우측 밀착 */
+            margin-left: auto;
         }
 
         .btn-group {
@@ -283,6 +283,7 @@
         .add-btn { background: #2563eb; color: white; }
         .remove-btn { background: #d97706; color: white; }
         .reset-btn { background: #dc2626; color: white; }
+        .undo-btn { background: #475569; color: white; }
 
         /* 📱 가로 스크롤 및 표 정렬 */
         .table-wrapper {
@@ -433,7 +434,7 @@
 
     <div class="money-card">
         <div class="money-header-flex">
-            <h3>💵 타당 내기 현금 정산</h3>
+            <h3>💵 현금 정산</h3>
             <button type="button" class="reset-money-btn" onclick="startNewGameBet()">🔄 내기 금액 리셋 (0원)</button>
         </div>
         <table class="money-table">
@@ -461,6 +462,7 @@
         </div>
         <div class="right-btns">
             <button type="button" class="action-btn reset-btn" onclick="resetAllData()">🔄 전체 초기화</button>
+            <button type="button" class="action-btn undo-btn" onclick="undoLastAction()">↩️ 되돌리기</button>
         </div>
     </div>
 
@@ -516,6 +518,23 @@
     }
 
     let appData = getDefaultData();
+    let historyStack = [];
+
+    function saveState() {
+        if (historyStack.length >= 10) historyStack.shift();
+        historyStack.push(JSON.stringify(appData));
+    }
+
+    function undoLastAction() {
+        if (historyStack.length === 0) {
+            showToast("⚠️ 되돌릴 이전 내역이 없습니다.");
+            return;
+        }
+        const previousState = historyStack.pop();
+        appData = JSON.parse(previousState);
+        syncToFirebase(appData);
+        showToast("↩️ 이전 상태로 되돌렸습니다.");
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
         const checkFirebase = setInterval(() => {
@@ -594,6 +613,7 @@
     }
 
     function updateMoney(name, type, value) {
+        saveState();
         if (!appData.money) appData.money = {};
         if (!appData.money[name]) appData.money[name] = { start: 0, end: 0, accumulatedDiff: 0 };
         appData.money[name][type] = parseFloat(value) || 0;
@@ -601,6 +621,7 @@
     }
 
     function startNewGameBet() {
+        saveState();
         golfers.forEach(g => {
             if (!appData.money[g]) appData.money[g] = { start: 0, end: 0, accumulatedDiff: 0 };
             const m = appData.money[g];
@@ -611,7 +632,7 @@
         });
 
         syncToFirebase(appData);
-        showToast("🔄 내기 금액이 리셋되었습니다!");
+        showToast("🔄 금액이 리셋되었습니다!");
     }
 
     function renderTable() {
@@ -650,12 +671,14 @@
     }
 
     function updateCourse(r, val) {
+        saveState();
         if (!appData.courses) appData.courses = [];
         appData.courses[r] = val;
         syncToFirebase(appData);
     }
 
     function updateScore(name, r, val) {
+        saveState();
         if (!appData.scores) appData.scores = {};
         if (!appData.scores[name]) appData.scores[name] = [];
         appData.scores[name][r] = val === "" ? "" : parseFloat(val);
@@ -663,6 +686,7 @@
     }
 
     function addRound() {
+        saveState();
         appData.totalRounds++;
         if (!appData.courses) appData.courses = [];
         appData.courses.push("");
@@ -679,6 +703,7 @@
             showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
             return;
         }
+        saveState();
         appData.totalRounds--;
         if (appData.courses) appData.courses.pop();
         golfers.forEach(name => {
@@ -861,7 +886,6 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
-        /* 💡 수정된 부분: 계급 제외 내기 금액 계산 */
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
@@ -872,10 +896,7 @@
                 const currentGameDiff = m.end - m.start;
                 const totalGameDiff = (m.accumulatedDiff || 0) + currentGameDiff;
                 
-                // ✨ 순수 타당 내기 손익 = 총 현금 손익 + 계급 차감 금액
                 const pureBetDiff = totalGameDiff + rankPrice;
-                
-                // 최종 합산 금액 = 현금 손익 총액 - 계급 금액 (결국 totalGameDiff - rankPrice)
                 const finalBalance = totalGameDiff - rankPrice;
                 
                 const rankPriceText = (rankPrice / 10000).toFixed(1) + "만";
@@ -945,6 +966,7 @@
 
     function resetAllData() {
         if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
+            saveState();
             appData = getDefaultData();
             syncToFirebase(appData);
             showToast("🔄 모든 데이터가 초기화되었습니다.");
