@@ -2,16 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <!-- 웹앱(PWA) 모드 및 화면 설정 -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<!-- 안드로이드 Chrome 전용 (주소창 숨김 & 앱 형태 실행) -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#ffffff"> <!-- 앱 상단 상태바 색상 (원하는 배경색 Hex 코드로 변경 가능) -->
-
-<!-- iOS Safari 전용 -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#edf2f7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <title>JTFAG League - 프리미엄 UI 디자인 적용</title>
 
@@ -186,14 +181,17 @@
             white-space: nowrap;
         }
 
-        .current-round-badge {
+        /* 🟢 차수 선택 셀렉트 박스 스타일 */
+        .round-select-badge {
             background: var(--gold-light);
             color: var(--primary-gold);
             border: 1px solid var(--card-border);
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 12px;
-            font-size: clamp(0.62rem, 2.3vw, 0.72rem);
+            font-size: clamp(0.65rem, 2.4vw, 0.75rem);
             font-weight: 800;
+            outline: none;
+            cursor: pointer;
         }
 
         .money-table {
@@ -368,7 +366,6 @@
             color: var(--text-main);
         }
 
-        /* 👑 리뉴얼된 등급 배지 스타일 */
         .rank-badge {
             display: inline-flex;
             align-items: center;
@@ -463,8 +460,9 @@
     <!-- 현금 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
-            <h3>💵 차수별 정산</h3>
-            <span class="current-round-badge" id="currentMoneyRoundBadge">차전 기준 입력</span>
+            <h3>💵 현금 정산</h3>
+            <!-- 🟢 차수를 자유롭게 선택할 수 있는 드롭다운 셀렉트 박스 -->
+            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
         </div>
         <table class="money-table">
             <thead>
@@ -472,7 +470,7 @@
                     <th style="width: 20%;">이름</th>
                     <th style="width: 30%;">시작 금액</th>
                     <th style="width: 30%;">남은 잔액</th>
-                    <th style="width: 20%;">금액 결과</th>
+                    <th style="width: 20%;">이번 손익</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -520,7 +518,6 @@
 <script>
     const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
-    // 👑 예쁘게 가공된 등급 정보
     const RANK_CONFIG = {
         0: { name: "독수리", icon: "🦅", penalty: 0, class: "rank-eagle" },
         1: { name: "매", icon: "⚡", penalty: -40000, class: "rank-hawk" },
@@ -549,6 +546,7 @@
 
     let appData = getDefaultData();
     let historyStack = [];
+    let selectedMoneyRoundIdx = -1; // 선택된 현금 정산 라운드 인덱스
 
     function saveState() {
         if (historyStack.length >= 10) historyStack.shift();
@@ -578,6 +576,12 @@
                     } else {
                         syncToFirebase(getDefaultData());
                     }
+                    
+                    // 초기 선택 라운드 설정 (기존 선택값이 없거나 범위를 벗어나면 마지막 라운드 지정)
+                    if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
+                        selectedMoneyRoundIdx = appData.totalRounds - 1;
+                    }
+
                     renderAll();
                     showSaveStatus("⚡ 실시간 동기화 완료");
                 }, (error) => {
@@ -616,13 +620,25 @@
         renderMoneyTable();
     }
 
+    function changeMoneyRound(idxVal) {
+        selectedMoneyRoundIdx = parseInt(idxVal, 10);
+        renderMoneyTable();
+    }
+
     function renderMoneyTable() {
         const tbody = document.getElementById('moneyTbody');
-        const badge = document.getElementById('currentMoneyRoundBadge');
-        if (!tbody) return;
+        const selectBox = document.getElementById('moneyRoundSelect');
+        if (!tbody || !selectBox) return;
 
-        const currentRoundIdx = appData.totalRounds - 1;
-        if (badge) badge.textContent = `${currentRoundIdx + 1}차전 정산 입력`;
+        // 드롭다운 옵션 동적 생성 (1차전 ~ N차전)
+        let selectHtml = "";
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const selectedStr = (r === selectedMoneyRoundIdx) ? "selected" : "";
+            selectHtml += `<option value="${r}" ${selectedStr}>${r + 1}차전 내기 정산 입력 ▾</option>`;
+        }
+        selectBox.innerHTML = selectHtml;
+
+        const currentRoundIdx = selectedMoneyRoundIdx;
 
         if (!appData.roundMoney) appData.roundMoney = [];
         if (!appData.roundMoney[currentRoundIdx]) {
@@ -658,7 +674,7 @@
 
     function updateMoney(name, type, value) {
         saveState();
-        const currentRoundIdx = appData.totalRounds - 1;
+        const currentRoundIdx = selectedMoneyRoundIdx;
         if (!appData.roundMoney[currentRoundIdx]) appData.roundMoney[currentRoundIdx] = {};
         if (!appData.roundMoney[currentRoundIdx][name]) appData.roundMoney[currentRoundIdx][name] = { start: 0, end: 0 };
         
@@ -731,6 +747,9 @@
         if (!appData.roundMoney) appData.roundMoney = [];
         appData.roundMoney.push(newRoundMoney);
 
+        // 차수 추가 시 새로 생긴 마지막 라운드로 자동 선택 전환
+        selectedMoneyRoundIdx = appData.totalRounds - 1;
+
         syncToFirebase(appData);
         showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     }
@@ -749,6 +768,10 @@
 
         if (appData.roundMoney && appData.roundMoney.length > 0) {
             appData.roundMoney.pop();
+        }
+
+        if (selectedMoneyRoundIdx >= appData.totalRounds) {
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
         }
 
         syncToFirebase(appData);
@@ -952,7 +975,7 @@
 
                         if (isMoneyEntered) {
                             const netCashDiff = m.end - m.start;
-                            const roundRank = roundRankProfit[g][rIdx] || 0;
+                            const roundRank = (roundRankProfit[g] && roundRankProfit[g][rIdx]) ? roundRankProfit[g][rIdx] : 0;
                             pureBetProfit += (netCashDiff - roundRank);
                         }
                     }
@@ -1029,6 +1052,7 @@
         if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
             saveState();
             appData = getDefaultData();
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
             syncToFirebase(appData);
             showToast("🔄 모든 데이터가 초기화되었습니다.");
         }
