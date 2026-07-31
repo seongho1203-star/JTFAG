@@ -453,14 +453,14 @@
     </div>
 
     <div class="total-summary-card">
-        <h2>💰 JTFAG 통합 정산 요약</h2>
+        <h2>💰 JTFAG 통합 누적 정산 요약</h2>
         <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
     <!-- 현금 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
-            <h3>💵 현금 정산</h3>
+            <h3>💵 차수별 정산</h3>
             <!-- 🟢 차수를 자유롭게 선택할 수 있는 드롭다운 셀렉트 박스 -->
             <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
         </div>
@@ -470,7 +470,7 @@
                     <th style="width: 20%;">이름</th>
                     <th style="width: 30%;">시작 금액</th>
                     <th style="width: 30%;">남은 잔액</th>
-                    <th style="width: 20%;">이번 손익</th>
+                    <th style="width: 20%;">정산 결과</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -634,7 +634,7 @@
         let selectHtml = "";
         for (let r = 0; r < appData.totalRounds; r++) {
             const selectedStr = (r === selectedMoneyRoundIdx) ? "selected" : "";
-            selectHtml += `<option value="${r}" ${selectedStr}>${r + 1}차전 내기 정산 입력 ▾</option>`;
+            selectHtml += `<option value="${r}" ${selectedStr}>${r + 1}차전 정산 입력 ▾</option>`;
         }
         selectBox.innerHTML = selectHtml;
 
@@ -996,7 +996,7 @@
                     <div class="summary-item">
                         <div class="name">${g}</div>
                         <div class="detail-line">계급: ${rankProfitText}</div>
-                        <div class="detail-line">내기: ${betProfitText}</div>
+                        <div class="detail-line">타수: ${betProfitText}</div>
                         <div class="final-total" style="color: ${finalColor};">
                             합산: ${finalText}
                         </div>
