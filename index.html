@@ -1,201 +1,1212 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>골프 리그 정산 및 일정</title>
-  <style>
-    :root {
-      --bg-dark: #121824;
-      --panel-bg: #182030;
-      --card-bg: rgba(255, 255, 255, 0.05);
-      --card-border: rgba(255, 255, 255, 0.15);
-      --text-gold: #f8e71c;
-      --text-white: #ffffff;
-      --text-gray: #a0aec0;
-      --text-red: #ff4d4f;
-      --text-blue: #40a9ff;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#edf2f7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <title>JTFAG League - 프리미엄 UI 디자인 적용</title>
 
-    body {
-      background-color: var(--bg-dark);
-      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, sans-serif;
-      color: var(--text-white);
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
+    <link rel="apple-touch-icon" href="IMG_8075.jpeg">
+    <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
-    .container {
-      width: 100%;
-      max-width: 600px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    /* 리그 공지 & 공금 영역 */
-    .section-card {
-      background-color: var(--panel-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
+        const firebaseConfig = {
+            apiKey: "AIzaSyATsVxoLIkjK2DMPyaWeWE8rPC8ym2a9qQ",
+            authDomain: "jtfag-8967b.firebaseapp.com",
+            projectId: "jtfag-8967b",
+            storageBucket: "jtfag-8967b.firebasestorage.app",
+            messagingSenderId: "445292272434",
+            appId: "1:445292272434:web:ea9cb5ebd0e0b2e4c4152b",
+            measurementId: "G-K5PHFVZYYC"
+        };
 
-    .section-title {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: var(--text-gold);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      letter-spacing: -0.5px;
-    }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const gameDocRef = doc(db, "jtfag_league", "current_game");
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+        window.db = db;
+        window.gameDocRef = gameDocRef;
+        window.onSnapshot = onSnapshot;
+        window.setDoc = setDoc;
+    </script>
 
-    .info-box {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
-    .info-label {
-      font-size: 0.85rem;
-      color: var(--text-gray);
-      font-weight: 600;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+        :root {
+            --bg-main: #f4f6f8;
+            --card-bg: #ffffff;
+            --card-border: rgba(212, 175, 55, 0.35);
+            --primary-gold: #b8860b;
+            --gold-light: #fef9e7;
+            --accent-green: #15803d;
+            --accent-red: #dc2626;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --input-bg: #f8fafc;
+        }
 
-    .info-value {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--text-white);
-      letter-spacing: -0.3px;
-      line-height: 1.25;
-      word-break: keep-all;
-    }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', sans-serif !important;
+        }
 
-    /* 정산 테이블 영역 */
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-    }
+        body {
+            background: linear-gradient(180deg, #edf2f7 0%, #e2e8f0 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 8px 4px 24px 4px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: center;
-      font-size: 0.95rem;
-    }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
 
-    th, td {
-      padding: 12px 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
+        .header-area {
+            text-align: center;
+            padding: 8px 0 10px 0;
+        }
 
-    th {
-      background-color: rgba(255, 255, 255, 0.08);
-      color: var(--text-gold);
-      font-weight: 700;
-    }
+        h1 {
+            background: linear-gradient(135deg, #1e293b 20%, #b8860b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: clamp(1.4rem, 5vw, 1.8rem);
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
 
-    .amount-minus {
-      color: var(--text-red);
-      font-weight: 700;
-    }
+        p.subtitle {
+            color: var(--primary-gold);
+            font-size: clamp(0.65rem, 2.5vw, 0.78rem);
+            font-weight: 700;
+            margin: 2px 0 0 0;
+            letter-spacing: 1px;
+        }
 
-    .amount-plus {
-      color: var(--text-blue);
-      font-weight: 700;
-    }
+        .notice-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            color: #ffffff;
+            border-radius: 14px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+        }
 
-    .highlight-row {
-      background-color: rgba(255, 255, 255, 0.03);
-    }
+        .notice-card h2 {
+            font-size: clamp(0.78rem, 3.2vw, 0.88rem);
+            margin: 0 0 8px 0;
+            color: #fef08a;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-    @media (max-width: 420px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-      .section-title {
-        font-size: 1.2rem;
-      }
-      .info-value {
-        font-size: 1.05rem;
-      }
-    }
-  </style>
+        .notice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .notice-box {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 6px 8px;
+        }
+
+        .notice-box label {
+            display: block;
+            font-size: clamp(0.58rem, 2.2vw, 0.65rem);
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .notice-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: clamp(0.7rem, 2.8vw, 0.8rem);
+            font-weight: 800;
+            outline: none;
+            padding: 0;
+        }
+
+        .notice-input::placeholder { color: #64748b; font-weight: 500; }
+
+        .notice-memo-box {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 6px 8px;
+        }
+
+        .notice-memo-box label {
+            display: block;
+            font-size: clamp(0.58rem, 2.2vw, 0.65rem);
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .notice-memo-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            font-size: clamp(0.68rem, 2.5vw, 0.75rem);
+            outline: none;
+            padding: 0;
+        }
+
+        .total-summary-card {
+            background: linear-gradient(145deg, #ffffff, #fefce8);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 10px 4px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        }
+
+        .total-summary-card h2 {
+            font-size: clamp(0.75rem, 3vw, 0.88rem);
+            margin: 0 0 8px 0;
+            text-align: center;
+            color: var(--primary-gold);
+            font-weight: 800;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+        }
+
+        .summary-item {
+            background: #ffffff;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 6px 1px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .summary-item .name {
+            font-size: clamp(0.68rem, 2.8vw, 0.78rem);
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 2px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .summary-item .detail-line {
+            font-size: clamp(0.55rem, 2.1vw, 0.65rem);
+            color: var(--text-sub);
+            margin-top: 1px;
+            white-space: nowrap;
+        }
+
+        .summary-item .final-total {
+            font-size: clamp(0.65rem, 2.6vw, 0.75rem);
+            font-weight: 900;
+            margin-top: 4px;
+            padding-top: 2px;
+            border-top: 1px dashed #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .money-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 14px;
+            padding: 10px 6px;
+            margin-bottom: 10px;
+        }
+
+        .money-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 4px 8px 4px;
+            width: 100%;
+        }
+
+        .money-card h3 {
+            margin: 0;
+            font-size: clamp(0.75rem, 3vw, 0.88rem);
+            color: var(--text-main);
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .round-select-badge {
+            background: var(--gold-light);
+            color: var(--primary-gold);
+            border: 1px solid var(--card-border);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: clamp(0.65rem, 2.4vw, 0.75rem);
+            font-weight: 800;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .money-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(0.68rem, 2.4vw, 0.75rem);
+            text-align: center;
+        }
+
+        .money-table th {
+            padding: 4px 0;
+            color: var(--text-sub);
+            font-weight: 700;
+            font-size: clamp(0.58rem, 2.1vw, 0.65rem);
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+        }
+
+        .money-table td { padding: 4px 1px; }
+
+        .money-input {
+            width: 95% !important;
+            max-width: 58px !important;
+            height: 26px !important;
+            background-color: var(--input-bg) !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            text-align: center !important;
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important;
+            font-weight: 700 !important;
+        }
+
+        .money-result-badge {
+            display: inline-block;
+            padding: 2px 3px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+            white-space: nowrap;
+        }
+
+        .info-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: clamp(0.65rem, 2.5vw, 0.75rem);
+            gap: 6px;
+        }
+
+        .info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }
+
+        .save-status {
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+            color: #16a34a;
+            font-weight: 700;
+            background: rgba(22, 163, 74, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        .left-btns, .right-btns { 
+            display: flex; 
+            gap: 4px; 
+        }
+
+        .action-btn {
+            padding: 6px 8px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: clamp(0.62rem, 2.3vw, 0.72rem);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .add-btn { background: #2563eb; color: white; }
+        .remove-btn { background: #d97706; color: white; }
+        .reset-btn { background: #dc2626; color: white; }
+        .undo-btn { background: #475569; color: white; }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            margin-bottom: 10px;
+            background: var(--card-bg);
+            width: 100%;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            text-align: center; 
+        }
+        
+        th, td { 
+            padding: 6px 2px; 
+            border-bottom: 1px solid #f1f5f9; 
+            vertical-align: middle; 
+        }
+
+        th { 
+            background-color: #f8fafc; 
+            color: var(--text-sub); 
+            font-weight: 700; 
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
+        }
+
+        table th:first-child,
+        table td:first-child,
+        .golfer-name { 
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            min-width: 52px !important;
+            font-weight: 800; 
+            font-size: clamp(0.72rem, 2.8vw, 0.8rem);
+            position: sticky; 
+            left: 0; 
+            background-color: #f1f5f9 !important; 
+            z-index: 2; 
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+        }
+
+        .header-round-title { 
+            font-size: clamp(0.68rem, 2.5vw, 0.78rem); 
+            color: var(--primary-gold); 
+            font-weight: 900; 
+            white-space: nowrap; 
+        }
+
+        input.score-input {
+            width: 34px; 
+            height: 28px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px;
+            text-align: center; 
+            font-size: clamp(0.75rem, 2.8vw, 0.85rem); 
+            font-weight: 800; 
+            background-color: var(--input-bg);
+        }
+
+        input.course-input {
+            width: 48px; 
+            padding: 2px 1px; 
+            border: 1px solid rgba(184, 134, 11, 0.4);
+            border-radius: 4px; 
+            text-align: center; 
+            font-size: clamp(0.58rem, 2.1vw, 0.65rem); 
+            font-weight: 800; 
+            background-color: #fef9e7;
+        }
+
+        .avg-cell {
+            font-weight: 900 !important;
+            font-size: clamp(0.8rem, 3vw, 0.9rem) !important;
+            color: var(--text-main);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: clamp(0.62rem, 2.3vw, 0.72rem);
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            letter-spacing: -0.3px;
+        }
+
+        .rank-eagle {
+            background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
+            color: #451a03;
+            border: 1px solid #fbbf24;
+        }
+
+        .rank-hawk {
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            color: #ffffff;
+            border: 1px solid #0ea5e9;
+        }
+
+        .rank-crane {
+            background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%);
+            color: #ffffff;
+            border: 1px solid #a855f7;
+        }
+
+        .rank-sparrow {
+            background: linear-gradient(135deg, #94a3b8 0%, #475569 100%);
+            color: #ffffff;
+            border: 1px solid #64748b;
+        }
+
+        .rank-cell-box { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 55px; }
+        .price-text { font-size: clamp(0.6rem, 2.2vw, 0.68rem); font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
+
+        .match-card, .history-card {
+            background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px; padding: 8px; margin-top: 8px;
+        }
+
+        .match-card h3, .history-card h3 { margin: 0 0 6px 0; font-size: clamp(0.72rem, 2.8vw, 0.8rem); color: var(--primary-gold); text-align: center; }
+        .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+        .match-item { background: #f8fafc; padding: 6px 4px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
+
+        .history-list { display: flex; flex-direction: column; gap: 4px; }
+        .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; }
+        .history-header { font-size: clamp(0.6rem, 2.2vw, 0.68rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 2px 4px; border-radius: 4px; }
+        .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px; }
+        .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 4px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
+
+        #customToast {
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95); 
+            border: 1px solid var(--primary-gold); 
+            color: #ffffff;
+            padding: 10px 18px; 
+            border-radius: 20px; 
+            font-size: 0.78rem; 
+            font-weight: 800;
+            z-index: 9999; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease;
+            white-space: nowrap !important;
+            max-width: 90vw;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    
-    <!-- 1. 리그 공지 & 공금 -->
-    <div class="section-card">
-      <div class="section-title">
-        📢 리그 공지 & 모임 공금
-      </div>
-      <div class="grid-2">
-        <div class="info-box">
-          <div class="info-label">📅 다음 라운드 일시</div>
-          <div class="info-value">8월 16일(일) 함평엘리체</div>
-        </div>
-        <div class="info-box">
-          <div class="info-label">💰 남은 공금 잔액</div>
-          <div class="info-value">79,000 원</div>
-        </div>
-      </div>
+<div class="container">
+    <div class="header-area">
+        <h1>JTFAG LEAGUE</h1>
+        <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 2. 정산 현황 표 -->
-    <div class="section-card">
-      <div class="section-title">
-        📊 통합 정산 현황
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>이름</th>
-              <th>계급전</th>
-              <th>타수내기 (3·4차)</th>
-              <th>통합 누적 금액</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>김지명</td>
-              <td class="amount-minus">-100,000</td>
-              <td class="amount-plus">+75,000</td>
-              <td class="amount-minus">-25,000</td>
-            </tr>
-            <!-- 다른 멤버 행이 있다면 여기에 추가하셔도 됩니다 -->
-          </tbody>
+    <!-- 📢 공지사항 & 공금 잔액 카드 -->
+    <div class="notice-card">
+        <h2>📢 리그 공지 & 모임 공금</h2>
+        <div class="notice-grid">
+            <div class="notice-box">
+                <label>📅 다음 라운드 일시</label>
+                <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" onchange="updateNoticeData()">
+            </div>
+            <div class="notice-box">
+                <label>💰 남은 공금 잔액</label>
+                <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150000" onfocus="this.select()" onchange="updateNoticeData()">
+            </div>
+        </div>
+        <div class="notice-memo-box">
+            <label>📝 공지 메모 / 장소</label>
+            <input type="text" id="noticeMemoInput" class="notice-memo-input" placeholder="골프장 이름, 준비물 등 메모 입력..." onchange="updateNoticeData()">
+        </div>
+    </div>
+
+    <div class="total-summary-card">
+        <h2>💰 JTFAG 통합 정산 요약</h2>
+        <div class="summary-grid" id="summaryGrid"></div>
+    </div>
+
+    <!-- 현금 정산 카드 -->
+    <div class="money-card">
+        <div class="money-header-flex">
+            <h3>💵 차수별 정산</h3>
+            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
+        </div>
+        <table class="money-table">
+            <thead>
+                <tr>
+                    <th style="width: 18%;">이름</th>
+                    <th style="width: 25%;">시작 금액</th>
+                    <th style="width: 25%;">남은 잔액</th>
+                    <th style="width: 16%;">타수 내기</th>
+                    <th style="width: 16%;">정산 결과</th>
+                </tr>
+            </thead>
+            <tbody id="moneyTbody"></tbody>
         </table>
-      </div>
     </div>
 
-  </div>
+    <div class="info-card">
+        <span class="info-text" id="infoText">💡 <b>최근 2경기 스코어</b> 기준 1:1 핸디캡 산출</span>
+        <span class="save-status" id="saveStatus">⚡ 실시간 동기화 완료</span>
+    </div>
+
+    <div class="btn-group">
+        <div class="left-btns">
+            <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
+            <button type="button" class="action-btn remove-btn" onclick="removeRound()">- 최근 삭제</button>
+        </div>
+        <div class="right-btns">
+            <button type="button" class="action-btn reset-btn" onclick="resetAllData()">🔄 전체 초기화</button>
+            <button type="button" class="action-btn undo-btn" onclick="undoLastAction()">↩️ 되돌리기</button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="scoreTable">
+            <thead>
+                <tr id="headerRow"><th>이름</th></tr>
+            </thead>
+            <tbody id="scoreTbody"></tbody>
+        </table>
+    </div>
+
+    <div class="match-card">
+        <h3 id="matchCardTitle">🤝 최근 2경기 평균 기반 1:1 핸디캡 관계</h3>
+        <div class="match-grid" id="matchGrid"></div>
+    </div>
+
+    <div class="history-card">
+        <h3>📜 라운드별 계급 정산 이력</h3>
+        <div class="history-list" id="historyList"></div>
+    </div>
+</div>
+
+<div id="customToast"></div>
+
+<script>
+    const golfers = ["이관교", "김지명", "신성호", "박승수"];
+
+    const RANK_CONFIG = {
+        0: { name: "독수리", icon: "🦅", penalty: 0, class: "rank-eagle" },
+        1: { name: "매", icon: "⚡", penalty: -40000, class: "rank-hawk" },
+        2: { name: "학", icon: "🦩", penalty: -60000, class: "rank-crane" },
+        3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
+    };
+
+    function getDefaultData() {
+        return {
+            nextRoundDate: "",
+            clubFund: 0,
+            noticeMemo: "",
+            totalRounds: 4,
+            courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
+            scores: {
+                "이관교": [90, 83, 97, 92],
+                "김지명": [87, 87, 86, 86],
+                "신성호": [88, 85, 85, 93],
+                "박승수": [96, 96, 88, 90]
+            },
+            roundMoney: [
+                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+                { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
+            ]
+        };
+    }
+
+    let appData = getDefaultData();
+    let historyStack = [];
+    let selectedMoneyRoundIdx = -1;
+    let cachedRoundRankProfit = {};
+
+    function saveState() {
+        if (historyStack.length >= 10) historyStack.shift();
+        historyStack.push(JSON.stringify(appData));
+    }
+
+    function undoLastAction() {
+        if (historyStack.length === 0) {
+            showToast("⚠️ 되돌릴 이전 내역이 없습니다.");
+            return;
+        }
+        const previousState = historyStack.pop();
+        appData = JSON.parse(previousState);
+        syncToFirebase(appData);
+        showToast("↩️ 이전 상태로 되돌렸습니다.");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const checkFirebase = setInterval(() => {
+            if (window.onSnapshot && window.gameDocRef) {
+                clearInterval(checkFirebase);
+                
+                window.onSnapshot(window.gameDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        appData = docSnap.data();
+                        if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+                    } else {
+                        syncToFirebase(getDefaultData());
+                    }
+                    
+                    if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
+                        selectedMoneyRoundIdx = appData.totalRounds - 1;
+                    }
+
+                    renderNoticeArea();
+                    renderAll();
+                    showSaveStatus("⚡ 실시간 동기화 완료");
+                }, (error) => {
+                    console.error("Firebase Error:", error);
+                    showSaveStatus("⚠️ DB 연결 확인 필요");
+                });
+            }
+        }, 100);
+    });
+
+    function syncToFirebase(dataToSave) {
+        if (!window.setDoc || !window.gameDocRef) return;
+        window.setDoc(window.gameDocRef, dataToSave, { merge: true });
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('customToast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+    }
+
+    function showSaveStatus(msg) {
+        const saveStatus = document.getElementById('saveStatus');
+        if (saveStatus) {
+            saveStatus.textContent = msg;
+            saveStatus.style.opacity = '1';
+            setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200);
+        }
+    }
+
+    function renderNoticeArea() {
+        const dateInput = document.getElementById('nextRoundInput');
+        const fundInput = document.getElementById('clubFundInput');
+        const memoInput = document.getElementById('noticeMemoInput');
+
+        if (dateInput && document.activeElement !== dateInput) {
+            dateInput.value = appData.nextRoundDate || "";
+        }
+        if (fundInput && document.activeElement !== fundInput) {
+            const fundVal = appData.clubFund || 0;
+            fundInput.value = fundVal === 0 ? "" : fundVal.toLocaleString('ko-KR');
+        }
+        if (memoInput && document.activeElement !== memoInput) {
+            memoInput.value = appData.noticeMemo || "";
+        }
+    }
+
+    function updateNoticeData() {
+        saveState();
+        const dateInput = document.getElementById('nextRoundInput');
+        const fundInput = document.getElementById('clubFundInput');
+        const memoInput = document.getElementById('noticeMemoInput');
+
+        appData.nextRoundDate = dateInput ? dateInput.value : "";
+        
+        let rawFund = fundInput ? fundInput.value.replace(/[^0-9]/g, '') : "0";
+        appData.clubFund = parseInt(rawFund, 10) || 0;
+        
+        appData.noticeMemo = memoInput ? memoInput.value : "";
+
+        syncToFirebase(appData);
+        renderNoticeArea();
+    }
+
+    function renderAll() {
+        renderTable();
+        calculateAndRender();
+        renderMoneyTable();
+    }
+
+    function changeMoneyRound(idxVal) {
+        selectedMoneyRoundIdx = parseInt(idxVal, 10);
+        renderMoneyTable();
+    }
+
+    function renderMoneyTable() {
+        const tbody = document.getElementById('moneyTbody');
+        const selectBox = document.getElementById('moneyRoundSelect');
+        if (!tbody || !selectBox) return;
+
+        let selectHtml = "";
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const selectedStr = (r === selectedMoneyRoundIdx) ? "selected" : "";
+            selectHtml += `<option value="${r}" ${selectedStr}>${r + 1}차전 정산 입력 ▾</option>`;
+        }
+        selectBox.innerHTML = selectHtml;
+
+        const currentRoundIdx = selectedMoneyRoundIdx;
+
+        if (!appData.roundMoney) appData.roundMoney = [];
+        if (!appData.roundMoney[currentRoundIdx]) {
+            appData.roundMoney[currentRoundIdx] = {};
+            golfers.forEach(g => appData.roundMoney[currentRoundIdx][g] = { start: 0, end: 0 });
+        }
+
+        const currMoney = appData.roundMoney[currentRoundIdx];
+        tbody.innerHTML = "";
+
+        golfers.forEach(g => {
+            const m = currMoney[g] || { start: 0, end: 0 };
+            const netCashDiff = m.end - m.start;
+
+            const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
+                                ? cachedRoundRankProfit[g][currentRoundIdx] 
+                                : 0;
+
+            const pureStrokeDiff = netCashDiff - rankPenalty;
+
+            const strokeText = (pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만");
+            const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
+            const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
+
+            const totalText = (netCashDiff === 0 ? "0.0만" : (netCashDiff > 0 ? "+" : "") + (netCashDiff / 10000).toFixed(1) + "만");
+            const totalBg = netCashDiff > 0 ? "rgba(22, 163, 74, 0.12)" : (netCashDiff < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)");
+            const totalColor = netCashDiff > 0 ? "#16a34a" : (netCashDiff < 0 ? "#dc2626" : "#64748b");
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-weight:800; color:var(--text-main);">${g}</td>
+                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.start}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
+                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.end}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
+                    <td>
+                        <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
+                            ${strokeText}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="money-result-badge" style="background:${totalBg}; color:${totalColor}; font-weight:900;">
+                            ${totalText}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function updateMoney(name, type, value) {
+        saveState();
+        const currentRoundIdx = selectedMoneyRoundIdx;
+        if (!appData.roundMoney[currentRoundIdx]) appData.roundMoney[currentRoundIdx] = {};
+        if (!appData.roundMoney[currentRoundIdx][name]) appData.roundMoney[currentRoundIdx][name] = { start: 0, end: 0 };
+        
+        appData.roundMoney[currentRoundIdx][name][type] = parseFloat(value) || 0;
+        syncToFirebase(appData);
+    }
+
+    function renderTable() {
+        const headerRow = document.getElementById('headerRow');
+        const tbody = document.getElementById('scoreTbody');
+
+        let headerHtml = `<th>이름</th>`;
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const courseVal = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
+            headerHtml += `
+                <th>
+                    <div class="header-round-title">${r + 1}차</div>
+                    <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
+                </th>`;
+        }
+
+        headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th><th style="white-space:nowrap;">최종 계급</th>`;
+        headerRow.innerHTML = headerHtml;
+
+        tbody.innerHTML = "";
+        golfers.forEach(name => {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-name', name);
+
+            let rowHtml = `<td class="golfer-name">${name}</td>`;
+            
+            for (let r = 0; r < appData.totalRounds; r++) {
+                const val = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+                rowHtml += `<td class="score-cell"><input type="text" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${val}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
+            }
+
+            rowHtml += `<td class="avg-cell">-</td><td class="rank-cell">-</td>`;
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateCourse(r, val) {
+        saveState();
+        if (!appData.courses) appData.courses = [];
+        appData.courses[r] = val;
+        syncToFirebase(appData);
+    }
+
+    function updateScore(name, r, val) {
+        saveState();
+        if (!appData.scores) appData.scores = {};
+        if (!appData.scores[name]) appData.scores[name] = [];
+        appData.scores[name][r] = val === "" ? "" : parseFloat(val);
+        syncToFirebase(appData);
+    }
+
+    function addRound() {
+        saveState();
+        appData.totalRounds++;
+        if (!appData.courses) appData.courses = [];
+        appData.courses.push("");
+        golfers.forEach(g => {
+            if (!appData.scores[g]) appData.scores[g] = [];
+            appData.scores[g].push("");
+        });
+
+        const newRoundMoney = {};
+        golfers.forEach(g => newRoundMoney[g] = { start: 0, end: 0 });
+        if (!appData.roundMoney) appData.roundMoney = [];
+        appData.roundMoney.push(newRoundMoney);
+
+        selectedMoneyRoundIdx = appData.totalRounds - 1;
+
+        syncToFirebase(appData);
+        showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
+    }
+
+    function removeRound() {
+        if (appData.totalRounds <= 2) {
+            showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
+            return;
+        }
+        saveState();
+        appData.totalRounds--;
+        if (appData.courses) appData.courses.pop();
+        golfers.forEach(name => {
+            if (appData.scores[name]) appData.scores[name].pop();
+        });
+
+        if (appData.roundMoney && appData.roundMoney.length > 0) {
+            appData.roundMoney.pop();
+        }
+
+        if (selectedMoneyRoundIdx >= appData.totalRounds) {
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
+        }
+
+        syncToFirebase(appData);
+        showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
+    }
+
+    function calculateAndRender() {
+        let targetR1 = -1, targetR2 = -1;
+        for (let r = appData.totalRounds - 1; r >= 1; r--) {
+            let completeCurr = true;
+            let completePrev = true;
+            golfers.forEach(g => {
+                const sCurr = appData.scores[g] ? appData.scores[g][r] : "";
+                const sPrev = appData.scores[g] ? appData.scores[g][r - 1] : "";
+                if (sCurr === "" || sCurr === undefined || isNaN(parseFloat(sCurr))) completeCurr = false;
+                if (sPrev === "" || sPrev === undefined || isNaN(parseFloat(sPrev))) completePrev = false;
+            });
+
+            if (completeCurr && completePrev) {
+                targetR1 = r - 1;
+                targetR2 = r;
+                break;
+            }
+        }
+
+        if (targetR1 === -1) {
+            targetR1 = 0;
+            targetR2 = 1;
+        }
+
+        const infoText = document.getElementById('infoText');
+        const matchCardTitle = document.getElementById('matchCardTitle');
+        const avgHeaderTitle = document.getElementById('avgHeaderTitle');
+
+        const titleStr = `${targetR1 + 1}차 & ${targetR2 + 1}차`;
+        const avgTitleStr = `${targetR1 + 1}·${targetR2 + 1}차 평균`;
+
+        if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
+        if (matchCardTitle) matchCardTitle.innerHTML = `🤝 ${avgTitleStr} 기반 1:1 핸디캡 관계`;
+        if (avgHeaderTitle) avgHeaderTitle.innerHTML = avgTitleStr;
+
+        const rows = document.querySelectorAll('#scoreTbody tr');
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const s1 = parseFloat(appData.scores[name] ? appData.scores[name][targetR1] : NaN);
+            const s2 = parseFloat(appData.scores[name] ? appData.scores[name][targetR2] : NaN);
+
+            const avgCell = row.querySelector('.avg-cell');
+            if (!isNaN(s1) && !isNaN(s2)) {
+                const avg = Math.floor((s1 + s2) / 2);
+                if (avgCell) avgCell.textContent = `${avg}`;
+            } else {
+                if (avgCell) avgCell.textContent = `-`;
+            }
+        });
+
+        processAllRoundSettlements();
+        renderHandicapMatchCard(targetR1, targetR2);
+    }
+
+    function processAllRoundSettlements() {
+        const totalRounds = appData.totalRounds;
+        const totalRankProfit = {};
+        const roundRankProfit = {};
+
+        golfers.forEach(g => {
+            totalRankProfit[g] = 0;
+            roundRankProfit[g] = {};
+        });
+
+        const historyList = document.getElementById('historyList');
+        if (historyList) historyList.innerHTML = "";
+
+        document.querySelectorAll('.rank-cell').forEach(rc => rc.textContent = '-');
+
+        for (let r = 2; r < totalRounds; r++) {
+            const handicapAvg = {};
+            let isComplete = true;
+
+            golfers.forEach(g => {
+                const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
+                const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
+                if (isNaN(s1) || isNaN(s2)) isComplete = false;
+                handicapAvg[g] = Math.floor((s1 + s2) / 2);
+            });
+
+            const currentScores = {};
+            golfers.forEach(g => {
+                const sr = parseFloat(appData.scores[g] ? appData.scores[g][r] : NaN);
+                if (isNaN(sr)) isComplete = false;
+                currentScores[g] = sr;
+            });
+
+            if (!isComplete) continue;
+
+            const matchResults = {};
+            golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 });
+
+            for (let i = 0; i < golfers.length; i++) {
+                for (let j = i + 1; j < golfers.length; j++) {
+                    const g1 = golfers[i];
+                    const g2 = golfers[j];
+
+                    const g1Avg = handicapAvg[g1];
+                    const g2Avg = handicapAvg[g2];
+
+                    const g1Score = currentScores[g1];
+                    const g2Score = currentScores[g2];
+
+                    const g1Adjusted = g1Score - (g1Avg - g2Avg);
+                    const g2Adjusted = g2Score;
+
+                    if (g1Adjusted < g2Adjusted) {
+                        matchResults[g1].wins++;
+                        matchResults[g2].losses++;
+                    } else if (g1Adjusted > g2Adjusted) {
+                        matchResults[g1].losses++;
+                        matchResults[g2].wins++;
+                    } else {
+                        if (g1Avg < g2Avg) {
+                            matchResults[g1].wins++;
+                            matchResults[g2].losses++;
+                        } else if (g2Avg < g1Avg) {
+                            matchResults[g2].wins++;
+                            matchResults[g1].losses++;
+                        } else {
+                            matchResults[g1].ties++;
+                            matchResults[g2].ties++;
+                        }
+                    }
+
+                    matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
+                    matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
+                }
+            }
+
+            const sortedGolfers = [...golfers].sort((a, b) => {
+                if (matchResults[b].wins !== matchResults[a].wins) {
+                    return matchResults[b].wins - matchResults[a].wins;
+                }
+                return matchResults[b].totalDiff - matchResults[a].totalDiff;
+            });
+
+            let roundHistoryHtml = `
+                <div class="history-item">
+                    <div class="history-header">⛳ ${r + 1}차전 정산</div>
+                    <div class="history-grid">
+            `;
+
+            sortedGolfers.forEach((golferName, index) => {
+                const rankInfo = RANK_CONFIG[index];
+                const profit = rankInfo.penalty;
+                
+                totalRankProfit[golferName] += profit;
+                roundRankProfit[golferName][r] = profit;
+
+                const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
+
+                roundHistoryHtml += `
+                    <div class="history-member">
+                        <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
+                        <div style="display:flex; align-items:center; gap:2px;">
+                            <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
+                            <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
+                        </div>
+                    </div>
+                `;
+
+                const row = document.querySelector(`tr[data-name="${golferName}"]`);
+                if (row) {
+                    const rc = row.querySelector('.rank-cell');
+                    if (rc) {
+                        rc.innerHTML = `
+                            <div class="rank-cell-box">
+                                <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
+                                <div class="price-text" style="color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</div>
+                            </div>
+                        `;
+                    }
+                }
+            });
+
+            roundHistoryHtml += `</div></div>`;
+            if (historyList) historyList.innerHTML += roundHistoryHtml;
+        }
+
+        cachedRoundRankProfit = roundRankProfit;
+
+        const summaryGrid = document.getElementById('summaryGrid');
+        if (summaryGrid) {
+            summaryGrid.innerHTML = "";
+            golfers.forEach(g => {
+                const rankProfit = totalRankProfit[g] || 0; 
+                let totalNetCash = 0; 
+
+                if (appData.roundMoney) {
+                    for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                        const rMoney = appData.roundMoney[rIdx];
+                        if (!rMoney) continue;
+
+                        const m = rMoney[g] || { start: 0, end: 0 };
+                        if (m.start > 0 || m.end > 0) {
+                            totalNetCash += (m.end - m.start);
+                        }
+                    }
+                }
+                
+                const pureBetProfit = totalNetCash - rankProfit; 
+                const finalBalance = totalNetCash;
+                
+                const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
+                const betProfitText = pureBetProfit === 0 ? "0.0만" : (pureBetProfit > 0 ? "+" : "") + (pureBetProfit / 10000).toFixed(1) + "만";
+                
+                let finalColor = "#64748b";
+                let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
+                
+                if (finalBalance > 0) finalColor = "#16a34a";
+                if (finalBalance < 0) finalColor = "#dc2626";
+
+                summaryGrid.innerHTML += `
+                    <div class="summary-item">
+                        <div class="name">${g}</div>
+                        <div class="detail-line">계급: ${rankProfitText}</div>
+                        <div class="detail-line">내기: ${betProfitText}</div>
+                        <div class="final-total" style="color: ${finalColor};">
+                            합산: ${finalText}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    function renderHandicapMatchCard(r1, r2) {
+        const matchGrid = document.getElementById('matchGrid');
+        if (!matchGrid) return;
+        matchGrid.innerHTML = "";
+
+        const avgScores = {};
+        golfers.forEach(g => {
+            const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
+            const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
+            if (!isNaN(s1) && !isNaN(s2)) {
+                avgScores[g] = Math.floor((s1 + s2) / 2);
+            }
+        });
+
+        if (Object.keys(avgScores).length < 4) {
+            matchGrid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-sub);">스코어를 먼저 입력해 주세요.</div>`;
+            return;
+        }
+
+        for (let i = 0; i < golfers.length; i++) {
+            for (let j = i + 1; j < golfers.length; j++) {
+                const g1 = golfers[i];
+                const g2 = golfers[j];
+                const diff = avgScores[g1] - avgScores[g2];
+
+                let matchText = "";
+                if (diff > 0) {
+                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음`;
+                } else if (diff < 0) {
+                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음`;
+                } else {
+                    matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'match-item';
+                item.innerHTML = matchText;
+                matchGrid.appendChild(item);
+            }
+        }
+    }
+
+    function resetAllData() {
+        if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
+            saveState();
+            appData = getDefaultData();
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
+            syncToFirebase(appData);
+            showToast("🔄 모든 데이터가 초기화되었습니다.");
+        }
+    }
+</script>
 
 </body>
 </html>
