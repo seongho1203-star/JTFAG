@@ -117,26 +117,31 @@
             justify-content: space-between;
         }
 
+        /* 3. 모바일에서 찌그러지지 않도록 레이아웃 개선 */
         .notice-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-bottom: 6px;
+            gap: 8px;
         }
 
         .notice-box {
             background: rgba(255, 255, 255, 0.07);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 8px;
-            padding: 6px 8px;
+            padding: 8px;
+            min-width: 0; /* 텍스트 넘침 방지 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .notice-box label {
             display: block;
-            font-size: clamp(0.58rem, 2.2vw, 0.65rem);
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             color: #94a3b8;
             font-weight: 700;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            white-space: nowrap;
         }
 
         .notice-input {
@@ -144,38 +149,14 @@
             background: transparent;
             border: none;
             color: #ffffff;
-            font-size: clamp(0.7rem, 2.8vw, 0.8rem);
+            font-size: clamp(0.72rem, 2.8vw, 0.82rem);
             font-weight: 800;
             outline: none;
             padding: 0;
+            word-break: keep-all;
         }
 
         .notice-input::placeholder { color: #64748b; font-weight: 500; }
-
-        .notice-memo-box {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 6px 8px;
-        }
-
-        .notice-memo-box label {
-            display: block;
-            font-size: clamp(0.58rem, 2.2vw, 0.65rem);
-            color: #94a3b8;
-            font-weight: 700;
-            margin-bottom: 2px;
-        }
-
-        .notice-memo-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: #e2e8f0;
-            font-size: clamp(0.68rem, 2.5vw, 0.75rem);
-            outline: none;
-            padding: 0;
-        }
 
         .total-summary-card {
             background: linear-gradient(145deg, #ffffff, #fefce8);
@@ -532,7 +513,7 @@
         <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 📢 공지사항 & 공금 잔액 카드 -->
+    <!-- 📢 공지사항 & 공금 잔액 카드 (공지 메모 영역 완전히 삭제) -->
     <div class="notice-card">
         <h2>📢 리그 공지 & 모임 공금</h2>
         <div class="notice-grid">
@@ -544,10 +525,6 @@
                 <label>💰 남은 공금 잔액</label>
                 <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150000" onfocus="this.select()" onchange="updateNoticeData()">
             </div>
-        </div>
-        <div class="notice-memo-box">
-            <label>📝 공지 메모 / 장소</label>
-            <input type="text" id="noticeMemoInput" class="notice-memo-input" placeholder="골프장 이름, 준비물 등 메모 입력..." onchange="updateNoticeData()">
         </div>
     </div>
 
@@ -720,7 +697,6 @@
     function renderNoticeArea() {
         const dateInput = document.getElementById('nextRoundInput');
         const fundInput = document.getElementById('clubFundInput');
-        const memoInput = document.getElementById('noticeMemoInput');
 
         if (dateInput && document.activeElement !== dateInput) {
             dateInput.value = appData.nextRoundDate || "";
@@ -729,23 +705,17 @@
             const fundVal = appData.clubFund || 0;
             fundInput.value = fundVal === 0 ? "" : fundVal.toLocaleString('ko-KR');
         }
-        if (memoInput && document.activeElement !== memoInput) {
-            memoInput.value = appData.noticeMemo || "";
-        }
     }
 
     function updateNoticeData() {
         saveState();
         const dateInput = document.getElementById('nextRoundInput');
         const fundInput = document.getElementById('clubFundInput');
-        const memoInput = document.getElementById('noticeMemoInput');
 
         appData.nextRoundDate = dateInput ? dateInput.value : "";
         
         let rawFund = fundInput ? fundInput.value.replace(/[^0-9]/g, '') : "0";
         appData.clubFund = parseInt(rawFund, 10) || 0;
-        
-        appData.noticeMemo = memoInput ? memoInput.value : "";
 
         syncToFirebase(appData);
         renderNoticeArea();
@@ -762,6 +732,7 @@
         renderMoneyTable();
     }
 
+    /* 1. 시작금액과 남은잔액이 0일 때 타수 내기를 0.0만으로 정확히 예외 처리 */
     function renderMoneyTable() {
         const tbody = document.getElementById('moneyTbody');
         const selectBox = document.getElementById('moneyRoundSelect');
@@ -787,13 +758,16 @@
 
         golfers.forEach(g => {
             const m = currMoney[g] || { start: 0, end: 0 };
-            const netCashDiff = m.end - m.start;
+            
+            // 입력값이 없을 때(0, 0)는 0으로 고정 계산
+            const isZeroRound = (m.start === 0 && m.end === 0);
+            const netCashDiff = isZeroRound ? 0 : (m.end - m.start);
 
             const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
                                 ? cachedRoundRankProfit[g][currentRoundIdx] 
                                 : 0;
 
-            const pureStrokeDiff = netCashDiff - rankPenalty;
+            const pureStrokeDiff = isZeroRound ? 0 : (netCashDiff - rankPenalty);
 
             const strokeText = (pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만");
             const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
