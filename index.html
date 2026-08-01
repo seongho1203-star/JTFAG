@@ -982,7 +982,6 @@
         renderHandicapMatchCard(targetR1, targetR2);
     }
 
-    /* 📌 계급 및 동타 처리 보정 정산 함수 */
     function processAllRoundSettlements() {
         const totalRounds = appData.totalRounds;
         const totalRankProfit = {};
@@ -1042,11 +1041,10 @@
                         matchResults[g1].losses++;
                         matchResults[g2].wins++;
                     } else {
-                        // 💡 동타 시 핸디캡 평균이 더 큰 사람(핸디를 받는 사람/원래 타수가 높은 사람)이 승리
-                        if (g1Avg > g2Avg) {
+                        if (g1Avg < g2Avg) {
                             matchResults[g1].wins++;
                             matchResults[g2].losses++;
-                        } else if (g2Avg > g1Avg) {
+                        } else if (g2Avg < g1Avg) {
                             matchResults[g2].wins++;
                             matchResults[g1].losses++;
                         } else {
@@ -1112,7 +1110,6 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
-        // 💡 통합 정산 요약 수식 보정 (정확한 계급 + 타수 내기 + 누적 현금 합산 반영)
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
