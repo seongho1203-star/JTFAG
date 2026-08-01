@@ -181,7 +181,6 @@
             white-space: nowrap;
         }
 
-        /* 🟢 차수 선택 셀렉트 박스 스타일 */
         .round-select-badge {
             background: var(--gold-light);
             color: var(--primary-gold);
@@ -197,7 +196,7 @@
         .money-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: clamp(0.7rem, 2.6vw, 0.78rem);
+            font-size: clamp(0.68rem, 2.4vw, 0.75rem);
             text-align: center;
         }
 
@@ -205,30 +204,31 @@
             padding: 4px 0;
             color: var(--text-sub);
             font-weight: 700;
-            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+            font-size: clamp(0.58rem, 2.1vw, 0.65rem);
             border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
         }
 
         .money-table td { padding: 4px 1px; }
 
         .money-input {
-            width: 90% !important;
-            max-width: 65px !important;
-            height: 28px !important;
+            width: 95% !important;
+            max-width: 58px !important;
+            height: 26px !important;
             background-color: var(--input-bg) !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 6px !important;
             text-align: center !important;
-            font-size: clamp(0.7rem, 2.6vw, 0.78rem) !important;
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important;
             font-weight: 700 !important;
         }
 
         .money-result-badge {
             display: inline-block;
-            padding: 2px 4px;
+            padding: 2px 3px;
             border-radius: 4px;
             font-weight: 800;
-            font-size: clamp(0.62rem, 2.4vw, 0.7rem);
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
             white-space: nowrap;
         }
 
@@ -453,7 +453,7 @@
     </div>
 
     <div class="total-summary-card">
-        <h2>💰 JTFAG 통합 누적 정산 요약</h2>
+        <h2>💰 JTFAG 통합 정산 요약</h2>
         <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
@@ -461,16 +461,16 @@
     <div class="money-card">
         <div class="money-header-flex">
             <h3>💵 차수별 정산</h3>
-            <!-- 🟢 차수를 자유롭게 선택할 수 있는 드롭다운 셀렉트 박스 -->
             <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
         </div>
         <table class="money-table">
             <thead>
                 <tr>
-                    <th style="width: 20%;">이름</th>
-                    <th style="width: 30%;">시작 금액</th>
-                    <th style="width: 30%;">남은 잔액</th>
-                    <th style="width: 20%;">정산 결과</th>
+                    <th style="width: 18%;">이름</th>
+                    <th style="width: 25%;">시작 금액</th>
+                    <th style="width: 25%;">남은 잔액</th>
+                    <th style="width: 16%;">타수 내기</th>
+                    <th style="width: 16%;">정산 결과</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -539,14 +539,15 @@
                 { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
                 { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
                 { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
-                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 100000, end: 20000 }, "박승수": { start: 100000, end: 20000 } }
+                { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
             ]
         };
     }
 
     let appData = getDefaultData();
     let historyStack = [];
-    let selectedMoneyRoundIdx = -1; // 선택된 현금 정산 라운드 인덱스
+    let selectedMoneyRoundIdx = -1;
+    let cachedRoundRankProfit = {}; // 차수별 계급 정산 금액 저장 캐시
 
     function saveState() {
         if (historyStack.length >= 10) historyStack.shift();
@@ -577,7 +578,6 @@
                         syncToFirebase(getDefaultData());
                     }
                     
-                    // 초기 선택 라운드 설정 (기존 선택값이 없거나 범위를 벗어나면 마지막 라운드 지정)
                     if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
                         selectedMoneyRoundIdx = appData.totalRounds - 1;
                     }
@@ -630,7 +630,6 @@
         const selectBox = document.getElementById('moneyRoundSelect');
         if (!tbody || !selectBox) return;
 
-        // 드롭다운 옵션 동적 생성 (1차전 ~ N차전)
         let selectHtml = "";
         for (let r = 0; r < appData.totalRounds; r++) {
             const selectedStr = (r === selectedMoneyRoundIdx) ? "selected" : "";
@@ -651,11 +650,25 @@
 
         golfers.forEach(g => {
             const m = currMoney[g] || { start: 0, end: 0 };
-            const pureBetDiff = m.end - m.start;
+            const netCashDiff = m.end - m.start; // 총 정산 손익 (남은금액 - 시작금액)
 
-            const diffText = (pureBetDiff > 0 ? "+" : "") + (pureBetDiff / 10000).toFixed(1) + "만";
-            const diffBg = pureBetDiff > 0 ? "rgba(22, 163, 74, 0.1)" : (pureBetDiff < 0 ? "rgba(220, 38, 38, 0.1)" : "rgba(0, 0, 0, 0.03)");
-            const diffColor = pureBetDiff > 0 ? "#16a34a" : (pureBetDiff < 0 ? "#dc2626" : "#64748b");
+            // 해당 차수의 계급 벌금 가져오기
+            const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
+                                ? cachedRoundRankProfit[g][currentRoundIdx] 
+                                : 0;
+
+            // 순수 타수 내기 = 총 정산 손익 - 계급 벌금
+            const pureStrokeDiff = netCashDiff - rankPenalty;
+
+            // 타수 금액 텍스트 포맷
+            const strokeText = (pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만");
+            const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
+            const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
+
+            // 정산 결과 텍스트 포맷
+            const totalText = (netCashDiff === 0 ? "0.0만" : (netCashDiff > 0 ? "+" : "") + (netCashDiff / 10000).toFixed(1) + "만");
+            const totalBg = netCashDiff > 0 ? "rgba(22, 163, 74, 0.12)" : (netCashDiff < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)");
+            const totalColor = netCashDiff > 0 ? "#16a34a" : (netCashDiff < 0 ? "#dc2626" : "#64748b");
 
             tbody.innerHTML += `
                 <tr>
@@ -663,8 +676,13 @@
                     <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.start}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
                     <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.end}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
                     <td>
-                        <span class="money-result-badge" style="background:${diffBg}; color:${diffColor};">
-                            ${diffText}
+                        <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
+                            ${strokeText}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="money-result-badge" style="background:${totalBg}; color:${totalColor}; font-weight:900;">
+                            ${totalText}
                         </span>
                     </td>
                 </tr>
@@ -747,7 +765,6 @@
         if (!appData.roundMoney) appData.roundMoney = [];
         appData.roundMoney.push(newRoundMoney);
 
-        // 차수 추가 시 새로 생긴 마지막 라운드로 자동 선택 전환
         selectedMoneyRoundIdx = appData.totalRounds - 1;
 
         syncToFirebase(appData);
@@ -895,8 +912,8 @@
                             matchResults[g1].wins++;
                             matchResults[g2].losses++;
                         } else if (g2Avg < g1Avg) {
-                            matchResults[g2].wins++;
-                            matchResults[g1].losses++;
+                            matchResults[g2].losses++;
+                            matchResults[g1].wins++;
                         } else {
                             matchResults[g1].ties++;
                             matchResults[g2].ties++;
@@ -958,6 +975,8 @@
             if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
 
+        cachedRoundRankProfit = roundRankProfit; // 현금 표에서 바로 불러올 수 있게 글로벌 저장
+
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
@@ -996,7 +1015,7 @@
                     <div class="summary-item">
                         <div class="name">${g}</div>
                         <div class="detail-line">계급: ${rankProfitText}</div>
-                        <div class="detail-line">타수: ${betProfitText}</div>
+                        <div class="detail-line">내기: ${betProfitText}</div>
                         <div class="final-total" style="color: ${finalColor};">
                             합산: ${finalText}
                         </div>
