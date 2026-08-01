@@ -117,7 +117,6 @@
             justify-content: space-between;
         }
 
-        /* 3. 모바일에서 찌그러지지 않도록 레이아웃 개선 */
         .notice-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -129,7 +128,7 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 8px;
             padding: 8px;
-            min-width: 0; /* 텍스트 넘침 방지 */
+            min-width: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -513,7 +512,7 @@
         <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 📢 공지사항 & 공금 잔액 카드 (공지 메모 영역 완전히 삭제) -->
+    <!-- 📢 공지사항 & 공금 잔액 카드 -->
     <div class="notice-card">
         <h2>📢 리그 공지 & 모임 공금</h2>
         <div class="notice-grid">
@@ -732,7 +731,6 @@
         renderMoneyTable();
     }
 
-    /* 1. 시작금액과 남은잔액이 0일 때 타수 내기를 0.0만으로 정확히 예외 처리 */
     function renderMoneyTable() {
         const tbody = document.getElementById('moneyTbody');
         const selectBox = document.getElementById('moneyRoundSelect');
@@ -759,7 +757,6 @@
         golfers.forEach(g => {
             const m = currMoney[g] || { start: 0, end: 0 };
             
-            // 입력값이 없을 때(0, 0)는 0으로 고정 계산
             const isZeroRound = (m.start === 0 && m.end === 0);
             const netCashDiff = isZeroRound ? 0 : (m.end - m.start);
 
@@ -1084,12 +1081,13 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
+        // 💰 통합 정산 요약 카드 계산 알고리즘 수정
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
             golfers.forEach(g => {
-                const rankProfit = totalRankProfit[g] || 0; 
-                let totalNetCash = 0; 
+                const rankProfit = totalRankProfit[g] || 0; // 누적 계급 벌금 총합
+                let totalNetCash = 0; // 모든 차수 최종 정산금 합산
 
                 if (appData.roundMoney) {
                     for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
@@ -1103,6 +1101,7 @@
                     }
                 }
                 
+                // 순수 내기 = 전체 최종 정산 결과 - 계급 총합
                 const pureBetProfit = totalNetCash - rankProfit; 
                 const finalBalance = totalNetCash;
                 
