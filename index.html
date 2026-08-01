@@ -630,12 +630,12 @@
             clubFund: 0,
             noticeMemo: "",
             totalRounds: 4,
-            courses: ["함평엘리체", "함평엘리체", "어등산", "골프장"],
+            courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
             scores: {
-                "이관교": [90, 83, 97, 85],
-                "김지명": [87, 87, 86, 89],
-                "신성호": [88, 85, 85, 88],
-                "박승수": [96, 96, 88, 92]
+                "이관교": [90, 83, 97, 92],
+                "김지명": [87, 87, 86, 86],
+                "신성호": [88, 85, 85, 93],
+                "박승수": [96, 96, 88, 90]
             },
             roundMoney: [
                 { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
@@ -982,7 +982,7 @@
         renderHandicapMatchCard(targetR1, targetR2);
     }
 
-    /* 📌 수식 수정 완료된 통합 정산 처리 함수 */
+    /* 📌 계급 및 동타 처리 보정 정산 함수 */
     function processAllRoundSettlements() {
         const totalRounds = appData.totalRounds;
         const totalRankProfit = {};
@@ -1042,12 +1042,13 @@
                         matchResults[g1].losses++;
                         matchResults[g2].wins++;
                     } else {
-                        if (g1Avg < g2Avg) {
+                        // 💡 동타 시 핸디캡 평균이 더 큰 사람(핸디를 받는 사람/원래 타수가 높은 사람)이 승리
+                        if (g1Avg > g2Avg) {
                             matchResults[g1].wins++;
                             matchResults[g2].losses++;
-                        } else if (g2Avg < g1Avg) {
-                            matchResults[g2].losses++;
-                            matchResults[g1].wins++;
+                        } else if (g2Avg > g1Avg) {
+                            matchResults[g2].wins++;
+                            matchResults[g1].losses++;
                         } else {
                             matchResults[g1].ties++;
                             matchResults[g2].ties++;
@@ -1111,7 +1112,7 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
-        // 💡 통합 정산 요약 수식 보정 (중복 차감 문제 완벽 해결)
+        // 💡 통합 정산 요약 수식 보정 (정확한 계급 + 타수 내기 + 누적 현금 합산 반영)
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
@@ -1125,15 +1126,14 @@
                         if (!rMoney) continue;
 
                         const m = rMoney[g] || { start: 0, end: 0 };
-                        totalNetCash += (m.end - m.start); // 실제 현금 손익 차액
+                        if (m.start > 0 || m.end > 0) {
+                            totalNetCash += (m.end - m.start);
+                        }
                     }
                 }
                 
-                // [수정된 핵심 수식]
-                // 1. finalBalance (최종 합산) = 현금 정산으로 치러진 모든 잔액 차액
-                // 2. pureBetProfit (타수 내기) = 최종 합산 - 계급 정산
+                const pureBetProfit = totalNetCash - rankProfit; 
                 const finalBalance = totalNetCash;
-                const pureBetProfit = finalBalance - rankProfit; 
                 
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
                 const betProfitText = pureBetProfit === 0 ? "0.0만" : (pureBetProfit > 0 ? "+" : "") + (pureBetProfit / 10000).toFixed(1) + "만";
