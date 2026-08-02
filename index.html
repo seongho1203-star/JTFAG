@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <title>JTFAG League - 프리미엄 UI 디자인 적용</title>
+    <title>JTFAG League - 실시간 정산 시스템</title>
 
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
@@ -97,19 +97,20 @@
             letter-spacing: 1px;
         }
 
+        /* 📢 공지사항 & 공금 잔액 카드 최적화 */
         .notice-card {
             background: linear-gradient(145deg, #1e293b, #0f172a);
             color: #ffffff;
             border-radius: 14px;
-            padding: 10px 12px;
+            padding: 12px 14px;
             margin-bottom: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
             border: 1px solid rgba(212, 175, 55, 0.4);
         }
 
         .notice-card h2 {
-            font-size: clamp(0.78rem, 3.2vw, 0.88rem);
-            margin: 0 0 8px 0;
+            font-size: clamp(0.82rem, 3.4vw, 0.92rem);
+            margin: 0 0 10px 0;
             color: #fef08a;
             font-weight: 800;
             display: flex;
@@ -119,27 +120,33 @@
 
         .notice-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.2fr 0.8fr;
             gap: 8px;
         }
 
         .notice-box {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 8px 10px;
             min-width: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            transition: border-color 0.2s ease;
+        }
+
+        .notice-box:focus-within {
+            border-color: rgba(254, 240, 138, 0.6);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .notice-box label {
             display: block;
-            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
-            color: #94a3b8;
+            font-size: clamp(0.62rem, 2.3vw, 0.7rem);
+            color: #cbd5e1;
             font-weight: 700;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
             white-space: nowrap;
         }
 
@@ -148,11 +155,16 @@
             background: transparent;
             border: none;
             color: #ffffff;
-            font-size: clamp(0.72rem, 2.8vw, 0.82rem);
+            font-size: clamp(0.78rem, 3vw, 0.88rem);
             font-weight: 800;
             outline: none;
             padding: 0;
             word-break: keep-all;
+        }
+
+        /* 남은 공금 잔액 가운데 정렬 전용 스타일 */
+        #clubFundInput {
+            text-align: center;
         }
 
         .notice-input::placeholder { color: #64748b; font-weight: 500; }
@@ -273,7 +285,7 @@
 
         .money-input {
             width: 95% !important;
-            max-width: 58px !important;
+            max-width: 62px !important;
             height: 26px !important;
             background-color: var(--input-bg) !important;
             border: 1px solid #cbd5e1 !important;
@@ -430,37 +442,19 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 3px 6px;
+            gap: 2px;
+            padding: 2px 6px;
             border-radius: 6px;
             font-weight: 900;
-            font-size: clamp(0.85rem, 3.2vw, 1rem);
+            font-size: clamp(0.65rem, 2.4vw, 0.75rem);
             white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        .rank-eagle {
-            background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
-            color: #451a03;
-            border: 1px solid #fbbf24;
-        }
-
-        .rank-hawk {
-            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-            color: #ffffff;
-            border: 1px solid #0ea5e9;
-        }
-
-        .rank-crane {
-            background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%);
-            color: #ffffff;
-            border: 1px solid #a855f7;
-        }
-
-        .rank-sparrow {
-            background: linear-gradient(135deg, #94a3b8 0%, #475569 100%);
-            color: #ffffff;
-            border: 1px solid #64748b;
-        }
+        .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
+        .rank-hawk { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; border: 1px solid #0ea5e9; }
+        .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }
+        .rank-sparrow { background: linear-gradient(135deg, #94a3b8 0%, #475569 100%); color: #ffffff; border: 1px solid #64748b; }
 
         .match-card, .history-card {
             background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
@@ -516,18 +510,18 @@
                 <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" onchange="updateNoticeData()">
             </div>
             <div class="notice-box">
-                <label>💰 남은 공금 잔액</label>
+                <label style="text-align: center;">💰 남은 공금 잔액</label>
                 <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150000" onfocus="this.select()" onchange="updateNoticeData()">
             </div>
         </div>
     </div>
 
     <div class="total-summary-card">
-        <h2>💰 JTFAG 통합 정산 요약</h2>
+        <h2>💰 JTFAG 통합 정산 요약 (누적)</h2>
         <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
-    <!-- 현금 정산 카드 -->
+    <!-- 차수별 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
             <h3>💵 차수별 정산</h3>
@@ -538,9 +532,9 @@
                 <tr>
                     <th style="width: 18%;">이름</th>
                     <th style="width: 25%;">시작 금액</th>
-                    <th style="width: 25%;">남은 잔액</th>
-                    <th style="width: 16%;">타수 내기</th>
-                    <th style="width: 16%;">계급 벌금</th>
+                    <th style="width: 25%;">남은 금액</th>
+                    <th style="width: 16%;">계급정산</th>
+                    <th style="width: 16%;">타수정산</th>
                 </tr>
             </thead>
             <tbody id="moneyTbody"></tbody>
@@ -620,7 +614,7 @@
     let appData = getDefaultData();
     let historyStack = [];
     let selectedMoneyRoundIdx = -1;
-    let cachedRoundRankProfit = {};
+    let cachedRoundRankProfit = {}; 
 
     function saveState() {
         if (historyStack.length >= 10) historyStack.shift();
@@ -707,7 +701,6 @@
         const fundInput = document.getElementById('clubFundInput');
 
         appData.nextRoundDate = dateInput ? dateInput.value : "";
-        
         let rawFund = fundInput ? fundInput.value.replace(/[^0-9]/g, '') : "0";
         appData.clubFund = parseInt(rawFund, 10) || 0;
 
@@ -717,7 +710,7 @@
 
     function renderAll() {
         renderTable();
-        calculateAndRender();
+        calculateAndRender(); 
         renderMoneyTable();
     }
 
@@ -752,22 +745,21 @@
         golfers.forEach(g => {
             const m = currMoney[g] || { start: 0, end: 0 };
 
-            // 해당 차수의 계급 벌금만 가져오기
-            const currentRoundPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
-                                        ? cachedRoundRankProfit[g][currentRoundIdx] 
-                                        : 0;
+            const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
+                                ? cachedRoundRankProfit[g][currentRoundIdx] 
+                                : 0;
 
-            // 순수 해당 차수 타수 내기 손익 = 남은금액 + 계급벌금 - 시작금액
-            // 예: 92,000 + (-100,000) - 230,000 = -38,000 (-3.8만)
-            const netCashDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end + currentRoundPenalty - m.start);
+            const totalDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end - m.start);
 
-            const strokeText = (netCashDiff === 0 ? "0.0만" : (netCashDiff > 0 ? "+" : "") + (netCashDiff / 10000).toFixed(1) + "만");
-            const strokeBg = netCashDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (netCashDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
-            const strokeColor = netCashDiff > 0 ? "#16a34a" : (netCashDiff < 0 ? "#dc2626" : "#64748b");
+            const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : (totalDiff - rankPenalty);
 
-            const penaltyText = currentRoundPenalty === 0 ? "0.0만" : (currentRoundPenalty > 0 ? "+" : "") + (currentRoundPenalty / 10000).toFixed(1) + "만";
-            const penaltyBg = currentRoundPenalty < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)";
-            const penaltyColor = currentRoundPenalty < 0 ? "#dc2626" : "#64748b";
+            const penaltyText = rankPenalty === 0 ? "0.0만" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
+            const penaltyBg = rankPenalty < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)";
+            const penaltyColor = rankPenalty < 0 ? "#dc2626" : "#64748b";
+
+            const strokeText = pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
+            const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
+            const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
 
             tbody.innerHTML += `
                 <tr>
@@ -775,13 +767,13 @@
                     <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.start}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
                     <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.end}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
                     <td>
-                        <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
-                            ${strokeText}
+                        <span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">
+                            ${penaltyText}
                         </span>
                     </td>
                     <td>
-                        <span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">
-                            ${penaltyText}
+                        <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
+                            ${strokeText}
                         </span>
                     </td>
                 </tr>
@@ -1050,7 +1042,7 @@
                     <div class="history-member">
                         <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
                         <div style="display:flex; align-items:center; gap:2px;">
-                            <span class="rank-badge ${rankInfo.class}">${rankInfo.icon}</span>
+                            <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
                             <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
                         </div>
                     </div>
@@ -1060,7 +1052,7 @@
                 if (row) {
                     const rc = row.querySelector('.rank-cell');
                     if (rc) {
-                        rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon}</span>`;
+                        rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>`;
                     }
                 }
             });
@@ -1071,13 +1063,12 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
-        // 💰 통합 정산 요약 카드 계산
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
             golfers.forEach(g => {
                 const rankProfit = totalRankProfit[g] || 0; 
-                let totalStrokeProfit = 0; 
+                let totalPureStrokeProfit = 0; 
 
                 if (appData.roundMoney) {
                     for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
@@ -1086,18 +1077,19 @@
 
                         const m = rMoney[g] || { start: 0, end: 0 };
                         if (m.start > 0 || m.end > 0) {
-                            const currentRRankPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
-                            // 차수별 순수 타수 내기 = 남은금액 + 해당차수 계급벌금 - 시작금액
-                            const roundStrokeDiff = m.end + currentRRankPenalty - m.start;
-                            totalStrokeProfit += roundStrokeDiff;
+                            const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
+                            const totalDiff = m.end - m.start;
+                            const pureStroke = totalDiff - rPenalty; 
+                            
+                            totalPureStrokeProfit += pureStroke;
                         }
                     }
                 }
                 
-                const finalBalance = rankProfit + totalStrokeProfit;
+                const finalBalance = rankProfit + totalPureStrokeProfit;
                 
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
-                const strokeProfitText = totalStrokeProfit === 0 ? "0.0만" : (totalStrokeProfit > 0 ? "+" : "") + (totalStrokeProfit / 10000).toFixed(1) + "만";
+                const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit > 0 ? "+" : "") + (totalPureStrokeProfit / 10000).toFixed(1) + "만";
                 
                 let finalColor = "#64748b";
                 let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
