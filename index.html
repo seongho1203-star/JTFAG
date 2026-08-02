@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#edf2f7">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -63,7 +63,7 @@
             background: linear-gradient(180deg, #edf2f7 0%, #e2e8f0 100%);
             color: var(--text-main);
             margin: 0;
-            padding: 8px 4px 24px 4px;
+            padding: 8px 4px calc(24px + env(safe-area-inset-bottom)) 4px;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -97,7 +97,6 @@
             letter-spacing: 1px;
         }
 
-        /* 📢 공지사항 & 공금 잔액 카드 최적화 */
         .notice-card {
             background: linear-gradient(145deg, #1e293b, #0f172a);
             color: #ffffff;
@@ -134,6 +133,7 @@
             flex-direction: column;
             justify-content: center;
             transition: border-color 0.2s ease;
+            position: relative;
         }
 
         .notice-box:focus-within {
@@ -162,12 +162,25 @@
             word-break: keep-all;
         }
 
-        /* 남은 공금 잔액 가운데 정렬 전용 스타일 */
+        .notice-input[readonly] {
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
         #clubFundInput {
             text-align: center;
         }
 
         .notice-input::placeholder { color: #64748b; font-weight: 500; }
+
+        .lock-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0 4px;
+            margin-left: 4px;
+        }
 
         .total-summary-card {
             background: linear-gradient(145deg, #ffffff, #fefce8);
@@ -285,7 +298,7 @@
 
         .money-input {
             width: 95% !important;
-            max-width: 62px !important;
+            max-width: 68px !important;
             height: 26px !important;
             background-color: var(--input-bg) !important;
             border: 1px solid #cbd5e1 !important;
@@ -465,11 +478,112 @@
         .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
         .match-item { background: #f8fafc; padding: 6px 4px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
-        .history-list { display: flex; flex-direction: column; gap: 4px; }
-        .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; }
-        .history-header { font-size: clamp(0.6rem, 2.2vw, 0.68rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 2px 4px; border-radius: 4px; }
-        .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px; }
-        .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 4px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
+        .history-btn-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .open-history-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #fef08a;
+            border: 1px solid var(--primary-gold);
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: clamp(0.75rem, 3vw, 0.85rem);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            width: 100%;
+            max-width: 460px;
+            max-height: 80vh;
+            border-radius: 16px;
+            border: 1px solid var(--primary-gold);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform 0.25s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 12px 16px;
+            background: #1e293b;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: clamp(0.85rem, 3.2vw, 0.95rem);
+            color: #fef08a;
+            font-weight: 800;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .modal-body {
+            padding: 12px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-list { display: flex; flex-direction: column; gap: 8px; }
+        .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+        .history-header { font-size: clamp(0.68rem, 2.4vw, 0.75rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
+        .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+        .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+            color: transparent !important;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
 
         #customToast {
             position: fixed; 
@@ -503,21 +617,24 @@
 
     <!-- 📢 공지사항 & 공금 잔액 카드 -->
     <div class="notice-card">
-        <h2>📢 JTFAG 공지 및 모임 공금</h2>
+        <h2>
+            <span>📢 리그 공지 & 모임 공금</span>
+            <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="수정 잠금/해제">🔒</button>
+        </h2>
         <div class="notice-grid">
             <div class="notice-box">
                 <label>📅 다음 라운드 일시</label>
-                <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" onchange="updateNoticeData()">
+                <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" readonly onclick="handleInputClick(this)" onchange="updateNoticeData()" oninput="updateNoticeData()">
             </div>
             <div class="notice-box">
-                <label style="text-align: center;">💰 공금 잔액</label>
-                <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150000" onfocus="this.select()" onchange="updateNoticeData()">
+                <label style="text-align: center;">💰 남은 공금 잔액</label>
+                <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150,000" readonly onclick="handleInputClick(this)" onfocus="this.select()" onchange="updateNoticeData()" oninput="updateNoticeData()">
             </div>
         </div>
     </div>
 
     <div class="total-summary-card">
-        <h2>💰 JTFAG 통합 정산 요약</h2>
+        <h2>💰 JTFAG 통합 정산 요약 (누적)</h2>
         <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
@@ -543,7 +660,7 @@
 
     <div class="info-card">
         <span class="info-text" id="infoText">💡 <b>최근 2경기 스코어</b> 기준 1:1 핸디캡 산출</span>
-        <span class="save-status" id="saveStatus">⚡ 실시간 동기화 완료</span>
+        <span class="save-status" id="saveStatus">⚡ 연결 중...</span>
     </div>
 
     <div class="btn-group">
@@ -571,15 +688,29 @@
         <div class="match-grid" id="matchGrid"></div>
     </div>
 
-    <div class="history-card">
-        <h3>📜 라운드별 계급 정산 이력</h3>
-        <div class="history-list" id="historyList"></div>
+    <div class="history-btn-container">
+        <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>📜 라운드별 계급 정산 이력</h3>
+            <button type="button" class="close-btn" onclick="closeHistoryModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="history-list" id="historyList"></div>
+        </div>
     </div>
 </div>
 
 <div id="customToast"></div>
 
 <script>
+    const ADMIN_PASSWORD = "1234"; // 🔑 공금 및 정보 입력 비밀번호 설정
+    let isFundUnlocked = false;    // 현재 공금 수정 잠금 해제 여부
+
     const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
     const RANK_CONFIG = {
@@ -615,6 +746,72 @@
     let historyStack = [];
     let selectedMoneyRoundIdx = -1;
     let cachedRoundRankProfit = {}; 
+    let isLoaded = false;
+
+    // 🔑 비밀번호 검증 및 잠금 해제 처리
+    function authenticateAdmin() {
+        if (isFundUnlocked) return true;
+        
+        const pwd = prompt("🔒 비밀번호를 입력해주세요:");
+        if (pwd === ADMIN_PASSWORD) {
+            isFundUnlocked = true;
+            updateLockUI();
+            showToast("🔓 수정 권한이 인증되었습니다.");
+            return true;
+        } else if (pwd !== null) {
+            showToast("⚠️ 비밀번호가 일치하지 않습니다.");
+        }
+        return false;
+    }
+
+    function toggleFundLock() {
+        if (isFundUnlocked) {
+            isFundUnlocked = false;
+            updateLockUI();
+            showToast("🔒 공금 수정이 잠겼습니다.");
+        } else {
+            authenticateAdmin();
+        }
+    }
+
+    function handleInputClick(inputElem) {
+        if (!isFundUnlocked) {
+            if (authenticateAdmin()) {
+                setTimeout(() => {
+                    inputElem.focus();
+                }, 50);
+            }
+        }
+    }
+
+    function updateLockUI() {
+        const btn = document.getElementById('lockToggleBtn');
+        const dateInput = document.getElementById('nextRoundInput');
+        const fundInput = document.getElementById('clubFundInput');
+
+        if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
+        
+        if (dateInput) {
+            if (isFundUnlocked) dateInput.removeAttribute('readonly');
+            else dateInput.setAttribute('readonly', 'true');
+        }
+        
+        if (fundInput) {
+            if (isFundUnlocked) fundInput.removeAttribute('readonly');
+            else fundInput.setAttribute('readonly', 'true');
+        }
+    }
+
+    function formatNumber(num) {
+        if (num === null || num === undefined || isNaN(num) || num === 0) return "0";
+        return num.toLocaleString('ko-KR');
+    }
+
+    function parseNumber(val) {
+        if (!val) return 0;
+        const cleaned = String(val).replace(/[^0-9.-]/g, '');
+        return parseFloat(cleaned) || 0;
+    }
 
     function saveState() {
         if (historyStack.length >= 10) historyStack.shift();
@@ -632,7 +829,23 @@
         showToast("↩️ 이전 상태로 되돌렸습니다.");
     }
 
+    function renderSkeleton() {
+        const summaryGrid = document.getElementById('summaryGrid');
+        if (summaryGrid) {
+            summaryGrid.innerHTML = golfers.map(() => `
+                <div class="summary-item skeleton">
+                    <div class="name">---</div>
+                    <div class="detail-line">---</div>
+                    <div class="detail-line">---</div>
+                    <div class="final-total">---</div>
+                </div>
+            `).join('');
+        }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+        renderSkeleton();
+
         const checkFirebase = setInterval(() => {
             if (window.onSnapshot && window.gameDocRef) {
                 clearInterval(checkFirebase);
@@ -649,6 +862,7 @@
                         selectedMoneyRoundIdx = appData.totalRounds - 1;
                     }
 
+                    isLoaded = true;
                     renderNoticeArea();
                     renderAll();
                     showSaveStatus("⚡ 실시간 동기화 완료");
@@ -693,19 +907,19 @@
             const fundVal = appData.clubFund || 0;
             fundInput.value = fundVal === 0 ? "" : fundVal.toLocaleString('ko-KR');
         }
+        updateLockUI();
     }
 
     function updateNoticeData() {
+        if (!isFundUnlocked) return;
         saveState();
         const dateInput = document.getElementById('nextRoundInput');
         const fundInput = document.getElementById('clubFundInput');
 
         appData.nextRoundDate = dateInput ? dateInput.value : "";
-        let rawFund = fundInput ? fundInput.value.replace(/[^0-9]/g, '') : "0";
-        appData.clubFund = parseInt(rawFund, 10) || 0;
+        appData.clubFund = parseNumber(fundInput ? fundInput.value : 0);
 
         syncToFirebase(appData);
-        renderNoticeArea();
     }
 
     function renderAll() {
@@ -750,7 +964,6 @@
                                 : 0;
 
             const totalDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end - m.start);
-
             const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : (totalDiff - rankPenalty);
 
             const penaltyText = rankPenalty === 0 ? "0.0만" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
@@ -764,8 +977,8 @@
             tbody.innerHTML += `
                 <tr>
                     <td style="font-weight:800; color:var(--text-main);">${g}</td>
-                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.start}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
-                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${m.end}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
+                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
+                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
                     <td>
                         <span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">
                             ${penaltyText}
@@ -787,8 +1000,9 @@
         if (!appData.roundMoney[currentRoundIdx]) appData.roundMoney[currentRoundIdx] = {};
         if (!appData.roundMoney[currentRoundIdx][name]) appData.roundMoney[currentRoundIdx][name] = { start: 0, end: 0 };
         
-        appData.roundMoney[currentRoundIdx][name][type] = parseFloat(value) || 0;
+        appData.roundMoney[currentRoundIdx][name][type] = parseNumber(value);
         syncToFirebase(appData);
+        renderAll();
     }
 
     function renderTable() {
@@ -837,8 +1051,9 @@
         saveState();
         if (!appData.scores) appData.scores = {};
         if (!appData.scores[name]) appData.scores[name] = [];
-        appData.scores[name][r] = val === "" ? "" : parseFloat(val);
+        appData.scores[name][r] = val === "" ? "" : parseNumber(val);
         syncToFirebase(appData);
+        renderAll();
     }
 
     function addRound() {
@@ -1025,7 +1240,7 @@
 
             let roundHistoryHtml = `
                 <div class="history-item">
-                    <div class="history-header">⛳ ${r + 1}차전 정산</div>
+                    <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
                     <div class="history-grid">
             `;
 
@@ -1081,7 +1296,9 @@
                             const totalDiff = m.end - m.start;
                             const pureStroke = totalDiff - rPenalty; 
                             
-                            totalPureStrokeProfit += pureStroke;
+                            if (pureStroke < 0) {
+                                totalPureStrokeProfit += pureStroke;
+                            }
                         }
                     }
                 }
@@ -1089,7 +1306,7 @@
                 const finalBalance = rankProfit + totalPureStrokeProfit;
                 
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
-                const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit > 0 ? "+" : "") + (totalPureStrokeProfit / 10000).toFixed(1) + "만";
+                const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
                 
                 let finalColor = "#64748b";
                 let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
@@ -1151,6 +1368,16 @@
                 matchGrid.appendChild(item);
             }
         }
+    }
+
+    function openHistoryModal() {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeHistoryModal(e) {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.classList.remove('active');
     }
 
     function resetAllData() {
