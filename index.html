@@ -751,22 +751,15 @@
 
         golfers.forEach(g => {
             const m = currMoney[g] || { start: 0, end: 0 };
-            
-            // 해당 차수까지의 누적 계급 벌금 계산
-            let cumulativeRankPenalty = 0;
-            if (cachedRoundRankProfit[g]) {
-                for (let r = 0; r <= currentRoundIdx; r++) {
-                    cumulativeRankPenalty += (cachedRoundRankProfit[g][r] || 0);
-                }
-            }
 
-            // 해당 차수 벌금 (표시용)
+            // 해당 차수의 계급 벌금만 가져오기
             const currentRoundPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
                                         ? cachedRoundRankProfit[g][currentRoundIdx] 
                                         : 0;
 
-            // 올바른 타수 손익 = 시작금액 - 누적계급벌금 - 남은금액
-            const netCashDiff = (m.start === 0 && m.end === 0) ? 0 : (m.start + cumulativeRankPenalty - m.end);
+            // 순수 해당 차수 타수 내기 손익 = 남은금액 + 계급벌금 - 시작금액
+            // 예: 92,000 + (-100,000) - 230,000 = -38,000 (-3.8만)
+            const netCashDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end + currentRoundPenalty - m.start);
 
             const strokeText = (netCashDiff === 0 ? "0.0만" : (netCashDiff > 0 ? "+" : "") + (netCashDiff / 10000).toFixed(1) + "만");
             const strokeBg = netCashDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (netCashDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
@@ -1078,13 +1071,13 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
-        // 💰 통합 정산 요약 카드 계산 (정확한 누적 수식 적용)
+        // 💰 통합 정산 요약 카드 계산
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
             golfers.forEach(g => {
-                const rankProfit = totalRankProfit[g] || 0; // 전체 누적 계급 벌금 총합
-                let totalStrokeProfit = 0; // 누적 타수 손익 총합
+                const rankProfit = totalRankProfit[g] || 0; 
+                let totalStrokeProfit = 0; 
 
                 if (appData.roundMoney) {
                     for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
@@ -1093,20 +1086,14 @@
 
                         const m = rMoney[g] || { start: 0, end: 0 };
                         if (m.start > 0 || m.end > 0) {
-                            // 해당 차수까지의 누적 계급 벌금
-                            let cumulativePenaltyUpToR = 0;
-                            for (let r = 0; r <= rIdx; r++) {
-                                cumulativePenaltyUpToR += (roundRankProfit[g] && roundRankProfit[g][r] !== undefined) ? roundRankProfit[g][r] : 0;
-                            }
-
-                            // 해당 차수 타수 손익 = 시작금액 + 누적계급벌금 - 남은금액
-                            const roundStrokeDiff = m.start + cumulativePenaltyUpToR - m.end;
+                            const currentRRankPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
+                            // 차수별 순수 타수 내기 = 남은금액 + 해당차수 계급벌금 - 시작금액
+                            const roundStrokeDiff = m.end + currentRRankPenalty - m.start;
                             totalStrokeProfit += roundStrokeDiff;
                         }
                     }
                 }
                 
-                // 합산 = 누적 계급 벌금 + 누적 타수 손익
                 const finalBalance = rankProfit + totalStrokeProfit;
                 
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
