@@ -266,6 +266,12 @@
             color: #78350f;
             border: 1px solid #eab308;
         }
+        .badge-avg-1 {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #ffffff;
+            border: 1px solid #2563eb;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+        }
         .badge-best-score {
             background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
             color: #451a03;
@@ -283,7 +289,7 @@
             background: var(--card-bg);
             border: 1px solid rgba(0, 0, 0, 0.06);
             border-radius: 14px;
-            padding: 10px 6px;
+            padding: 10px 8px;
             margin-bottom: 10px;
         }
 
@@ -1319,9 +1325,11 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
-        // 🏆 시즌 전체 최저타수 및 해당 골퍼(들) 탐색 로직
+        // 🏆 시즌 최저타수 및 전체 평균 타수 계산 로직
         let overallMinScore = Infinity;
+        let overallMinAvg = Infinity;
         const golferMinScores = {};
+        const golferAvgScores = {};
 
         golfers.forEach(g => {
             const validScores = (appData.scores && appData.scores[g]) 
@@ -1329,13 +1337,23 @@
                 : [];
 
             if (validScores.length > 0) {
+                // 단일 최저타
                 const userMin = Math.min(...validScores);
                 golferMinScores[g] = userMin;
                 if (userMin < overallMinScore) {
                     overallMinScore = userMin;
                 }
+
+                // 전체 평균 타수
+                const sum = validScores.reduce((acc, curr) => acc + curr, 0);
+                const userAvg = sum / validScores.length;
+                golferAvgScores[g] = userAvg;
+                if (userAvg < overallMinAvg) {
+                    overallMinAvg = userAvg;
+                }
             } else {
                 golferMinScores[g] = null;
+                golferAvgScores[g] = null;
             }
         });
 
@@ -1375,9 +1393,15 @@
                     badgesHtml += `<div class="season-badge badge-eagle-2">🦅 독수리 2연속 등극!</div>`;
                 }
 
-                // 2) 🏆 시즌 최저타수 뱃지 (전체 최소 타수와 동일한 경우 독수리 등급 스타일 뱃지 부여)
+                // 2) 🏆 평균타수 1위 뱃지 (전체 평균타수가 가장 낮은 골퍼)
+                if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
+                    const formattedAvg = golferAvgScores[g].toFixed(1);
+                    badgesHtml += `<div class="season-badge badge-avg-1">🏆 평균타수 1위 (${formattedAvg}타)</div>`;
+                }
+
+                // 3) 🎯 시즌 최저타 뱃지 (전체 라운드 중 단일 최저타)
                 if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
-                    badgesHtml += `<div class="season-badge badge-best-score">🏆 최저타 ${overallMinScore}타</div>`;
+                    badgesHtml += `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`;
                 }
                 
                 const finalBalance = rankProfit + totalPureStrokeProfit;
