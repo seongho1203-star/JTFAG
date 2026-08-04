@@ -214,6 +214,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
         }
 
         .summary-item .name {
@@ -240,6 +241,42 @@
             padding-top: 2px;
             border-top: 1px dashed #e2e8f0;
             white-space: nowrap;
+        }
+
+        /* 🏅 시즌 뱃지 스타일 */
+        .season-badge {
+            display: inline-block;
+            margin-top: 3px;
+            padding: 1px 3px;
+            border-radius: 4px;
+            font-size: clamp(0.48rem, 1.8vw, 0.58rem);
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: -0.3px;
+        }
+        .badge-eagle-3 {
+            background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+            color: #ffffff;
+            border: 1px solid #d97706;
+            box-shadow: 0 1px 4px rgba(217, 119, 6, 0.4);
+            animation: pulse 2s infinite;
+        }
+        .badge-eagle-2 {
+            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%);
+            color: #78350f;
+            border: 1px solid #eab308;
+        }
+        .badge-best-score {
+            background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
+            color: #451a03;
+            border: 1px solid #fbbf24;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
         }
 
         .money-card {
@@ -746,6 +783,7 @@
     let historyStack = [];
     let selectedMoneyRoundIdx = -1;
     let cachedRoundRankProfit = {}; 
+    let golferRankHistory = {}; // 골퍼별 라운드 승패/계급 기록 저장
     let isLoaded = false;
 
     // 🔑 비밀번호 검증 및 잠금 해제 처리
@@ -1159,10 +1197,12 @@
         const totalRounds = appData.totalRounds;
         const totalRankProfit = {};
         const roundRankProfit = {};
+        golferRankHistory = {}; // 히스토리 초기화
 
         golfers.forEach(g => {
             totalRankProfit[g] = 0;
             roundRankProfit[g] = {};
+            golferRankHistory[g] = [];
         });
 
         const historyList = document.getElementById('historyList');
@@ -1250,6 +1290,7 @@
                 
                 totalRankProfit[golferName] += profit;
                 roundRankProfit[golferName][r] = profit;
+                golferRankHistory[golferName].push(index); // 등수(0:독수리) 기록 추가
 
                 const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
 
@@ -1278,6 +1319,26 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
+        // 🏆 시즌 전체 최저타수 및 해당 골퍼(들) 탐색 로직
+        let overallMinScore = Infinity;
+        const golferMinScores = {};
+
+        golfers.forEach(g => {
+            const validScores = (appData.scores && appData.scores[g]) 
+                ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
+                : [];
+
+            if (validScores.length > 0) {
+                const userMin = Math.min(...validScores);
+                golferMinScores[g] = userMin;
+                if (userMin < overallMinScore) {
+                    overallMinScore = userMin;
+                }
+            } else {
+                golferMinScores[g] = null;
+            }
+        });
+
         const summaryGrid = document.getElementById('summaryGrid');
         if (summaryGrid) {
             summaryGrid.innerHTML = "";
@@ -1302,6 +1363,22 @@
                         }
                     }
                 }
+
+                // 🦅 뱃지 판단 로직
+                const ranks = golferRankHistory[g] || [];
+                let badgesHtml = "";
+                
+                // 1) 독수리 연속 달성 뱃지
+                if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
+                    badgesHtml += `<div class="season-badge badge-eagle-3">🦅 독수리 뱃지 획득! 🎉</div>`;
+                } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
+                    badgesHtml += `<div class="season-badge badge-eagle-2">🦅 독수리 2연속 등극!</div>`;
+                }
+
+                // 2) 🏆 시즌 최저타수 뱃지 (전체 최소 타수와 동일한 경우 독수리 등급 스타일 뱃지 부여)
+                if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
+                    badgesHtml += `<div class="season-badge badge-best-score">🏆 최저타 ${overallMinScore}타</div>`;
+                }
                 
                 const finalBalance = rankProfit + totalPureStrokeProfit;
                 
@@ -1319,6 +1396,7 @@
                         <div class="name">${g}</div>
                         <div class="detail-line">계급: ${rankProfitText}</div>
                         <div class="detail-line">타수: ${strokeProfitText}</div>
+                        ${badgesHtml}
                         <div class="final-total" style="color: ${finalColor};">
                             합산: ${finalText}
                         </div>
