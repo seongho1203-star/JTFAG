@@ -132,13 +132,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            transition: border-color 0.2s ease;
             position: relative;
-        }
-
-        .notice-box:focus-within {
-            border-color: rgba(254, 240, 138, 0.6);
-            background: rgba(255, 255, 255, 0.12);
         }
 
         .notice-box label {
@@ -159,7 +153,6 @@
             font-weight: 800;
             outline: none;
             padding: 0;
-            word-break: keep-all;
         }
 
         .notice-input[readonly] {
@@ -214,7 +207,6 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            position: relative;
         }
 
         .summary-item .name {
@@ -243,7 +235,6 @@
             white-space: nowrap;
         }
 
-        /* 🏅 시즌 뱃지 스타일 */
         .season-badge {
             display: inline-block;
             margin-top: 3px;
@@ -252,38 +243,11 @@
             font-size: clamp(0.48rem, 1.8vw, 0.58rem);
             font-weight: 900;
             white-space: nowrap;
-            letter-spacing: -0.3px;
         }
-        .badge-eagle-3 {
-            background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
-            color: #ffffff;
-            border: 1px solid #d97706;
-            box-shadow: 0 1px 4px rgba(217, 119, 6, 0.4);
-            animation: pulse 2s infinite;
-        }
-        .badge-eagle-2 {
-            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%);
-            color: #78350f;
-            border: 1px solid #eab308;
-        }
-        .badge-avg-1 {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: #ffffff;
-            border: 1px solid #2563eb;
-            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
-        }
-        .badge-best-score {
-            background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
-            color: #451a03;
-            border: 1px solid #fbbf24;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
+        .badge-eagle-3 { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); color: #ffffff; border: 1px solid #d97706; }
+        .badge-eagle-2 { background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%); color: #78350f; border: 1px solid #eab308; }
+        .badge-avg-1 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; border: 1px solid #2563eb; }
+        .badge-best-score { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
 
         .money-card {
             background: var(--card-bg);
@@ -394,10 +358,7 @@
             width: 100%;
         }
 
-        .left-btns, .right-btns { 
-            display: flex; 
-            gap: 4px; 
-        }
+        .left-btns, .right-btns { display: flex; gap: 4px; }
 
         .action-btn {
             padding: 6px 8px;
@@ -424,89 +385,59 @@
             width: 100%;
         }
 
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            text-align: center; 
-        }
-        
-        th, td { 
-            padding: 6px 2px; 
-            border-bottom: 1px solid #f1f5f9; 
-            vertical-align: middle; 
-        }
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td { padding: 6px 2px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
-        th { 
-            background-color: #f8fafc; 
-            color: var(--text-sub); 
-            font-weight: 700; 
-            font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
-        }
-
-        table th:first-child,
-        table td:first-child,
-        .golfer-name { 
+        table th:first-child, table td:first-child, .golfer-name { 
             white-space: nowrap !important;
             word-break: keep-all !important;
             min-width: 52px !important;
             font-weight: 800; 
             font-size: clamp(0.72rem, 2.8vw, 0.8rem);
-            position: sticky; 
-            left: 0; 
+            position: sticky; left: 0; 
             background-color: #f1f5f9 !important; 
             z-index: 2; 
-            padding-left: 4px !important;
-            padding-right: 4px !important;
+            padding-left: 4px !important; padding-right: 4px !important;
         }
 
-        .header-round-title { 
-            font-size: clamp(0.68rem, 2.5vw, 0.78rem); 
-            color: var(--primary-gold); 
-            font-weight: 900; 
-            white-space: nowrap; 
-        }
+        .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
         input.score-input {
-            width: 34px; 
-            height: 28px; 
-            border: 1px solid #cbd5e1; 
-            border-radius: 6px;
-            text-align: center; 
-            font-size: clamp(0.75rem, 2.8vw, 0.85rem); 
-            font-weight: 800; 
-            background-color: var(--input-bg);
+            width: 34px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px;
+            text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg);
         }
 
         input.course-input {
-            width: 48px; 
-            padding: 2px 1px; 
-            border: 1px solid rgba(184, 134, 11, 0.4);
-            border-radius: 4px; 
-            text-align: center; 
-            font-size: clamp(0.58rem, 2.1vw, 0.65rem); 
-            font-weight: 800; 
-            background-color: #fef9e7;
+            width: 48px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4);
+            border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7;
         }
 
-        .avg-cell {
-            font-weight: 900 !important;
-            font-size: clamp(0.8rem, 3vw, 0.9rem) !important;
-            color: var(--text-main);
+        .photo-btn {
+            display: inline-block;
+            margin-top: 2px;
+            padding: 1px 4px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            border-radius: 4px;
+            font-size: clamp(0.52rem, 1.8vw, 0.6rem);
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
         }
+        .photo-btn.has-photo {
+            background: #dcfce7;
+            color: #15803d;
+            border-color: #bbf7d0;
+        }
+
+        .avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--text-main); }
 
         .rank-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-weight: 900;
-            font-size: clamp(0.65rem, 2.4vw, 0.75rem);
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+            padding: 2px 6px; border-radius: 6px; font-weight: 900; font-size: clamp(0.65rem, 2.4vw, 0.75rem); white-space: nowrap;
         }
-
         .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
         .rank-hawk { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; border: 1px solid #0ea5e9; }
         .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }
@@ -516,98 +447,36 @@
             background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
             border-radius: 12px; padding: 8px; margin-top: 8px;
         }
-
-        .match-card h3, .history-card h3 { margin: 0 0 6px 0; font-size: clamp(0.72rem, 2.8vw, 0.8rem); color: var(--primary-gold); text-align: center; }
+        .match-card h3 { margin: 0 0 6px 0; font-size: clamp(0.72rem, 2.8vw, 0.8rem); color: var(--primary-gold); text-align: center; }
         .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
         .match-item { background: #f8fafc; padding: 6px 4px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
-        .history-btn-container {
-            margin-top: 10px;
-            text-align: center;
-        }
-
+        .history-btn-container { margin-top: 10px; text-align: center; }
         .open-history-btn {
-            width: 100%;
-            padding: 10px;
-            background: linear-gradient(135deg, #1e293b, #334155);
-            color: #fef08a;
-            border: 1px solid var(--primary-gold);
-            border-radius: 10px;
-            font-weight: 800;
-            font-size: clamp(0.75rem, 3vw, 0.85rem);
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 100%; padding: 10px; background: linear-gradient(135deg, #1e293b, #334155);
+            color: #fef08a; border: 1px solid var(--primary-gold); border-radius: 10px;
+            font-weight: 800; font-size: clamp(0.75rem, 3vw, 0.85rem); cursor: pointer;
         }
 
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            z-index: 999; display: flex; align-items: center; justify-content: center;
+            padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
         }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background: #ffffff;
-            width: 100%;
-            max-width: 460px;
-            max-height: 80vh;
-            border-radius: 16px;
-            border: 1px solid var(--primary-gold);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transform: translateY(20px);
-            transition: transform 0.25s ease;
+            background: #ffffff; width: 100%; max-width: 460px; max-height: 80vh;
+            border-radius: 16px; border: 1px solid var(--primary-gold);
+            display: flex; flex-direction: column; overflow: hidden;
         }
-
-        .modal-overlay.active .modal-content {
-            transform: translateY(0);
-        }
-
         .modal-header {
-            padding: 12px 16px;
-            background: #1e293b;
-            color: #ffffff;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 12px 16px; background: #1e293b; color: #ffffff;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: clamp(0.85rem, 3.2vw, 0.95rem);
-            color: #fef08a;
-            font-weight: 800;
-        }
-
-        .close-btn {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-size: 1.2rem;
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .modal-body {
-            padding: 12px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        .modal-header h3 { margin: 0; font-size: clamp(0.85rem, 3.2vw, 0.95rem); color: #fef08a; font-weight: 800; }
+        .close-btn { background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; }
+        .modal-body { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
         .history-list { display: flex; flex-direction: column; gap: 8px; }
         .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
@@ -617,36 +486,15 @@
 
         .skeleton {
             background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: 4px;
-            color: transparent !important;
+            background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; color: transparent !important;
         }
-
-        @keyframes skeleton-loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         #customToast {
-            position: fixed; 
-            bottom: 20px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            background: rgba(30, 41, 59, 0.95); 
-            border: 1px solid var(--primary-gold); 
-            color: #ffffff;
-            padding: 10px 18px; 
-            border-radius: 20px; 
-            font-size: 0.78rem; 
-            font-weight: 800;
-            z-index: 9999; 
-            opacity: 0; 
-            pointer-events: none; 
-            transition: opacity 0.3s ease;
-            white-space: nowrap !important;
-            max-width: 90vw;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95); border: 1px solid var(--primary-gold); color: #ffffff;
+            padding: 10px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 800;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; white-space: nowrap !important;
         }
     </style>
 </head>
@@ -658,7 +506,6 @@
         <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 📢 공지사항 & 공금 잔액 카드 -->
     <div class="notice-card">
         <h2>
             <span>📢 리그 공지 & 모임 공금</span>
@@ -667,7 +514,7 @@
         <div class="notice-grid">
             <div class="notice-box">
                 <label>📅 다음 라운드 일시</label>
-                <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" readonly onclick="handleInputClick(this)" onchange="updateNoticeData()" oninput="updateNoticeData()">
+                <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" onchange="updateNoticeData()" oninput="updateNoticeData()">
             </div>
             <div class="notice-box">
                 <label style="text-align: center;">💰 남은 공금 잔액</label>
@@ -681,7 +528,6 @@
         <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
-    <!-- 차수별 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
             <h3>💵 차수별 정산</h3>
@@ -748,11 +594,27 @@
     </div>
 </div>
 
+<!-- 이미지 미리보기 모달 -->
+<div class="modal-overlay" id="photoModal" onclick="closePhotoModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width:90vw;">
+        <div class="modal-header">
+            <h3 id="photoModalTitle">📷 라운드 등록 사진</h3>
+            <button type="button" class="close-btn" onclick="closePhotoModal()">✕</button>
+        </div>
+        <div class="modal-body" style="text-align:center; padding:8px;">
+            <img id="modalPreviewImg" src="" alt="라운드 사진" style="max-width:100%; max-height:65vh; border-radius:8px;">
+            <div style="margin-top:10px;">
+                <button type="button" class="action-btn reset-btn" onclick="deleteCurrentRoundPhoto()">🗑️ 사진 삭제</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="customToast"></div>
 
 <script>
-    const ADMIN_PASSWORD = "1234"; // 🔑 공금 및 정보 입력 비밀번호 설정
-    let isFundUnlocked = false;    // 현재 공금 수정 잠금 해제 여부
+    const ADMIN_PASSWORD = "1234";
+    let isFundUnlocked = false;
 
     const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
@@ -770,6 +632,7 @@
             noticeMemo: "",
             totalRounds: 4,
             courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
+            photos: ["", "", "", ""],
             scores: {
                 "이관교": [90, 83, 97, 92],
                 "김지명": [87, 87, 86, 86],
@@ -788,14 +651,116 @@
     let appData = getDefaultData();
     let historyStack = [];
     let selectedMoneyRoundIdx = -1;
+    let viewingPhotoRoundIdx = -1;
     let cachedRoundRankProfit = {}; 
-    let golferRankHistory = {}; // 골퍼별 라운드 승패/계급 기록 저장
+    let golferRankHistory = {};
     let isLoaded = false;
 
-    // 🔑 비밀번호 검증 및 잠금 해제 처리
+    // 📸 이미지 리사이징 함수 (용량 초과 방지: 최대 가로/세로 800px, 퀄리티 0.7 압축)
+    function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(dataUrl);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+
+    async function handleRoundPhotoUpload(roundIdx, inputElem) {
+        const file = inputElem.files[0];
+        if (!file) return;
+
+        try {
+            showToast("📷 이미지 압축 및 등록 중...");
+            const compressedBase64 = await compressImage(file);
+            
+            saveState();
+            if (!appData.photos) appData.photos = [];
+            appData.photos[roundIdx] = compressedBase64;
+            
+            syncToFirebase(appData);
+            renderTable();
+            showToast("✅ 사진이 등록되었습니다.");
+        } catch (error) {
+            console.error("Image Compression Error:", error);
+            showToast("⚠️ 이미지 처리 중 오류가 발생했습니다.");
+        }
+        inputElem.value = "";
+    }
+
+    function openPhotoModal(roundIdx) {
+        viewingPhotoRoundIdx = roundIdx;
+        const photoUrl = appData.photos && appData.photos[roundIdx];
+        if (!photoUrl) return;
+
+        const modal = document.getElementById('photoModal');
+        const imgTag = document.getElementById('modalPreviewImg');
+        const titleTag = document.getElementById('photoModalTitle');
+
+        if (titleTag) titleTag.textContent = `📷 ${roundIdx + 1}차전 등록 사진`;
+        if (imgTag) imgTag.src = photoUrl;
+        if (modal) modal.classList.add('active');
+    }
+
+    function closePhotoModal(e) {
+        if (e && e.target !== e.currentTarget && !e.target.classList.contains('close-btn')) return;
+        const modal = document.getElementById('photoModal');
+        if (modal) modal.classList.remove('active');
+        viewingPhotoRoundIdx = -1;
+    }
+
+    function deleteCurrentRoundPhoto() {
+        if (viewingPhotoRoundIdx < 0) return;
+        if (confirm("해당 차전의 사진을 삭제하시겠습니까?")) {
+            saveState();
+            if (!appData.photos) appData.photos = [];
+            appData.photos[viewingPhotoRoundIdx] = "";
+            
+            syncToFirebase(appData);
+            renderTable();
+            closePhotoModal();
+            showToast("🗑️ 사진이 삭제되었습니다.");
+        }
+    }
+
+    window.compressImage = compressImage;
+    window.handleRoundPhotoUpload = handleRoundPhotoUpload;
+    window.openPhotoModal = openPhotoModal;
+    window.closePhotoModal = closePhotoModal;
+    window.deleteCurrentRoundPhoto = deleteCurrentRoundPhoto;
+
     function authenticateAdmin() {
         if (isFundUnlocked) return true;
-        
         const pwd = prompt("🔒 비밀번호를 입력해주세요:");
         if (pwd === ADMIN_PASSWORD) {
             isFundUnlocked = true;
@@ -821,25 +786,16 @@
     function handleInputClick(inputElem) {
         if (!isFundUnlocked) {
             if (authenticateAdmin()) {
-                setTimeout(() => {
-                    inputElem.focus();
-                }, 50);
+                setTimeout(() => { inputElem.focus(); }, 50);
             }
         }
     }
 
     function updateLockUI() {
         const btn = document.getElementById('lockToggleBtn');
-        const dateInput = document.getElementById('nextRoundInput');
         const fundInput = document.getElementById('clubFundInput');
 
         if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
-        
-        if (dateInput) {
-            if (isFundUnlocked) dateInput.removeAttribute('readonly');
-            else dateInput.setAttribute('readonly', 'true');
-        }
-        
         if (fundInput) {
             if (isFundUnlocked) fundInput.removeAttribute('readonly');
             else fundInput.setAttribute('readonly', 'true');
@@ -898,6 +854,7 @@
                     if (docSnap.exists()) {
                         appData = docSnap.data();
                         if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+                        if (!appData.photos) appData.photos = ["", "", "", ""];
                     } else {
                         syncToFirebase(getDefaultData());
                     }
@@ -920,7 +877,12 @@
 
     function syncToFirebase(dataToSave) {
         if (!window.setDoc || !window.gameDocRef) return;
-        window.setDoc(window.gameDocRef, dataToSave, { merge: true });
+        window.setDoc(window.gameDocRef, dataToSave, { merge: true }).catch(err => {
+            console.error("Firebase SetDoc Error:", err);
+            if (err.code === 'invalid-argument' || err.message.includes('exceeds')) {
+                showToast("⚠️ 저장 실패: 데이터 용량이 너무 큽니다.");
+            }
+        });
     }
 
     function showToast(msg) {
@@ -955,7 +917,6 @@
     }
 
     function updateNoticeData() {
-        if (!isFundUnlocked) return;
         saveState();
         const dateInput = document.getElementById('nextRoundInput');
         const fundInput = document.getElementById('clubFundInput');
@@ -1002,7 +963,6 @@
 
         golfers.forEach(g => {
             const m = currMoney[g] || { start: 0, end: 0 };
-
             const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
                                 ? cachedRoundRankProfit[g][currentRoundIdx] 
                                 : 0;
@@ -1023,16 +983,8 @@
                     <td style="font-weight:800; color:var(--text-main);">${g}</td>
                     <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
                     <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
-                    <td>
-                        <span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">
-                            ${penaltyText}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
-                            ${strokeText}
-                        </span>
-                    </td>
+                    <td><span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">${penaltyText}</span></td>
+                    <td><span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">${strokeText}</span></td>
                 </tr>
             `;
         });
@@ -1056,10 +1008,23 @@
         let headerHtml = `<th>이름</th>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             const courseVal = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
+            const hasPhoto = appData.photos && appData.photos[r];
+            const photoBtnClass = hasPhoto ? "photo-btn has-photo" : "photo-btn";
+            const photoBtnText = hasPhoto ? "📷 사진(O)" : "📷 사진등록";
+
             headerHtml += `
                 <th>
                     <div class="header-round-title">${r + 1}차</div>
                     <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
+                    <div>
+                        ${hasPhoto 
+                            ? `<button type="button" class="${photoBtnClass}" onclick="openPhotoModal(${r})">${photoBtnText}</button>`
+                            : `<label class="${photoBtnClass}">
+                                   ${photoBtnText}
+                                   <input type="file" accept="image/*" style="display:none;" onchange="handleRoundPhotoUpload(${r}, this)">
+                               </label>`
+                        }
+                    </div>
                 </th>`;
         }
 
@@ -1072,7 +1037,6 @@
             tr.setAttribute('data-name', name);
 
             let rowHtml = `<td class="golfer-name">${name}</td>`;
-            
             for (let r = 0; r < appData.totalRounds; r++) {
                 const val = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
                 rowHtml += `<td class="score-cell"><input type="text" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${val}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
@@ -1105,6 +1069,9 @@
         appData.totalRounds++;
         if (!appData.courses) appData.courses = [];
         appData.courses.push("");
+        if (!appData.photos) appData.photos = [];
+        appData.photos.push("");
+
         golfers.forEach(g => {
             if (!appData.scores[g]) appData.scores[g] = [];
             appData.scores[g].push("");
@@ -1129,6 +1096,8 @@
         saveState();
         appData.totalRounds--;
         if (appData.courses) appData.courses.pop();
+        if (appData.photos) appData.photos.pop();
+
         golfers.forEach(name => {
             if (appData.scores[name]) appData.scores[name].pop();
         });
@@ -1203,7 +1172,7 @@
         const totalRounds = appData.totalRounds;
         const totalRankProfit = {};
         const roundRankProfit = {};
-        golferRankHistory = {}; // 히스토리 초기화
+        golferRankHistory = {};
 
         golfers.forEach(g => {
             totalRankProfit[g] = 0;
@@ -1237,7 +1206,7 @@
             if (!isComplete) continue;
 
             const matchResults = {};
-            golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 });
+            golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0, headToHead: {} });
 
             for (let i = 0; i < golfers.length; i++) {
                 for (let j = i + 1; j < golfers.length; j++) {
@@ -1246,7 +1215,6 @@
 
                     const g1Avg = handicapAvg[g1];
                     const g2Avg = handicapAvg[g2];
-
                     const g1Score = currentScores[g1];
                     const g2Score = currentScores[g2];
 
@@ -1256,30 +1224,50 @@
                     if (g1Adjusted < g2Adjusted) {
                         matchResults[g1].wins++;
                         matchResults[g2].losses++;
+                        matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
+                        matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
+                        matchResults[g1].headToHead[g2] = 1;
+                        matchResults[g2].headToHead[g1] = -1;
                     } else if (g1Adjusted > g2Adjusted) {
                         matchResults[g1].losses++;
                         matchResults[g2].wins++;
+                        matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
+                        matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
+                        matchResults[g1].headToHead[g2] = -1;
+                        matchResults[g2].headToHead[g1] = 1;
                     } else {
+                        // 핸디 반영 보정타수가 동타일 때: 핸디를 '준' 사람(Avg가 낮은 사람)이 승리
                         if (g1Avg < g2Avg) {
                             matchResults[g1].wins++;
                             matchResults[g2].losses++;
+                            matchResults[g1].totalDiff += 0.5; // 동타 승리자에게 가산점 부여로 정렬 순위 보장
+                            matchResults[g2].totalDiff -= 0.5;
+                            matchResults[g1].headToHead[g2] = 1;
+                            matchResults[g2].headToHead[g1] = -1;
                         } else if (g2Avg < g1Avg) {
                             matchResults[g2].wins++;
                             matchResults[g1].losses++;
+                            matchResults[g2].totalDiff += 0.5;
+                            matchResults[g1].totalDiff -= 0.5;
+                            matchResults[g2].headToHead[g1] = 1;
+                            matchResults[g1].headToHead[g2] = -1;
                         } else {
                             matchResults[g1].ties++;
                             matchResults[g2].ties++;
+                            matchResults[g1].headToHead[g2] = 0;
+                            matchResults[g2].headToHead[g1] = 0;
                         }
                     }
-
-                    matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
-                    matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
                 }
             }
 
             const sortedGolfers = [...golfers].sort((a, b) => {
                 if (matchResults[b].wins !== matchResults[a].wins) {
                     return matchResults[b].wins - matchResults[a].wins;
+                }
+                // 승수가 같은 경우, 두 사람 간의 상대전적(승패) 확인
+                if (matchResults[a].headToHead[b] !== undefined && matchResults[a].headToHead[b] !== 0) {
+                    return matchResults[b].headToHead[a] - matchResults[a].headToHead[b];
                 }
                 return matchResults[b].totalDiff - matchResults[a].totalDiff;
             });
@@ -1296,7 +1284,7 @@
                 
                 totalRankProfit[golferName] += profit;
                 roundRankProfit[golferName][r] = profit;
-                golferRankHistory[golferName].push(index); // 등수(0:독수리) 기록 추가
+                golferRankHistory[golferName].push(index);
 
                 const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
 
@@ -1325,7 +1313,6 @@
 
         cachedRoundRankProfit = roundRankProfit;
 
-        // 🏆 시즌 최저타수 및 전체 평균 타수 계산 로직
         let overallMinScore = Infinity;
         let overallMinAvg = Infinity;
         const golferMinScores = {};
@@ -1337,20 +1324,14 @@
                 : [];
 
             if (validScores.length > 0) {
-                // 단일 최저타
                 const userMin = Math.min(...validScores);
                 golferMinScores[g] = userMin;
-                if (userMin < overallMinScore) {
-                    overallMinScore = userMin;
-                }
+                if (userMin < overallMinScore) overallMinScore = userMin;
 
-                // 전체 평균 타수
                 const sum = validScores.reduce((acc, curr) => acc + curr, 0);
                 const userAvg = sum / validScores.length;
                 golferAvgScores[g] = userAvg;
-                if (userAvg < overallMinAvg) {
-                    overallMinAvg = userAvg;
-                }
+                if (userAvg < overallMinAvg) overallMinAvg = userAvg;
             } else {
                 golferMinScores[g] = null;
                 golferAvgScores[g] = null;
@@ -1368,49 +1349,36 @@
                     for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
                         const rMoney = appData.roundMoney[rIdx];
                         if (!rMoney) continue;
-
                         const m = rMoney[g] || { start: 0, end: 0 };
                         if (m.start > 0 || m.end > 0) {
                             const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
                             const totalDiff = m.end - m.start;
                             const pureStroke = totalDiff - rPenalty; 
-                            
-                            if (pureStroke < 0) {
-                                totalPureStrokeProfit += pureStroke;
-                            }
+                            if (pureStroke < 0) totalPureStrokeProfit += pureStroke;
                         }
                     }
                 }
 
-                // 🦅 뱃지 판단 로직
                 const ranks = golferRankHistory[g] || [];
                 let badgesHtml = "";
-                
-                // 1) 독수리 연속 달성 뱃지
                 if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
-                    badgesHtml += `<div class="season-badge badge-eagle-3">🦅 독수리 뱃지 획득! 🎉</div>`;
+                    badgesHtml += `<div class="season-badge badge-eagle-3">🦅 독수리 뱃지!</div>`;
                 } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
-                    badgesHtml += `<div class="season-badge badge-eagle-2">🦅 독수리 2연속 등극!</div>`;
+                    badgesHtml += `<div class="season-badge badge-eagle-2">🦅 독수리 2연속</div>`;
                 }
-
-                // 2) 🏆 평균타수 1위 뱃지 (숫자 표기 제거됨)
                 if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
-                    badgesHtml += `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`;
+                    badgesHtml += `<div class="season-badge badge-avg-1">🏆 평균 1위</div>`;
                 }
-
-                // 3) 🎯 시즌 최저타 뱃지 (전체 라운드 중 단일 최저타)
                 if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
                     badgesHtml += `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`;
                 }
                 
                 const finalBalance = rankProfit + totalPureStrokeProfit;
-                
                 const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
                 const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
                 
                 let finalColor = "#64748b";
                 let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
-                
                 if (finalBalance > 0) finalColor = "#16a34a";
                 if (finalBalance < 0) finalColor = "#dc2626";
 
@@ -1420,9 +1388,7 @@
                         <div class="detail-line">계급: ${rankProfitText}</div>
                         <div class="detail-line">타수: ${strokeProfitText}</div>
                         ${badgesHtml}
-                        <div class="final-total" style="color: ${finalColor};">
-                            합산: ${finalText}
-                        </div>
+                        <div class="final-total" style="color: ${finalColor};">합산: ${finalText}</div>
                     </div>
                 `;
             });
@@ -1456,9 +1422,9 @@
 
                 let matchText = "";
                 if (diff > 0) {
-                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음`;
+                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold);">${diff}타</b> 받음`;
                 } else if (diff < 0) {
-                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음`;
+                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold);">${Math.abs(diff)}타</b> 받음`;
                 } else {
                     matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
                 }
@@ -1477,6 +1443,7 @@
     }
 
     function closeHistoryModal(e) {
+        if (e && e.target !== e.currentTarget && !e.target.classList.contains('close-btn')) return;
         const modal = document.getElementById('historyModal');
         if (modal) modal.classList.remove('active');
     }
