@@ -1393,10 +1393,9 @@
                     badgesHtml += `<div class="season-badge badge-eagle-2">🦅 독수리 2연속 등극!</div>`;
                 }
 
-                // 2) 🏆 평균타수 1위 뱃지 (전체 평균타수가 가장 낮은 골퍼)
+                // 2) 🏆 평균타수 1위 뱃지 (숫자 표기 제거됨)
                 if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
-                    const formattedAvg = golferAvgScores[g].toFixed(1);
-                    badgesHtml += `<div class="season-badge badge-avg-1">🏆 평균타수 1위 (${formattedAvg}타)</div>`;
+                    badgesHtml += `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`;
                 }
 
                 // 3) 🎯 시즌 최저타 뱃지 (전체 라운드 중 단일 최저타)
