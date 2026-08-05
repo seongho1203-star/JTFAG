@@ -13,6 +13,9 @@
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
+    <!-- 폭죽 애니메이션 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -235,15 +238,24 @@
             white-space: nowrap;
         }
 
+        /* 뱃지 침범 방지용 애니메이션 (scale 대신 box-shadow와 부드러운 밝기 조절 활용) */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); filter: brightness(1); }
+            50% { box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); filter: brightness(1.08); }
+            100% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); filter: brightness(1); }
+        }
+
         .season-badge {
             display: inline-block;
             margin-top: 3px;
-            padding: 1px 3px;
+            padding: 1px 4px;
             border-radius: 4px;
             font-size: clamp(0.48rem, 1.8vw, 0.58rem);
             font-weight: 900;
             white-space: nowrap;
+            animation: pulse-glow 1.8s infinite ease-in-out; /* 크기 변환 없이 빛나는 효과 적용 */
         }
+        
         .badge-eagle-3 { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); color: #ffffff; border: 1px solid #d97706; }
         .badge-eagle-2 { background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%); color: #78350f; border: 1px solid #eab308; }
         .badge-avg-1 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; border: 1px solid #2563eb; }
@@ -401,31 +413,48 @@
             padding-left: 4px !important; padding-right: 4px !important;
         }
 
-        .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
+        .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; margin-bottom: 4px; }
 
         input.score-input {
             width: 34px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px;
             text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg);
         }
 
+        .th-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        input.course-input, .photo-btn {
+            width: 54px !important;
+            height: 22px !important;
+            box-sizing: border-box;
+            border-radius: 4px;
+            font-size: clamp(0.52rem, 1.8vw, 0.6rem) !important;
+            font-weight: 800 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            text-align: center;
+        }
+
         input.course-input {
-            width: 48px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4);
-            border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7;
+            border: 1px solid rgba(184, 134, 11, 0.4);
+            background-color: #fef9e7;
         }
 
         .photo-btn {
-            display: inline-block;
-            margin-top: 2px;
-            padding: 1px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: #e0f2fe;
             color: #0369a1;
             border: 1px solid #bae6fd;
-            border-radius: 4px;
-            font-size: clamp(0.52rem, 1.8vw, 0.6rem);
-            font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
         }
+        
         .photo-btn.has-photo {
             background: #dcfce7;
             color: #15803d;
@@ -496,6 +525,40 @@
             padding: 10px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 800;
             z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; white-space: nowrap !important;
         }
+
+        .report-stat-grid { display: grid; gap: 8px; margin-bottom: 12px; }
+        .report-stat-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; }
+        .report-stat-box .title { font-size: 0.75rem; color: #64748b; font-weight: 700; }
+        .report-stat-box .value { font-weight: 900; }
+        .memo-section { background: #ffffff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; color: #1e293b; }
+
+        .celebration-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.92);
+            border: 2px solid #fef08a;
+            border-radius: 16px;
+            padding: 20px 24px;
+            text-align: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            width: 85%;
+            max-width: 380px;
+        }
+        .celebration-overlay.active { opacity: 1; }
+        .celebration-text {
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .celebration-text b { color: #fef08a; font-size: 1.15rem; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -610,6 +673,24 @@
     </div>
 </div>
 
+<!-- 개인 리포트 모달 -->
+<div class="modal-overlay" id="personalReportModal" onclick="closePersonalReport(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="reportTitle">⛳ 개인 리포트</h3>
+            <button type="button" class="close-btn" onclick="closePersonalReport()">✕</button>
+        </div>
+        <div class="modal-body" id="reportContent">
+            <!-- 자바스크립트로 채워질 영역 -->
+        </div>
+    </div>
+</div>
+
+<!-- 축하 문구 오버레이 -->
+<div id="celebrationOverlay" class="celebration-overlay">
+    <div id="celebrationText" class="celebration-text"></div>
+</div>
+
 <div id="customToast"></div>
 
 <script>
@@ -655,8 +736,12 @@
     let cachedRoundRankProfit = {}; 
     let golferRankHistory = {};
     let isLoaded = false;
+    
+    let globalHeadToHead = {};
+    let isInitialLoad = true;
+    let prevGolferMinScores = {};
+    let prevGolferEagleStreaks = {};
 
-    // 📸 이미지 리사이징 함수 (용량 초과 방지: 최대 가로/세로 800px, 퀄리티 0.7 압축)
     function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -867,6 +952,7 @@
                     renderNoticeArea();
                     renderAll();
                     showSaveStatus("⚡ 실시간 동기화 완료");
+                    isInitialLoad = false;
                 }, (error) => {
                     console.error("Firebase Error:", error);
                     showSaveStatus("⚠️ DB 연결 확인 필요");
@@ -1015,8 +1101,8 @@
             headerHtml += `
                 <th>
                     <div class="header-round-title">${r + 1}차</div>
-                    <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
-                    <div>
+                    <div class="th-controls">
+                        <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
                         ${hasPhoto 
                             ? `<button type="button" class="${photoBtnClass}" onclick="openPhotoModal(${r})">${photoBtnText}</button>`
                             : `<label class="${photoBtnClass}">
@@ -1178,6 +1264,11 @@
             totalRankProfit[g] = 0;
             roundRankProfit[g] = {};
             golferRankHistory[g] = [];
+            
+            globalHeadToHead[g] = {};
+            golfers.forEach(g2 => {
+                if (g !== g2) globalHeadToHead[g][g2] = { wins: 0, ties: 0, losses: 0, total: 0 };
+            });
         });
 
         const historyList = document.getElementById('historyList');
@@ -1228,6 +1319,8 @@
                         matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
                         matchResults[g1].headToHead[g2] = 1;
                         matchResults[g2].headToHead[g1] = -1;
+                        
+                        globalHeadToHead[g1][g2].wins++; globalHeadToHead[g2][g1].losses++;
                     } else if (g1Adjusted > g2Adjusted) {
                         matchResults[g1].losses++;
                         matchResults[g2].wins++;
@@ -1235,29 +1328,37 @@
                         matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
                         matchResults[g1].headToHead[g2] = -1;
                         matchResults[g2].headToHead[g1] = 1;
+                        
+                        globalHeadToHead[g1][g2].losses++; globalHeadToHead[g2][g1].wins++;
                     } else {
-                        // 핸디 반영 보정타수가 동타일 때: 핸디를 '준' 사람(Avg가 낮은 사람)이 승리
                         if (g1Avg < g2Avg) {
                             matchResults[g1].wins++;
                             matchResults[g2].losses++;
-                            matchResults[g1].totalDiff += 0.5; // 동타 승리자에게 가산점 부여로 정렬 순위 보장
+                            matchResults[g1].totalDiff += 0.5;
                             matchResults[g2].totalDiff -= 0.5;
                             matchResults[g1].headToHead[g2] = 1;
                             matchResults[g2].headToHead[g1] = -1;
+                            
+                            globalHeadToHead[g1][g2].wins++; globalHeadToHead[g2][g1].losses++;
                         } else if (g2Avg < g1Avg) {
                             matchResults[g2].wins++;
                             matchResults[g1].losses++;
                             matchResults[g2].totalDiff += 0.5;
                             matchResults[g1].totalDiff -= 0.5;
                             matchResults[g2].headToHead[g1] = 1;
-                            matchResults[g1].headToHead[g2] = -1;
+                            matchResults[g2].headToHead[g2] = -1;
+                            
+                            globalHeadToHead[g2][g1].wins++; globalHeadToHead[g1][g2].losses++;
                         } else {
                             matchResults[g1].ties++;
                             matchResults[g2].ties++;
                             matchResults[g1].headToHead[g2] = 0;
                             matchResults[g2].headToHead[g1] = 0;
+                            
+                            globalHeadToHead[g1][g2].ties++; globalHeadToHead[g2][g1].ties++;
                         }
                     }
+                    globalHeadToHead[g1][g2].total++; globalHeadToHead[g2][g1].total++;
                 }
             }
 
@@ -1265,7 +1366,6 @@
                 if (matchResults[b].wins !== matchResults[a].wins) {
                     return matchResults[b].wins - matchResults[a].wins;
                 }
-                // 승수가 같은 경우, 두 사람 간의 상대전적(승패) 확인
                 if (matchResults[a].headToHead[b] !== undefined && matchResults[a].headToHead[b] !== 0) {
                     return matchResults[b].headToHead[a] - matchResults[a].headToHead[b];
                 }
@@ -1384,7 +1484,7 @@
 
                 summaryGrid.innerHTML += `
                     <div class="summary-item">
-                        <div class="name">${g}</div>
+                        <div class="name" style="cursor: pointer;" onclick="openPersonalReport('${g}')">${g}</div>
                         <div class="detail-line">계급: ${rankProfitText}</div>
                         <div class="detail-line">타수: ${strokeProfitText}</div>
                         ${badgesHtml}
@@ -1392,6 +1492,47 @@
                     </div>
                 `;
             });
+        }
+
+        let celebrationMessages = [];
+        golfers.forEach(g => {
+            if (golferMinScores[g] !== null && prevGolferMinScores[g] !== undefined && prevGolferMinScores[g] !== null) {
+                if (golferMinScores[g] < prevGolferMinScores[g]) {
+                    celebrationMessages.push(`🎉 <b>${g}</b>님 최저타수 갱신! (${golferMinScores[g]}타)`);
+                }
+            }
+            prevGolferMinScores[g] = golferMinScores[g];
+            
+            const ranks = golferRankHistory[g] || [];
+            let hasEagle3 = false;
+            if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
+                hasEagle3 = true;
+            }
+            if (hasEagle3 && !prevGolferEagleStreaks[g]) {
+                celebrationMessages.push(`🦅 <b>${g}</b>님 독수리 3연속 뱃지 획득!`);
+            }
+            prevGolferEagleStreaks[g] = hasEagle3;
+        });
+
+        if (celebrationMessages.length > 0 && !isInitialLoad) {
+            confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.5 },
+                colors: ['#b8860b', '#1e293b', '#fef08a', '#16a34a', '#ea580c'],
+                zIndex: 9999
+            });
+
+            const overlay = document.getElementById('celebrationOverlay');
+            const textDiv = document.getElementById('celebrationText');
+            if (overlay && textDiv) {
+                textDiv.innerHTML = celebrationMessages.join("<br><br>");
+                overlay.classList.add('active');
+                
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 4000);
+            }
         }
     }
 
@@ -1457,6 +1598,91 @@
             showToast("🔄 모든 데이터가 초기화되었습니다.");
         }
     }
+
+    window.openPersonalReport = function(golferName) {
+        const modal = document.getElementById('personalReportModal');
+        const title = document.getElementById('reportTitle');
+        const content = document.getElementById('reportContent');
+
+        title.textContent = `⛳ ${golferName} 님의 리포트`;
+
+        const scores = appData.scores[golferName] 
+            ? appData.scores[golferName].filter(s => s !== "" && !isNaN(parseFloat(s))).map(Number) 
+            : [];
+        
+        const max = scores.length > 0 ? Math.max(...scores) : '-';
+        const min = scores.length > 0 ? Math.min(...scores) : '-';
+        const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
+
+        const ranks = golferRankHistory[golferName] || [];
+        const rankCounts = {0: 0, 1: 0, 2: 0, 3: 0};
+        ranks.forEach(r => rankCounts[r]++);
+
+        let h2hHtml = `<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">`;
+        golfers.forEach(opponent => {
+            if (opponent === golferName) return;
+            const stats = globalHeadToHead[golferName][opponent];
+            
+            if (stats && stats.total > 0) {
+                const winRate = Math.round((stats.wins / stats.total) * 100);
+                h2hHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+                    <span>vs <b>${opponent}</b></span>
+                    <div style="text-align:right;">
+                        <span style="color:#1e293b; font-weight:800; margin-right:4px;">승률 ${winRate}%</span>
+                        <span style="font-size:0.65rem; color:#64748b;">(${stats.total}전 ${stats.wins}승 ${stats.ties}무 ${stats.losses}패)</span>
+                    </div>
+                </div>`;
+            } else {
+                h2hHtml += `
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; border-bottom:1px solid #e2e8f0; padding-bottom:6px; color:#94a3b8;">
+                    <span>vs <b>${opponent}</b></span>
+                    <span>전적 없음</span>
+                </div>`;
+            }
+        });
+        h2hHtml += `</div>`;
+
+        content.innerHTML = `
+            <div class="report-stat-grid" style="grid-template-columns: repeat(3, 1fr); gap:6px;">
+                <div class="report-stat-box" style="padding:10px 4px;">
+                    <div class="title" style="margin-bottom:4px;">최고(Worst)</div>
+                    <div class="value" style="color: #64748b; font-size:1.1rem;">${max}</div>
+                </div>
+                <div class="report-stat-box" style="padding:10px 4px;">
+                    <div class="title" style="margin-bottom:4px;">평균타수</div>
+                    <div class="value" style="color: #1e293b; font-size:1.1rem;">${avg}</div>
+                </div>
+                <div class="report-stat-box" style="padding:10px 4px;">
+                    <div class="title" style="margin-bottom:4px;">최저(Best)</div>
+                    <div class="value" style="color: #ea580c; font-size:1.1rem;">${min}</div>
+                </div>
+            </div>
+            
+            <div class="memo-section" style="margin-bottom: 12px; background: #f8fafc; border: 1px solid #cbd5e1;">
+                <strong style="display:block; margin-bottom:8px; font-size:0.85rem; color:#0f172a;">🏆 계급 획득 횟수</strong>
+                <div style="display:flex; justify-content:space-around; text-align:center; font-size:0.75rem; color:#475569;">
+                    <div>🦅 독수리<br><b style="font-size:1rem; color:#d97706;">${rankCounts[0]}</b></div>
+                    <div>⚡ 매<br><b style="font-size:1rem; color:#0284c7;">${rankCounts[1]}</b></div>
+                    <div>🦩 학<br><b style="font-size:1rem; color:#7e22ce;">${rankCounts[2]}</b></div>
+                    <div>🐦 참새<br><b style="font-size:1rem; color:#475569;">${rankCounts[3]}</b></div>
+                </div>
+            </div>
+
+            <div class="memo-section">
+                <strong style="display:block; margin-bottom:8px; font-size:0.85rem; color:#0f172a;">⚔️ 개인별 상대 전적 (핸디캡 승패 기준)</strong>
+                ${h2hHtml}
+            </div>
+        `;
+        
+        modal.classList.add('active');
+    };
+
+    window.closePersonalReport = function(e) {
+        if (e && e.target !== e.currentTarget && !e.target.classList.contains('close-btn')) return;
+        const modal = document.getElementById('personalReportModal');
+        if (modal) modal.classList.remove('active');
+    };
 </script>
 
 </body>
