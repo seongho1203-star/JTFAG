@@ -120,6 +120,7 @@ async function handleGlobalFileChange(inputElem) {
 
     try {
         showToast(`📷 ${files.length}장의 사진 압축 및 등록 중...`);
+        showSaveStatus("⏳ 저장 중...", true);
         saveState();
         
         if (!appData.photos) appData.photos = [];
@@ -225,6 +226,7 @@ function deleteCurrentlyViewedPhoto() {
     if (photosArr.length === 0) return;
 
     if (confirm(`현재 보고 있는 사진을 삭제하시겠습니까?`)) {
+        showSaveStatus("⏳ 삭제 중...", true);
         saveState();
         
         photosArr.splice(currentPhotoIndex, 1);
@@ -320,6 +322,7 @@ function undoLastAction() {
         showToast("⚠️ 되돌릴 이전 내역이 없습니다.");
         return;
     }
+    showSaveStatus("⏳ 되돌리는 중...", true);
     const previousState = historyStack.pop();
     appData = JSON.parse(previousState);
     syncToFirebase(appData);
@@ -368,7 +371,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 isInitialLoad = false;
             }, (error) => {
                 console.error("Firebase Error:", error);
-                showSaveStatus("⚠️ DB 연결 확인 필요");
+                showSaveStatus("⚠️ DB 연결 확인 필요", true);
             });
         }
     }, 100);
@@ -376,15 +379,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function syncToFirebase(dataToSave) {
     if (!window.setDoc || !window.gameDocRef) return;
+    showSaveStatus("⏳ 저장 중...", true);
     try {
-        window.setDoc(window.gameDocRef, dataToSave, { merge: true }).catch(err => {
+        window.setDoc(window.gameDocRef, dataToSave, { merge: true }).then(() => {
+            showSaveStatus("⚡ 실시간 동기화 완료");
+        }).catch(err => {
             console.error("Firebase SetDoc Async Error:", err);
+            showSaveStatus("⚠️ 저장 실패", true);
             if (err.code === 'invalid-argument' || (err.message && err.message.includes('exceeds'))) {
                 showToast("⚠️ 저장 실패: 사진 용량이 너무 큽니다.");
             }
         });
     } catch(err) {
         console.error("Firebase SetDoc Sync Error:", err);
+        showSaveStatus("⚠️ 저장 실패", true);
         showToast("⚠️ 저장 실패: 사진 용량이 너무 큽니다.");
     }
 }
@@ -397,12 +405,16 @@ function showToast(msg) {
     setTimeout(() => { toast.style.opacity = '0'; }, 2200);
 }
 
-function showSaveStatus(msg) {
+function showSaveStatus(msg, isSyncing = false) {
     const saveStatus = document.getElementById('saveStatus');
     if (saveStatus) {
         saveStatus.textContent = msg;
+        if (isSyncing) {
+            saveStatus.classList.add('syncing');
+        } else {
+            saveStatus.classList.remove('syncing');
+        }
         saveStatus.style.opacity = '1';
-        setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200);
     }
 }
 
@@ -511,6 +523,7 @@ function renderNoticeArea() {
 }
 
 window.updateNoticeData = function() {
+    showSaveStatus("⏳ 저장 중...", true);
     saveState();
     const dateInput = document.getElementById('nextRoundInput');
     const fundInput = document.getElementById('clubFundInput');
@@ -587,6 +600,7 @@ function renderMoneyTable() {
 }
 
 window.updateMoney = function(name, type, value) {
+    showSaveStatus("⏳ 저장 중...", true);
     saveState();
     const currentRoundIdx = selectedMoneyRoundIdx;
     if (!appData.roundMoney[currentRoundIdx]) appData.roundMoney[currentRoundIdx] = {};
@@ -644,6 +658,7 @@ function renderTable() {
 }
 
 window.updateCourse = function(r, val) {
+    showSaveStatus("⏳ 저장 중...", true);
     saveState();
     if (!appData.courses) appData.courses = [];
     appData.courses[r] = val;
@@ -651,6 +666,7 @@ window.updateCourse = function(r, val) {
 }
 
 window.updateScore = function(name, r, val) {
+    showSaveStatus("⏳ 저장 중...", true);
     saveState();
     if (!appData.scores) appData.scores = {};
     if (!appData.scores[name]) appData.scores[name] = [];
@@ -660,6 +676,7 @@ window.updateScore = function(name, r, val) {
 }
 
 window.addRound = function() {
+    showSaveStatus("⏳ 저장 중...", true);
     saveState();
     appData.totalRounds++;
     if (!appData.courses) appData.courses = [];
@@ -697,6 +714,7 @@ window.removeRound = function() {
         showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
         return;
     }
+    showSaveStatus("⏳ 저장 중...", true);
     saveState();
     appData.totalRounds--;
     if (appData.courses) appData.courses.pop();
@@ -1118,6 +1136,7 @@ window.closeHistoryModal = function(e) {
 
 window.resetAllData = function() {
     if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
+        showSaveStatus("⏳ 초기화 중...", true);
         saveState();
         appData = getDefaultData();
         selectedMoneyRoundIdx = appData.totalRounds - 1;
