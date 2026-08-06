@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
-    <!-- 디자인 스타일시트 연결 -->
+    <!-- 스타일시트 연결 -->
     <link rel="stylesheet" href="style.css">
 
     <!-- 폭죽 애니메이션 라이브러리 추가 -->
@@ -51,6 +51,7 @@
         <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
+    <!-- 공지사항 레이아웃: 일정과 공금을 1줄로 나란히 -->
     <div class="notice-card">
         <h2>
             <span>📢 리그 공지 & 모임 공금</span>
@@ -68,6 +69,7 @@
                 <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150,000" readonly onclick="handleInputClick(this)" onfocus="this.select()" onchange="updateNoticeData()" style="text-align: right;">
             </div>
             
+            <!-- 날씨 정보 박스 -->
             <div class="weather-box">
                 <span style="font-size:0.65rem; color:#bae6fd; font-weight:800; letter-spacing: 0.5px;">🌤️ 실시간 날씨 연동</span>
                 <span id="weatherText" style="font-size:0.85rem; color:#ffffff; font-weight:800; word-break: keep-all; line-height: 1.3;">일정과 골프장을 입력해주세요</span>
@@ -136,7 +138,7 @@
     </div>
 </div>
 
-<!-- 모달창 및 숨김 요소들 -->
+<!-- 모달창 영역 -->
 <div class="modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -184,7 +186,7 @@
 <input type="file" id="globalFileInput" multiple accept="image/*" style="display:none;" onchange="handleGlobalFileChange(this)">
 <div id="customToast"></div>
 
-<!-- 자바스크립트 로직 파일 연결 -->
+<!-- 자바스크립트 파일 연결 -->
 <script src="app.js"></script>
 
 </body>
