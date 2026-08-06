@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JTFAG 골프 정산 시스템</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK (v9 Modular) -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -27,7 +27,6 @@
         window.setDoc = setDoc;
         window.onSnapshot = onSnapshot;
     </script>
-    <!-- Canvas Confetti 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.min.js"></script>
 </head>
 <body>
@@ -65,51 +64,10 @@
         <!-- 통합 요약 카드 -->
         <div class="total-summary-card">
             <h2>🏆 시즌 통합 요약 (이름 클릭시 개인리포트)</h2>
-            <div class="summary-grid" id="summaryGrid">
-                <!-- 동적 생성 -->
-            </div>
+            <div class="summary-grid" id="summaryGrid"></div>
         </div>
 
-        <!-- 라운드별 정산 카드 -->
-        <div class="money-card">
-            <div class="money-header-flex">
-                <h3>💰 라운드별 정산 (타수 정산 + 계급 벌금)</h3>
-                <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)">
-                    <option value="">정산 차수 선택 ▾</option>
-                </select>
-            </div>
-            <div class="table-wrapper">
-                <table class="money-table">
-                    <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>시작금액</th>
-                            <th>종료금액</th>
-                            <th>계급벌금</th>
-                            <th>순수타수정산</th>
-                        </tr>
-                    </thead>
-                    <tbody id="moneyTbody">
-                        <!-- 동적 생성 -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 1:1 핸디캡 매치 카드 -->
-        <div class="match-card">
-            <h3 id="matchCardTitle">🤝 핸디캡 기반 1:1 매치 관계</h3>
-            <div class="match-grid" id="matchGrid">
-                <!-- 동적 생성 -->
-            </div>
-        </div>
-
-        <!-- 정보 안내 카드 -->
-        <div class="info-card">
-            <span class="info-text" id="infoText">💡 스코어 기준 1:1 핸디캡 산출 중...</span>
-        </div>
-
-        <!-- 컨트롤 버튼 그룹 -->
+        <!-- 컨트롤 버튼 그룹 (크기 최적화) -->
         <div class="btn-group">
             <div class="left-btns">
                 <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
@@ -124,30 +82,61 @@
 
         <div class="scroll-hint">좌우로 밀어서 차수를 확인하세요 ➡️</div>
 
-        <!-- 메인 스코어보드 테이블 -->
+        <!-- 메인 스코어보드 테이블 (스크롤 영역 완벽 보장) -->
         <div class="table-wrapper">
             <table id="scoreTable">
                 <thead>
-                    <tr id="headerRow">
-                        <!-- 동적 생성 -->
-                    </tr>
+                    <tr id="headerRow"></tr>
                 </thead>
-                <tbody id="scoreTbody">
-                    <!-- 동적 생성 -->
-                </tbody>
+                <tbody id="scoreTbody"></tbody>
             </table>
+        </div>
+
+        <!-- 라운드별 정산 카드 (원래 위치로 복구) -->
+        <div class="money-card">
+            <div class="money-header-flex">
+                <h3>💰 라운드별 정산 (타수 + 계급 벌금)</h3>
+                <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)">
+                    <option value="">정산 차수 선택 ▾</option>
+                </select>
+            </div>
+            <div class="table-wrapper">
+                <table class="money-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>시작 금액</th>
+                            <th>남은 금액</th>
+                            <th>계급정산</th>
+                            <th>타수정산</th>
+                        </tr>
+                    </thead>
+                    <tbody id="moneyTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 1:1 핸디캡 매치 카드 -->
+        <div class="match-card">
+            <h3 id="matchCardTitle">🤝 핸디캡 기반 1:1 매치 관계</h3>
+            <div class="match-grid" id="matchGrid"></div>
+        </div>
+
+        <!-- 정보 안내 카드 -->
+        <div class="info-card">
+            <span class="info-text" id="infoText">💡 스코어 기준 1:1 핸디캡 산출 중...</span>
         </div>
 
         <!-- 지난 차전 계급 정산 히스토리 버튼 -->
         <div class="history-btn-container">
-            <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 지난 차전별 계급 정산 히스토리 보기</button>
+            <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
         </div>
     </div>
 
-    <!-- 숨겨진 글로벌 파일 업로드 input (사진 보기 및 추가용) -->
+    <!-- 숨겨진 파일 업로드 -->
     <input type="file" id="globalFileInput" accept="image/*" multiple style="display:none;" onchange="handleGlobalFileChange(this)">
 
-    <!-- 사진 크게보기 모달 -->
+    <!-- 사진 보기 모달 -->
     <div class="modal-overlay" id="photoModal" onclick="closePhotoModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -155,9 +144,7 @@
                 <button type="button" class="close-btn" onclick="closePhotoModal()">✕</button>
             </div>
             <div class="modal-body" style="text-align: center;">
-                <div class="modal-preview-container" id="modalPreviewContainer">
-                    <!-- 동적 이미지 슬라이드 -->
-                </div>
+                <div class="modal-preview-container" id="modalPreviewContainer"></div>
                 <div style="display: flex; gap: 6px; margin-top: 10px;">
                     <button type="button" class="action-btn add-btn" style="flex: 1; padding: 8px;" onclick="triggerAddMorePhoto()">➕ 사진 추가하기</button>
                     <button type="button" class="action-btn reset-btn" style="flex: 1; padding: 8px;" onclick="deleteCurrentlyViewedPhoto()">🗑️ 현재 사진 삭제</button>
@@ -174,7 +161,7 @@
                 <button type="button" class="close-btn" onclick="closeScoreOcrModal()">✕</button>
             </div>
             <div class="modal-body" style="text-align: center; padding: 16px;">
-                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">스코어를 등록할 차수를 선택하고, 스코어카드 사진을 업로드하면 자동으로 분석 및 누적됩니다.</p>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">차수를 선택하고 스코어카드 사진을 업로드하면 압축 후 자동 반영됩니다.</p>
                 <select id="ocrRoundSelect" class="round-select-badge" style="width: 100%; padding: 8px; margin-bottom: 14px; font-size: 0.85rem;"></select>
                 <input type="file" id="ocrFileInput" accept="image/*" style="width: 100%; margin-bottom: 16px; font-size: 0.8rem;">
                 <button type="button" class="action-btn add-btn" style="width: 100%; padding: 10px;" onclick="processScoreCardImage()">🤖 스코어카드 자동 분석 및 누적하기</button>
@@ -190,9 +177,7 @@
                 <button type="button" class="close-btn" onclick="closeHistoryModal()">✕</button>
             </div>
             <div class="modal-body">
-                <div class="history-list" id="historyList">
-                    <!-- 동적 생성 -->
-                </div>
+                <div class="history-list" id="historyList"></div>
             </div>
         </div>
     </div>
@@ -204,20 +189,15 @@
                 <h3 id="reportTitle">⛳ 개인 리포트</h3>
                 <button type="button" class="close-btn" onclick="closePersonalReport()">✕</button>
             </div>
-            <div class="modal-body" id="reportContent">
-                <!-- 동적 생성 -->
-            </div>
+            <div class="modal-body" id="reportContent"></div>
         </div>
     </div>
 
-    <!-- 축하 애니메이션 오버레이 -->
     <div class="celebration-overlay" id="celebrationOverlay">
         <p class="celebration-text" id="celebrationText">축하합니다!</p>
     </div>
 
-    <!-- 커스텀 토스트 알림 -->
     <div id="customToast">알림 메시지</div>
-
     <script src="app.js"></script>
 </body>
 </html>
