@@ -83,11 +83,37 @@ p.subtitle {
     gap: 8px;
 }
 
+.notice-card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 8px 10px; /* 👈 패딩을 줄여서 높이를 슬림하게 압축 */
+    margin-bottom: 8px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.notice-card h2 {
+    font-size: clamp(0.78rem, 3vw, 0.88rem);
+    margin: 0 0 6px 0; /* 👈 하단 여백 축소 */
+    color: #fef08a;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.notice-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 6px; /* 👈 간격 축소 */
+}
+
 .notice-box {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
-    padding: 8px 10px;
+    border-radius: 8px;
+    padding: 6px 8px; /* 👈 내부 여백 축소 */
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -99,13 +125,13 @@ p.subtitle {
     grid-column: span 2;
     background: rgba(56, 189, 248, 0.15);
     border: 1px solid rgba(56, 189, 248, 0.3);
-    border-radius: 10px;
-    padding: 10px 8px;
+    border-radius: 8px;
+    padding: 6px 8px; /* 👈 날씨 박스 높이 축소 */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 5px;
+    gap: 2px;
     text-align: center;
 }
 
