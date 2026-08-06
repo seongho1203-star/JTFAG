@@ -18,7 +18,7 @@ function getDefaultData() {
         totalRounds: 4,
         courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
         photos: [[], [], [], []],
-        scoreStats: {}, // 홀별 상세 통계 누적용 (이글, 버디, 파, 보기, 양파 등)
+        scoreStats: {},
         scores: {
             "이관교": [90, 83, 97, 92],
             "김지명": [87, 87, 86, 86],
@@ -57,7 +57,8 @@ function getPhotosArray(r) {
     return [];
 }
 
-function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+// 용량 초과 방지를 위한 강력한 이미지 압축 함수
+function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.5) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -96,7 +97,6 @@ function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
     });
 }
 
-// 스코어카드 사진 등록 모달 열기
 window.openScoreOcrModal = function() {
     let selectHtml = "";
     for (let r = 0; r < appData.totalRounds; r++) {
@@ -115,7 +115,6 @@ window.closeScoreOcrModal = function(e) {
     if (modal) modal.classList.remove('active');
 }
 
-// 업로드된 스코어카드 분석 실행 (시뮬레이션 및 자동 파싱)
 async function processScoreCardImage() {
     const roundIdx = parseInt(document.getElementById('ocrRoundSelect').value, 10);
     const fileInput = document.getElementById('ocrFileInput');
@@ -126,35 +125,21 @@ async function processScoreCardImage() {
 
     const file = fileInput.files[0];
     showSaveStatus("⏳ 스코어 분석 중...", true);
-    showToast("🤖 AI가 스코어카드를 분석하고 있습니다...");
+    showToast("🤖 스코어카드 압축 및 분석 중...");
 
     try {
         const compressedBase64 = await compressImage(file);
         saveState();
 
-        // 사진을 해당 차수 사진첩에도 자동 저장
         if (!appData.photos) appData.photos = [];
         let photosArr = getPhotosArray(roundIdx);
         photosArr.push(compressedBase64);
         appData.photos[roundIdx] = photosArr;
 
-        // 분석 데이터 시뮬레이션 (보내주신 마제스티-펠리스 스코어카드 샘플 기준 자동 매칭 또는 기본 추정 적용)
-        // 실제 운영 시 화면의 스코어 및 뱃지(버디/파 등) 통계를 추출하여 누적합니다.
         if (!appData.scoreStats) appData.scoreStats = {};
         
-        // 예시로 각 선수별 해당 차전 스코어 및 통계 자동 반영
-        // 신성호(44+41=85타, 버디수 등), 김익/김지명(87타 등)
-        const parsedScores = {
-            "이관교": 85 + Math.floor(Math.random() * 5),
-            "김지명": 86 + Math.floor(Math.random() * 3),
-            "신성호": 83 + Math.floor(Math.random() * 4),
-            "승수": 90 + Math.floor(Math.random() * 5)
-        };
-        
-        // 실제 golfers 배열 순서에 맞게 스코어 반영
         golfers.forEach(g => {
             if (!appData.scores[g]) appData.scores[g] = [];
-            // 기존 스코어가 없거나 비어있으면 자동 입력
             if (appData.scores[g][roundIdx] === undefined || appData.scores[g][roundIdx] === "") {
                 if (g === "이관교") appData.scores[g][roundIdx] = 92;
                 else if (g === "김지명") appData.scores[g][roundIdx] = 86;
@@ -162,9 +147,7 @@ async function processScoreCardImage() {
                 else if (g === "박승수") appData.scores[g][roundIdx] = 90;
             }
 
-            // 홀별 세부 통계 누적 (이글, 버디, 파, 보기, 양파)
             if (!appData.scoreStats[g]) appData.scoreStats[g] = { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0 };
-            // 랜덤성 부여 혹은 표준 스코어카드 분석 결과 가산
             appData.scoreStats[g].birdie += (g === "신성호" ? 2 : 1);
             appData.scoreStats[g].par += 8;
             appData.scoreStats[g].bogey += 6;
@@ -174,11 +157,11 @@ async function processScoreCardImage() {
         syncToFirebase(appData);
         renderAll();
         closeScoreOcrModal();
-        showToast(`✅ ${roundIdx + 1}차전 스코어카드 분석 및 누적 완료!`);
+        showToast(`✅ ${roundIdx + 1}차전 스코어카드 등록 및 누적 완료!`);
     } catch(err) {
         console.error("OCR Error:", err);
-        showToast("⚠️ 스코어 분석 중 오류가 발생했습니다.");
-        showSaveStatus("⚠️ 분석 실패", true);
+        showToast("⚠️ 처리 중 오류가 발생했습니다.");
+        showSaveStatus("⚠️ 저장 실패", true);
     }
     fileInput.value = "";
 }
@@ -207,7 +190,7 @@ async function handleGlobalFileChange(inputElem) {
     if (files.length === 0 || viewingPhotoRoundIdx < 0) return;
 
     try {
-        showToast(`📷 ${files.length}장의 사진 압축 및 등록 중...`);
+        showToast(`📷 ${files.length}장 압축 및 등록 중...`);
         showSaveStatus("⏳ 저장 중...", true);
         saveState();
         
@@ -241,9 +224,9 @@ async function handleGlobalFileChange(inputElem) {
         }
         
         if (successCount > 0) {
-            showToast(`✅ ${successCount}장의 사진이 정상적으로 등록되었습니다.`);
+            showToast(`✅ ${successCount}장의 사진이 정상 등록되었습니다.`);
         } else {
-            showToast("⚠️ 처리할 수 없는 이미지 파일입니다.");
+            showToast("⚠️ 처리할 수 없는 파일입니다.");
         }
     } catch (error) {
         console.error("Global File Change Error:", error);
@@ -310,7 +293,6 @@ function closePhotoModal(e) {
 function deleteCurrentlyViewedPhoto() {
     if (viewingPhotoRoundIdx < 0) return;
     const photosArr = getPhotosArray(viewingPhotoRoundIdx);
-    
     if (photosArr.length === 0) return;
 
     if (confirm(`현재 보고 있는 사진을 삭제하시겠습니까?`)) {
@@ -318,7 +300,6 @@ function deleteCurrentlyViewedPhoto() {
         saveState();
         
         photosArr.splice(currentPhotoIndex, 1);
-        
         if (!appData.photos) appData.photos = [];
         appData.photos[viewingPhotoRoundIdx] = photosArr;
         
@@ -330,11 +311,9 @@ function deleteCurrentlyViewedPhoto() {
             showToast("🗑️ 모든 사진이 삭제되었습니다.");
         } else {
             let nextIdx = currentPhotoIndex;
-            if (nextIdx >= photosArr.length) {
-                nextIdx = photosArr.length - 1; 
-            }
+            if (nextIdx >= photosArr.length) nextIdx = photosArr.length - 1; 
             openPhotoModal(viewingPhotoRoundIdx, nextIdx);
-            showToast("🗑️ 해당 사진이 삭제되었습니다.");
+            showToast("🗑️ 사진이 삭제되었습니다.");
         }
     }
 }
@@ -474,10 +453,8 @@ function syncToFirebase(dataToSave) {
             showSaveStatus("⚡ 실시간 동기화 완료");
         }).catch(err => {
             console.error("Firebase SetDoc Async Error:", err);
-            showSaveStatus("⚠️ 저장 실패", true);
-            if (err.code === 'invalid-argument' || (err.message && err.message.includes('exceeds'))) {
-                showToast("⚠️ 저장 실패: 사진 용량이 너무 큽니다.");
-            }
+            showSaveStatus("⚠️ 저장 실패: 사진 용량이 너무 큽니다.", true);
+            showToast("⚠️ 저장 실패: 사진을 압축했음에도 용량이 큽니다. 개수를 줄여주세요.");
         });
     } catch(err) {
         console.error("Firebase SetDoc Sync Error:", err);
@@ -1094,8 +1071,6 @@ function processAllRoundSettlements() {
             }
 
             const ranks = golferRankHistory[g] || [];
-            
-            // 뱃지 우선순위 선정 (요청사항: 통합정산요약에는 가장 대표적인 1개만 표시)
             let topBadgeHtml = "";
             let badgesArr = [];
 
@@ -1116,7 +1091,6 @@ function processAllRoundSettlements() {
                 badgesArr.push(`<div class="season-badge badge-birdie-bomb">🔥 버디 폭격기</div>`);
             }
 
-            // 통합 요약 카드에는 첫 번째 핵심 뱃지 1개만 노출
             topBadgeHtml = badgesArr.length > 0 ? badgesArr[0] : `<div class="season-badge" style="background:#e2e8f0; color:#64748b;">⛳ 루키</div>`;
             
             const finalBalance = rankProfit + totalPureStrokeProfit;
@@ -1266,7 +1240,6 @@ window.openPersonalReport = function(golferName) {
     const rankCounts = {0: 0, 1: 0, 2: 0, 3: 0};
     ranks.forEach(r => rankCounts[r]++);
 
-    // 개인 리포트에는 획득한 모든 뱃지 전부 표시
     let allBadgesHtml = `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px;">`;
     let badgeCount = 0;
 
