@@ -57,8 +57,7 @@ function getPhotosArray(r) {
     return [];
 }
 
-// 용량 초과 방지를 위한 강력한 이미지 압축 함수
-function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.5) {
+function compressImage(file, maxWidth = 500, maxHeight = 500, quality = 0.4) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -124,8 +123,8 @@ async function processScoreCardImage() {
     }
 
     const file = fileInput.files[0];
-    showSaveStatus("⏳ 스코어 분석 중...", true);
-    showToast("🤖 스코어카드 압축 및 분석 중...");
+    showSaveStatus("⏳ 분석 중...", true);
+    showToast("🤖 스코어카드 분석 및 압축 중...");
 
     try {
         const compressedBase64 = await compressImage(file);
@@ -157,11 +156,11 @@ async function processScoreCardImage() {
         syncToFirebase(appData);
         renderAll();
         closeScoreOcrModal();
-        showToast(`✅ ${roundIdx + 1}차전 스코어카드 등록 및 누적 완료!`);
+        showToast(`✅ ${roundIdx + 1}차전 스코어 등록 완료!`);
     } catch(err) {
         console.error("OCR Error:", err);
         showToast("⚠️ 처리 중 오류가 발생했습니다.");
-        showSaveStatus("⚠️ 저장 실패", true);
+        showSaveStatus("⚠️ 실패", true);
     }
     fileInput.value = "";
 }
@@ -190,7 +189,7 @@ async function handleGlobalFileChange(inputElem) {
     if (files.length === 0 || viewingPhotoRoundIdx < 0) return;
 
     try {
-        showToast(`📷 ${files.length}장 압축 및 등록 중...`);
+        showToast(`📷 압축 및 등록 중...`);
         showSaveStatus("⏳ 저장 중...", true);
         saveState();
         
@@ -204,17 +203,16 @@ async function handleGlobalFileChange(inputElem) {
                 currentPhotos.push(compressedBase64);
                 successCount++;
             } catch(e) {
-                console.error("Single image compression failed:", e);
+                console.error("Compression failed:", e);
             }
         }
         
         if (currentPhotos.length > 10) {
-            showToast("⚠️ 라운드당 최대 10장까지만 저장됩니다.");
+            showToast("⚠️ 최대 10장까지만 저장됩니다.");
             currentPhotos = currentPhotos.slice(0, 10);
         }
         
         appData.photos[viewingPhotoRoundIdx] = currentPhotos;
-        
         syncToFirebase(appData);
         renderTable(); 
         
@@ -222,15 +220,9 @@ async function handleGlobalFileChange(inputElem) {
         if (modal && modal.classList.contains('active')) {
             openPhotoModal(viewingPhotoRoundIdx, currentPhotos.length - 1);
         }
-        
-        if (successCount > 0) {
-            showToast(`✅ ${successCount}장의 사진이 정상 등록되었습니다.`);
-        } else {
-            showToast("⚠️ 처리할 수 없는 파일입니다.");
-        }
+        if (successCount > 0) showToast(`✅ 등록 완료되었습니다.`);
     } catch (error) {
-        console.error("Global File Change Error:", error);
-        showToast("⚠️ 시스템 오류가 발생했습니다.");
+        console.error("File Change Error:", error);
     }
     inputElem.value = "";
 }
@@ -240,7 +232,6 @@ function updatePhotoIndex() {
     if (!container) return;
     const scrollLeft = container.scrollLeft;
     const width = container.clientWidth;
-    
     currentPhotoIndex = Math.round(scrollLeft / width);
     
     const indicator = document.getElementById('photoPageIndicator');
@@ -256,7 +247,6 @@ function openPhotoModal(roundIdx, startIdx = 0) {
     if (photosArr.length === 0) return;
 
     currentPhotoIndex = startIdx; 
-
     const modal = document.getElementById('photoModal');
     const container = document.getElementById('modalPreviewContainer');
     const titleTag = document.getElementById('photoModalTitle');
@@ -283,10 +273,8 @@ function closePhotoModal(e) {
     if (e && e.target !== e.currentTarget && !e.target.classList.contains('close-btn')) return;
     const modal = document.getElementById('photoModal');
     if (modal) modal.classList.remove('active');
-    
     const container = document.getElementById('modalPreviewContainer');
     if (container) container.removeEventListener('scroll', updatePhotoIndex); 
-    
     viewingPhotoRoundIdx = -1;
 }
 
@@ -298,7 +286,6 @@ function deleteCurrentlyViewedPhoto() {
     if (confirm(`현재 보고 있는 사진을 삭제하시겠습니까?`)) {
         showSaveStatus("⏳ 삭제 중...", true);
         saveState();
-        
         photosArr.splice(currentPhotoIndex, 1);
         if (!appData.photos) appData.photos = [];
         appData.photos[viewingPhotoRoundIdx] = photosArr;
@@ -331,10 +318,10 @@ function authenticateAdmin() {
     if (pwd === ADMIN_PASSWORD) {
         isFundUnlocked = true;
         updateLockUI();
-        showToast("🔓 수정 권한이 인증되었습니다.");
+        showToast("🔓 권한이 인증되었습니다.");
         return true;
     } else if (pwd !== null) {
-        showToast("⚠️ 비밀번호가 일치하지 않습니다.");
+        showToast("⚠️ 비밀번호 불일치");
     }
     return false;
 }
@@ -343,7 +330,7 @@ function toggleFundLock() {
     if (isFundUnlocked) {
         isFundUnlocked = false;
         updateLockUI();
-        showToast("🔒 공금 수정이 잠겼습니다.");
+        showToast("🔒 공금 잠김");
     } else {
         authenticateAdmin();
     }
@@ -386,7 +373,7 @@ function saveState() {
 
 function undoLastAction() {
     if (historyStack.length === 0) {
-        showToast("⚠️ 되돌릴 이전 내역이 없습니다.");
+        showToast("⚠️ 되돌릴 내역 없음");
         return;
     }
     showSaveStatus("⏳ 되돌리는 중...", true);
@@ -394,7 +381,7 @@ function undoLastAction() {
     appData = JSON.parse(previousState);
     syncToFirebase(appData);
     renderAll();
-    showToast("↩️ 이전 상태로 되돌렸습니다.");
+    showToast("↩️ 이전 상태로 복구");
 }
 
 function renderSkeleton() {
@@ -439,7 +426,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 isInitialLoad = false;
             }, (error) => {
                 console.error("Firebase Error:", error);
-                showSaveStatus("⚠️ DB 연결 확인 필요", true);
+                showSaveStatus("⚠️ DB 연결 오류", true);
             });
         }
     }, 100);
@@ -452,14 +439,13 @@ function syncToFirebase(dataToSave) {
         window.setDoc(window.gameDocRef, dataToSave, { merge: true }).then(() => {
             showSaveStatus("⚡ 실시간 동기화 완료");
         }).catch(err => {
-            console.error("Firebase SetDoc Async Error:", err);
-            showSaveStatus("⚠️ 저장 실패: 사진 용량이 너무 큽니다.", true);
-            showToast("⚠️ 저장 실패: 사진을 압축했음에도 용량이 큽니다. 개수를 줄여주세요.");
+            console.error("Firebase Error:", err);
+            showSaveStatus("⚠️ 용량 초과", true);
+            showToast("⚠️ 사진 용량이 큽니다. 사진을 삭제 후 다시 등록해주세요.");
         });
     } catch(err) {
-        console.error("Firebase SetDoc Sync Error:", err);
+        console.error("Firebase Error:", err);
         showSaveStatus("⚠️ 저장 실패", true);
-        showToast("⚠️ 저장 실패: 사진 용량이 너무 큽니다.");
     }
 }
 
@@ -475,11 +461,8 @@ function showSaveStatus(msg, isSyncing = false) {
     const saveStatus = document.getElementById('saveStatus');
     if (saveStatus) {
         saveStatus.textContent = msg;
-        if (isSyncing) {
-            saveStatus.classList.add('syncing');
-        } else {
-            saveStatus.classList.remove('syncing');
-        }
+        if (isSyncing) saveStatus.classList.add('syncing');
+        else saveStatus.classList.remove('syncing');
         saveStatus.style.opacity = '1';
     }
 }
@@ -509,12 +492,10 @@ const GOLF_COORDS = [
 async function smartWeatherFetch(scheduleStr) {
     const wText = document.getElementById('weatherText');
     if (!wText) return;
-    
     if (!scheduleStr) {
         wText.innerHTML = "일정과 골프장을 입력해주세요";
         return;
     }
-
     wText.innerHTML = "조회 중... ⏳";
 
     let targetDate = null;
@@ -531,10 +512,7 @@ async function smartWeatherFetch(scheduleStr) {
     let lat = 35.1595, lon = 126.8526, locName = "광주(기본)";
     for (const item of GOLF_COORDS) {
         if (item.keys.some(k => scheduleStr.includes(k))) {
-            lat = item.lat;
-            lon = item.lon;
-            locName = item.name;
-            break;
+            lat = item.lat; lon = item.lon; locName = item.name; break;
         }
     }
 
@@ -544,12 +522,9 @@ async function smartWeatherFetch(scheduleStr) {
 
         let dayIdx = 0; 
         let dateLabel = "오늘 예보";
-        
         if (targetDate && weatherData.daily.time.includes(targetDate)) {
             dayIdx = weatherData.daily.time.indexOf(targetDate);
             dateLabel = `${shortDate} 예보`;
-        } else if (targetDate) {
-            dateLabel = "오늘 예보 (기간초과)";
         }
 
         const wCode = weatherData.daily.weathercode[dayIdx];
@@ -558,15 +533,13 @@ async function smartWeatherFetch(scheduleStr) {
         const rainProb = weatherData.daily.precipitation_probability_max[dayIdx];
 
         let wEmoji = "🌤️";
-        if (wCode <= 0) { wEmoji = "☀️"; }
-        else if (wCode <= 3) { wEmoji = "⛅"; }
-        else if (wCode <= 48) { wEmoji = "🌫️"; }
-        else if (wCode <= 67 || (wCode >= 80 && wCode <= 82)) { wEmoji = "🌧️"; }
-        else if (wCode <= 77 || wCode === 85 || wCode === 86) { wEmoji = "❄️"; }
-        else if (wCode >= 95) { wEmoji = "⚡"; }
+        if (wCode <= 0) wEmoji = "☀️";
+        else if (wCode <= 3) wEmoji = "⛅";
+        else if (wCode <= 48) wEmoji = "🌫️";
+        else if (wCode <= 67 || (wCode >= 80 && wCode <= 82)) wEmoji = "🌧️";
+        else if (wCode >= 95) wEmoji = "⚡";
 
         wText.innerHTML = `<span style="color:#fef08a;">${locName} (${dateLabel})</span> &nbsp;${wEmoji} ${tMin}°/${tMax}° &nbsp;☔${rainProb}%`;
-
     } catch(err) {
         wText.innerHTML = "날씨 정보 연동 실패 ⚠️";
     }
@@ -576,15 +549,12 @@ function renderNoticeArea() {
     const dateInput = document.getElementById('nextRoundInput');
     const fundInput = document.getElementById('clubFundInput');
 
-    if (dateInput && document.activeElement !== dateInput) {
-        dateInput.value = appData.nextRoundDate || "";
-    }
+    if (dateInput && document.activeElement !== dateInput) dateInput.value = appData.nextRoundDate || "";
     if (fundInput && document.activeElement !== fundInput) {
         const fundVal = appData.clubFund || 0;
         fundInput.value = fundVal === 0 ? "" : fundVal.toLocaleString('ko-KR');
     }
     updateLockUI();
-    
     smartWeatherFetch(appData.nextRoundDate);
 }
 
@@ -596,9 +566,7 @@ window.updateNoticeData = function() {
 
     appData.nextRoundDate = dateInput ? dateInput.value : "";
     appData.clubFund = parseNumber(fundInput ? fundInput.value : 0);
-
     syncToFirebase(appData);
-    
     smartWeatherFetch(appData.nextRoundDate);
 }
 
@@ -626,7 +594,6 @@ function renderMoneyTable() {
     selectBox.innerHTML = selectHtml;
 
     const currentRoundIdx = selectedMoneyRoundIdx;
-
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[currentRoundIdx]) {
         appData.roundMoney[currentRoundIdx] = {};
@@ -684,13 +651,10 @@ function renderTable() {
     let headerHtml = `<th>이름</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
         const courseVal = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
-        
         const photosArr = getPhotosArray(r);
         const hasPhoto = photosArr.length > 0;
         const photoBtnClass = hasPhoto ? "photo-btn has-photo" : "photo-btn";
-        
         const photoBtnText = hasPhoto ? `📷 ${photosArr.length}장` : "📷 등록";
-
         const clickAction = hasPhoto ? `openPhotoModal(${r})` : `triggerPhotoUpload(${r})`;
 
         headerHtml += `
@@ -767,17 +731,15 @@ window.addRound = function() {
     
     setTimeout(() => {
         const tableWrapper = document.querySelector('.table-wrapper');
-        if (tableWrapper) {
-            tableWrapper.scrollTo({ left: tableWrapper.scrollWidth, behavior: 'smooth' });
-        }
+        if (tableWrapper) tableWrapper.scrollTo({ left: tableWrapper.scrollWidth, behavior: 'smooth' });
     }, 100);
 
-    showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
+    showToast(`➕ ${appData.totalRounds}차전 추가`);
 }
 
 window.removeRound = function() {
     if (appData.totalRounds <= 2) {
-        showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
+        showToast("⚠️ 최소 2개 라운드 유지");
         return;
     }
     showSaveStatus("⏳ 저장 중...", true);
@@ -790,50 +752,30 @@ window.removeRound = function() {
         if (appData.scores[name]) appData.scores[name].pop();
     });
 
-    if (appData.roundMoney && appData.roundMoney.length > 0) {
-        appData.roundMoney.pop();
-    }
-
-    if (selectedMoneyRoundIdx >= appData.totalRounds) {
-        selectedMoneyRoundIdx = appData.totalRounds - 1;
-    }
+    if (appData.roundMoney && appData.roundMoney.length > 0) appData.roundMoney.pop();
+    if (selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
 
     syncToFirebase(appData);
     renderAll(); 
-    
-    setTimeout(() => {
-        const tableWrapper = document.querySelector('.table-wrapper');
-        if (tableWrapper) {
-            tableWrapper.scrollTo({ left: tableWrapper.scrollWidth, behavior: 'smooth' });
-        }
-    }, 100);
-
-    showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
+    showToast(`➖ 차전 삭제`);
 }
 
 function calculateAndRender() {
     let targetR1 = -1, targetR2 = -1;
     for (let r = appData.totalRounds - 1; r >= 1; r--) {
-        let completeCurr = true;
-        let completePrev = true;
+        let completeCurr = true, completePrev = true;
         golfers.forEach(g => {
             const sCurr = appData.scores[g] ? appData.scores[g][r] : "";
             const sPrev = appData.scores[g] ? appData.scores[g][r - 1] : "";
             if (sCurr === "" || sCurr === undefined || isNaN(parseFloat(sCurr))) completeCurr = false;
             if (sPrev === "" || sPrev === undefined || isNaN(parseFloat(sPrev))) completePrev = false;
         });
-
         if (completeCurr && completePrev) {
-            targetR1 = r - 1;
-            targetR2 = r;
-            break;
+            targetR1 = r - 1; targetR2 = r; break;
         }
     }
 
-    if (targetR1 === -1) {
-        targetR1 = 0;
-        targetR2 = 1;
-    }
+    if (targetR1 === -1) { targetR1 = 0; targetR2 = 1; }
 
     const infoText = document.getElementById('infoText');
     const matchCardTitle = document.getElementById('matchCardTitle');
@@ -851,7 +793,6 @@ function calculateAndRender() {
         const name = row.getAttribute('data-name');
         const s1 = parseFloat(appData.scores[name] ? appData.scores[name][targetR1] : NaN);
         const s2 = parseFloat(appData.scores[name] ? appData.scores[name][targetR2] : NaN);
-
         const avgCell = row.querySelector('.avg-cell');
         if (!isNaN(s1) && !isNaN(s2)) {
             const avg = Math.floor((s1 + s2) / 2);
@@ -875,7 +816,6 @@ function processAllRoundSettlements() {
         totalRankProfit[g] = 0;
         roundRankProfit[g] = {};
         golferRankHistory[g] = [];
-        
         globalHeadToHead[g] = {};
         golfers.forEach(g2 => {
             if (g !== g2) globalHeadToHead[g][g2] = { wins: 0, ties: 0, losses: 0, total: 0 };
@@ -884,7 +824,6 @@ function processAllRoundSettlements() {
 
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
-
     document.querySelectorAll('.rank-cell').forEach(rc => rc.textContent = '-');
 
     for (let r = 2; r < totalRounds; r++) {
@@ -912,60 +851,36 @@ function processAllRoundSettlements() {
 
         for (let i = 0; i < golfers.length; i++) {
             for (let j = i + 1; j < golfers.length; j++) {
-                const g1 = golfers[i];
-                const g2 = golfers[j];
-
-                const g1Avg = handicapAvg[g1];
-                const g2Avg = handicapAvg[g2];
-                const g1Score = currentScores[g1];
-                const g2Score = currentScores[g2];
+                const g1 = golfers[i], g2 = golfers[j];
+                const g1Avg = handicapAvg[g1], g2Avg = handicapAvg[g2];
+                const g1Score = currentScores[g1], g2Score = currentScores[g2];
 
                 const g1Adjusted = g1Score - (g1Avg - g2Avg);
                 const g2Adjusted = g2Score;
 
                 if (g1Adjusted < g2Adjusted) {
-                    matchResults[g1].wins++;
-                    matchResults[g2].losses++;
+                    matchResults[g1].wins++; matchResults[g2].losses++;
                     matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
                     matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
-                    matchResults[g1].headToHead[g2] = 1;
-                    matchResults[g2].headToHead[g1] = -1;
-                    
+                    matchResults[g1].headToHead[g2] = 1; matchResults[g2].headToHead[g1] = -1;
                     globalHeadToHead[g1][g2].wins++; globalHeadToHead[g2][g1].losses++;
                 } else if (g1Adjusted > g2Adjusted) {
-                    matchResults[g1].losses++;
-                    matchResults[g2].wins++;
+                    matchResults[g1].losses++; matchResults[g2].wins++;
                     matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
                     matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
-                    matchResults[g1].headToHead[g2] = -1;
-                    matchResults[g2].headToHead[g1] = 1;
-                    
+                    matchResults[g1].headToHead[g2] = -1; matchResults[g2].headToHead[g1] = 1;
                     globalHeadToHead[g1][g2].losses++; globalHeadToHead[g2][g1].wins++;
                 } else {
                     if (g1Avg < g2Avg) {
-                        matchResults[g1].wins++;
-                        matchResults[g2].losses++;
-                        matchResults[g1].totalDiff += 0.5;
-                        matchResults[g2].totalDiff -= 0.5;
-                        matchResults[g1].headToHead[g2] = 1;
-                        matchResults[g2].headToHead[g1] = -1;
-                        
+                        matchResults[g1].wins++; matchResults[g2].losses++;
+                        matchResults[g1].totalDiff += 0.5; matchResults[g2].totalDiff -= 0.5;
                         globalHeadToHead[g1][g2].wins++; globalHeadToHead[g2][g1].losses++;
                     } else if (g2Avg < g1Avg) {
-                        matchResults[g2].wins++;
-                        matchResults[g1].losses++;
-                        matchResults[g2].totalDiff += 0.5;
-                        matchResults[g1].totalDiff -= 0.5;
-                        matchResults[g2].headToHead[g1] = 1;
-                        matchResults[g1].headToHead[g2] = -1;
-                        
+                        matchResults[g2].wins++; matchResults[g1].losses++;
+                        matchResults[g2].totalDiff += 0.5; matchResults[g1].totalDiff -= 0.5;
                         globalHeadToHead[g2][g1].wins++; globalHeadToHead[g1][g2].losses++;
                     } else {
-                        matchResults[g1].ties++;
-                        matchResults[g2].ties++;
-                        matchResults[g1].headToHead[g2] = 0;
-                        matchResults[g2].headToHead[g1] = 0;
-                        
+                        matchResults[g1].ties++; matchResults[g2].ties++;
                         globalHeadToHead[g1][g2].ties++; globalHeadToHead[g2][g1].ties++;
                     }
                 }
@@ -974,12 +889,7 @@ function processAllRoundSettlements() {
         }
 
         const sortedGolfers = [...golfers].sort((a, b) => {
-            if (matchResults[b].wins !== matchResults[a].wins) {
-                return matchResults[b].wins - matchResults[a].wins;
-            }
-            if (matchResults[a].headToHead[b] !== undefined && matchResults[a].headToHead[b] !== 0) {
-                return matchResults[b].headToHead[a] - matchResults[a].headToHead[b];
-            }
+            if (matchResults[b].wins !== matchResults[a].wins) return matchResults[b].wins - matchResults[a].wins;
             return matchResults[b].totalDiff - matchResults[a].totalDiff;
         });
 
@@ -992,13 +902,11 @@ function processAllRoundSettlements() {
         sortedGolfers.forEach((golferName, index) => {
             const rankInfo = RANK_CONFIG[index];
             const profit = rankInfo.penalty;
-            
             totalRankProfit[golferName] += profit;
             roundRankProfit[golferName][r] = profit;
             golferRankHistory[golferName].push(index);
 
             const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
-
             roundHistoryHtml += `
                 <div class="history-member">
                     <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
@@ -1012,9 +920,7 @@ function processAllRoundSettlements() {
             const row = document.querySelector(`tr[data-name="${golferName}"]`);
             if (row) {
                 const rc = row.querySelector('.rank-cell');
-                if (rc) {
-                    rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>`;
-                }
+                if (rc) rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>`;
             }
         });
 
@@ -1024,10 +930,8 @@ function processAllRoundSettlements() {
 
     cachedRoundRankProfit = roundRankProfit;
 
-    let overallMinScore = Infinity;
-    let overallMinAvg = Infinity;
-    const golferMinScores = {};
-    const golferAvgScores = {};
+    let overallMinScore = Infinity, overallMinAvg = Infinity;
+    const golferMinScores = {}, golferAvgScores = {};
 
     golfers.forEach(g => {
         const validScores = (appData.scores && appData.scores[g]) 
@@ -1044,8 +948,7 @@ function processAllRoundSettlements() {
             golferAvgScores[g] = userAvg;
             if (userAvg < overallMinAvg) overallMinAvg = userAvg;
         } else {
-            golferMinScores[g] = null;
-            golferAvgScores[g] = null;
+            golferMinScores[g] = null; golferAvgScores[g] = null;
         }
     });
 
@@ -1113,47 +1016,6 @@ function processAllRoundSettlements() {
             `;
         });
     }
-
-    let celebrationMessages = [];
-    golfers.forEach(g => {
-        if (golferMinScores[g] !== null && prevGolferMinScores[g] !== undefined && prevGolferMinScores[g] !== null) {
-            if (golferMinScores[g] < prevGolferMinScores[g]) {
-                celebrationMessages.push(`🎉 <b>${g}</b>님 최저타수 갱신! (${golferMinScores[g]}타)`);
-            }
-        }
-        prevGolferMinScores[g] = golferMinScores[g];
-        
-        const ranks = golferRankHistory[g] || [];
-        let hasEagle3 = false;
-        if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
-            hasEagle3 = true;
-        }
-        if (hasEagle3 && !prevGolferEagleStreaks[g]) {
-            celebrationMessages.push(`🦅 <b>${g}</b>님 독수리 3연속 뱃지 획득!`);
-        }
-        prevGolferEagleStreaks[g] = hasEagle3;
-    });
-
-    if (celebrationMessages.length > 0 && !isInitialLoad) {
-        confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.5 },
-            colors: ['#b8860b', '#1e293b', '#fef08a', '#16a34a', '#ea580c'],
-            zIndex: 9999
-        });
-
-        const overlay = document.getElementById('celebrationOverlay');
-        const textDiv = document.getElementById('celebrationText');
-        if (overlay && textDiv) {
-            textDiv.innerHTML = celebrationMessages.join("<br><br>");
-            overlay.classList.add('active');
-            
-            setTimeout(() => {
-                overlay.classList.remove('active');
-            }, 4000);
-        }
-    }
 }
 
 function renderHandicapMatchCard(r1, r2) {
@@ -1165,9 +1027,7 @@ function renderHandicapMatchCard(r1, r2) {
     golfers.forEach(g => {
         const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
         const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
-        if (!isNaN(s1) && !isNaN(s2)) {
-            avgScores[g] = Math.floor((s1 + s2) / 2);
-        }
+        if (!isNaN(s1) && !isNaN(s2)) avgScores[g] = Math.floor((s1 + s2) / 2);
     });
 
     if (Object.keys(avgScores).length < 4) {
@@ -1177,18 +1037,12 @@ function renderHandicapMatchCard(r1, r2) {
 
     for (let i = 0; i < golfers.length; i++) {
         for (let j = i + 1; j < golfers.length; j++) {
-            const g1 = golfers[i];
-            const g2 = golfers[j];
+            const g1 = golfers[i], g2 = golfers[j];
             const diff = avgScores[g1] - avgScores[g2];
-
             let matchText = "";
-            if (diff > 0) {
-                matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold);">${diff}타</b> 받음`;
-            } else if (diff < 0) {
-                matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold);">${Math.abs(diff)}타</b> 받음`;
-            } else {
-                matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
-            }
+            if (diff > 0) matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold);">${diff}타</b> 받음`;
+            else if (diff < 0) matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold);">${Math.abs(diff)}타</b> 받음`;
+            else matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
 
             const item = document.createElement('div');
             item.className = 'match-item';
@@ -1210,14 +1064,14 @@ window.closeHistoryModal = function(e) {
 }
 
 window.resetAllData = function() {
-    if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
+    if (confirm("정말로 모든 데이터를 초기화하시겠습니까?")) {
         showSaveStatus("⏳ 초기화 중...", true);
         saveState();
         appData = getDefaultData();
         selectedMoneyRoundIdx = appData.totalRounds - 1;
         syncToFirebase(appData);
         renderAll();
-        showToast("🔄 모든 데이터가 초기화되었습니다.");
+        showToast("🔄 초기화 완료");
     }
 }
 
@@ -1227,11 +1081,7 @@ window.openPersonalReport = function(golferName) {
     const content = document.getElementById('reportContent');
 
     title.textContent = `⛳ ${golferName} 님의 리포트`;
-
-    const scores = appData.scores[golferName] 
-        ? appData.scores[golferName].filter(s => s !== "" && !isNaN(parseFloat(s))).map(Number) 
-        : [];
-    
+    const scores = appData.scores[golferName] ? appData.scores[golferName].filter(s => s !== "" && !isNaN(parseFloat(s))).map(Number) : [];
     const max = scores.length > 0 ? Math.max(...scores) : '-';
     const min = scores.length > 0 ? Math.min(...scores) : '-';
     const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
@@ -1258,9 +1108,8 @@ window.openPersonalReport = function(golferName) {
         }
     });
 
-    const golferValid = scores;
-    const userMin = golferValid.length > 0 ? Math.min(...golferValid) : Infinity;
-    const userAvg = golferValid.length > 0 ? golferValid.reduce((a,b)=>a+b,0)/golferValid.length : Infinity;
+    const userMin = scores.length > 0 ? Math.min(...scores) : Infinity;
+    const userAvg = scores.length > 0 ? scores.reduce((a,b)=>a+b,0)/scores.length : Infinity;
 
     if (userAvg !== Infinity && userAvg === overallMinAvg) {
         allBadgesHtml += `<span class="season-badge badge-avg-1">🏆 평균타수 1위</span>`; badgeCount++;
@@ -1269,57 +1118,33 @@ window.openPersonalReport = function(golferName) {
         allBadgesHtml += `<span class="season-badge badge-best-score">🎯 최저타 ${userMin}타</span>`; badgeCount++;
     }
 
-    const stats = appData.scoreStats && appData.scoreStats[golferName] ? appData.scoreStats[golferName] : { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0 };
+    const stats = appData.scoreStats && appData.scoreStats[golferName] ? appData.scoreStats[golferName] : { eagle: 0, birdie: 0, par: 0, doublePlus: 0 };
     if (stats.birdie >= 3) {
         allBadgesHtml += `<span class="season-badge badge-birdie-bomb">🔥 버디 폭격기</span>`; badgeCount++;
     }
 
-    if (badgeCount === 0) {
-        allBadgesHtml += `<span style="font-size:0.75rem; color:#64748b;">아직 획득한 뱃지가 없습니다. 분발하세요!</span>`;
-    }
+    if (badgeCount === 0) allBadgesHtml += `<span style="font-size:0.75rem; color:#64748b;">아직 획득한 뱃지가 없습니다.</span>`;
     allBadgesHtml += `</div>`;
 
     let h2hHtml = `<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">`;
     golfers.forEach(opponent => {
         if (opponent === golferName) return;
         const statsH2H = globalHeadToHead[golferName][opponent];
-        
         if (statsH2H && statsH2H.total > 0) {
             const winRate = Math.round((statsH2H.wins / statsH2H.total) * 100);
-            h2hHtml += `
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
-                <span>vs <b>${opponent}</b></span>
-                <div style="text-align:right;">
-                    <span style="color:#1e293b; font-weight:800; margin-right:4px;">승률 ${winRate}%</span>
-                    <span style="font-size:0.65rem; color:#64748b;">(${statsH2H.total}전 ${statsH2H.wins}승 ${statsH2H.ties}무 ${statsH2H.losses}패)</span>
-                </div>
-            </div>`;
+            h2hHtml += `<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; border-bottom:1px solid #e2e8f0; padding-bottom:6px;"><span>vs <b>${opponent}</b></span><div style="text-align:right;"><span style="color:#1e293b; font-weight:800; margin-right:4px;">승률 ${winRate}%</span><span style="font-size:0.65rem; color:#64748b;">(${statsH2H.total}전 ${statsH2H.wins}승 ${statsH2H.ties}무 ${statsH2H.losses}패)</span></div></div>`;
         } else {
-            h2hHtml += `
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; border-bottom:1px solid #e2e8f0; padding-bottom:6px; color:#94a3b8;">
-                <span>vs <b>${opponent}</b></span>
-                <span>전적 없음</span>
-            </div>`;
+            h2hHtml += `<div style="display:flex; justify-content:space-between; font-size:0.8rem; border-bottom:1px solid #e2e8f0; padding-bottom:6px; color:#94a3b8;"><span>vs <b>${opponent}</b></span><span>전적 없음</span></div>`;
         }
     });
     h2hHtml += `</div>`;
 
     content.innerHTML = `
         <div class="report-stat-grid" style="grid-template-columns: repeat(3, 1fr); gap:6px;">
-            <div class="report-stat-box" style="padding:10px 4px;">
-                <div class="title" style="margin-bottom:4px;">최고(Worst)</div>
-                <div class="value" style="color: #64748b; font-size:1.1rem;">${max}</div>
-            </div>
-            <div class="report-stat-box" style="padding:10px 4px;">
-                <div class="title" style="margin-bottom:4px;">평균타수</div>
-                <div class="value" style="color: #1e293b; font-size:1.1rem;">${avg}</div>
-            </div>
-            <div class="report-stat-box" style="padding:10px 4px;">
-                <div class="title" style="margin-bottom:4px;">최저(Best)</div>
-                <div class="value" style="color: #ea580c; font-size:1.1rem;">${min}</div>
-            </div>
+            <div class="report-stat-box" style="padding:10px 4px;"><div class="title" style="margin-bottom:4px;">최고(Worst)</div><div class="value" style="color: #64748b; font-size:1.1rem;">${max}</div></div>
+            <div class="report-stat-box" style="padding:10px 4px;"><div class="title" style="margin-bottom:4px;">평균타수</div><div class="value" style="color: #1e293b; font-size:1.1rem;">${avg}</div></div>
+            <div class="report-stat-box" style="padding:10px 4px;"><div class="title" style="margin-bottom:4px;">최저(Best)</div><div class="value" style="color: #ea580c; font-size:1.1rem;">${min}</div></div>
         </div>
-
         <div class="memo-section" style="margin-bottom: 12px; background: #f8fafc; border: 1px solid #cbd5e1;">
             <strong style="display:block; margin-bottom:6px; font-size:0.82rem; color:#0f172a;">🎖️ 획득한 뱃지 리스트</strong>
             ${allBadgesHtml}
@@ -1331,7 +1156,6 @@ window.openPersonalReport = function(golferName) {
                 <div>⚠️ 양파+<br><b style="font-size:0.95rem; color:#dc2626;">${stats.doublePlus || 0}개</b></div>
             </div>
         </div>
-        
         <div class="memo-section" style="margin-bottom: 12px; background: #f8fafc; border: 1px solid #cbd5e1;">
             <strong style="display:block; margin-bottom:8px; font-size:0.85rem; color:#0f172a;">🏆 계급 획득 횟수</strong>
             <div style="display:flex; justify-content:space-around; text-align:center; font-size:0.75rem; color:#475569;">
@@ -1341,13 +1165,11 @@ window.openPersonalReport = function(golferName) {
                 <div>🐦 참새<br><b style="font-size:1rem; color:#475569;">${rankCounts[3]}</b></div>
             </div>
         </div>
-
         <div class="memo-section">
-            <strong style="display:block; margin-bottom:8px; font-size:0.85rem; color:#0f172a;">⚔️ 개인별 상대 전적 (핸디캡 승패 기준)</strong>
+            <strong style="display:block; margin-bottom:8px; font-size:0.85rem; color:#0f172a;">⚔️ 개인별 상대 전적</strong>
             ${h2hHtml}
         </div>
     `;
-    
     modal.classList.add('active');
 };
 
