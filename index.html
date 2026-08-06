@@ -404,45 +404,74 @@
             margin-bottom: 10px;
             background: var(--card-bg);
             width: 100%;
-            scroll-behavior: smooth; /* 부드러운 스크롤 */
+            scroll-behavior: smooth;
         }
 
-        table { width: 100%; border-collapse: collapse; text-align: center; }
-        th, td { padding: 6px 2px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
+        /* 🚀 차수 간격 좁히기 핵심 수정 내용 */
+        #scoreTable { 
+            width: max-content; /* 표가 화면에 꽉 차지 않고 내용물만큼만 너비 차지 */
+            margin: 0 auto;     /* 가운데 정렬 */
+            border-collapse: collapse; 
+            text-align: center; 
+        }
+        
+        #scoreTable th, #scoreTable td { 
+            padding: 4px 1px; /* 좌우 여백을 1px로 확 줄임 */
+            border-bottom: 1px solid #f1f5f9; 
+            vertical-align: middle; 
+        }
+        
+        #scoreTable th { 
+            background-color: #f8fafc; 
+            color: var(--text-sub); 
+            font-weight: 700; 
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
+        }
 
-        table th:first-child, table td:first-child, .golfer-name { 
+        #scoreTable th:first-child, #scoreTable td:first-child, .golfer-name { 
             white-space: nowrap !important;
             word-break: keep-all !important;
-            min-width: 52px !important;
+            min-width: 46px !important; /* 이름칸 너비 살짝 축소 */
             font-weight: 800; 
             font-size: clamp(0.72rem, 2.8vw, 0.8rem);
             position: sticky; left: 0; 
             background-color: #f1f5f9 !important; 
             z-index: 2; 
-            padding-left: 4px !important; padding-right: 4px !important;
+            padding-left: 2px !important; padding-right: 2px !important;
         }
 
-        .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; margin-bottom: 4px; }
+        .header-round-title { 
+            font-size: clamp(0.68rem, 2.5vw, 0.78rem); 
+            color: var(--primary-gold); 
+            font-weight: 900; 
+            white-space: nowrap; 
+            margin-bottom: 2px; 
+        }
 
         input.score-input {
-            width: 34px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px;
-            text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg);
+            width: 32px; /* 타수 입력칸 다이어트 */
+            height: 26px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px;
+            text-align: center; 
+            font-size: clamp(0.75rem, 2.8vw, 0.85rem); 
+            font-weight: 800; 
+            background-color: var(--input-bg);
         }
 
         .th-controls {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 2px; /* 위아래 간격 축소 */
         }
 
         input.course-input, .photo-btn {
-            width: 72px !important;
-            height: 24px !important;
+            width: 54px !important; /* 기존 72px에서 54px로 대폭 다이어트 */
+            height: 22px !important;
             box-sizing: border-box;
             border-radius: 4px;
-            font-size: clamp(0.5rem, 1.8vw, 0.58rem) !important;
+            font-size: clamp(0.48rem, 1.8vw, 0.55rem) !important;
             font-weight: 800 !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -475,7 +504,7 @@
 
         .rank-badge {
             display: inline-flex; align-items: center; justify-content: center; gap: 2px;
-            padding: 2px 6px; border-radius: 6px; font-weight: 900; font-size: clamp(0.65rem, 2.4vw, 0.75rem); white-space: nowrap;
+            padding: 2px 4px; border-radius: 6px; font-weight: 900; font-size: clamp(0.65rem, 2.4vw, 0.75rem); white-space: nowrap;
         }
         .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
         .rank-hawk { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; border: 1px solid #0ea5e9; }
@@ -780,7 +809,7 @@
     let historyStack = [];
     let selectedMoneyRoundIdx = -1;
     let viewingPhotoRoundIdx = -1;
-    let currentPhotoIndex = 0; // 현재 모달에서 보고 있는 사진의 인덱스
+    let currentPhotoIndex = 0; 
     let cachedRoundRankProfit = {}; 
     let golferRankHistory = {};
     let isLoaded = false;
@@ -799,7 +828,6 @@
         return [];
     }
 
-    // 파일 용량 초과 방지를 위해 강력한 압축 적용 (500x500, quality 0.5)
     function compressImage(file, maxWidth = 500, maxHeight = 500, quality = 0.5) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -888,11 +916,10 @@
             appData.photos[viewingPhotoRoundIdx] = currentPhotos;
             
             syncToFirebase(appData);
-            renderTable(); // 업로드 즉시 화면 반영
+            renderTable(); 
             
             const modal = document.getElementById('photoModal');
             if (modal && modal.classList.contains('active')) {
-                // 추가된 사진 중 제일 마지막 사진으로 모달 이동
                 openPhotoModal(viewingPhotoRoundIdx, currentPhotos.length - 1);
             }
             
@@ -908,14 +935,12 @@
         inputElem.value = "";
     }
 
-    // 스와이프할 때마다 현재 인덱스를 추적하는 함수
     function updatePhotoIndex() {
         const container = document.getElementById('modalPreviewContainer');
         if (!container) return;
         const scrollLeft = container.scrollLeft;
         const width = container.clientWidth;
         
-        // 현재 화면의 스크롤 위치를 바탕으로 인덱스 계산
         currentPhotoIndex = Math.round(scrollLeft / width);
         
         const indicator = document.getElementById('photoPageIndicator');
@@ -930,7 +955,7 @@
         const photosArr = getPhotosArray(roundIdx);
         if (photosArr.length === 0) return;
 
-        currentPhotoIndex = startIdx; // 시작 인덱스 설정
+        currentPhotoIndex = startIdx; 
 
         const modal = document.getElementById('photoModal');
         const container = document.getElementById('modalPreviewContainer');
@@ -945,11 +970,9 @@
                 </div>
             `).join('');
             
-            // 모달이 열린 후 스크롤 위치를 지정한 인덱스로 맞추기
             setTimeout(() => {
                 container.scrollLeft = container.clientWidth * startIdx;
-                updatePhotoIndex(); // 숫자 즉시 갱신
-                // 스크롤 이벤트 리스너 등록
+                updatePhotoIndex(); 
                 container.addEventListener('scroll', updatePhotoIndex);
             }, 50);
         }
@@ -962,12 +985,11 @@
         if (modal) modal.classList.remove('active');
         
         const container = document.getElementById('modalPreviewContainer');
-        if (container) container.removeEventListener('scroll', updatePhotoIndex); // 리스너 해제
+        if (container) container.removeEventListener('scroll', updatePhotoIndex); 
         
         viewingPhotoRoundIdx = -1;
     }
 
-    // 변경된 개별 삭제 기능
     function deleteCurrentlyViewedPhoto() {
         if (viewingPhotoRoundIdx < 0) return;
         const photosArr = getPhotosArray(viewingPhotoRoundIdx);
@@ -977,7 +999,6 @@
         if (confirm(`현재 보고 있는 사진을 삭제하시겠습니까?`)) {
             saveState();
             
-            // 현재 보고있는 인덱스의 사진 1장만 삭제
             photosArr.splice(currentPhotoIndex, 1);
             
             if (!appData.photos) appData.photos = [];
@@ -990,10 +1011,9 @@
                 closePhotoModal();
                 showToast("🗑️ 모든 사진이 삭제되었습니다.");
             } else {
-                // 삭제 후 이전 사진이나 다음 사진 위치로 모달 갱신
                 let nextIdx = currentPhotoIndex;
                 if (nextIdx >= photosArr.length) {
-                    nextIdx = photosArr.length - 1; // 마지막 사진을 지웠다면 그 앞 사진으로
+                    nextIdx = photosArr.length - 1; 
                 }
                 openPhotoModal(viewingPhotoRoundIdx, nextIdx);
                 showToast("🗑️ 해당 사진이 삭제되었습니다.");
@@ -1268,7 +1288,9 @@
             const photosArr = getPhotosArray(r);
             const hasPhoto = photosArr.length > 0;
             const photoBtnClass = hasPhoto ? "photo-btn has-photo" : "photo-btn";
-            const photoBtnText = hasPhoto ? `📷 완료(${photosArr.length})` : "📷 사진등록";
+            
+            // 🚀 글자를 줄여서 공간 확보
+            const photoBtnText = hasPhoto ? `📷 ${photosArr.length}장` : "📷 등록";
 
             const clickAction = hasPhoto ? `openPhotoModal(${r})` : `triggerPhotoUpload(${r})`;
 
@@ -1282,7 +1304,7 @@
                 </th>`;
         }
 
-        headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th><th style="white-space:nowrap;">최종 계급</th>`;
+        headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap; padding: 4px 4px;">- 평균</th><th style="white-space:nowrap; padding: 4px 4px;">최종 계급</th>`;
         headerRow.innerHTML = headerHtml;
 
         tbody.innerHTML = "";
@@ -1339,9 +1361,8 @@
         selectedMoneyRoundIdx = appData.totalRounds - 1;
 
         syncToFirebase(appData);
-        renderAll(); // 버튼 클릭 시 화면 즉시 반영
+        renderAll(); 
         
-        // 새로 추가된 차수(오른쪽 끝)로 표 자동 스크롤 애니메이션
         setTimeout(() => {
             const tableWrapper = document.querySelector('.table-wrapper');
             if (tableWrapper) {
@@ -1377,7 +1398,6 @@
         syncToFirebase(appData);
         renderAll(); 
         
-        // 삭제 후 표 오른쪽 끝으로 다시 스크롤
         setTimeout(() => {
             const tableWrapper = document.querySelector('.table-wrapper');
             if (tableWrapper) {
