@@ -407,16 +407,15 @@
             scroll-behavior: smooth;
         }
 
-        /* 🚀 차수 간격 좁히기 핵심 수정 내용 */
         #scoreTable { 
-            width: max-content; /* 표가 화면에 꽉 차지 않고 내용물만큼만 너비 차지 */
-            margin: 0 auto;     /* 가운데 정렬 */
+            width: max-content; 
+            margin: 0 auto;     
             border-collapse: collapse; 
             text-align: center; 
         }
         
         #scoreTable th, #scoreTable td { 
-            padding: 4px 1px; /* 좌우 여백을 1px로 확 줄임 */
+            padding: 4px 2px; 
             border-bottom: 1px solid #f1f5f9; 
             vertical-align: middle; 
         }
@@ -431,13 +430,13 @@
         #scoreTable th:first-child, #scoreTable td:first-child, .golfer-name { 
             white-space: nowrap !important;
             word-break: keep-all !important;
-            min-width: 46px !important; /* 이름칸 너비 살짝 축소 */
+            min-width: 48px !important; 
             font-weight: 800; 
             font-size: clamp(0.72rem, 2.8vw, 0.8rem);
             position: sticky; left: 0; 
             background-color: #f1f5f9 !important; 
             z-index: 2; 
-            padding-left: 2px !important; padding-right: 2px !important;
+            padding-left: 3px !important; padding-right: 3px !important;
         }
 
         .header-round-title { 
@@ -449,7 +448,7 @@
         }
 
         input.score-input {
-            width: 32px; /* 타수 입력칸 다이어트 */
+            width: 32px; 
             height: 26px; 
             border: 1px solid #cbd5e1; 
             border-radius: 6px;
@@ -463,15 +462,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px; /* 위아래 간격 축소 */
+            gap: 2px; 
         }
 
+        /* 🚀 골프장 입력 및 사진 등록 버튼 글씨 크기 키움 */
         input.course-input, .photo-btn {
-            width: 54px !important; /* 기존 72px에서 54px로 대폭 다이어트 */
-            height: 22px !important;
+            width: 58px !important; 
+            height: 23px !important;
             box-sizing: border-box;
             border-radius: 4px;
-            font-size: clamp(0.48rem, 1.8vw, 0.55rem) !important;
+            font-size: clamp(0.6rem, 2.1vw, 0.68rem) !important; /* 글씨 크기 상향 */
             font-weight: 800 !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -1289,7 +1289,6 @@
             const hasPhoto = photosArr.length > 0;
             const photoBtnClass = hasPhoto ? "photo-btn has-photo" : "photo-btn";
             
-            // 🚀 글자를 줄여서 공간 확보
             const photoBtnText = hasPhoto ? `📷 ${photosArr.length}장` : "📷 등록";
 
             const clickAction = hasPhoto ? `openPhotoModal(${r})` : `triggerPhotoUpload(${r})`;
