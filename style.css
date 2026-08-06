@@ -60,34 +60,8 @@ p.subtitle {
 .notice-card {
     background: linear-gradient(145deg, #1e293b, #0f172a);
     color: #ffffff;
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(212, 175, 55, 0.4);
-}
-
-.notice-card h2 {
-    font-size: clamp(0.82rem, 3.4vw, 0.92rem);
-    margin: 0 0 10px 0;
-    color: #fef08a;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.notice-grid {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 8px;
-}
-
-.notice-card {
-    background: linear-gradient(145deg, #1e293b, #0f172a);
-    color: #ffffff;
     border-radius: 12px;
-    padding: 8px 10px; /* 👈 패딩을 줄여서 높이를 슬림하게 압축 */
+    padding: 8px 10px;
     margin-bottom: 8px;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(212, 175, 55, 0.4);
@@ -95,7 +69,7 @@ p.subtitle {
 
 .notice-card h2 {
     font-size: clamp(0.78rem, 3vw, 0.88rem);
-    margin: 0 0 6px 0; /* 👈 하단 여백 축소 */
+    margin: 0 0 6px 0;
     color: #fef08a;
     font-weight: 800;
     display: flex;
@@ -106,14 +80,14 @@ p.subtitle {
 .notice-grid {
     display: grid;
     grid-template-columns: 1.6fr 1fr;
-    gap: 6px; /* 👈 간격 축소 */
+    gap: 6px;
 }
 
 .notice-box {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    padding: 6px 8px; /* 👈 내부 여백 축소 */
+    padding: 6px 8px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -126,7 +100,7 @@ p.subtitle {
     background: rgba(56, 189, 248, 0.15);
     border: 1px solid rgba(56, 189, 248, 0.3);
     border-radius: 8px;
-    padding: 6px 8px; /* 👈 날씨 박스 높이 축소 */
+    padding: 6px 8px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -343,15 +317,24 @@ p.subtitle {
 
 .info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }
 
+/* 동기화 상태 표시 디자인 강화 */
 .save-status {
     font-size: clamp(0.6rem, 2.2vw, 0.68rem);
     color: #16a34a;
-    font-weight: 700;
-    background: rgba(22, 163, 74, 0.1);
-    padding: 2px 6px;
+    font-weight: 800;
+    background: rgba(22, 163, 74, 0.15);
+    border: 1px solid rgba(22, 163, 74, 0.3);
+    padding: 2px 8px;
     border-radius: 10px;
     white-space: nowrap;
     margin-left: auto;
+    transition: all 0.3s ease;
+}
+
+.save-status.syncing {
+    color: #d97706;
+    background: rgba(217, 119, 6, 0.15);
+    border-color: rgba(217, 119, 6, 0.3);
 }
 
 .btn-group {
