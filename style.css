@@ -228,131 +228,24 @@ p.subtitle {
 .badge-best-score { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
 .badge-birdie-bomb { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); color: #ffffff; border: 1px solid #db2777; }
 
-.money-card {
-    background: var(--card-bg);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 14px;
-    padding: 10px 8px;
-    margin-bottom: 10px;
-}
-
-.money-header-flex {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2px 4px 8px 4px;
-    width: 100%;
-}
-
-.money-card h3 {
-    margin: 0;
-    font-size: clamp(0.75rem, 3vw, 0.88rem);
-    color: var(--text-main);
-    font-weight: 800;
-    white-space: nowrap;
-}
-
-.round-select-badge {
-    background: var(--gold-light);
-    color: var(--primary-gold);
-    border: 1px solid var(--card-border);
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: clamp(0.65rem, 2.4vw, 0.75rem);
-    font-weight: 800;
-    outline: none;
-    cursor: pointer;
-}
-
-.money-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: clamp(0.68rem, 2.4vw, 0.75rem);
-    text-align: center;
-}
-
-.money-table th {
-    padding: 4px 0;
-    color: var(--text-sub);
-    font-weight: 700;
-    font-size: clamp(0.58rem, 2.1vw, 0.65rem);
-    border-bottom: 1px solid #f1f5f9;
-    white-space: nowrap;
-}
-
-.money-table td { padding: 4px 1px; }
-
-.money-input {
-    width: 95% !important;
-    max-width: 68px !important;
-    height: 26px !important;
-    background-color: var(--input-bg) !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 6px !important;
-    text-align: center !important;
-    font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important;
-    font-weight: 700 !important;
-}
-
-.money-result-badge {
-    display: inline-block;
-    padding: 2px 3px;
-    border-radius: 4px;
-    font-weight: 800;
-    font-size: clamp(0.6rem, 2.2vw, 0.68rem);
-    white-space: nowrap;
-}
-
-.info-card {
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
-    padding: 6px 10px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: clamp(0.65rem, 2.5vw, 0.75rem);
-    gap: 6px;
-}
-
-.info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }
-
-.save-status {
-    font-size: clamp(0.6rem, 2.2vw, 0.68rem);
-    color: #16a34a;
-    font-weight: 800;
-    background: rgba(22, 163, 74, 0.15);
-    border: 1px solid rgba(22, 163, 74, 0.3);
-    padding: 2px 8px;
-    border-radius: 10px;
-    white-space: nowrap;
-    margin-left: auto;
-    transition: all 0.3s ease;
-}
-
-.save-status.syncing {
-    color: #d97706;
-    background: rgba(217, 119, 6, 0.15);
-    border-color: rgba(217, 119, 6, 0.3);
-}
-
+/* 버튼들이 화면을 안 넘어가도록 크기 및 패딩 최적화 */
 .btn-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 4px;
     width: 100%;
+    gap: 2px;
 }
 
-.left-btns, .right-btns { display: flex; gap: 4px; }
+.left-btns, .right-btns { display: flex; gap: 2px; }
 
 .action-btn {
-    padding: 6px 8px;
+    padding: 5px 6px;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 800;
-    font-size: clamp(0.62rem, 2.3vw, 0.72rem);
+    font-size: clamp(0.56rem, 2.1vw, 0.68rem);
     cursor: pointer;
     white-space: nowrap;
     z-index: 5;
@@ -487,6 +380,81 @@ input.course-input {
 .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }
 .rank-sparrow { background: linear-gradient(135deg, #94a3b8 0%, #475569 100%); color: #ffffff; border: 1px solid #64748b; }
 
+.money-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 10px 8px;
+    margin-bottom: 10px;
+}
+
+.money-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 4px 8px 4px;
+    width: 100%;
+}
+
+.money-card h3 {
+    margin: 0;
+    font-size: clamp(0.75rem, 3vw, 0.88rem);
+    color: var(--text-main);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.round-select-badge {
+    background: var(--gold-light);
+    color: var(--primary-gold);
+    border: 1px solid var(--card-border);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: clamp(0.65rem, 2.4vw, 0.75rem);
+    font-weight: 800;
+    outline: none;
+    cursor: pointer;
+}
+
+.money-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(0.68rem, 2.4vw, 0.75rem);
+    text-align: center;
+}
+
+.money-table th {
+    padding: 4px 0;
+    color: var(--text-sub);
+    font-weight: 700;
+    font-size: clamp(0.58rem, 2.1vw, 0.65rem);
+    border-bottom: 1px solid #f1f5f9;
+    white-space: nowrap;
+}
+
+.money-table td { padding: 4px 1px; }
+
+.money-input {
+    width: 95% !important;
+    max-width: 68px !important;
+    height: 26px !important;
+    background-color: var(--input-bg) !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+    font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important;
+    font-weight: 700 !important;
+}
+
+.money-result-badge {
+    display: inline-block;
+    padding: 2px 3px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+    white-space: nowrap;
+}
+
 .match-card, .history-card {
     background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 12px; padding: 8px; margin-top: 8px;
@@ -602,3 +570,37 @@ input.course-input {
     margin: 0;
 }
 .celebration-text b { color: #fef08a; font-size: 1.15rem; font-weight: 900; }
+
+.info-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: clamp(0.65rem, 2.5vw, 0.75rem);
+    gap: 6px;
+}
+
+.info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }
+
+.save-status {
+    font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+    color: #16a34a;
+    font-weight: 800;
+    background: rgba(22, 163, 74, 0.15);
+    border: 1px solid rgba(22, 163, 74, 0.3);
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    margin-left: auto;
+    transition: all 0.3s ease;
+}
+
+.save-status.syncing {
+    color: #d97706;
+    background: rgba(217, 119, 6, 0.15);
+    border-color: rgba(217, 119, 6, 0.3);
+}
