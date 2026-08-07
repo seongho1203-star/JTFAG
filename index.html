@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JTFAG 골프 정산 시스템</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -21,7 +21,9 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const gameDocRef = doc(db, "matches", "current");
+        
+        /* 🔥 데이터베이스 꽉 막힌 통로를 버리고 새 통로(season2)로 완벽하게 이사합니다 🔥 */
+        const gameDocRef = doc(db, "matches", "season2");
 
         window.gameDocRef = gameDocRef;
         window.setDoc = setDoc;
@@ -34,7 +36,7 @@
         <!-- 상단 헤더 -->
         <div class="header-area">
             <h1>JTFAG</h1>
-            <p class="subtitle">REALTIME GOLF SYSTEM</p>
+            <p class="subtitle">JEON-NAM AMATEUR GOLF LEAGUE</p>
         </div>
 
         <!-- 상단 공지 카드 -->
@@ -63,11 +65,11 @@
 
         <!-- 통합 요약 카드 -->
         <div class="total-summary-card">
-            <h2>🏆 시즌 통합 요약</h2>
+            <h2>🏆 시즌 통합 요약 (이름 클릭시 개인리포트)</h2>
             <div class="summary-grid" id="summaryGrid"></div>
         </div>
 
-        <!-- 컨트롤 버튼 그룹 (크기 최적화) -->
+        <!-- 컨트롤 버튼 그룹 -->
         <div class="btn-group">
             <div class="left-btns">
                 <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
@@ -82,7 +84,7 @@
 
         <div class="scroll-hint">좌우로 밀어서 차수를 확인하세요 ➡️</div>
 
-        <!-- 메인 스코어보드 테이블 (스크롤 영역 완벽 보장) -->
+        <!-- 메인 스코어보드 테이블 -->
         <div class="table-wrapper">
             <table id="scoreTable">
                 <thead>
@@ -92,10 +94,10 @@
             </table>
         </div>
 
-        <!-- 라운드별 정산 카드 (원래 위치로 복구) -->
+        <!-- 라운드별 정산 카드 -->
         <div class="money-card">
             <div class="money-header-flex">
-                <h3>💰 라운드별 정산/h3>
+                <h3>💰 라운드별 정산 (타수 + 계급 벌금)</h3>
                 <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)">
                     <option value="">정산 차수 선택 ▾</option>
                 </select>
@@ -127,13 +129,12 @@
             <span class="info-text" id="infoText">💡 스코어 기준 1:1 핸디캡 산출 중...</span>
         </div>
 
-        <!-- 지난 차전 계급 정산 히스토리 버튼 -->
+        <!-- 히스토리 버튼 -->
         <div class="history-btn-container">
             <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
         </div>
     </div>
 
-    <!-- 숨겨진 파일 업로드 -->
     <input type="file" id="globalFileInput" accept="image/*" multiple style="display:none;" onchange="handleGlobalFileChange(this)">
 
     <!-- 사진 보기 모달 -->
@@ -198,6 +199,8 @@
     </div>
 
     <div id="customToast">알림 메시지</div>
-    <script src="app.js"></script>
+    
+    <!-- 🔥 아이폰 캐시를 무시하고 무조건 최신 자바스크립트를 불러오게 강제하는 마법의 코드 🔥 -->
+    <script src="app.js?v=3"></script>
 </body>
 </html>
