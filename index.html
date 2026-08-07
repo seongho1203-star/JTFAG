@@ -2,105 +2,1522 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase HTML 연동 테스트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#edf2f7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>JTFAG League - 실시간 정산 시스템</title>
+
+    <link rel="apple-touch-icon" href="IMG_8075.jpeg">
+    <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
+
     <!-- Supabase JS 라이브러리 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // Supabase 설정 정보
+        const SUPABASE_URL = 'https://xhulylksiexhtifyrokp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWx5bGtzaWV4aHRpZnlyb2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODM0MTIsImV4cCI6MjEwMTY1OTQxMn0.gm2uMhOopFg1ZkAiFL-E_ZUB6jGi0Pwyj6fSvAuSmPg';
+
+        // Supabase 클라이언트 초기화
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Supabase 연동 변수 전역 등록
+        window._supabase = _supabase;
+        window.SUPABASE_TABLE = 'jtfag_league'; // Supabase에 생성할 테이블명 (필요시 변경)
+    </script>
+
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
-        .box { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ddd; }
-        input, button { padding: 8px; margin-right: 5px; }
-        ul { padding-left: 20px; }
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --bg-main: #f4f6f8;
+            --card-bg: #ffffff;
+            --card-border: rgba(212, 175, 55, 0.35);
+            --primary-gold: #b8860b;
+            --gold-light: #fef9e7;
+            --accent-green: #15803d;
+            --accent-red: #dc2626;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --input-bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', sans-serif !important;
+        }
+
+        body {
+            background: linear-gradient(180deg, #edf2f7 0%, #e2e8f0 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 8px 4px calc(24px + env(safe-area-inset-bottom)) 4px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header-area {
+            text-align: center;
+            padding: 8px 0 10px 0;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #1e293b 20%, #b8860b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: clamp(1.4rem, 5vw, 1.8rem);
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--primary-gold);
+            font-size: clamp(0.65rem, 2.5vw, 0.78rem);
+            font-weight: 700;
+            margin: 2px 0 0 0;
+            letter-spacing: 1px;
+        }
+
+        .notice-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            color: #ffffff;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+        }
+
+        .notice-card h2 {
+            font-size: clamp(0.82rem, 3.4vw, 0.92rem);
+            margin: 0 0 10px 0;
+            color: #fef08a;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notice-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 8px;
+        }
+
+        .notice-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 8px 10px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: border-color 0.2s ease;
+            position: relative;
+        }
+
+        .notice-box:focus-within {
+            border-color: rgba(254, 240, 138, 0.6);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .notice-box label {
+            display: block;
+            font-size: clamp(0.62rem, 2.3vw, 0.7rem);
+            color: #cbd5e1;
+            font-weight: 700;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+
+        .notice-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: clamp(0.78rem, 3vw, 0.88rem);
+            font-weight: 800;
+            outline: none;
+            padding: 0;
+            word-break: keep-all;
+        }
+
+        .notice-input[readonly] {
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        #clubFundInput {
+            text-align: center;
+        }
+
+        .notice-input::placeholder { color: #64748b; font-weight: 500; }
+
+        .lock-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0 4px;
+            margin-left: 4px;
+        }
+
+        .total-summary-card {
+            background: linear-gradient(145deg, #ffffff, #fefce8);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 10px 4px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        }
+
+        .total-summary-card h2 {
+            font-size: clamp(0.75rem, 3vw, 0.88rem);
+            margin: 0 0 8px 0;
+            text-align: center;
+            color: var(--primary-gold);
+            font-weight: 800;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+        }
+
+        .summary-item {
+            background: #ffffff;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 6px 1px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .summary-item .name {
+            font-size: clamp(0.68rem, 2.8vw, 0.78rem);
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 2px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .summary-item .detail-line {
+            font-size: clamp(0.55rem, 2.1vw, 0.65rem);
+            color: var(--text-sub);
+            margin-top: 1px;
+            white-space: nowrap;
+        }
+
+        .summary-item .final-total {
+            font-size: clamp(0.65rem, 2.6vw, 0.75rem);
+            font-weight: 900;
+            margin-top: 4px;
+            padding-top: 2px;
+            border-top: 1px dashed #e2e8f0;
+            white-space: nowrap;
+        }
+
+        /* 🏅 시즌 뱃지 스타일 */
+        .season-badge {
+            display: inline-block;
+            margin-top: 3px;
+            padding: 1px 3px;
+            border-radius: 4px;
+            font-size: clamp(0.48rem, 1.8vw, 0.58rem);
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: -0.3px;
+        }
+        .badge-eagle-3 {
+            background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+            color: #ffffff;
+            border: 1px solid #d97706;
+            box-shadow: 0 1px 4px rgba(217, 119, 6, 0.4);
+            animation: pulse 2s infinite;
+        }
+        .badge-eagle-2 {
+            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%);
+            color: #78350f;
+            border: 1px solid #eab308;
+        }
+        .badge-avg-1 {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #ffffff;
+            border: 1px solid #2563eb;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+        }
+        .badge-best-score {
+            background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%);
+            color: #451a03;
+            border: 1px solid #fbbf24;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        .money-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 14px;
+            padding: 10px 8px;
+            margin-bottom: 10px;
+        }
+
+        .money-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 4px 8px 4px;
+            width: 100%;
+        }
+
+        .money-card h3 {
+            margin: 0;
+            font-size: clamp(0.75rem, 3vw, 0.88rem);
+            color: var(--text-main);
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .round-select-badge {
+            background: var(--gold-light);
+            color: var(--primary-gold);
+            border: 1px solid var(--card-border);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: clamp(0.65rem, 2.4vw, 0.75rem);
+            font-weight: 800;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .money-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(0.68rem, 2.4vw, 0.75rem);
+            text-align: center;
+        }
+
+        .money-table th {
+            padding: 4px 0;
+            color: var(--text-sub);
+            font-weight: 700;
+            font-size: clamp(0.58rem, 2.1vw, 0.65rem);
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+        }
+
+        .money-table td { padding: 4px 1px; }
+
+        .money-input {
+            width: 95% !important;
+            max-width: 68px !important;
+            height: 26px !important;
+            background-color: var(--input-bg) !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            text-align: center !important;
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important;
+            font-weight: 700 !important;
+        }
+
+        .money-result-badge {
+            display: inline-block;
+            padding: 2px 3px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+            white-space: nowrap;
+        }
+
+        .info-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: clamp(0.65rem, 2.5vw, 0.75rem);
+            gap: 6px;
+        }
+
+        .info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }
+
+        .save-status {
+            font-size: clamp(0.6rem, 2.2vw, 0.68rem);
+            color: #16a34a;
+            font-weight: 700;
+            background: rgba(22, 163, 74, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        .left-btns, .right-btns { 
+            display: flex; 
+            gap: 4px; 
+        }
+
+        .action-btn {
+            padding: 6px 8px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: clamp(0.62rem, 2.3vw, 0.72rem);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .add-btn { background: #2563eb; color: white; }
+        .remove-btn { background: #d97706; color: white; }
+        .reset-btn { background: #dc2626; color: white; }
+        .undo-btn { background: #475569; color: white; }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            margin-bottom: 10px;
+            background: var(--card-bg);
+            width: 100%;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            text-align: center; 
+        }
+        
+        th, td { 
+            padding: 6px 2px; 
+            border-bottom: 1px solid #f1f5f9; 
+            vertical-align: middle; 
+        }
+
+        th { 
+            background-color: #f8fafc; 
+            color: var(--text-sub); 
+            font-weight: 700; 
+            font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
+        }
+
+        table th:first-child,
+        table td:first-child,
+        .golfer-name { 
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            min-width: 52px !important;
+            font-weight: 800; 
+            font-size: clamp(0.72rem, 2.8vw, 0.8rem);
+            position: sticky; 
+            left: 0; 
+            background-color: #f1f5f9 !important; 
+            z-index: 2; 
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+        }
+
+        .header-round-title { 
+            font-size: clamp(0.68rem, 2.5vw, 0.78rem); 
+            color: var(--primary-gold); 
+            font-weight: 900; 
+            white-space: nowrap; 
+        }
+
+        input.score-input {
+            width: 34px; 
+            height: 28px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px;
+            text-align: center; 
+            font-size: clamp(0.75rem, 2.8vw, 0.85rem); 
+            font-weight: 800; 
+            background-color: var(--input-bg);
+        }
+
+        input.course-input {
+            width: 48px; 
+            padding: 2px 1px; 
+            border: 1px solid rgba(184, 134, 11, 0.4);
+            border-radius: 4px; 
+            text-align: center; 
+            font-size: clamp(0.58rem, 2.1vw, 0.65rem); 
+            font-weight: 800; 
+            background-color: #fef9e7;
+        }
+
+        .avg-cell {
+            font-weight: 900 !important;
+            font-size: clamp(0.8rem, 3vw, 0.9rem) !important;
+            color: var(--text-main);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: clamp(0.65rem, 2.4vw, 0.75rem);
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
+        .rank-hawk { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; border: 1px solid #0ea5e9; }
+        .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }
+        .rank-sparrow { background: linear-gradient(135deg, #94a3b8 0%, #475569 100%); color: #ffffff; border: 1px solid #64748b; }
+
+        .match-card, .history-card {
+            background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px; padding: 8px; margin-top: 8px;
+        }
+
+        .match-card h3, .history-card h3 { margin: 0 0 6px 0; font-size: clamp(0.72rem, 2.8vw, 0.8rem); color: var(--primary-gold); text-align: center; }
+        .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+        .match-item { background: #f8fafc; padding: 6px 4px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
+
+        .history-btn-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .open-history-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #fef08a;
+            border: 1px solid var(--primary-gold);
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: clamp(0.75rem, 3vw, 0.85rem);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            width: 100%;
+            max-width: 460px;
+            max-height: 80vh;
+            border-radius: 16px;
+            border: 1px solid var(--primary-gold);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform 0.25s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 12px 16px;
+            background: #1e293b;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: clamp(0.85rem, 3.2vw, 0.95rem);
+            color: #fef08a;
+            font-weight: 800;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .modal-body {
+            padding: 12px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-list { display: flex; flex-direction: column; gap: 8px; }
+        .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+        .history-header { font-size: clamp(0.68rem, 2.4vw, 0.75rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
+        .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+        .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+            color: transparent !important;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        #customToast {
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95); 
+            border: 1px solid var(--primary-gold); 
+            color: #ffffff;
+            padding: 10px 18px; 
+            border-radius: 20px; 
+            font-size: 0.78rem; 
+            font-weight: 800;
+            z-index: 9999; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease;
+            white-space: nowrap !important;
+            max-width: 90vw;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
 
-    <h2>🚀 Supabase HTML 연동</h2>
-
-    <!-- 데이터 추가 영역 -->
-    <div class="box">
-        <h3>데이터 추가하기</h3>
-        <input type="text" id="inputData" placeholder="내용을 입력하세요">
-        <button onclick="insertData()">저장</button>
+<div class="container">
+    <div class="header-area">
+        <h1>JTFAG LEAGUE</h1>
+        <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 데이터 조회 영역 -->
-    <div class="box">
-        <h3>데이터 목록</h3>
-        <button onclick="fetchData()">새로고침</button>
-        <ul id="dataList">
-            <li>데이터를 불러오는 중...</li>
-        </ul>
+    <!-- 📢 공지사항 & 공금 잔액 카드 -->
+    <div class="notice-card">
+        <h2>
+            <span>📢 리그 공지 & 모임 공금</span>
+            <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="수정 잠금/해제">🔒</button>
+        </h2>
+        <div class="notice-grid">
+            <div class="notice-box">
+                <label>📅 다음 라운드 일시</label>
+                <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8/15(토) 07:30" readonly onclick="handleInputClick(this)" onchange="updateNoticeData()" oninput="updateNoticeData()">
+            </div>
+            <div class="notice-box">
+                <label style="text-align: center;">💰 남은 공금 잔액</label>
+                <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="예: 150,000" readonly onclick="handleInputClick(this)" onfocus="this.select()" onchange="updateNoticeData()" oninput="updateNoticeData()">
+            </div>
+        </div>
     </div>
 
-    <script>
-        // 1. Supabase 설정 정보
-        const SUPABASE_URL = 'https://xhulylksiexhtifyrokp.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWx5bGtzaWV4aHRpZnlyb2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODM0MTIsImV4cCI6MjEwMTY1OTQxMn0.gm2uMhOopFg1ZkAiFL-E_ZUB6jGi0Pwyj6fSvAuSmPg';
+    <div class="total-summary-card">
+        <h2>💰 JTFAG 통합 정산 요약</h2>
+        <div class="summary-grid" id="summaryGrid"></div>
+    </div>
 
-        // 2. Supabase 클라이언트 초기화
-        const { createClient } = supabase;
-        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <!-- 차수별 정산 카드 -->
+    <div class="money-card">
+        <div class="money-header-flex">
+            <h3>💵 차수별 정산</h3>
+            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
+        </div>
+        <table class="money-table">
+            <thead>
+                <tr>
+                    <th style="width: 18%;">이름</th>
+                    <th style="width: 25%;">시작 금액</th>
+                    <th style="width: 25%;">남은 금액</th>
+                    <th style="width: 16%;">계급정산</th>
+                    <th style="width: 16%;">타수정산</th>
+                </tr>
+            </thead>
+            <tbody id="moneyTbody"></tbody>
+        </table>
+    </div>
 
-        // 테이블 이름 (Supabase에 생성한 테이블명으로 변경하세요)
-        const TABLE_NAME = 'todos'; 
+    <div class="info-card">
+        <span class="info-text" id="infoText">💡 <b>최근 2경기 스코어</b> 기준 1:1 핸디캡 산출</span>
+        <span class="save-status" id="saveStatus">⚡ 연결 중...</span>
+    </div>
 
-        // 3. 데이터 조회 함수
-        async function fetchData() {
-            const listEl = document.getElementById('dataList');
-            listEl.innerHTML = '<li>불러오는 중...</li>';
+    <div class="btn-group">
+        <div class="left-btns">
+            <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
+            <button type="button" class="action-btn remove-btn" onclick="removeRound()">- 최근 삭제</button>
+        </div>
+        <div class="right-btns">
+            <button type="button" class="action-btn reset-btn" onclick="resetAllData()">🔄 전체 초기화</button>
+            <button type="button" class="action-btn undo-btn" onclick="undoLastAction()">↩️ 되돌리기</button>
+        </div>
+    </div>
 
-            const { data, error } = await _supabase
-                .from(TABLE_NAME)
-                .select('*');
+    <div class="table-wrapper">
+        <table id="scoreTable">
+            <thead>
+                <tr id="headerRow"><th>이름</th></tr>
+            </thead>
+            <tbody id="scoreTbody"></tbody>
+        </table>
+    </div>
+
+    <div class="match-card">
+        <h3 id="matchCardTitle">🤝 최근 2경기 평균 기반 1:1 핸디캡 관계</h3>
+        <div class="match-grid" id="matchGrid"></div>
+    </div>
+
+    <div class="history-btn-container">
+        <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>📜 라운드별 계급 정산 이력</h3>
+            <button type="button" class="close-btn" onclick="closeHistoryModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+</div>
+
+<div id="customToast"></div>
+
+<script>
+    const ADMIN_PASSWORD = "1234"; // 🔑 공금 및 정보 입력 비밀번호 설정
+    let isFundUnlocked = false;    // 현재 공금 수정 잠금 해제 여부
+
+    const golfers = ["이관교", "김지명", "신성호", "박승수"];
+
+    const RANK_CONFIG = {
+        0: { name: "독수리", icon: "🦅", penalty: 0, class: "rank-eagle" },
+        1: { name: "매", icon: "⚡", penalty: -40000, class: "rank-hawk" },
+        2: { name: "학", icon: "🦩", penalty: -60000, class: "rank-crane" },
+        3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
+    };
+
+    function getDefaultData() {
+        return {
+            nextRoundDate: "",
+            clubFund: 0,
+            noticeMemo: "",
+            totalRounds: 4,
+            courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
+            scores: {
+                "이관교": [90, 83, 97, 92],
+                "김지명": [87, 87, 86, 86],
+                "신성호": [88, 85, 85, 93],
+                "박승수": [96, 96, 88, 90]
+            },
+            roundMoney: [
+                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+                { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+                { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
+            ]
+        };
+    }
+
+    let appData = getDefaultData();
+    let historyStack = [];
+    let selectedMoneyRoundIdx = -1;
+    let cachedRoundRankProfit = {}; 
+    let golferRankHistory = {}; 
+    let isLoaded = false;
+
+    // 🔑 비밀번호 검증 및 잠금 해제 처리
+    function authenticateAdmin() {
+        if (isFundUnlocked) return true;
+        
+        const pwd = prompt("🔒 비밀번호를 입력해주세요:");
+        if (pwd === ADMIN_PASSWORD) {
+            isFundUnlocked = true;
+            updateLockUI();
+            showToast("🔓 수정 권한이 인증되었습니다.");
+            return true;
+        } else if (pwd !== null) {
+            showToast("⚠️ 비밀번호가 일치하지 않습니다.");
+        }
+        return false;
+    }
+
+    function toggleFundLock() {
+        if (isFundUnlocked) {
+            isFundUnlocked = false;
+            updateLockUI();
+            showToast("🔒 공금 수정이 잠겼습니다.");
+        } else {
+            authenticateAdmin();
+        }
+    }
+
+    function handleInputClick(inputElem) {
+        if (!isFundUnlocked) {
+            if (authenticateAdmin()) {
+                setTimeout(() => {
+                    inputElem.focus();
+                }, 50);
+            }
+        }
+    }
+
+    function updateLockUI() {
+        const btn = document.getElementById('lockToggleBtn');
+        const dateInput = document.getElementById('nextRoundInput');
+        const fundInput = document.getElementById('clubFundInput');
+
+        if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
+        
+        if (dateInput) {
+            if (isFundUnlocked) dateInput.removeAttribute('readonly');
+            else dateInput.setAttribute('readonly', 'true');
+        }
+        
+        if (fundInput) {
+            if (isFundUnlocked) fundInput.removeAttribute('readonly');
+            else fundInput.setAttribute('readonly', 'true');
+        }
+    }
+
+    function formatNumber(num) {
+        if (num === null || num === undefined || isNaN(num) || num === 0) return "0";
+        return num.toLocaleString('ko-KR');
+    }
+
+    function parseNumber(val) {
+        if (!val) return 0;
+        const cleaned = String(val).replace(/[^0-9.-]/g, '');
+        return parseFloat(cleaned) || 0;
+    }
+
+    function saveState() {
+        if (historyStack.length >= 10) historyStack.shift();
+        historyStack.push(JSON.stringify(appData));
+    }
+
+    function undoLastAction() {
+        if (historyStack.length === 0) {
+            showToast("⚠️ 되돌릴 이전 내역이 없습니다.");
+            return;
+        }
+        const previousState = historyStack.pop();
+        appData = JSON.parse(previousState);
+        syncToSupabase(appData);
+        showToast("↩️ 이전 상태로 되돌렸습니다.");
+    }
+
+    function renderSkeleton() {
+        const summaryGrid = document.getElementById('summaryGrid');
+        if (summaryGrid) {
+            summaryGrid.innerHTML = golfers.map(() => `
+                <div class="summary-item skeleton">
+                    <div class="name">---</div>
+                    <div class="detail-line">---</div>
+                    <div class="detail-line">---</div>
+                    <div class="final-total">---</div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // ==========================================
+    // Supabase 데이터 통신 함수 (기존 파이어베이스 대체)
+    // ==========================================
+    async function fetchFromSupabase() {
+        try {
+            const { data, error } = await window._supabase
+                .from(window.SUPABASE_TABLE)
+                .select('*')
+                .eq('id', 1)
+                .single();
+
+            if (error || !data) {
+                // 데이터가 없으면 기본값으로 초기 생성 시도
+                await syncToSupabase(getDefaultData());
+                appData = getDefaultData();
+            } else {
+                appData = data.payload;
+                if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+            }
+
+            if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
+                selectedMoneyRoundIdx = appData.totalRounds - 1;
+            }
+
+            isLoaded = true;
+            renderNoticeArea();
+            renderAll();
+            showSaveStatus("⚡ Supabase 연결 완료");
+        } catch (err) {
+            console.error("Supabase Load Error:", err);
+            showSaveStatus("⚠️ DB 연결 확인 필요");
+        }
+    }
+
+    async function syncToSupabase(dataToSave) {
+        try {
+            const payloadData = { id: 1, payload: dataToSave };
+            const { error } = await window._supabase
+                .from(window.SUPABASE_TABLE)
+                .upsert(payloadData);
 
             if (error) {
-                console.error('조회 에러:', error);
-                listEl.innerHTML = `<li>에러 발생: ${error.message}</li>`;
-                return;
+                console.error("Supabase Save Error:", error);
+                showSaveStatus("⚠️ 저장 실패");
+            } else {
+                showSaveStatus("⚡ 동기화 완료");
+            }
+        } catch (err) {
+            console.error("Supabase Sync Exception:", err);
+        }
+    }
+    // ==========================================
+
+    window.addEventListener('DOMContentLoaded', () => {
+        renderSkeleton();
+        fetchFromSupabase();
+
+        // 실시간 변경 감지 (Supabase Realtime 구독)
+        window._supabase
+            .channel('public:jtfag_league')
+            .on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
+                if (payload.new && payload.new.payload) {
+                    appData = payload.new.payload;
+                    if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+                    
+                    if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
+                        selectedMoneyRoundIdx = appData.totalRounds - 1;
+                    }
+                    renderNoticeArea();
+                    renderAll();
+                    showSaveStatus("⚡ 실시간 업데이트됨");
+                }
+            })
+            .subscribe();
+    });
+
+    function showToast(msg) {
+        const toast = document.getElementById('customToast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+    }
+
+    function showSaveStatus(msg) {
+        const saveStatus = document.getElementById('saveStatus');
+        if (saveStatus) {
+            saveStatus.textContent = msg;
+            saveStatus.style.opacity = '1';
+            setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200);
+        }
+    }
+
+    function renderNoticeArea() {
+        const dateInput = document.getElementById('nextRoundInput');
+        const fundInput = document.getElementById('clubFundInput');
+
+        if (dateInput && document.activeElement !== dateInput) {
+            dateInput.value = appData.nextRoundDate || "";
+        }
+        if (fundInput && document.activeElement !== fundInput) {
+            const fundVal = appData.clubFund || 0;
+            fundInput.value = fundVal === 0 ? "" : fundVal.toLocaleString('ko-KR');
+        }
+        updateLockUI();
+    }
+
+    function updateNoticeData() {
+        if (!isFundUnlocked) return;
+        saveState();
+        const dateInput = document.getElementById('nextRoundInput');
+        const fundInput = document.getElementById('clubFundInput');
+
+        appData.nextRoundDate = dateInput ? dateInput.value : "";
+        appData.clubFund = parseNumber(fundInput ? fundInput.value : 0);
+
+        syncToSupabase(appData);
+    }
+
+    function renderAll() {
+        renderTable();
+        calculateAndRender(); 
+        renderMoneyTable();
+    }
+
+    function changeMoneyRound(idxVal) {
+        selectedMoneyRoundIdx = parseInt(idxVal, 10);
+        renderMoneyTable();
+    }
+
+    function renderMoneyTable() {
+        const tbody = document.getElementById('moneyTbody');
+        const selectBox = document.getElementById('moneyRoundSelect');
+        if (!tbody || !selectBox) return;
+
+        let selectHtml = "";
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const selectedStr = (r === selectedMoneyRoundIdx) ? "selected" : "";
+            selectHtml += `<option value="${r}" ${selectedStr}>${r + 1}차전 정산 입력 ▾</option>`;
+        }
+        selectBox.innerHTML = selectHtml;
+
+        const currentRoundIdx = selectedMoneyRoundIdx;
+
+        if (!appData.roundMoney) appData.roundMoney = [];
+        if (!appData.roundMoney[currentRoundIdx]) {
+            appData.roundMoney[currentRoundIdx] = {};
+            golfers.forEach(g => appData.roundMoney[currentRoundIdx][g] = { start: 0, end: 0 });
+        }
+
+        const currMoney = appData.roundMoney[currentRoundIdx];
+        tbody.innerHTML = "";
+
+        golfers.forEach(g => {
+            const m = currMoney[g] || { start: 0, end: 0 };
+
+            const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
+                                ? cachedRoundRankProfit[g][currentRoundIdx] 
+                                : 0;
+
+            const totalDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end - m.start);
+            const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : (totalDiff - rankPenalty);
+
+            const penaltyText = rankPenalty === 0 ? "0.0만" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
+            const penaltyBg = rankPenalty < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)";
+            const penaltyColor = rankPenalty < 0 ? "#dc2626" : "#64748b";
+
+            const strokeText = pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
+            const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
+            const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-weight:800; color:var(--text-main);">${g}</td>
+                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
+                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
+                    <td>
+                        <span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">
+                            ${penaltyText}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
+                            ${strokeText}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function updateMoney(name, type, value) {
+        saveState();
+        const currentRoundIdx = selectedMoneyRoundIdx;
+        if (!appData.roundMoney[currentRoundIdx]) appData.roundMoney[currentRoundIdx] = {};
+        if (!appData.roundMoney[currentRoundIdx][name]) appData.roundMoney[currentRoundIdx][name] = { start: 0, end: 0 };
+        
+        appData.roundMoney[currentRoundIdx][name][type] = parseNumber(value);
+        syncToSupabase(appData);
+        renderAll();
+    }
+
+    function renderTable() {
+        const headerRow = document.getElementById('headerRow');
+        const tbody = document.getElementById('scoreTbody');
+
+        let headerHtml = `<th>이름</th>`;
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const courseVal = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
+            headerHtml += `
+                <th>
+                    <div class="header-round-title">${r + 1}차</div>
+                    <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
+                </th>`;
+        }
+
+        headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th><th style="white-space:nowrap;">최종 계급</th>`;
+        headerRow.innerHTML = headerHtml;
+
+        tbody.innerHTML = "";
+        golfers.forEach(name => {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-name', name);
+
+            let rowHtml = `<td class="golfer-name">${name}</td>`;
+            
+            for (let r = 0; r < appData.totalRounds; r++) {
+                const val = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+                rowHtml += `<td class="score-cell"><input type="text" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${val}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
             }
 
-            listEl.innerHTML = '';
-            if (data.length === 0) {
-                listEl.innerHTML = '<li>저장된 데이터가 없습니다.</li>';
-                return;
+            rowHtml += `<td class="avg-cell">-</td><td class="rank-cell">-</td>`;
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateCourse(r, val) {
+        saveState();
+        if (!appData.courses) appData.courses = [];
+        appData.courses[r] = val;
+        syncToSupabase(appData);
+    }
+
+    function updateScore(name, r, val) {
+        saveState();
+        if (!appData.scores) appData.scores = {};
+        if (!appData.scores[name]) appData.scores[name] = [];
+        appData.scores[name][r] = val === "" ? "" : parseNumber(val);
+        syncToSupabase(appData);
+        renderAll();
+    }
+
+    function addRound() {
+        saveState();
+        appData.totalRounds++;
+        if (!appData.courses) appData.courses = [];
+        appData.courses.push("");
+        golfers.forEach(g => {
+            if (!appData.scores[g]) appData.scores[g] = [];
+            appData.scores[g].push("");
+        });
+
+        const newRoundMoney = {};
+        golfers.forEach(g => newRoundMoney[g] = { start: 0, end: 0 });
+        if (!appData.roundMoney) appData.roundMoney = [];
+        appData.roundMoney.push(newRoundMoney);
+
+        selectedMoneyRoundIdx = appData.totalRounds - 1;
+
+        syncToSupabase(appData);
+        showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
+    }
+
+    function removeRound() {
+        if (appData.totalRounds <= 2) {
+            showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
+            return;
+        }
+        saveState();
+        appData.totalRounds--;
+        if (appData.courses) appData.courses.pop();
+        golfers.forEach(name => {
+            if (appData.scores[name]) appData.scores[name].pop();
+        });
+
+        if (appData.roundMoney && appData.roundMoney.length > 0) {
+            appData.roundMoney.pop();
+        }
+
+        if (selectedMoneyRoundIdx >= appData.totalRounds) {
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
+        }
+
+        syncToSupabase(appData);
+        showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
+    }
+
+    function calculateAndRender() {
+        let targetR1 = -1, targetR2 = -1;
+        for (let r = appData.totalRounds - 1; r >= 1; r--) {
+            let completeCurr = true;
+            let completePrev = true;
+            golfers.forEach(g => {
+                const sCurr = appData.scores[g] ? appData.scores[g][r] : "";
+                const sPrev = appData.scores[g] ? appData.scores[g][r - 1] : "";
+                if (sCurr === "" || sCurr === undefined || isNaN(parseFloat(sCurr))) completeCurr = false;
+                if (sPrev === "" || sPrev === undefined || isNaN(parseFloat(sPrev))) completePrev = false;
+            });
+
+            if (completeCurr && completePrev) {
+                targetR1 = r - 1;
+                targetR2 = r;
+                break;
+            }
+        }
+
+        if (targetR1 === -1) {
+            targetR1 = 0;
+            targetR2 = 1;
+        }
+
+        const infoText = document.getElementById('infoText');
+        const matchCardTitle = document.getElementById('matchCardTitle');
+        const avgHeaderTitle = document.getElementById('avgHeaderTitle');
+
+        const titleStr = `${targetR1 + 1}차 & ${targetR2 + 1}차`;
+        const avgTitleStr = `${targetR1 + 1}·${targetR2 + 1}차 평균`;
+
+        if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
+        if (matchCardTitle) matchCardTitle.innerHTML = `🤝 ${avgTitleStr} 기반 1:1 핸디캡 관계`;
+        if (avgHeaderTitle) avgHeaderTitle.innerHTML = avgTitleStr;
+
+        const rows = document.querySelectorAll('#scoreTbody tr');
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const s1 = parseFloat(appData.scores[name] ? appData.scores[name][targetR1] : NaN);
+            const s2 = parseFloat(appData.scores[name] ? appData.scores[name][targetR2] : NaN);
+
+            const avgCell = row.querySelector('.avg-cell');
+            if (!isNaN(s1) && !isNaN(s2)) {
+                const avg = Math.floor((s1 + s2) / 2);
+                if (avgCell) avgCell.textContent = `${avg}`;
+            } else {
+                if (avgCell) avgCell.textContent = `-`;
+            }
+        });
+
+        processAllRoundSettlements();
+        renderHandicapMatchCard(targetR1, targetR2);
+    }
+
+    function processAllRoundSettlements() {
+        const totalRounds = appData.totalRounds;
+        const totalRankProfit = {};
+        const roundRankProfit = {};
+        golferRankHistory = {}; 
+
+        golfers.forEach(g => {
+            totalRankProfit[g] = 0;
+            roundRankProfit[g] = {};
+            golferRankHistory[g] = [];
+        });
+
+        const historyList = document.getElementById('historyList');
+        if (historyList) historyList.innerHTML = "";
+
+        document.querySelectorAll('.rank-cell').forEach(rc => rc.textContent = '-');
+
+        for (let r = 2; r < totalRounds; r++) {
+            const handicapAvg = {};
+            let isComplete = true;
+
+            golfers.forEach(g => {
+                const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
+                const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
+                if (isNaN(s1) || isNaN(s2)) isComplete = false;
+                handicapAvg[g] = Math.floor((s1 + s2) / 2);
+            });
+
+            const currentScores = {};
+            golfers.forEach(g => {
+                const sr = parseFloat(appData.scores[g] ? appData.scores[g][r] : NaN);
+                if (isNaN(sr)) isComplete = false;
+                currentScores[g] = sr;
+            });
+
+            if (!isComplete) continue;
+
+            const matchResults = {};
+            golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 });
+
+            for (let i = 0; i < golfers.length; i++) {
+                for (let j = i + 1; j < golfers.length; j++) {
+                    const g1 = golfers[i];
+                    const g2 = golfers[j];
+
+                    const g1Avg = handicapAvg[g1];
+                    const g2Avg = handicapAvg[g2];
+
+                    const g1Score = currentScores[g1];
+                    const g2Score = currentScores[g2];
+
+                    const g1Adjusted = g1Score - (g1Avg - g2Avg);
+                    const g2Adjusted = g2Score;
+
+                    if (g1Adjusted < g2Adjusted) {
+                        matchResults[g1].wins++;
+                        matchResults[g2].losses++;
+                    } else if (g1Adjusted > g2Adjusted) {
+                        matchResults[g1].losses++;
+                        matchResults[g2].wins++;
+                    } else {
+                        if (g1Avg < g2Avg) {
+                            matchResults[g1].wins++;
+                            matchResults[g2].losses++;
+                        } else if (g2Avg < g1Avg) {
+                            matchResults[g2].wins++;
+                            matchResults[g1].losses++;
+                        } else {
+                            matchResults[g1].ties++;
+                            matchResults[g2].ties++;
+                        }
+                    }
+
+                    matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
+                    matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
+                }
             }
 
-            data.forEach(item => {
-                const li = document.createElement('li');
-                // 테이블 구조에 맞춰 컬럼명을 수정하세요 (예: item.content 또는 item.title)
-                li.textContent = item.content || JSON.stringify(item);
-                listEl.appendChild(li);
+            const sortedGolfers = [...golfers].sort((a, b) => {
+                if (matchResults[b].wins !== matchResults[a].wins) {
+                    return matchResults[b].wins - matchResults[a].wins;
+                }
+                return matchResults[b].totalDiff - matchResults[a].totalDiff;
+            });
+
+            let roundHistoryHtml = `
+                <div class="history-item">
+                    <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
+                    <div class="history-grid">
+            `;
+
+            sortedGolfers.forEach((golferName, index) => {
+                const rankInfo = RANK_CONFIG[index];
+                const profit = rankInfo.penalty;
+                
+                totalRankProfit[golferName] += profit;
+                roundRankProfit[golferName][r] = profit;
+                golferRankHistory[golferName].push(index);
+
+                const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
+
+                roundHistoryHtml += `
+                    <div class="history-member">
+                        <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
+                        <div style="display:flex; align-items:center; gap:2px;">
+                            <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
+                            <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
+                        </div>
+                    </div>
+                `;
+
+                const row = document.querySelector(`tr[data-name="${golferName}"]`);
+                if (row) {
+                    const rc = row.querySelector('.rank-cell');
+                    if (rc) {
+                        rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>`;
+                    }
+                }
+            });
+
+            roundHistoryHtml += `</div></div>`;
+            if (historyList) historyList.innerHTML += roundHistoryHtml;
+        }
+
+        cachedRoundRankProfit = roundRankProfit;
+
+        let overallMinScore = Infinity;
+        let overallMinAvg = Infinity;
+        const golferMinScores = {};
+        const golferAvgScores = {};
+
+        golfers.forEach(g => {
+            const validScores = (appData.scores && appData.scores[g]) 
+                ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
+                : [];
+
+            if (validScores.length > 0) {
+                const userMin = Math.min(...validScores);
+                golferMinScores[g] = userMin;
+                if (userMin < overallMinScore) {
+                    overallMinScore = userMin;
+                }
+
+                const sum = validScores.reduce((acc, curr) => acc + curr, 0);
+                const userAvg = sum / validScores.length;
+                golferAvgScores[g] = userAvg;
+                if (userAvg < overallMinAvg) {
+                    overallMinAvg = userAvg;
+                }
+            } else {
+                golferMinScores[g] = null;
+                golferAvgScores[g] = null;
+            }
+        });
+
+        const summaryGrid = document.getElementById('summaryGrid');
+        if (summaryGrid) {
+            summaryGrid.innerHTML = "";
+            golfers.forEach(g => {
+                const rankProfit = totalRankProfit[g] || 0; 
+                let totalPureStrokeProfit = 0; 
+
+                if (appData.roundMoney) {
+                    for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                        const rMoney = appData.roundMoney[rIdx];
+                        if (!rMoney) continue;
+
+                        const m = rMoney[g] || { start: 0, end: 0 };
+                        if (m.start > 0 || m.end > 0) {
+                            const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
+                            const totalDiff = m.end - m.start;
+                            const pureStroke = totalDiff - rPenalty; 
+                            
+                            if (pureStroke < 0) {
+                                totalPureStrokeProfit += pureStroke;
+                            }
+                        }
+                    }
+                }
+
+                const ranks = golferRankHistory[g] || [];
+                let badgesHtml = "";
+                
+                if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
+                    badgesHtml += `<div class="season-badge badge-eagle-3">🦅 독수리 뱃지 획득! 🎉</div>`;
+                } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
+                    badgesHtml += `<div class="season-badge badge-eagle-2">🦅 독수리 2연속 등극!</div>`;
+                }
+
+                if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
+                    const formattedAvg = golferAvgScores[g].toFixed(1);
+                    badgesHtml += `<div class="season-badge badge-avg-1">🏆 평균타수 1위 (${formattedAvg}타)</div>`;
+                }
+
+                if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
+                    badgesHtml += `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`;
+                }
+                
+                const finalBalance = rankProfit + totalPureStrokeProfit;
+                
+                const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
+                const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
+                
+                let finalColor = "#64748b";
+                let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
+                
+                if (finalBalance > 0) finalColor = "#16a34a";
+                if (finalBalance < 0) finalColor = "#dc2626";
+
+                summaryGrid.innerHTML += `
+                    <div class="summary-item">
+                        <div class="name">${g}</div>
+                        <div class="detail-line">계급: ${rankProfitText}</div>
+                        <div class="detail-line">타수: ${strokeProfitText}</div>
+                        ${badgesHtml}
+                        <div class="final-total" style="color: ${finalColor};">
+                            합산: ${finalText}
+                        </div>
+                    </div>
+                `;
             });
         }
+    }
 
-        // 4. 데이터 추가 함수
-        async function insertData() {
-            const inputVal = document.getElementById('inputData').value;
-            if (!inputVal.trim()) {
-                alert('내용을 입력해주세요!');
-                return;
+    function renderHandicapMatchCard(r1, r2) {
+        const matchGrid = document.getElementById('matchGrid');
+        if (!matchGrid) return;
+        matchGrid.innerHTML = "";
+
+        const avgScores = {};
+        golfers.forEach(g => {
+            const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
+            const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
+            if (!isNaN(s1) && !isNaN(s2)) {
+                avgScores[g] = Math.floor((s1 + s2) / 2);
             }
+        });
 
-            // 테이블 구조에 맞춰 컬럼명을 수정하세요 (예: { content: inputVal })
-            const { data, error } = await _supabase
-                .from(TABLE_NAME)
-                .insert([{ content: inputVal }]);
-
-            if (error) {
-                console.error('저장 에러:', error);
-                alert(`저장 실패: ${error.message}`);
-                return;
-            }
-
-            alert('성공적으로 저장되었습니다!');
-            document.getElementById('inputData').value = '';
-            fetchData(); // 목록 새로고침
+        if (Object.keys(avgScores).length < 4) {
+            matchGrid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-sub);">스코어를 먼저 입력해 주세요.</div>`;
+            return;
         }
 
-        // 페이지 로드 시 데이터 조회 실행
-        fetchData();
-    </script>
+        for (let i = 0; i < golfers.length; i++) {
+            for (let j = i + 1; j < golfers.length; j++) {
+                const g1 = golfers[i];
+                const g2 = golfers[j];
+                const diff = avgScores[g1] - avgScores[g2];
+
+                let matchText = "";
+                if (diff > 0) {
+                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음`;
+                } else if (diff < 0) {
+                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음`;
+                } else {
+                    matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'match-item';
+                item.innerHTML = matchText;
+                matchGrid.appendChild(item);
+            }
+        }
+    }
+
+    function openHistoryModal() {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeHistoryModal(e) {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.classList.remove('active');
+    }
+
+    function resetAllData() {
+        if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
+            saveState();
+            appData = getDefaultData();
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
+            syncToSupabase(appData);
+            showToast("🔄 모든 데이터가 초기화되었습니다.");
+        }
+    }
+</script>
 
 </body>
 </html>
