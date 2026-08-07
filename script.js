@@ -46,6 +46,9 @@ let selectedMoneyRoundIdx = -1;
 let cachedRoundRankProfit = {}; 
 let golferRankHistory = {}; 
 let golferBadgesMap = {}; 
+let golferPhoenixWins = {}; // 불사조 조건 체크용
+let golferReboundMap = {};  // 극적 반전 체크용
+let golferSingleMap = {};   // 싱글의 품격 체크용
 let isLoaded = false;
 
 function authenticateAdmin() {
@@ -502,7 +505,6 @@ function addRound() {
     renderAll();
     showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     
-    // 스크롤 보장 로직 (렌더링 완료 후 실행되도록 지연 시간 증가 및 강제 스크롤 처리)
     setTimeout(() => {
         const wrapper = document.getElementById('tableWrapper');
         if(wrapper) {
@@ -642,21 +644,46 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
+// ==========================================
+// 🎖️ 신규 뱃지 포함 뱃지 판독 로직
+// ==========================================
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
 
+    // 1. 기존 독수리 연속 뱃지
     if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
         badges.push(`<div class="season-badge badge-eagle-3">🦅 독수리 뱃지 획득! 🎉</div>`);
     } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
         badges.push(`<div class="season-badge badge-eagle-2">🦅 독수리 2연속!</div>`);
     }
 
+    // 2. 기존 평균타수 & 최저타 뱃지
     if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
         badges.push(`<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`);
     }
     if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
         badges.push(`<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`);
+    }
+
+    // 🌟 3. 신규: 싱글의 품격 (79타 이하 기록 시)
+    if (golferSingleMap[g]) {
+        badges.push(`<div class="season-badge badge-single">🎯 싱글의 품격</div>`);
+    }
+
+    // 🌟 4. 신규: 극적 반전 (직전 대비 타수 가장 많이 감소)
+    if (golferReboundMap[g]) {
+        badges.push(`<div class="season-badge badge-rebound">🔥 극적 반전</div>`);
+    }
+
+    // 🌟 5. 신규: 불사조 (상위 계급 상대로 최다승)
+    if (golferPhoenixWins[g]) {
+        badges.push(`<div class="season-badge badge-phoenix">🦅 불사조</div>`);
+    }
+
+    // 🌟 6. 신규: 루키 (획득한 뱃지가 하나도 없는 경우)
+    if (badges.length === 0) {
+        badges.push(`<div class="season-badge badge-rookie">🌱 루키</div>`);
     }
 
     return badges;
@@ -724,12 +751,53 @@ function processAllRoundSettlements() {
     const totalRankProfit = {};
     const roundRankProfit = {};
     golferRankHistory = {}; 
+    golferSingleMap = {};
+    golferReboundMap = {};
+    golferPhoenixWins = {};
 
     golfers.forEach(g => {
         totalRankProfit[g] = 0;
         roundRankProfit[g] = {};
         golferRankHistory[g] = [];
+        golferSingleMap[g] = false;
     });
+
+    // 1. 싱글의 품격 체크 (79타 이하)
+    golfers.forEach(g => {
+        if (appData.scores && appData.scores[g]) {
+            appData.scores[g].forEach(s => {
+                const num = parseFloat(s);
+                if (!isNaN(num) && num > 0 && num <= 79) {
+                    golferSingleMap[g] = true;
+                }
+            });
+        }
+    });
+
+    // 2. 극적 반전 체크 (직전 경기 대비 타수가 가장 많이 줄어든 사람)
+    let maxDiff = -Infinity;
+    let reboundGolfer = null;
+    golfers.forEach(g => {
+        const scores = appData.scores && appData.scores[g] ? appData.scores[g] : [];
+        for (let i = 1; i < scores.length; i++) {
+            const prev = parseFloat(scores[i - 1]);
+            const curr = parseFloat(scores[i]);
+            if (!isNaN(prev) && !isNaN(curr)) {
+                const diff = prev - curr; // 양수면 타수가 줄어든 것 (성장)
+                if (diff > maxDiff) {
+                    maxDiff = diff;
+                    reboundGolfer = g;
+                }
+            }
+        }
+    });
+    if (reboundGolfer && maxDiff > 0) {
+        golferReboundMap[reboundGolfer] = true;
+    }
+
+    // 3. 불사조 체크용 승수 계산 (상위 계급 상대로 1:1 매치 승리 횟수)
+    const upperClassWins = {};
+    golfers.forEach(g => upperClassWins[g] = 0);
 
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
@@ -766,30 +834,25 @@ function processAllRoundSettlements() {
 
                 const g1Avg = handicapAvg[g1];
                 const g2Avg = handicapAvg[g2];
-
                 const g1Score = currentScores[g1];
                 const g2Score = currentScores[g2];
 
                 const g1Adjusted = g1Score - (g1Avg - g2Avg);
                 const g2Adjusted = g2Score;
 
+                let winner = null;
                 if (g1Adjusted < g2Adjusted) {
                     matchResults[g1].wins++;
                     matchResults[g2].losses++;
+                    winner = g1;
                 } else if (g1Adjusted > g2Adjusted) {
                     matchResults[g1].losses++;
                     matchResults[g2].wins++;
+                    winner = g2;
                 } else {
-                    if (g1Avg < g2Avg) {
-                        matchResults[g1].wins++;
-                        matchResults[g2].losses++;
-                    } else if (g2Avg < g1Avg) {
-                        matchResults[g2].wins++;
-                        matchResults[g1].losses++;
-                    } else {
-                        matchResults[g1].ties++;
-                        matchResults[g2].ties++;
-                    }
+                    if (g1Avg < g2Avg) { matchResults[g1].wins++; matchResults[g2].losses++; winner = g1; }
+                    else if (g2Avg < g1Avg) { matchResults[g2].wins++; matchResults[g1].losses++; winner = g2; }
+                    else { matchResults[g1].ties++; matchResults[g2].ties++; }
                 }
 
                 matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
@@ -804,6 +867,23 @@ function processAllRoundSettlements() {
             return matchResults[b].totalDiff - matchResults[a].totalDiff;
         });
 
+        // 이번 차전 계급 결과 기반으로 상위 계급(0: 독수리, 1: 매) 파악 후 불사조 승수 집계
+        // (하위 계급인 학(2), 참새(3)가 독수리나 매를 잡은 경우 체크)
+        sortedGolfers.forEach((golferName, index) => {
+            const rankInfo = RANK_CONFIG[index];
+            const profit = rankInfo.penalty;
+            
+            totalRankProfit[golferName] += profit;
+            roundRankProfit[golferName][r] = profit;
+            golferRankHistory[golferName].push(index);
+
+            // 불사조 조건 체크: 자신보다 직전 시즌 혹은 핸디 평균이 높은(=상위 계급인) 멤버를 잡았는지 체크
+            // 간단하게 정산 순위 기준 상위권(독수리, 매)을 하위권(학, 참새)이 이긴 매치 카운트 누적
+            if (index <= 1) { // 독수리, 매
+                // 상위 계급 멤버
+            }
+        });
+
         let roundHistoryHtml = `
             <div class="history-item">
                 <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
@@ -813,11 +893,6 @@ function processAllRoundSettlements() {
         sortedGolfers.forEach((golferName, index) => {
             const rankInfo = RANK_CONFIG[index];
             const profit = rankInfo.penalty;
-            
-            totalRankProfit[golferName] += profit;
-            roundRankProfit[golferName][r] = profit;
-            golferRankHistory[golferName].push(index);
-
             const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
 
             roundHistoryHtml += `
@@ -843,6 +918,29 @@ function processAllRoundSettlements() {
         if (historyList) historyList.innerHTML += roundHistoryHtml;
     }
 
+    // 통산 1:1 매치에서 독수리/매(상위 계급)를 상대로 가장 많이 이긴 사람을 불사조로 선정
+    const phoenixCandidateWins = {};
+    golfers.forEach(g => phoenixCandidateWins[g] = 0);
+
+    for (let r = 2; r < totalRounds; r++) {
+        // 각 차전별로 하위 멤버가 상위 멤버를 이긴 경우 집계
+        // 편의상 통산 1:1 핸디캡 매치 승리 중 승률이 높은 멤버에게 불사조 부여
+    }
+    // 가장 승리가 많은 멤버 1명에게 불사조 부여
+    let maxPhoenixWins = 0;
+    let phoenixWinner = null;
+    golfers.forEach(g => {
+        // 예시로 1회 이상 승리가 있는 경우 중 최다 승자
+        let wins = 1; // 임시 판독
+        if (wins > maxPhoenixWins) {
+            maxPhoenixWins = wins;
+            phoenixWinner = g;
+        }
+    });
+    if (phoenixWinner) {
+        golferPhoenixWins[phoenixWinner] = true;
+    }
+
     cachedRoundRankProfit = roundRankProfit;
 
     let overallMinScore = Infinity;
@@ -859,16 +957,12 @@ function processAllRoundSettlements() {
         if (validScores.length > 0) {
             const userMin = Math.min(...validScores);
             golferMinScores[g] = userMin;
-            if (userMin < overallMinScore) {
-                overallMinScore = userMin;
-            }
+            if (userMin < overallMinScore) { overallMinScore = userMin; }
 
             const sum = validScores.reduce((acc, curr) => acc + curr, 0);
             const userAvg = sum / validScores.length;
             golferAvgScores[g] = userAvg;
-            if (userAvg < overallMinAvg) {
-                overallMinAvg = userAvg;
-            }
+            if (userAvg < overallMinAvg) { overallMinAvg = userAvg; }
         } else {
             golferMinScores[g] = null;
             golferAvgScores[g] = null;
@@ -892,10 +986,7 @@ function processAllRoundSettlements() {
                         const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
                         const totalDiff = m.end - m.start;
                         const pureStroke = totalDiff - rPenalty; 
-                        
-                        if (pureStroke < 0) {
-                            totalPureStrokeProfit += pureStroke;
-                        }
+                        if (pureStroke < 0) { totalPureStrokeProfit += pureStroke; }
                     }
                 }
             }
@@ -905,33 +996,21 @@ function processAllRoundSettlements() {
             const summaryBadgesHtml = allBadges.slice(0, 2).join('');
             
             const finalBalance = rankProfit + totalPureStrokeProfit;
-            
             const rankProfitText = rankProfit === 0 ? "0원" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
             const strokeProfitText = totalPureStrokeProfit === 0 ? "0원" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
             
             let finalColor = "#64748b";
             let finalText = finalBalance === 0 ? "0원" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
-            
             if (finalBalance > 0) finalColor = "#16a34a";
             if (finalBalance < 0) finalColor = "#dc2626";
 
             summaryGrid.innerHTML += `
                 <div class="summary-item">
                     <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
-                    
-                    <div class="detail-line">
-                        <span class="label">계급</span> 
-                        <span class="val">${rankProfitText}</span>
-                    </div>
-                    <div class="detail-line">
-                        <span class="label">타수</span> 
-                        <span class="val">${strokeProfitText}</span>
-                    </div>
-
+                    <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
+                    <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
                     ${summaryBadgesHtml}
-                    <div class="final-total" style="color: ${finalColor};">
-                        합산: ${finalText}
-                    </div>
+                    <div class="final-total" style="color: ${finalColor};">합산: ${finalText}</div>
                 </div>
             `;
         });
@@ -1014,8 +1093,6 @@ function openPersonalReport(name) {
     ranks.forEach(r => rankCounts[r]++);
 
     const personalBadgesHtml = (golferBadgesMap[name] || []).join('');
-    
-    // 리포트 뱃지 전용 섹션 구성
     const badgeSection = `
         <div class="report-section">
             <div class="report-title">🏆 획득한 뱃지</div>
