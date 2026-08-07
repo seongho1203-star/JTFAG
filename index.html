@@ -15,6 +15,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+    <!-- Firebase SDK (안정적인 v9 CDN 방식 적용) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -29,14 +30,19 @@
             measurementId: "G-K5PHFVZYYC"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const gameDocRef = doc(db, "jtfag_league", "current_game");
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const gameDocRef = doc(db, "jtfag_league", "current_game");
 
-        window.db = db;
-        window.gameDocRef = gameDocRef;
-        window.onSnapshot = onSnapshot;
-        window.setDoc = setDoc;
+            window.db = db;
+            window.gameDocRef = gameDocRef;
+            window.onSnapshot = onSnapshot;
+            window.setDoc = setDoc;
+            console.log("Firebase 연결 성공");
+        } catch (err) {
+            console.error("Firebase 초기화 에러:", err);
+        }
     </script>
 
     <style>
@@ -113,15 +119,6 @@
         .summary-item .detail-line { font-size: clamp(0.55rem, 2.1vw, 0.65rem); color: var(--text-sub); margin-top: 1px; white-space: nowrap; }
         .summary-item .final-total { font-size: clamp(0.65rem, 2.6vw, 0.75rem); font-weight: 900; margin-top: 4px; padding-top: 2px; border-top: 1px dashed #e2e8f0; white-space: nowrap; }
 
-        .season-badge {
-            display: inline-block; margin-top: 3px; padding: 1px 4px; border-radius: 4px;
-            font-size: clamp(0.48rem, 1.8vw, 0.58rem); font-weight: 900; white-space: nowrap;
-        }
-        .badge-eagle-3 { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); color: #ffffff; border: 1px solid #d97706; }
-        .badge-eagle-2 { background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%); color: #78350f; border: 1px solid #eab308; }
-        .badge-avg-1 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; border: 1px solid #2563eb; }
-        .badge-best-score { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
-
         .money-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 14px; padding: 10px 8px; margin-bottom: 10px; }
         .money-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px 4px; width: 100%; }
         .money-card h3 { margin: 0; font-size: clamp(0.75rem, 3vw, 0.88rem); color: var(--text-main); font-weight: 800; white-space: nowrap; }
@@ -160,10 +157,7 @@
         .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; margin-bottom: 2px; }
         input.score-input { width: 32px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg); }
         .th-controls { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        input.course-input, .photo-btn { width: 58px !important; height: 23px !important; box-sizing: border-box; border-radius: 4px; font-size: clamp(0.6rem, 2.1vw, 0.68rem) !important; font-weight: 800 !important; margin: 0 !important; padding: 0 !important; text-align: center; }
-        input.course-input { border: 1px solid rgba(184, 134, 11, 0.4); background-color: #fef9e7; }
-        .photo-btn { display: flex; align-items: center; justify-content: center; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; cursor: pointer; white-space: nowrap; }
-        .photo-btn.has-photo { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        input.course-input { width: 58px !important; height: 23px !important; box-sizing: border-box; border-radius: 4px; font-size: clamp(0.6rem, 2.1vw, 0.68rem) !important; font-weight: 800 !important; margin: 0 !important; padding: 0 !important; text-align: center; border: 1px solid rgba(184, 134, 11, 0.4); background-color: #fef9e7; }
 
         .avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--text-main); }
         .rank-badge { display: inline-flex; align-items: center; justify-content: center; gap: 2px; padding: 2px 4px; border-radius: 6px; font-weight: 900; font-size: clamp(0.65rem, 2.4vw, 0.75rem); white-space: nowrap; }
@@ -172,7 +166,7 @@
         .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }
         .rank-sparrow { background: linear-gradient(135deg, #94a3b8 0%, #475569 100%); color: #ffffff; border: 1px solid #64748b; }
 
-        .match-card, .history-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 12px; padding: 8px; margin-top: 8px; }
+        .match-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 12px; padding: 8px; margin-top: 8px; }
         .match-card h3 { margin: 0 0 6px 0; font-size: clamp(0.72rem, 2.8vw, 0.8rem); color: var(--primary-gold); text-align: center; }
         .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
         .match-item { background: #f8fafc; padding: 6px 4px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
@@ -188,10 +182,6 @@
         .close-btn { background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; }
         .modal-body { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-        .modal-preview-container { display: flex; overflow-x: auto; gap: 10px; scroll-snap-type: x mandatory; padding-bottom: 8px; -webkit-overflow-scrolling: touch; width: 100%; }
-        .preview-img-wrapper { flex: 0 0 100%; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; }
-        .preview-img-item { max-width: 100%; max-height: 65vh; border-radius: 8px; object-fit: contain; background-color: #f8fafc; }
-
         .history-list { display: flex; flex-direction: column; gap: 8px; }
         .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
         .history-header { font-size: clamp(0.68rem, 2.4vw, 0.75rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
@@ -199,10 +189,6 @@
         .history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
 
         #customToast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.95); border: 1px solid var(--primary-gold); color: #ffffff; padding: 10px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; white-space: nowrap !important; }
-        .celebration-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.92); border: 2px solid #fef08a; border-radius: 16px; padding: 20px 24px; text-align: center; z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.5s ease-in-out; box-shadow: 0 10px 30px rgba(0,0,0,0.4); width: 85%; max-width: 380px; }
-        .celebration-overlay.active { opacity: 1; }
-        .celebration-text { color: #ffffff; font-size: 1.05rem; font-weight: 700; line-height: 1.6; margin: 0; }
-        .celebration-text b { color: #fef08a; font-size: 1.15rem; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -308,24 +294,6 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="photoModal" onclick="closePhotoModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()" style="max-width:90vw;">
-        <div class="modal-header">
-            <h3 id="photoModalTitle">📷 사진</h3>
-            <span id="photoPageIndicator" style="font-size:0.8rem; color:#fef08a; margin-left:8px; flex:1;">(1 / 1)</span>
-            <button type="button" class="close-btn" onclick="closePhotoModal()">✕</button>
-        </div>
-        <div class="modal-body" style="text-align:center; padding:8px; display:flex; flex-direction:column;">
-            <div id="modalPreviewContainer" class="modal-preview-container"></div>
-            <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">↔️ 좌우로 스와이프하여 이동</div>
-            <div style="margin-top:12px; display:flex; justify-content:center; gap:8px;">
-                <button type="button" class="action-btn add-btn" onclick="triggerAddMorePhoto()">➕ 추가하기</button>
-                <button type="button" class="action-btn reset-btn" onclick="deleteCurrentlyViewedPhoto()">🗑️ 현재 사진 삭제</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="modal-overlay" id="personalReportModal" onclick="closePersonalReport(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -336,11 +304,6 @@
     </div>
 </div>
 
-<div id="celebrationOverlay" class="celebration-overlay">
-    <div id="celebrationText" class="celebration-text"></div>
-</div>
-
-<input type="file" id="globalFileInput" multiple accept="image/*" style="display:none;" onchange="handleGlobalFileChange(this)">
 <div id="customToast"></div>
 
 <script>
@@ -362,7 +325,6 @@
             noticeMemo: "",
             totalRounds: 4,
             courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
-            photos: [[], [], [], []],
             scores: {
                 "이관교": [90, 83, 97, 92],
                 "김지명": [87, 87, 86, 86],
@@ -381,163 +343,9 @@
     let appData = getDefaultData();
     let historyStack = [];
     let selectedMoneyRoundIdx = -1;
-    let viewingPhotoRoundIdx = -1;
-    let currentPhotoIndex = 0; 
     let cachedRoundRankProfit = {}; 
     let golferRankHistory = {};
     let globalHeadToHead = {};
-
-    function getPhotosArray(r) {
-        if (!appData.photos) return [];
-        let p = appData.photos[r];
-        if (!p) return [];
-        if (typeof p === 'string') return [p];
-        if (Array.isArray(p)) return p.filter(x => x);
-        return [];
-    }
-
-    function compressImage(file, maxWidth = 500, maxHeight = 500, quality = 0.5) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    let width = img.width, height = img.height;
-                    if (width > height) {
-                        if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
-                    } else {
-                        if (height > maxHeight) { width = Math.round((width * maxHeight) / height); height = maxHeight; }
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.onerror = () => reject(new Error("이미지 오류"));
-            };
-            reader.onerror = (err) => reject(err);
-        });
-    }
-
-    function triggerPhotoUpload(roundIdx) {
-        viewingPhotoRoundIdx = roundIdx;
-        const fileInput = document.getElementById('globalFileInput');
-        if (fileInput) { fileInput.value = ""; fileInput.click(); }
-    }
-
-    function triggerAddMorePhoto() {
-        const fileInput = document.getElementById('globalFileInput');
-        if (fileInput) { fileInput.value = ""; fileInput.click(); }
-    }
-
-    async function handleGlobalFileChange(inputElem) {
-        const files = Array.from(inputElem.files);
-        if (files.length === 0 || viewingPhotoRoundIdx < 0) return;
-
-        try {
-            showToast(`📷 사진 압축 및 등록 중...`);
-            saveState();
-            if (!appData.photos) appData.photos = [];
-            let currentPhotos = getPhotosArray(viewingPhotoRoundIdx);
-            
-            for (let file of files) {
-                try {
-                    const compressedBase64 = await compressImage(file);
-                    currentPhotos.push(compressedBase64);
-                } catch(e) {}
-            }
-            
-            if (currentPhotos.length > 5) currentPhotos = currentPhotos.slice(0, 5);
-            appData.photos[viewingPhotoRoundIdx] = currentPhotos;
-            
-            syncToFirebase(appData);
-            renderTable(); 
-            showToast(`✅ 사진이 등록되었습니다.`);
-        } catch (error) {
-            showToast("⚠️ 사진 처리 오류");
-        }
-        inputElem.value = "";
-    }
-
-    function updatePhotoIndex() {
-        const container = document.getElementById('modalPreviewContainer');
-        if (!container) return;
-        currentPhotoIndex = Math.round(container.scrollLeft / container.clientWidth);
-        const indicator = document.getElementById('photoPageIndicator');
-        const photosArr = getPhotosArray(viewingPhotoRoundIdx);
-        if (indicator && photosArr.length > 0) {
-            indicator.textContent = `(${currentPhotoIndex + 1} / ${photosArr.length})`;
-        }
-    }
-
-    function openPhotoModal(roundIdx, startIdx = 0) {
-        viewingPhotoRoundIdx = roundIdx;
-        const photosArr = getPhotosArray(roundIdx);
-        if (photosArr.length === 0) return;
-
-        currentPhotoIndex = startIdx; 
-        const modal = document.getElementById('photoModal');
-        const container = document.getElementById('modalPreviewContainer');
-        const titleTag = document.getElementById('photoModalTitle');
-
-        if (titleTag) titleTag.textContent = `📷 ${roundIdx + 1}차전`;
-        if (container) {
-            container.innerHTML = photosArr.map((src, idx) => `
-                <div class="preview-img-wrapper">
-                    <img src="${src}" class="preview-img-item" alt="사진 ${idx+1}">
-                </div>
-            `).join('');
-            setTimeout(() => {
-                container.scrollLeft = container.clientWidth * startIdx;
-                updatePhotoIndex(); 
-                container.addEventListener('scroll', updatePhotoIndex);
-            }, 50);
-        }
-        if (modal) modal.classList.add('active');
-    }
-
-    function closePhotoModal(e) {
-        if (e && e.target !== e.currentTarget && !e.target.classList.contains('close-btn')) return;
-        const modal = document.getElementById('photoModal');
-        if (modal) modal.classList.remove('active');
-        const container = document.getElementById('modalPreviewContainer');
-        if (container) container.removeEventListener('scroll', updatePhotoIndex); 
-        viewingPhotoRoundIdx = -1;
-    }
-
-    function deleteCurrentlyViewedPhoto() {
-        if (viewingPhotoRoundIdx < 0) return;
-        const photosArr = getPhotosArray(viewingPhotoRoundIdx);
-        if (photosArr.length === 0) return;
-
-        if (confirm(`현재 사진을 삭제하시겠습니까?`)) {
-            saveState();
-            photosArr.splice(currentPhotoIndex, 1);
-            if (!appData.photos) appData.photos = [];
-            appData.photos[viewingPhotoRoundIdx] = photosArr;
-            syncToFirebase(appData);
-            renderTable();
-            
-            if (photosArr.length === 0) {
-                closePhotoModal();
-                showToast("🗑️ 사진 삭제됨");
-            } else {
-                let nextIdx = Math.min(currentPhotoIndex, photosArr.length - 1);
-                openPhotoModal(viewingPhotoRoundIdx, nextIdx);
-                showToast("🗑️ 사진 삭제됨");
-            }
-        }
-    }
-
-    window.triggerPhotoUpload = triggerPhotoUpload;
-    window.triggerAddMorePhoto = triggerAddMorePhoto;
-    window.handleGlobalFileChange = handleGlobalFileChange;
-    window.openPhotoModal = openPhotoModal;
-    window.closePhotoModal = closePhotoModal;
-    window.deleteCurrentlyViewedPhoto = deleteCurrentlyViewedPhoto;
 
     function authenticateAdmin() {
         if (isFundUnlocked) return true;
@@ -611,11 +419,9 @@
                 window.onSnapshot(window.gameDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const serverData = docSnap.data();
-                        // 서버에 데이터가 있으면 그대로 반영
                         if (serverData && serverData.totalRounds) {
                             appData = serverData;
                         } else {
-                            // 서버 문서가 비어있으면 기본값 세팅
                             syncToFirebase(getDefaultData());
                             appData = getDefaultData();
                         }
@@ -647,7 +453,7 @@
         }).catch(err => {
             console.error("Firebase SetDoc Error:", err);
             showSaveStatus("⚠️ 저장 실패");
-            showToast("⚠️ 저장 실패 (용량 초과 가능성)");
+            showToast("⚠️ 네트워크 저장 실패");
         });
     }
 
@@ -812,14 +618,11 @@
         let headerHtml = `<th>이름</th>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             const courseVal = appData.courses?.[r] || "";
-            const photosArr = getPhotosArray(r);
-            const hasPhoto = photosArr.length > 0;
             headerHtml += `
                 <th>
                     <div class="header-round-title">${r + 1}차</div>
                     <div class="th-controls">
                         <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
-                        <button type="button" class="photo-btn ${hasPhoto ? 'has-photo' : ''}" onclick="${hasPhoto ? `openPhotoModal(${r})` : `triggerPhotoUpload(${r})`}">${hasPhoto ? `📷 ${photosArr.length}장` : "📷 등록"}</button>
                     </div>
                 </th>`;
         }
@@ -862,8 +665,6 @@
         appData.totalRounds++;
         if (!appData.courses) appData.courses = [];
         appData.courses.push("");
-        if (!appData.photos) appData.photos = [];
-        appData.photos.push([]);
 
         golfers.forEach(g => {
             if (!appData.scores[g]) appData.scores[g] = [];
@@ -889,7 +690,6 @@
         saveState();
         appData.totalRounds--;
         appData.courses?.pop();
-        appData.photos?.pop();
         golfers.forEach(name => appData.scores[name]?.pop());
         appData.roundMoney?.pop();
 
@@ -982,10 +782,8 @@
 
                     if (g1Adjusted < g2Adjusted) {
                         matchResults[g1].wins++; matchResults[g2].losses++;
-                        matchResults[g1].headToHead[g2] = 1; matchResults[g2].headToHead[g1] = -1;
                     } else if (g1Adjusted > g2Adjusted) {
                         matchResults[g1].losses++; matchResults[g2].wins++;
-                        matchResults[g1].headToHead[g2] = -1; matchResults[g2].headToHead[g1] = 1;
                     } else {
                         matchResults[g1].ties++; matchResults[g2].ties++;
                     }
