@@ -1,4 +1,3 @@
-// Supabase 설정
 const SUPABASE_URL = 'https://xhulylksiexhtifyrokp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWx5bGtzaWV4aHRpZnlyb2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODM0MTIsImV4cCI6MjEwMTY1OTQxMn0.gm2uMhOopFg1ZkAiFL-E_ZUB6jGi0Pwyj6fSvAuSmPg';
 const { createClient } = supabase;
@@ -384,11 +383,11 @@ function renderMoneyTable() {
         const totalDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end - m.start);
         const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : (totalDiff - rankPenalty);
 
-        const penaltyText = rankPenalty === 0 ? "0.0만" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
+        const penaltyText = rankPenalty === 0 ? "0" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
         const penaltyBg = rankPenalty < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)";
         const penaltyColor = rankPenalty < 0 ? "#dc2626" : "#64748b";
 
-        const strokeText = pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
+        const strokeText = pureStrokeDiff === 0 ? "0" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
         const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
         const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
 
@@ -547,8 +546,7 @@ function openRoundPhotoModal(r) {
     document.getElementById('roundPhotoModal').classList.add('active');
 }
 
-function closeRoundPhotoModal(e) {
-    if(e && e.target !== document.getElementById('roundPhotoModal') && e.target.className !== 'close-btn') return;
+function closeRoundPhotoModal() {
     document.getElementById('roundPhotoModal').classList.remove('active');
 }
 
@@ -907,11 +905,12 @@ function processAllRoundSettlements() {
             
             const finalBalance = rankProfit + totalPureStrokeProfit;
             
-            const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
-            const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
+            // 가독성을 위한 라벨 렌더링 텍스트
+            const rankProfitText = rankProfit === 0 ? "0원" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
+            const strokeProfitText = totalPureStrokeProfit === 0 ? "0원" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
             
             let finalColor = "#64748b";
-            let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
+            let finalText = finalBalance === 0 ? "0원" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
             
             if (finalBalance > 0) finalColor = "#16a34a";
             if (finalBalance < 0) finalColor = "#dc2626";
@@ -919,8 +918,16 @@ function processAllRoundSettlements() {
             summaryGrid.innerHTML += `
                 <div class="summary-item">
                     <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
-                    <div class="detail-line">계급: ${rankProfitText}</div>
-                    <div class="detail-line">타수: ${strokeProfitText}</div>
+                    
+                    <div class="detail-line">
+                        <span class="label">계급</span> 
+                        <span class="val">${rankProfitText}</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="label">타수</span> 
+                        <span class="val">${strokeProfitText}</span>
+                    </div>
+
                     ${summaryBadgesHtml}
                     <div class="final-total" style="color: ${finalColor};">
                         합산: ${finalText}
@@ -978,8 +985,7 @@ function openHistoryModal() {
     if (modal) modal.classList.add('active');
 }
 
-function closeHistoryModal(e) {
-    if(e && e.target !== document.getElementById('historyModal') && e.target.className !== 'close-btn') return;
+function closeHistoryModal() {
     const modal = document.getElementById('historyModal');
     if (modal) modal.classList.remove('active');
 }
@@ -1008,7 +1014,16 @@ function openPersonalReport(name) {
     ranks.forEach(r => rankCounts[r]++);
 
     const personalBadgesHtml = (golferBadgesMap[name] || []).join('');
-    const badgeSection = personalBadgesHtml ? `<div class="report-badges-area" style="margin-bottom:12px; justify-content:center;">${personalBadgesHtml}</div>` : '';
+    
+    // 리포트 뱃지 전용 섹션 구성
+    const badgeSection = `
+        <div class="report-section">
+            <div class="report-title">🏆 획득한 뱃지</div>
+            <div class="report-badges-area" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding: 4px 0;">
+                ${personalBadgesHtml ? personalBadgesHtml : '<span style="color:#94a3b8; font-size:0.75rem;">아직 획득한 뱃지가 없습니다.</span>'}
+            </div>
+        </div>
+    `;
 
     const winRates = {};
     golfers.forEach(g => { if(g !== name) winRates[g] = {w:0, l:0, t:0}; });
@@ -1095,6 +1110,7 @@ function openPersonalReport(name) {
 
     const content = `
         ${badgeSection}
+        
         <div class="report-section">
             <div class="report-title">📊 스코어 요약</div>
             <div class="stat-grid">
@@ -1125,8 +1141,7 @@ function openPersonalReport(name) {
     document.getElementById('personalReportModal').classList.add('active');
 }
 
-function closePersonalReport(e) {
-    if(e && e.target !== document.getElementById('personalReportModal') && e.target.className !== 'close-btn') return;
+function closePersonalReport() {
     document.getElementById('personalReportModal').classList.remove('active');
 }
 
