@@ -383,11 +383,11 @@ function renderMoneyTable() {
         const totalDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end - m.start);
         const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : (totalDiff - rankPenalty);
 
-        const penaltyText = rankPenalty === 0 ? "0" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
+        const penaltyText = rankPenalty === 0 ? "0원" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
         const penaltyBg = rankPenalty < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)";
         const penaltyColor = rankPenalty < 0 ? "#dc2626" : "#64748b";
 
-        const strokeText = pureStrokeDiff === 0 ? "0" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
+        const strokeText = pureStrokeDiff === 0 ? "0원" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
         const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
         const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
 
@@ -502,12 +502,13 @@ function addRound() {
     renderAll();
     showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     
+    // 차수 추가 시 테이블 맨 우측으로 부드럽게 자동 스크롤
     setTimeout(() => {
         const wrapper = document.getElementById('tableWrapper');
         if(wrapper) {
             wrapper.scrollTo({ left: wrapper.scrollWidth, behavior: 'smooth' });
         }
-    }, 50);
+    }, 100);
 }
 
 function removeRound() {
@@ -905,7 +906,6 @@ function processAllRoundSettlements() {
             
             const finalBalance = rankProfit + totalPureStrokeProfit;
             
-            // 가독성을 위한 라벨 렌더링 텍스트
             const rankProfitText = rankProfit === 0 ? "0원" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
             const strokeProfitText = totalPureStrokeProfit === 0 ? "0원" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
             
