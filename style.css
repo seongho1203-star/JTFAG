@@ -106,7 +106,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .reset-btn { background: #dc2626; color: white; }
 .undo-btn { background: #475569; color: white; }
 
-/* 🔥 차수 간격을 좁게 촘촘하게 모아주는 테이블 세팅 🔥 */
+/* 🔥 차수 간격을 적당히 여유 있게 넓혀주는 테이블 세팅 🔥 */
 .table-wrapper { 
     overflow-x: auto; 
     -webkit-overflow-scrolling: touch; 
@@ -124,51 +124,51 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
     text-align: center; 
 }
 th, td { 
-    padding: 5px 1px; /* 좌우 여백을 1px로 대폭 줄여서 차수 간격을 좁힘 */
+    padding: 6px 5px; /* 좌우 여백을 살짝 늘려 차수 간격을 여유 있게 조정 */
     border-bottom: 1px solid #f1f5f9; 
     vertical-align: middle; 
-    min-width: 44px; /* 최소 칸 너비도 좁게 설정하여 오밀조밀하게 배치 */
+    min-width: 52px; /* 최소 칸 너비를 살짝 넓힘 */
 }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
-table th:first-child, table td:first-child, .golfer-name { white-space: nowrap !important; word-break: keep-all !important; min-width: 50px !important; font-weight: 800; font-size: clamp(0.72rem, 2.8vw, 0.8rem); position: sticky; left: 0; background-color: #f1f5f9 !important; z-index: 2; padding-left: 4px !important; padding-right: 4px !important; }
+table th:first-child, table td:first-child, .golfer-name { white-space: nowrap !important; word-break: keep-all !important; min-width: 54px !important; font-weight: 800; font-size: clamp(0.72rem, 2.8vw, 0.8rem); position: sticky; left: 0; background-color: #f1f5f9 !important; z-index: 2; padding-left: 6px !important; padding-right: 6px !important; }
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
-/* 🔥 스코어 및 골프장 입력칸 크기를 콤팩트하게 고정 🔥 */
+/* 🔥 입력칸 크기 및 여백 세팅 🔥 */
 input.score-input { 
-    width: 30px; 
-    height: 26px; 
+    width: 34px; 
+    height: 28px; 
     border: 1px solid #cbd5e1; 
     border-radius: 6px; 
     text-align: center; 
-    font-size: clamp(0.72rem, 2.6vw, 0.82rem); 
+    font-size: clamp(0.75rem, 2.8vw, 0.85rem); 
     font-weight: 800; 
     background-color: var(--input-bg); 
     margin: 0 auto; 
     display: block; 
 }
 input.course-input { 
-    width: 44px; 
+    width: 50px; 
     padding: 2px 1px; 
     border: 1px solid rgba(184, 134, 11, 0.4); 
     border-radius: 4px; 
     text-align: center; 
-    font-size: clamp(0.55rem, 2vw, 0.62rem); 
+    font-size: clamp(0.58rem, 2.1vw, 0.65rem); 
     font-weight: 800; 
     background-color: #fef9e7; 
     margin: 0 auto;
     display: block;
 }
 .photo-btn { 
-    width: 44px; 
+    width: 50px; 
     padding: 2px 1px; 
     border: 1px solid rgba(184, 134, 11, 0.4); 
     border-radius: 4px; 
     text-align: center; 
-    font-size: clamp(0.55rem, 2vw, 0.62rem); 
+    font-size: clamp(0.58rem, 2.1vw, 0.65rem); 
     font-weight: 800; 
     color: var(--primary-gold); 
     background: #ffffff; 
-    margin: 2px auto 0 auto; 
+    margin: 3px auto 0 auto; 
     display: block; 
     box-sizing: border-box; 
 }
