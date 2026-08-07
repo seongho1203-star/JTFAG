@@ -111,7 +111,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .reset-btn { background: #dc2626; color: white; }
 .undo-btn { background: #475569; color: white; }
 
-/* 🔥 가로 스크롤 강제 적용 테이블 (차수 추가 시 넓어지도록) 🔥 */
+/* 🔥 가로 스크롤 강제 적용 테이블 세팅 강화 🔥 */
 .table-wrapper { 
     overflow-x: auto; 
     -webkit-overflow-scrolling: touch; 
@@ -123,12 +123,17 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
     scroll-behavior: smooth; 
 }
 .table-wrapper table { 
-    width: max-content; /* 테이블 내용물만큼 무한히 늘어나게 강제 지정 */
-    min-width: 100%; 
+    width: 100%; 
+    min-width: max-content; /* 테이블 내용물만큼 무조건 늘어나게 */
     border-collapse: collapse; 
     text-align: center; 
 }
-th, td { padding: 6px 2px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+th, td { 
+    padding: 6px 2px; 
+    border-bottom: 1px solid #f1f5f9; 
+    vertical-align: middle; 
+    min-width: 60px; /* 각 칸이 좁아지지 않도록 최소 너비 강제 */
+}
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 table th:first-child, table td:first-child, .golfer-name { white-space: nowrap !important; word-break: keep-all !important; min-width: 52px !important; font-weight: 800; font-size: clamp(0.72rem, 2.8vw, 0.8rem); position: sticky; left: 0; background-color: #f1f5f9 !important; z-index: 2; padding-left: 4px !important; padding-right: 4px !important; }
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
