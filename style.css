@@ -124,7 +124,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 }
 .table-wrapper table { 
     width: 100%; 
-    min-width: max-content; /* 테이블 내용물만큼 무조건 늘어나게 */
+    min-width: max-content; 
     border-collapse: collapse; 
     text-align: center; 
 }
@@ -139,9 +139,32 @@ table th:first-child, table td:first-child, .golfer-name { white-space: nowrap !
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
 input.score-input { width: 34px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg); }
-input.course-input { width: 48px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7; }
 
-.photo-btn { width: 48px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
+/* 🔥 골프장 입력칸과 사진 갤러리 버튼 크기 대폭 확장 🔥 */
+input.course-input { 
+    width: 64px; 
+    padding: 4px 2px; 
+    border: 1px solid rgba(184, 134, 11, 0.4); 
+    border-radius: 4px; 
+    text-align: center; 
+    font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
+    font-weight: 800; 
+    background-color: #fef9e7; 
+}
+.photo-btn { 
+    width: 64px; 
+    padding: 4px 2px; 
+    border: 1px solid rgba(184, 134, 11, 0.4); 
+    border-radius: 4px; 
+    text-align: center; 
+    font-size: clamp(0.65rem, 2.4vw, 0.72rem); 
+    font-weight: 800; 
+    color: var(--primary-gold); 
+    background: #ffffff; 
+    margin: 3px auto 0 auto; 
+    display: block; 
+    box-sizing: border-box; 
+}
 .photo-btn:hover { background: #fef9e7; }
 
 .avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--text-main); }
@@ -181,6 +204,7 @@ input.course-input { width: 48px; padding: 2px 1px; border: 1px solid rgba(184, 
 .stat-val { font-size: 0.9rem; font-weight: 900; color: var(--text-main); margin-top: 2px; }
 .winrate-list { font-size: 0.75rem; color: var(--text-main); line-height: 1.6; }
 .winrate-list div { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding: 2px 0; }
+.report-badges-area { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 
 .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
 .photo-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; background: #f1f5f9; }
