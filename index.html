@@ -27,7 +27,7 @@
 
         // Supabase 연동 변수 전역 등록
         window._supabase = _supabase;
-        window.SUPABASE_TABLE = 'jtfag_league'; // Supabase에 생성할 테이블명 (필요시 변경)
+        window.SUPABASE_TABLE = 'jtfag_league';
     </script>
 
     <style>
@@ -881,7 +881,7 @@
     }
 
     // ==========================================
-    // Supabase 데이터 통신 함수 (기존 파이어베이스 대체)
+    // Supabase 데이터 통신 함수
     // ==========================================
     async function fetchFromSupabase() {
         try {
@@ -892,7 +892,6 @@
                 .single();
 
             if (error || !data) {
-                // 데이터가 없으면 기본값으로 초기 생성 시도
                 await syncToSupabase(getDefaultData());
                 appData = getDefaultData();
             } else {
@@ -937,7 +936,7 @@
         renderSkeleton();
         fetchFromSupabase();
 
-        // 실시간 변경 감지 (Supabase Realtime 구독)
+        // 실시간 변경 구독
         window._supabase
             .channel('public:jtfag_league')
             .on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
@@ -1151,6 +1150,7 @@
         selectedMoneyRoundIdx = appData.totalRounds - 1;
 
         syncToSupabase(appData);
+        renderAll();
         showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     }
 
@@ -1175,6 +1175,7 @@
         }
 
         syncToSupabase(appData);
+        renderAll();
         showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
     }
 
@@ -1514,6 +1515,7 @@
             appData = getDefaultData();
             selectedMoneyRoundIdx = appData.totalRounds - 1;
             syncToSupabase(appData);
+            renderAll();
             showToast("🔄 모든 데이터가 초기화되었습니다.");
         }
     }
