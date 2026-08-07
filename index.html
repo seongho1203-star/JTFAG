@@ -16,28 +16,14 @@
     <!-- 폭죽 애니메이션 라이브러리 추가 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <!-- Supabase 공식 최신 SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // 🔑 Supabase 연동 정보 설정
+        const SUPABASE_URL = "https://xhulylksiexhtifyrokp.supabase.co"; //[span_1](start_span)[span_1](end_span)
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWx5bGtzaWV4aHRpZnlyb2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODM0MTIsImV4cCI6MjEwMTY1OTQxMn0.gm2uMhOopFg1ZkAiFL-E_ZUB6jGi0Pwyj6fSvAuSmPg";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyATsVxoLIkjK2DMPyaWeWE8rPC8ym2a9qQ",
-            authDomain: "jtfag-8967b.firebaseapp.com",
-            projectId: "jtfag-8967b",
-            storageBucket: "jtfag-8967b.firebasestorage.app",
-            messagingSenderId: "445292272434",
-            appId: "1:445292272434:web:ea9cb5ebd0e0b2e4c4152b",
-            measurementId: "G-K5PHFVZYYC"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const gameDocRef = doc(db, "jtfag_league", "current_game");
-
-        window.db = db;
-        window.gameDocRef = gameDocRef;
-        window.onSnapshot = onSnapshot;
-        window.setDoc = setDoc;
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
     <style>
