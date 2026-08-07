@@ -426,12 +426,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 isInitialLoad = false;
             }, (error) => {
                 console.error("Firebase Error:", error);
-                showSaveStatus("⚠️ DB 연결 오류", true);
+                if (error.code === 'permission-denied') {
+                    showSaveStatus("⚠️ 파이어베이스 규칙 만료!", true);
+                    showToast("⚠️ 구글 파이어베이스의 테스트 30일이 만료되었습니다. 규칙을 수정하세요.");
+                } else {
+                    showSaveStatus("⚠️ DB 연결 오류", true);
+                }
             });
         }
     }, 100);
 });
 
+/* 🔥 에러를 정확히 분류해서 보여주는 개선된 저장 함수 🔥 */
 function syncToFirebase(dataToSave) {
     if (!window.setDoc || !window.gameDocRef) return;
     showSaveStatus("⏳ 저장 중...", true);
@@ -440,8 +446,13 @@ function syncToFirebase(dataToSave) {
             showSaveStatus("⚡ 실시간 동기화 완료");
         }).catch(err => {
             console.error("Firebase Error:", err);
-            showSaveStatus("⚠️ 용량 초과", true);
-            showToast("⚠️ 사진 용량이 큽니다. 사진을 삭제 후 다시 등록해주세요.");
+            if (err.code === 'permission-denied') {
+                showSaveStatus("⚠️ 권한 차단 (규칙 만료)", true);
+                showToast("⚠️ 파이어베이스 30일 기한 만료! Firestore Rules를 업데이트하세요.");
+            } else {
+                showSaveStatus("⚠️ 저장 실패 (용량 초과)", true);
+                showToast("⚠️ 사진 용량이 초과되었습니다. 현재 사진을 삭제하세요.");
+            }
         });
     } catch(err) {
         console.error("Firebase Error:", err);
@@ -1015,6 +1026,47 @@ function processAllRoundSettlements() {
                 </div>
             `;
         });
+    }
+
+    let celebrationMessages = [];
+    golfers.forEach(g => {
+        if (golferMinScores[g] !== null && prevGolferMinScores[g] !== undefined && prevGolferMinScores[g] !== null) {
+            if (golferMinScores[g] < prevGolferMinScores[g]) {
+                celebrationMessages.push(`🎉 <b>${g}</b>님 최저타수 갱신! (${golferMinScores[g]}타)`);
+            }
+        }
+        prevGolferMinScores[g] = golferMinScores[g];
+        
+        const ranks = golferRankHistory[g] || [];
+        let hasEagle3 = false;
+        if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
+            hasEagle3 = true;
+        }
+        if (hasEagle3 && !prevGolferEagleStreaks[g]) {
+            celebrationMessages.push(`🦅 <b>${g}</b>님 독수리 3연속 뱃지 획득!`);
+        }
+        prevGolferEagleStreaks[g] = hasEagle3;
+    });
+
+    if (celebrationMessages.length > 0 && !isInitialLoad) {
+        confetti({
+            particleCount: 150,
+            spread: 100,
+            origin: { y: 0.5 },
+            colors: ['#b8860b', '#1e293b', '#fef08a', '#16a34a', '#ea580c'],
+            zIndex: 9999
+        });
+
+        const overlay = document.getElementById('celebrationOverlay');
+        const textDiv = document.getElementById('celebrationText');
+        if (overlay && textDiv) {
+            textDiv.innerHTML = celebrationMessages.join("<br><br>");
+            overlay.classList.add('active');
+            
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 4000);
+        }
     }
 }
 
