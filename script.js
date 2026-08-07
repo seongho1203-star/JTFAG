@@ -1,1140 +1,1142 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>프리미엄 정산 시스템</title>
-    <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-
-        :root {
-            --bg-main: #f4f6f8;
-            --card-bg: #ffffff;
-            --card-border: rgba(212, 175, 55, 0.35);
-            --primary-gold: #b8860b;
-            --gold-light: #fef9e7;
-            --accent-green: #15803d;
-            --accent-red: #dc2626;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-            --input-bg: #f8fafc;
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(180deg, #edf2f7 0%, #e2e8f0 100%);
-            color: var(--text-main);
-            margin: 0;
-            padding: 12px 8px 30px 8px;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* 👑 헤더 디자인 */
-        .header-area {
-            text-align: center;
-            padding: 16px 0 18px 0;
-            position: relative;
-        }
-
-        h1 {
-            background: linear-gradient(135deg, #1e293b 20%, #b8860b 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 1.7rem;
-            font-weight: 900;
-            margin: 0;
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        p.subtitle {
-            color: var(--primary-gold);
-            font-size: 0.78rem;
-            font-weight: 700;
-            margin: 4px 0 0 0;
-            letter-spacing: 1.5px;
-            opacity: 0.95;
-        }
-
-        /* 🏆 누적 정산 요약 카드 */
-        .total-summary-card {
-            background: linear-gradient(145deg, #ffffff, #fefce8);
-            border: 1px solid var(--card-border);
-            border-radius: 18px;
-            padding: 14px 10px;
-            margin-bottom: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        }
-
-        .total-summary-card h2 {
-            font-size: 0.88rem;
-            margin: 0 0 10px 0;
-            text-align: center;
-            color: var(--primary-gold);
-            font-weight: 800;
-            letter-spacing: -0.3px;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
-
-        .summary-item {
-            background: #ffffff;
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 12px;
-            padding: 8px 2px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-        }
-
-        .summary-item .name {
-            font-size: 0.8rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-bottom: 4px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 3px;
-        }
-
-        .summary-item .detail-line {
-            font-size: 0.63rem;
-            color: var(--text-sub);
-            margin-top: 2px;
-        }
-
-        .summary-item .final-total {
-            font-size: 0.82rem;
-            font-weight: 900;
-            margin-top: 6px;
-            padding-top: 4px;
-            border-top: 1px dashed #e2e8f0;
-        }
-
-        /* 💵 타당 내기 카드 */
-        .money-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 18px;
-            padding: 12px 8px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-        }
-
-        .money-header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 4px 8px 4px;
-        }
-
-        .money-card h3 {
-            margin: 0;
-            font-size: 0.88rem;
-            color: var(--text-main);
-            font-weight: 800;
-        }
-
-        .reset-money-btn {
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 0.7rem;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
-            transition: all 0.2s ease;
-        }
-
-        .reset-money-btn:active {
-            transform: scale(0.94);
-        }
-
-        .money-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.78rem;
-            text-align: center;
-        }
-
-        .money-table th {
-            padding: 6px 0;
-            color: var(--text-sub);
-            font-weight: 700;
-            font-size: 0.68rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .money-table td {
-            padding: 6px 2px;
-            vertical-align: middle;
-        }
-
-        .money-input {
-            width: 95% !important;
-            max-width: 85px !important;
-            height: 32px !important;
-            background-color: var(--input-bg) !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 8px !important;
-            text-align: center !important;
-            font-size: 0.78rem !important;
-            font-weight: 700 !important;
-            color: var(--text-main) !important;
-            transition: border 0.2s;
-        }
-
-        .money-input:focus {
-            border-color: var(--primary-gold) !important;
-            background-color: #ffffff !important;
-            outline: none;
-        }
-
-        .money-result-badge {
-            display: inline-block;
-            padding: 3px 6px;
-            border-radius: 6px;
-            font-weight: 800;
-            font-size: 0.72rem;
-        }
-
-        /* 💡 정보 탭 & 상태 바 */
-        .info-card {
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 12px;
-            padding: 8px 12px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.75rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-
-        .info-text {
-            color: var(--primary-gold);
-            font-weight: 700;
-        }
-
-        .save-status {
-            font-size: 0.68rem;
-            color: #16a34a;
-            font-weight: 700;
-            background: rgba(22, 163, 74, 0.1);
-            padding: 3px 8px;
-            border-radius: 12px;
-            border: 1px solid rgba(22, 163, 74, 0.2);
-        }
-
-        /* 🔘 버튼 그룹 */
-        .btn-group {
-            display: flex;
-            justify-content: space-between;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-
-        .left-btns, .right-btns {
-            display: flex;
-            gap: 6px;
-        }
-
-        .action-btn {
-            padding: 8px 10px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 800;
-            font-size: 0.72rem;
-            cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-            transition: transform 0.15s;
-        }
-
-        .action-btn:active { transform: scale(0.93); }
-        .add-btn { background: #2563eb; color: white; }
-        .remove-btn { background: #d97706; color: white; }
-        .undo-btn { background: #64748b; color: white; }
-        .reset-btn { background: #dc2626; color: white; }
-
-        /* 📊 메인 스코어 테이블 */
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: 16px;
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            margin-bottom: 12px;
-            background: var(--card-bg);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
-
-        th, td {
-            padding: 8px 4px;
-            border-bottom: 1px solid #f1f5f9;
-            white-space: nowrap;
-            color: var(--text-main);
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #f8fafc;
-            color: var(--text-sub);
-            font-weight: 700;
-            font-size: 0.75rem;
-        }
-
-        .header-round-title {
-            font-size: 0.78rem;
-            color: var(--primary-gold);
-            font-weight: 900;
-            margin-bottom: 4px;
-        }
-
-        .golfer-name {
-            font-weight: 800;
-            color: var(--text-main);
-            position: sticky;
-            left: 0;
-            background-color: #f1f5f9 !important;
-            z-index: 1;
-            padding: 0 8px;
-            font-size: 0.82rem;
-            border-right: 1px solid #e2e8f0;
-        }
-
-        th:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 2;
-            background-color: #e2e8f0 !important;
-            border-right: 1px solid #cbd5e1;
-        }
-
-        /* 💡 평균 타수 글씨 굵게 (Bold) 스타일 적용 */
-        .avg-cell {
-            font-weight: 900 !important;
-            font-size: 0.88rem !important;
-            color: var(--primary-gold) !important;
-        }
-
-        input.score-input {
-            width: 40px;
-            height: 32px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.85rem;
-            font-weight: 800;
-            background-color: var(--input-bg);
-            color: var(--text-main);
-        }
-
-        input.score-input:focus {
-            border-color: var(--primary-gold);
-            background-color: #ffffff;
-            outline: none;
-        }
-
-        /* ⛳ 골프장 입력창 */
-        input.course-input {
-            width: 58px;
-            padding: 4px 2px;
-            border: 1px solid rgba(184, 134, 11, 0.4);
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.72rem;
-            font-weight: 800;
-            background-color: #fef9e7;
-            color: var(--text-main);
-        }
-
-        input.course-input::placeholder {
-            color: #94a3b8;
-            font-weight: 500;
-        }
-
-        input.course-input:focus {
-            border-color: var(--primary-gold);
-            background-color: #ffffff;
-            outline: none;
-        }
-
-        /* 🚀 계산 및 저장 버튼 */
-        .calc-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #15803d, #047857);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            font-size: 0.95rem;
-            font-weight: 900;
-            cursor: pointer;
-            margin-bottom: 12px;
-            box-shadow: 0 6px 16px rgba(21, 128, 61, 0.25);
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-
-        .calc-btn:active {
-            transform: scale(0.97);
-        }
-
-        /* 🦅 계급 배지 */
-        .rank-badge {
-            display: inline-block;
-            padding: 3px 7px;
-            border-radius: 6px;
-            font-weight: 900;
-            font-size: 0.73rem;
-            letter-spacing: -0.2px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            white-space: nowrap;
-        }
-        .rank-eagle {
-            background: linear-gradient(135deg, #fef08a, #eab308);
-            color: #713f12;
-            border: 1px solid #fde047;
-        } 
-        .rank-hawk {
-            background: linear-gradient(135deg, #e0f2fe, #0284c7);
-            color: #ffffff;
-            border: 1px solid #38bdf8;
-        }  
-        .rank-crane {
-            background: linear-gradient(135deg, #f3e8ff, #9333ea);
-            color: #ffffff;
-            border: 1px solid #c084fc;
-        } 
-        .rank-sparrow {
-            background: linear-gradient(135deg, #f1f5f9, #64748b);
-            color: #ffffff;
-            border: 1px solid #94a3b8;
-        }
-
-        /* 🎯 최종 계급 셀 레이아웃 */
-        .rank-cell-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            padding: 2px;
-            min-width: 90px;
-        }
-
-        .price-text {
-            font-size: 0.75rem;
-            font-weight: 900;
-            color: var(--primary-gold);
-            letter-spacing: -0.3px;
-        }
-
-        /* 🤝 핸디캡 및 히스토리 카드 */
-        .match-card, .history-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 14px;
-            padding: 10px;
-            margin-top: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        }
-
-        .match-card h3, .history-card h3 {
-            margin: 0 0 8px 0;
-            font-size: 0.82rem;
-            color: var(--primary-gold);
-            text-align: center;
-            font-weight: 800;
-        }
-
-        .match-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-        }
-
-        .match-item {
-            background: #f8fafc;
-            padding: 8px 6px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-            color: var(--text-main);
-            font-size: 0.8rem;
-            line-height: 1.35;
-        }
-
-        .history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .history-item {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 8px;
-        }
-
-        .history-header {
-            display: inline-block;
-            font-size: 0.68rem;
-            font-weight: 800;
-            color: #15803d;
-            background: rgba(22, 163, 74, 0.1);
-            padding: 2px 6px;
-            border-radius: 6px;
-            margin-bottom: 6px;
-        }
-
-        .history-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-        }
-
-        .history-member {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 4px 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-        }
-
-        /* 🔔 토스트 메시지 */
-        #customToast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(30, 41, 59, 0.95);
-            border: 1px solid var(--primary-gold);
-            color: #ffffff;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            z-index: 9999;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            transition: opacity 0.3s ease;
-            opacity: 0;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="header-area">
-        <h1>JTFAG LEAGUE</h1>
-        <p class="subtitle">⛳ PREMIUM GOLF SCORE SYSTEM</p>
-    </div>
-
-    <!-- 🏆 누적 금액 통합 정산 요약 카드 -->
-    <div class="total-summary-card">
-        <h2>💰 JTFAG 통합 정산 요약</h2>
-        <div class="summary-grid" id="summaryGrid"></div>
-    </div>
-
-    <!-- 💵 개별 타당 내기 현금 정산 카드 -->
-    <div class="money-card">
-        <div class="money-header-flex">
-            <h3>💵 개인별 현금 정산</h3>
-            <button type="button" class="reset-money-btn" onclick="startNewGameBet()">🔄 금액 리셋</button>
-        </div>
-        <table class="money-table">
-            <thead>
-                <tr>
-                    <th style="width: 18%;">이름</th>
-                    <th style="width: 32%;">시작 금액</th>
-                    <th style="width: 32%;">남은 잔액</th>
-                    <th style="width: 18%;">손익계산</th>
-                </tr>
-            </thead>
-            <tbody id="moneyTbody"></tbody>
-        </table>
-    </div>
-
-    <div class="info-card">
-        <span class="info-text" id="infoText">💡 <b>최근 2경기 스코어</b> 기준 1:1 핸디캡 산출</span>
-        <span class="save-status" id="saveStatus">💾 저장됨</span>
-    </div>
-
-    <div class="btn-group">
-        <div class="left-btns">
-            <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
-            <button type="button" class="action-btn remove-btn" onclick="removeRound()">- 최근 삭제</button>
-        </div>
-        <div class="right-btns">
-            <button type="button" class="action-btn undo-btn" onclick="undoLastAction()">↩️ 되돌리기</button>
-            <button type="button" class="action-btn reset-btn" onclick="resetAllData()">🔄 전체 초기화</button>
-        </div>
-    </div>
-
-    <div class="table-wrapper">
-        <table id="scoreTable">
-            <thead>
-                <tr id="headerRow">
-                    <th>이름</th>
-                </tr>
-            </thead>
-            <tbody id="scoreTbody"></tbody>
-        </table>
-    </div>
-
-    <button type="button" class="calc-btn" onclick="calculateAndSave()">저장 & 최종 계급 계산하기</button>
-
-    <div class="match-card">
-        <h3 id="matchCardTitle">🤝 최근 2경기 평균 기반 1:1 핸디캡 관계</h3>
-        <div class="match-grid" id="matchGrid"></div>
-    </div>
-
-    <div class="history-card">
-        <h3>📜 라운드별 계급 정산 이력</h3>
-        <div class="history-list" id="historyList"></div>
-    </div>
-</div>
-
-<div id="customToast"></div>
-
-<script>
-    const golfers = ["이관교", "김지명", "신성호", "박승수"];
-    const STORAGE_KEY = "golf_score_data_v16";
-
-    const RANK_PRICES = {
-        0: { name: "독수리 🦅", price: 0, class: "rank-eagle" },
-        1: { name: "매 🦅", price: 40000, class: "rank-hawk" },
-        2: { name: "학 🦩", price: 60000, class: "rank-crane" },
-        3: { name: "참새 🐦", price: 100000, class: "rank-sparrow" }
+// Supabase 설정
+const SUPABASE_URL = 'https://xhulylksiexhtifyrokp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWx5bGtzaWV4aHRpZnlyb2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODM0MTIsImV4cCI6MjEwMTY1OTQxMn0.gm2uMhOopFg1ZkAiFL-E_ZUB6jGi0Pwyj6fSvAuSmPg';
+const { createClient } = supabase;
+const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window._supabase = _supabase;
+window.SUPABASE_TABLE = 'jtfag_league';
+
+const ADMIN_PASSWORD = "1234"; 
+let isFundUnlocked = false;    
+
+const golfers = ["이관교", "김지명", "신성호", "박승수"];
+
+const RANK_CONFIG = {
+    0: { name: "독수리", icon: "🦅", penalty: 0, class: "rank-eagle" },
+    1: { name: "매", icon: "⚡", penalty: -40000, class: "rank-hawk" },
+    2: { name: "학", icon: "🦩", penalty: -60000, class: "rank-crane" },
+    3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
+};
+
+function getDefaultData() {
+    return {
+        nextRoundDate: "",
+        clubFund: 0,
+        noticeMemo: "",
+        totalRounds: 4,
+        courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
+        scores: {
+            "이관교": [90, 83, 97, 92],
+            "김지명": [87, 87, 86, 86],
+            "신성호": [88, 85, 85, 93],
+            "박승수": [96, 96, 88, 90]
+        },
+        roundMoney: [
+            { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+            { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+            { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
+            { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
+        ],
+        roundPhotos: [[], [], [], []]
     };
+}
 
-    function getDefaultData() {
-        return {
-            totalRounds: 4,
-            courses: ["함평엘리체", "함평엘리체", "어등산", ""],
-            scores: {
-                "이관교": [90, 83, 97, 88],
-                "김지명": [87, 87, 86, 87],
-                "신성호": [88, 85, 85, 86],
-                "박승수": [96, 96, 88, 90]
-            },
-            money: {
-                "이관교": { start: 0, end: 0, accumulatedDiff: 0 },
-                "김지명": { start: 0, end: 0, accumulatedDiff: 0 },
-                "신성호": { start: 0, end: 0, accumulatedDiff: 0 },
-                "박승수": { start: 0, end: 0, accumulatedDiff: 0 }
-            }
-        };
+let appData = getDefaultData();
+let historyStack = [];
+let selectedMoneyRoundIdx = -1;
+let cachedRoundRankProfit = {}; 
+let golferRankHistory = {}; 
+let golferBadgesMap = {}; 
+let isLoaded = false;
+
+function authenticateAdmin() {
+    if (isFundUnlocked) return true;
+    const pwd = prompt("🔒 공금 수정 비밀번호를 입력해주세요:");
+    if (pwd === ADMIN_PASSWORD) {
+        isFundUnlocked = true;
+        updateLockUI();
+        showToast("🔓 공금 수정 권한이 인증되었습니다.");
+        return true;
+    } else if (pwd !== null) {
+        showToast("⚠️ 비밀번호가 일치하지 않습니다.");
     }
+    return false;
+}
 
-    let appData = getDefaultData();
-    let historyStack = [];
+function toggleFundLock() {
+    if (isFundUnlocked) {
+        isFundUnlocked = false;
+        updateLockUI();
+        const fundInput = document.getElementById('clubFundInput');
+        if (fundInput) fundInput.value = formatFundString(appData.clubFund);
+        showToast("🔒 공금 수정이 잠겼습니다.");
+    } else {
+        authenticateAdmin();
+    }
+}
 
-    window.onload = function() {
-        try {
-            loadData();
-            renderTable();
-            renderMoneyTable();
-            calculateAndSave(false);
-        } catch(e) {
-            console.error(e);
+function handleFundClick(inputElem) {
+    if (!isFundUnlocked) {
+        if (authenticateAdmin()) {
+            setTimeout(() => {
+                inputElem.value = appData.clubFund || ""; 
+                inputElem.focus();
+            }, 50);
         }
-    };
-
-    function showToast(msg) {
-        const toast = document.getElementById('customToast');
-        if (!toast) return;
-        toast.textContent = msg;
-        toast.style.opacity = '1';
-        setTimeout(() => { toast.style.opacity = '0'; }, 2200);
     }
+}
 
-    function saveHistoryState() {
-        if (historyStack.length >= 10) historyStack.shift();
-        historyStack.push(JSON.stringify(appData));
-    }
+function updateLockUI() {
+    const btn = document.getElementById('lockToggleBtn');
+    const fundInput = document.getElementById('clubFundInput');
 
-    function undoLastAction() {
-        if (historyStack.length === 0) {
-            showToast("⚠️ 되돌릴 이전 기록이 없습니다.");
-            return;
-        }
-        const previousState = historyStack.pop();
-        appData = JSON.parse(previousState);
-        renderTable();
-        renderMoneyTable();
-        calculateAndSave(false);
-        showToast("↩️ 이전 상태로 복구되었습니다!");
-    }
-
-    function loadData() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                if (parsed && parsed.scores) {
-                    appData = parsed;
-                    if (!appData.money) appData.money = getDefaultData().money;
-                    golfers.forEach(g => {
-                        if (!appData.money[g]) appData.money[g] = { start: 0, end: 0, accumulatedDiff: 0 };
-                        if (appData.money[g].accumulatedDiff === undefined) appData.money[g].accumulatedDiff = 0;
-                    });
-                } else {
-                    appData = getDefaultData();
-                }
-            } catch(e) {
-                appData = getDefaultData();
-            }
+    if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
+    
+    if (fundInput) {
+        if (isFundUnlocked) {
+            fundInput.removeAttribute('readonly');
+            fundInput.value = appData.clubFund || "";
         } else {
-            appData = getDefaultData();
+            fundInput.setAttribute('readonly', 'true');
+            fundInput.value = formatFundString(appData.clubFund);
+        }
+    }
+}
+
+function formatFundString(num) {
+    if (num === null || num === undefined || isNaN(num) || num === 0) return "0원";
+    return num.toLocaleString('ko-KR') + "원";
+}
+
+function formatNumber(num) {
+    if (num === null || num === undefined || isNaN(num) || num === 0) return "0";
+    return num.toLocaleString('ko-KR');
+}
+
+function parseNumber(val) {
+    if (!val) return 0;
+    const cleaned = String(val).replace(/[^0-9.-]/g, '');
+    return parseFloat(cleaned) || 0;
+}
+
+function saveState() {
+    if (historyStack.length >= 10) historyStack.shift();
+    historyStack.push(JSON.stringify(appData));
+}
+
+function undoLastAction() {
+    if (historyStack.length === 0) {
+        showToast("⚠️ 되돌릴 이전 내역이 없습니다.");
+        return;
+    }
+    const previousState = historyStack.pop();
+    appData = JSON.parse(previousState);
+    syncToSupabase(appData);
+    showToast("↩️ 이전 상태로 되돌렸습니다.");
+}
+
+function renderSkeleton() {
+    const summaryGrid = document.getElementById('summaryGrid');
+    if (summaryGrid) {
+        summaryGrid.innerHTML = golfers.map(() => `
+            <div class="summary-item skeleton">
+                <div class="name">---</div>
+                <div class="detail-line">---</div>
+                <div class="detail-line">---</div>
+                <div class="final-total">---</div>
+            </div>
+        `).join('');
+    }
+}
+
+const COURSE_GEO = {
+    "함평엘리체": { lat: 35.109, lon: 126.545 },
+    "어등산": { lat: 35.158, lon: 126.757 },
+    "해피니스": { lat: 35.012, lon: 126.963 },
+    "마제스티": { lat: 35.200, lon: 126.800 }
+};
+
+async function checkWeather(text) {
+    const widget = document.getElementById('weatherWidget');
+    const weatherText = document.getElementById('weatherText');
+    
+    let targetCourse = null;
+    for (let course in COURSE_GEO) {
+        if (text.includes(course)) {
+            targetCourse = course;
+            break;
         }
     }
 
-    function syncMoneyFromDOM() {
-        const inputs = document.querySelectorAll('.money-input');
-        inputs.forEach(input => {
-            const name = input.getAttribute('data-name');
-            const type = input.getAttribute('data-type');
-            if (name && type && appData.money[name]) {
-                const val = parseFloat(input.value);
-                appData.money[name][type] = isNaN(val) ? 0 : val;
+    if (targetCourse) {
+        widget.style.display = 'flex';
+        weatherText.textContent = `${targetCourse} 날씨 확인중...`;
+        try {
+            const geo = COURSE_GEO[targetCourse];
+            const dateMatch = text.match(/(\d{1,2})[월/]\s*(\d{1,2})[일]?/);
+            let targetDateStr = null;
+            if (dateMatch) {
+                const year = new Date().getFullYear();
+                const m = dateMatch[1].padStart(2, '0');
+                const d = dateMatch[2].padStart(2, '0');
+                targetDateStr = `${year}-${m}-${d}`;
             }
-        });
-    }
 
-    function startNewGameBet() {
-        syncMoneyFromDOM();
-        saveHistoryState();
-
-        golfers.forEach(g => {
-            if (!appData.money[g]) appData.money[g] = { start: 0, end: 0, accumulatedDiff: 0 };
-            const m = appData.money[g];
-            const currentDiff = m.end - m.start;
-            m.accumulatedDiff = (m.accumulatedDiff || 0) + currentDiff;
-            m.start = 0;
-            m.end = 0;
-        });
-
-        renderMoneyTable();
-        calculateAndSave(false);
-        showToast("🔄 내기 금액이 0원으로 리셋되었습니다!");
-    }
-
-    function renderMoneyTable() {
-        const tbody = document.getElementById('moneyTbody');
-        if (!tbody) return;
-        tbody.innerHTML = "";
-
-        golfers.forEach(g => {
-            const m = (appData.money && appData.money[g]) ? appData.money[g] : { start: 0, end: 0, accumulatedDiff: 0 };
-            const diff = m.end - m.start;
-            const diffText = (diff > 0 ? "+" : "") + (diff / 10000).toFixed(1) + "만";
-            const diffBg = diff > 0 ? "rgba(22, 163, 74, 0.1)" : (diff < 0 ? "rgba(220, 38, 38, 0.1)" : "rgba(0, 0, 0, 0.03)");
-            const diffColor = diff > 0 ? "#16a34a" : (diff < 0 ? "#dc2626" : "#64748b");
-
-            tbody.innerHTML += `
-                <tr>
-                    <td style="font-weight:800; color:var(--text-main);">${g}</td>
-                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" data-name="${g}" data-type="start" value="${m.start}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
-                    <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" data-name="${g}" data-type="end" value="${m.end}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
-                    <td>
-                        <span class="money-result-badge" style="background:${diffBg}; color:${diffColor}; border: 1px solid ${diffColor}30;">
-                            ${diffText}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
-    function updateMoney(name, type, value) {
-        saveHistoryState();
-        if (!appData.money) appData.money = {};
-        if (!appData.money[name]) appData.money[name] = { start: 0, end: 0, accumulatedDiff: 0 };
-        appData.money[name][type] = parseFloat(value) || 0;
-        calculateAndSave(false);
-    }
-
-    function renderTable() {
-        const headerRow = document.getElementById('headerRow');
-        const tbody = document.getElementById('scoreTbody');
-
-        let headerHtml = `<th>이름</th>`;
-        for (let r = 0; r < appData.totalRounds; r++) {
-            const courseVal = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
-            headerHtml += `
-                <th>
-                    <div class="header-round-title">${r + 1}차</div>
-                    <input type="text" class="course-input" data-round="${r}" value="${courseVal}" placeholder="골프장" onchange="calculateAndSave(true)">
-                </th>`;
-        }
-
-        headerHtml += `<th id="avgHeaderTitle">- 평균</th><th>최종 계급</th>`;
-        headerRow.innerHTML = headerHtml;
-
-        tbody.innerHTML = "";
-        golfers.forEach(name => {
-            const tr = document.createElement('tr');
-            tr.setAttribute('data-name', name);
-
-            let rowHtml = `<td class="golfer-name">${name}</td>`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=16`;
+            const res = await fetch(url);
+            const data = await res.json();
             
-            for (let r = 0; r < appData.totalRounds; r++) {
-                const val = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
-                rowHtml += `<td class="score-cell"><input type="text" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${val}" placeholder="타수" onfocus="this.select()" onchange="calculateAndSave(true)"></td>`;
+            function getWeatherInfo(code) {
+                if (code >= 1 && code <= 3) return { i: "⛅", d: "구름조금" };
+                if (code >= 45 && code <= 48) return { i: "🌫️", d: "안개" };
+                if (code >= 51 && code <= 67) return { i: "🌧️", d: "비" };
+                if (code >= 71 && code <= 77) return { i: "❄️", d: "눈" };
+                if (code >= 95) return { i: "⛈️", d: "뇌우" };
+                return { i: "☀️", d: "맑음" };
             }
 
-            rowHtml += `<td class="avg-cell">-</td><td class="rank-cell">-</td>`;
-            tr.innerHTML = rowHtml;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function addRound() {
-        saveHistoryState();
-        appData.totalRounds++;
-        if (!appData.courses) appData.courses = [];
-        appData.courses.push("");
-        renderTable();
-        calculateAndSave(false);
-        showToast("➕ 라운드 차수가 추가되었습니다.");
-    }
-
-    function removeRound() {
-        if (appData.totalRounds <= 2) {
-            showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
-            return;
+            if (targetDateStr && data.daily && data.daily.time.includes(targetDateStr)) {
+                const idx = data.daily.time.indexOf(targetDateStr);
+                const code = data.daily.weathercode[idx];
+                const maxT = data.daily.temperature_2m_max[idx];
+                const minT = data.daily.temperature_2m_min[idx];
+                const info = getWeatherInfo(code);
+                weatherText.innerHTML = `<b>${targetCourse} (${dateMatch[1]}/${dateMatch[2]})</b> 일일예보: ${info.i} ${info.d}, ${minT}°~${maxT}°`;
+            } else if (data.current_weather) {
+                const code = data.current_weather.weathercode;
+                const temp = data.current_weather.temperature;
+                const info = getWeatherInfo(code);
+                weatherText.innerHTML = `<b>${targetCourse}</b> 실시간: ${info.i} ${info.d}, ${temp}°C`;
+            }
+        } catch(e) {
+            weatherText.textContent = "날씨 정보를 불러오지 못했습니다.";
         }
-        saveHistoryState();
-        appData.totalRounds--;
-        if (appData.courses) appData.courses.pop();
-        golfers.forEach(name => {
-            if (appData.scores[name] && appData.scores[name].length > appData.totalRounds) {
-                appData.scores[name].pop();
-            }
-        });
-
-        renderTable();
-        calculateAndSave(false);
-        showToast("➖ 마지막 차수가 삭제되었습니다.");
+    } else {
+        widget.style.display = 'none';
     }
+}
 
-    function calculateAndSave(recordHistory = true) {
-        if (recordHistory) saveHistoryState();
+async function fetchFromSupabase() {
+    try {
+        const { data, error } = await window._supabase
+            .from(window.SUPABASE_TABLE)
+            .select('*')
+            .eq('id', 1)
+            .single();
 
-        const courseInputs = document.querySelectorAll('.course-input');
-        if (!appData.courses) appData.courses = [];
-        courseInputs.forEach((input, idx) => {
-            appData.courses[idx] = input.value;
-        });
-
-        const rows = document.querySelectorAll('#scoreTbody tr');
-
-        rows.forEach(row => {
-            const name = row.getAttribute('data-name');
-            const inputs = row.querySelectorAll('.score-input');
-            const currentScores = [];
-
-            inputs.forEach(input => currentScores.push(input.value));
-            if (!appData.scores) appData.scores = {};
-            appData.scores[name] = currentScores;
-        });
-
-        let targetR1 = -1, targetR2 = -1;
-        for (let r = appData.totalRounds - 1; r >= 1; r--) {
-            let completeCurr = true;
-            let completePrev = true;
-            golfers.forEach(g => {
-                const sCurr = appData.scores[g][r];
-                const sPrev = appData.scores[g][r - 1];
-                if (sCurr === "" || sCurr === undefined || isNaN(parseFloat(sCurr))) completeCurr = false;
-                if (sPrev === "" || sPrev === undefined || isNaN(parseFloat(sPrev))) completePrev = false;
-            });
-
-            if (completeCurr && completePrev) {
-                targetR1 = r - 1;
-                targetR2 = r;
-                break;
-            }
+        if (error || !data) {
+            await syncToSupabase(getDefaultData());
+            appData = getDefaultData();
+        } else {
+            appData = data.payload;
+            if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+            if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
         }
 
-        if (targetR1 === -1) {
-            targetR1 = 0;
-            targetR2 = 1;
+        if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
+            selectedMoneyRoundIdx = appData.totalRounds - 1;
         }
 
-        const infoText = document.getElementById('infoText');
-        const matchCardTitle = document.getElementById('matchCardTitle');
-        const avgHeaderTitle = document.getElementById('avgHeaderTitle');
+        isLoaded = true;
+        renderNoticeArea();
+        renderAll();
+        showSaveStatus("⚡ Supabase 연결 완료");
+    } catch (err) {
+        console.error("Supabase Load Error:", err);
+        showSaveStatus("⚠️ DB 연결 확인 필요");
+    }
+}
 
-        const titleStr = `${targetR1 + 1}차 & ${targetR2 + 1}차`;
-        const avgTitleStr = `${targetR1 + 1}·${targetR2 + 1}차 평균`;
+async function syncToSupabase(dataToSave) {
+    try {
+        const payloadData = { id: 1, payload: dataToSave };
+        const { error } = await window._supabase
+            .from(window.SUPABASE_TABLE)
+            .upsert(payloadData);
 
-        if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
-        if (matchCardTitle) matchCardTitle.innerHTML = `🤝 ${avgTitleStr} 기반 1:1 핸디캡 관계`;
-        if (avgHeaderTitle) avgHeaderTitle.innerHTML = avgTitleStr;
+        if (error) {
+            console.error("Supabase Save Error:", error);
+            showSaveStatus("⚠️ 저장 실패");
+        } else {
+            showSaveStatus("⚡ 동기화 완료");
+        }
+    } catch (err) {
+        console.error("Supabase Sync Exception:", err);
+    }
+}
 
-        rows.forEach(row => {
-            const name = row.getAttribute('data-name');
-            const s1 = parseFloat(appData.scores[name][targetR1]);
-            const s2 = parseFloat(appData.scores[name][targetR2]);
+window.addEventListener('DOMContentLoaded', () => {
+    renderSkeleton();
+    fetchFromSupabase();
 
-            const avgCell = row.querySelector('.avg-cell');
-            if (!isNaN(s1) && !isNaN(s2)) {
-                const avg = Math.floor((s1 + s2) / 2);
-                if (avgCell) avgCell.textContent = `${avg}`;
-            } else {
-                if (avgCell) avgCell.textContent = `-`;
+    window._supabase
+        .channel('public:jtfag_league')
+        .on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
+            if (payload.new && payload.new.payload) {
+                appData = payload.new.payload;
+                if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+                if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
+                
+                if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) {
+                    selectedMoneyRoundIdx = appData.totalRounds - 1;
+                }
+                renderNoticeArea();
+                renderAll();
+                showSaveStatus("⚡ 실시간 업데이트됨");
+                
+                if (document.getElementById('roundPhotoModal').classList.contains('active')) {
+                    renderRoundPhotos();
+                }
             }
-        });
+        })
+        .subscribe();
 
-        processAllRoundSettlements();
-        renderHandicapMatchCard(targetR1, targetR2);
-        renderMoneyTable();
+    const fundInput = document.getElementById('clubFundInput');
+    fundInput.addEventListener('blur', function() {
+        if (isFundUnlocked) {
+            appData.clubFund = parseNumber(this.value);
+            this.value = formatFundString(appData.clubFund);
+            syncToSupabase(appData);
+        }
+    });
+});
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+function showToast(msg) {
+    const toast = document.getElementById('customToast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+}
+
+function showSaveStatus(msg) {
+    const saveStatus = document.getElementById('saveStatus');
+    if (saveStatus) {
+        saveStatus.textContent = msg;
+        saveStatus.style.opacity = '1';
+        setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200);
+    }
+}
+
+function renderNoticeArea() {
+    const dateInput = document.getElementById('nextRoundInput');
+    const fundInput = document.getElementById('clubFundInput');
+
+    if (dateInput && document.activeElement !== dateInput) {
+        dateInput.value = appData.nextRoundDate || "";
+        checkWeather(dateInput.value); 
+    }
+    if (fundInput && document.activeElement !== fundInput) {
+        fundInput.value = formatFundString(appData.clubFund);
+    }
+    updateLockUI();
+}
+
+function updateNoticeData() {
+    saveState();
+    const dateInput = document.getElementById('nextRoundInput');
+    appData.nextRoundDate = dateInput ? dateInput.value : "";
+    checkWeather(appData.nextRoundDate); 
+    syncToSupabase(appData);
+}
+
+function renderAll() {
+    renderTable();
+    calculateAndRender(); 
+    renderMoneyTable();
+}
+
+function changeMoneyRound(idxVal) {
+    selectedMoneyRoundIdx = parseInt(idxVal, 10);
+    renderMoneyTable();
+}
+
+function renderMoneyTable() {
+    const tbody = document.getElementById('moneyTbody');
+    const selectBox = document.getElementById('moneyRoundSelect');
+    if (!tbody || !selectBox) return;
+
+    let selectHtml = "";
+    for (let r = 0; r < appData.totalRounds; r++) {
+        const selectedStr = (r === selectedMoneyRoundIdx) ? "selected" : "";
+        selectHtml += `<option value="${r}" ${selectedStr}>${r + 1}차전 정산 입력 ▾</option>`;
+    }
+    selectBox.innerHTML = selectHtml;
+
+    const currentRoundIdx = selectedMoneyRoundIdx;
+
+    if (!appData.roundMoney) appData.roundMoney = [];
+    if (!appData.roundMoney[currentRoundIdx]) {
+        appData.roundMoney[currentRoundIdx] = {};
+        golfers.forEach(g => appData.roundMoney[currentRoundIdx][g] = { start: 0, end: 0 });
+    }
+
+    const currMoney = appData.roundMoney[currentRoundIdx];
+    tbody.innerHTML = "";
+
+    golfers.forEach(g => {
+        const m = currMoney[g] || { start: 0, end: 0 };
+
+        const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][currentRoundIdx] !== undefined) 
+                            ? cachedRoundRankProfit[g][currentRoundIdx] 
+                            : 0;
+
+        const totalDiff = (m.start === 0 && m.end === 0) ? 0 : (m.end - m.start);
+        const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : (totalDiff - rankPenalty);
+
+        const penaltyText = rankPenalty === 0 ? "0.0만" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
+        const penaltyBg = rankPenalty < 0 ? "rgba(220, 38, 38, 0.12)" : "rgba(0, 0, 0, 0.03)";
+        const penaltyColor = rankPenalty < 0 ? "#dc2626" : "#64748b";
+
+        const strokeText = pureStrokeDiff === 0 ? "0.0만" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
+        const strokeBg = pureStrokeDiff > 0 ? "rgba(22, 163, 74, 0.08)" : (pureStrokeDiff < 0 ? "rgba(220, 38, 38, 0.08)" : "rgba(0, 0, 0, 0.02)");
+        const strokeColor = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-weight:800; color:var(--text-main);">${g}</td>
+                <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
+                <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
+                <td>
+                    <span class="money-result-badge" style="background:${penaltyBg}; color:${penaltyColor}; font-weight:900;">
+                        ${penaltyText}
+                    </span>
+                </td>
+                <td>
+                    <span class="money-result-badge" style="background:${strokeBg}; color:${strokeColor}; font-weight:800;">
+                        ${strokeText}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function updateMoney(name, type, value) {
+    saveState();
+    const currentRoundIdx = selectedMoneyRoundIdx;
+    if (!appData.roundMoney[currentRoundIdx]) appData.roundMoney[currentRoundIdx] = {};
+    if (!appData.roundMoney[currentRoundIdx][name]) appData.roundMoney[currentRoundIdx][name] = { start: 0, end: 0 };
+    
+    appData.roundMoney[currentRoundIdx][name][type] = parseNumber(value);
+    syncToSupabase(appData);
+    renderAll();
+}
+
+function renderTable() {
+    const headerRow = document.getElementById('headerRow');
+    const tbody = document.getElementById('scoreTbody');
+
+    let headerHtml = `<th>이름</th>`;
+    for (let r = 0; r < appData.totalRounds; r++) {
+        const courseVal = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
+        const photos = (appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r] : [];
+        const photoCount = photos.length;
+
+        headerHtml += `
+            <th>
+                <div class="header-round-title">${r + 1}차</div>
+                <input type="text" class="course-input" value="${courseVal}" placeholder="골프장" onchange="updateCourse(${r}, this.value)">
+                <div class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${photoCount}장</div>
+            </th>`;
+    }
+
+    headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th><th style="white-space:nowrap;">최종 계급</th>`;
+    headerRow.innerHTML = headerHtml;
+
+    tbody.innerHTML = "";
+    golfers.forEach(name => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-name', name);
+
+        let rowHtml = `<td class="golfer-name">${name}</td>`;
         
-        const saveStatus = document.getElementById('saveStatus');
-        if (saveStatus) {
-            saveStatus.style.opacity = '1';
-            setTimeout(() => { saveStatus.style.opacity = '0.6'; }, 1000);
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const val = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+            rowHtml += `<td class="score-cell"><input type="text" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${val}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
+
+        rowHtml += `<td class="avg-cell">-</td><td class="rank-cell">-</td>`;
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+    });
+}
+
+function updateCourse(r, val) {
+    saveState();
+    if (!appData.courses) appData.courses = [];
+    appData.courses[r] = val;
+    syncToSupabase(appData);
+}
+
+function updateScore(name, r, val) {
+    saveState();
+    if (!appData.scores) appData.scores = {};
+    if (!appData.scores[name]) appData.scores[name] = [];
+    appData.scores[name][r] = val === "" ? "" : parseNumber(val);
+    syncToSupabase(appData);
+    renderAll();
+}
+
+function addRound() {
+    saveState();
+    appData.totalRounds++;
+    if (!appData.courses) appData.courses = [];
+    appData.courses.push("");
+    
+    if (!appData.roundPhotos) appData.roundPhotos = [];
+    appData.roundPhotos.push([]);
+
+    golfers.forEach(g => {
+        if (!appData.scores[g]) appData.scores[g] = [];
+        appData.scores[g].push("");
+    });
+
+    const newRoundMoney = {};
+    golfers.forEach(g => newRoundMoney[g] = { start: 0, end: 0 });
+    if (!appData.roundMoney) appData.roundMoney = [];
+    appData.roundMoney.push(newRoundMoney);
+
+    selectedMoneyRoundIdx = appData.totalRounds - 1;
+
+    syncToSupabase(appData);
+    renderAll();
+    showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
+    
+    setTimeout(() => {
+        const wrapper = document.getElementById('tableWrapper');
+        if(wrapper) {
+            wrapper.scrollTo({ left: wrapper.scrollWidth, behavior: 'smooth' });
+        }
+    }, 50);
+}
+
+function removeRound() {
+    if (appData.totalRounds <= 2) {
+        showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다.");
+        return;
+    }
+    saveState();
+    appData.totalRounds--;
+    if (appData.courses) appData.courses.pop();
+    if (appData.roundPhotos && appData.roundPhotos.length > 0) appData.roundPhotos.pop();
+    
+    golfers.forEach(name => {
+        if (appData.scores[name]) appData.scores[name].pop();
+    });
+
+    if (appData.roundMoney && appData.roundMoney.length > 0) {
+        appData.roundMoney.pop();
     }
 
-    function processAllRoundSettlements() {
-        const totalRounds = appData.totalRounds;
-        const totalPayments = {};
-        golfers.forEach(g => totalPayments[g] = 0);
+    if (selectedMoneyRoundIdx >= appData.totalRounds) {
+        selectedMoneyRoundIdx = appData.totalRounds - 1;
+    }
 
-        const historyList = document.getElementById('historyList');
-        if (historyList) historyList.innerHTML = "";
+    syncToSupabase(appData);
+    renderAll();
+    showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
+}
 
-        document.querySelectorAll('.rank-cell').forEach(rc => rc.textContent = '-');
+let selectedPhotoRoundIdx = -1;
 
-        for (let r = 2; r < totalRounds; r++) {
-            const handicapAvg = {};
-            let isComplete = true;
+function openRoundPhotoModal(r) {
+    selectedPhotoRoundIdx = r;
+    document.getElementById('roundPhotoTitle').textContent = `📸 ${r + 1}차전 갤러리`;
+    renderRoundPhotos();
+    document.getElementById('roundPhotoModal').classList.add('active');
+}
 
-            golfers.forEach(g => {
-                const s1 = parseFloat(appData.scores[g][r - 2]);
-                const s2 = parseFloat(appData.scores[g][r - 1]);
-                if (isNaN(s1) || isNaN(s2)) isComplete = false;
-                handicapAvg[g] = Math.floor((s1 + s2) / 2);
-            });
+function closeRoundPhotoModal(e) {
+    if(e && e.target !== document.getElementById('roundPhotoModal') && e.target.className !== 'close-btn') return;
+    document.getElementById('roundPhotoModal').classList.remove('active');
+}
 
-            const currentScores = {};
-            golfers.forEach(g => {
-                const sr = parseFloat(appData.scores[g][r]);
-                if (isNaN(sr)) isComplete = false;
-                currentScores[g] = sr;
-            });
+function renderRoundPhotos() {
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = "";
+    const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) ? appData.roundPhotos[selectedPhotoRoundIdx] : [];
+    
+    if (photos.length === 0) {
+        grid.innerHTML = `<div style="grid-column: span 2; text-align:center; padding: 20px; color:#94a3b8; font-size: 0.8rem;">등록된 사진이 없습니다.</div>`;
+        return;
+    }
 
-            if (!isComplete) continue;
+    photos.forEach((photoBase64, index) => {
+        grid.innerHTML += `
+            <div class="photo-item">
+                <img src="${photoBase64}" onclick="openImageViewModal('${photoBase64}')">
+                <button type="button" class="photo-delete-btn" onclick="deleteRoundPhoto(${index})">✕</button>
+            </div>
+        `;
+    });
+}
 
-            const matchResults = {};
-            golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 });
+function handleRoundPhotoUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-            for (let i = 0; i < golfers.length; i++) {
-                for (let j = i + 1; j < golfers.length; j++) {
-                    const g1 = golfers[i];
-                    const g2 = golfers[j];
+    if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
+    if (!appData.roundPhotos[selectedPhotoRoundIdx]) appData.roundPhotos[selectedPhotoRoundIdx] = [];
 
-                    const g1Avg = handicapAvg[g1];
-                    const g2Avg = handicapAvg[g2];
+    if (appData.roundPhotos[selectedPhotoRoundIdx].length + files.length > 10) {
+        showToast("⚠️ 사진은 차수별로 최대 10장까지만 등록 가능합니다.");
+        return;
+    }
 
-                    const g1Score = currentScores[g1];
-                    const g2Score = currentScores[g2];
+    showToast("⏳ 사진을 압축하여 업로드 중입니다...");
+    saveState();
+    
+    let loadedCount = 0;
 
-                    const g1Adjusted = g1Score - (g1Avg - g2Avg);
-                    const g2Adjusted = g2Score;
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX = 800; 
+                let w = img.width; let h = img.height;
+                if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } 
+                else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                
+                appData.roundPhotos[selectedPhotoRoundIdx].push(dataUrl);
+                loadedCount++;
 
-                    if (g1Adjusted < g2Adjusted) {
-                        matchResults[g1].wins++;
-                        matchResults[g2].losses++;
-                    } else if (g1Adjusted > g2Adjusted) {
-                        matchResults[g1].losses++;
-                        matchResults[g2].wins++;
-                    } else {
-                        if (g1Avg < g2Avg) {
-                            matchResults[g1].wins++;
-                            matchResults[g2].losses++;
-                        } else if (g2Avg < g1Avg) {
-                            matchResults[g2].wins++;
-                            matchResults[g1].losses++;
-                        } else {
-                            matchResults[g1].ties++;
-                            matchResults[g2].ties++;
-                        }
-                    }
-
-                    matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
-                    matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
+                if (loadedCount === files.length) {
+                    syncToSupabase(appData);
+                    renderRoundPhotos();
+                    renderAll(); 
+                    showToast("✅ 사진 업로드 완료!");
+                    document.getElementById('roundPhotoUpload').value = '';
                 }
             }
-
-            const sortedGolfers = [...golfers].sort((a, b) => {
-                if (matchResults[b].wins !== matchResults[a].wins) {
-                    return matchResults[b].wins - matchResults[a].wins;
-                }
-                return matchResults[b].totalDiff - matchResults[a].totalDiff;
-            });
-
-            let roundHistoryHtml = `
-                <div class="history-item">
-                    <div class="history-header">⛳ ${r + 1}차전 정산</div>
-                    <div class="history-grid">
-            `;
-
-            sortedGolfers.forEach((golferName, index) => {
-                const rankInfo = RANK_PRICES[index];
-                totalPayments[golferName] += rankInfo.price;
-
-                const priceDisplay = (rankInfo.price === 0) ? '0원' : `${(rankInfo.price / 10000)}만`;
-
-                roundHistoryHtml += `
-                    <div class="history-member">
-                        <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
-                        <div style="display:flex; align-items:center; gap:4px;">
-                            <span class="rank-badge ${rankInfo.class}">${rankInfo.name.split(' ')[0]}</span>
-                            <span style="font-weight:800; color:var(--primary-gold);">${priceDisplay}</span>
-                        </div>
-                    </div>
-                `;
-
-                const row = document.querySelector(`tr[data-name="${golferName}"]`);
-                if (row) {
-                    const rc = row.querySelector('.rank-cell');
-                    if (rc) {
-                        rc.innerHTML = `
-                            <div class="rank-cell-box">
-                                <span class="rank-badge ${rankInfo.class}">${rankInfo.name}</span>
-                                <div class="price-text">💵 ${rankInfo.price.toLocaleString()}원</div>
-                            </div>
-                        `;
-                    }
-                }
-            });
-
-            roundHistoryHtml += `</div></div>`;
-            if (historyList) historyList.innerHTML += roundHistoryHtml;
         }
+    });
+}
 
-        /* 🏆 상단 통합 정산 요약 카드 */
-        const summaryGrid = document.getElementById('summaryGrid');
-        if (summaryGrid) {
-            summaryGrid.innerHTML = "";
-            golfers.forEach(g => {
-                const rankPrice = totalPayments[g] || 0;
-                const m = (appData.money && appData.money[g]) ? appData.money[g] : { start: 0, end: 0, accumulatedDiff: 0 };
-                
-                const currentGameDiff = m.end - m.start;
-                const totalGameDiff = (m.accumulatedDiff || 0) + currentGameDiff;
-                const finalBalance = totalGameDiff - rankPrice;
-                
-                const gameDiffText = (totalGameDiff >= 0 ? "+" : "") + (totalGameDiff / 10000).toFixed(1) + "만";
-                const rankPriceText = (rankPrice / 10000).toFixed(1) + "만";
-                
-                let finalColor = "#b8860b";
-                let finalText = (finalBalance >= 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
-                
-                if (finalBalance > 0) finalColor = "#16a34a";
-                if (finalBalance < 0) finalColor = "#dc2626";
+function deleteRoundPhoto(photoIdx) {
+    if(confirm("이 사진을 삭제하시겠습니까?")) {
+        saveState();
+        appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1);
+        syncToSupabase(appData);
+        renderRoundPhotos();
+        renderAll();
+        showToast("🗑️ 사진이 삭제되었습니다.");
+    }
+}
 
-                summaryGrid.innerHTML += `
-                    <div class="summary-item">
-                        <div class="name">${g}</div>
-                        <div class="detail-line">계급: -${rankPriceText}</div>
-                        <div class="detail-line">내기: ${gameDiffText}</div>
-                        <div class="final-total" style="color: ${finalColor};">
-                            합산: ${finalText}
-                        </div>
-                    </div>
-                `;
-            });
-        }
+function openImageViewModal(src) {
+    document.getElementById('fullImageView').src = src;
+    document.getElementById('imageViewModal').classList.add('active');
+}
+
+function closeImageViewModal() {
+    document.getElementById('imageViewModal').classList.remove('active');
+    document.getElementById('fullImageView').src = "";
+}
+
+function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
+    let badges = [];
+    const ranks = golferRankHistory[g] || [];
+
+    if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
+        badges.push(`<div class="season-badge badge-eagle-3">🦅 독수리 뱃지 획득! 🎉</div>`);
+    } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
+        badges.push(`<div class="season-badge badge-eagle-2">🦅 독수리 2연속!</div>`);
     }
 
-    function renderHandicapMatchCard(r1, r2) {
-        const matchGrid = document.getElementById('matchGrid');
-        if (!matchGrid) return;
-        matchGrid.innerHTML = "";
+    if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
+        badges.push(`<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`);
+    }
+    if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
+        badges.push(`<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`);
+    }
 
-        const avgScores = {};
+    return badges;
+}
+
+let golferAvgScores = {};
+let golferMinScores = {};
+
+function calculateAndRender() {
+    let targetR1 = -1, targetR2 = -1;
+    for (let r = appData.totalRounds - 1; r >= 1; r--) {
+        let completeCurr = true;
+        let completePrev = true;
         golfers.forEach(g => {
-            const s1 = parseFloat(appData.scores[g][r1]);
-            const s2 = parseFloat(appData.scores[g][r2]);
-            if (!isNaN(s1) && !isNaN(s2)) {
-                avgScores[g] = Math.floor((s1 + s2) / 2);
-            }
+            const sCurr = appData.scores[g] ? appData.scores[g][r] : "";
+            const sPrev = appData.scores[g] ? appData.scores[g][r - 1] : "";
+            if (sCurr === "" || sCurr === undefined || isNaN(parseFloat(sCurr))) completeCurr = false;
+            if (sPrev === "" || sPrev === undefined || isNaN(parseFloat(sPrev))) completePrev = false;
         });
 
-        if (Object.keys(avgScores).length < 4) {
-            matchGrid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-sub);">스코어를 먼저 입력해 주세요.</div>`;
-            return;
+        if (completeCurr && completePrev) {
+            targetR1 = r - 1;
+            targetR2 = r;
+            break;
         }
+    }
+
+    if (targetR1 === -1) {
+        targetR1 = 0;
+        targetR2 = 1;
+    }
+
+    const infoText = document.getElementById('infoText');
+    const matchCardTitle = document.getElementById('matchCardTitle');
+    const avgHeaderTitle = document.getElementById('avgHeaderTitle');
+
+    const titleStr = `${targetR1 + 1}차 & ${targetR2 + 1}차`;
+    const avgTitleStr = `${targetR1 + 1}·${targetR2 + 1}차 평균`;
+
+    if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
+    if (matchCardTitle) matchCardTitle.innerHTML = `🤝 ${avgTitleStr} 기반 1:1 핸디캡 관계`;
+    if (avgHeaderTitle) avgHeaderTitle.innerHTML = avgTitleStr;
+
+    const rows = document.querySelectorAll('#scoreTbody tr');
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        const s1 = parseFloat(appData.scores[name] ? appData.scores[name][targetR1] : NaN);
+        const s2 = parseFloat(appData.scores[name] ? appData.scores[name][targetR2] : NaN);
+
+        const avgCell = row.querySelector('.avg-cell');
+        if (!isNaN(s1) && !isNaN(s2)) {
+            const avg = Math.floor((s1 + s2) / 2);
+            if (avgCell) avgCell.textContent = `${avg}`;
+        } else {
+            if (avgCell) avgCell.textContent = `-`;
+        }
+    });
+
+    processAllRoundSettlements();
+    renderHandicapMatchCard(targetR1, targetR2);
+}
+
+function processAllRoundSettlements() {
+    const totalRounds = appData.totalRounds;
+    const totalRankProfit = {};
+    const roundRankProfit = {};
+    golferRankHistory = {}; 
+
+    golfers.forEach(g => {
+        totalRankProfit[g] = 0;
+        roundRankProfit[g] = {};
+        golferRankHistory[g] = [];
+    });
+
+    const historyList = document.getElementById('historyList');
+    if (historyList) historyList.innerHTML = "";
+
+    document.querySelectorAll('.rank-cell').forEach(rc => rc.textContent = '-');
+
+    for (let r = 2; r < totalRounds; r++) {
+        const handicapAvg = {};
+        let isComplete = true;
+
+        golfers.forEach(g => {
+            const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
+            const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
+            if (isNaN(s1) || isNaN(s2)) isComplete = false;
+            handicapAvg[g] = Math.floor((s1 + s2) / 2);
+        });
+
+        const currentScores = {};
+        golfers.forEach(g => {
+            const sr = parseFloat(appData.scores[g] ? appData.scores[g][r] : NaN);
+            if (isNaN(sr)) isComplete = false;
+            currentScores[g] = sr;
+        });
+
+        if (!isComplete) continue;
+
+        const matchResults = {};
+        golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 });
 
         for (let i = 0; i < golfers.length; i++) {
             for (let j = i + 1; j < golfers.length; j++) {
                 const g1 = golfers[i];
                 const g2 = golfers[j];
-                const diff = avgScores[g1] - avgScores[g2];
 
-                let matchText = "";
-                if (diff > 0) {
-                    matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: 0.88rem;">${diff}타</b> 받음`;
-                } else if (diff < 0) {
-                    matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: 0.88rem;">${Math.abs(diff)}타</b> 받음`;
+                const g1Avg = handicapAvg[g1];
+                const g2Avg = handicapAvg[g2];
+
+                const g1Score = currentScores[g1];
+                const g2Score = currentScores[g2];
+
+                const g1Adjusted = g1Score - (g1Avg - g2Avg);
+                const g2Adjusted = g2Score;
+
+                if (g1Adjusted < g2Adjusted) {
+                    matchResults[g1].wins++;
+                    matchResults[g2].losses++;
+                } else if (g1Adjusted > g2Adjusted) {
+                    matchResults[g1].losses++;
+                    matchResults[g2].wins++;
                 } else {
-                    matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
+                    if (g1Avg < g2Avg) {
+                        matchResults[g1].wins++;
+                        matchResults[g2].losses++;
+                    } else if (g2Avg < g1Avg) {
+                        matchResults[g2].wins++;
+                        matchResults[g1].losses++;
+                    } else {
+                        matchResults[g1].ties++;
+                        matchResults[g2].ties++;
+                    }
                 }
 
-                const item = document.createElement('div');
-                item.className = 'match-item';
-                item.innerHTML = matchText;
-                matchGrid.appendChild(item);
+                matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
+                matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
+            }
+        }
+
+        const sortedGolfers = [...golfers].sort((a, b) => {
+            if (matchResults[b].wins !== matchResults[a].wins) {
+                return matchResults[b].wins - matchResults[a].wins;
+            }
+            return matchResults[b].totalDiff - matchResults[a].totalDiff;
+        });
+
+        let roundHistoryHtml = `
+            <div class="history-item">
+                <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
+                <div class="history-grid">
+        `;
+
+        sortedGolfers.forEach((golferName, index) => {
+            const rankInfo = RANK_CONFIG[index];
+            const profit = rankInfo.penalty;
+            
+            totalRankProfit[golferName] += profit;
+            roundRankProfit[golferName][r] = profit;
+            golferRankHistory[golferName].push(index);
+
+            const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
+
+            roundHistoryHtml += `
+                <div class="history-member">
+                    <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
+                    <div style="display:flex; align-items:center; gap:2px;">
+                        <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
+                        <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
+                    </div>
+                </div>
+            `;
+
+            const row = document.querySelector(`tr[data-name="${golferName}"]`);
+            if (row) {
+                const rc = row.querySelector('.rank-cell');
+                if (rc) {
+                    rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>`;
+                }
+            }
+        });
+
+        roundHistoryHtml += `</div></div>`;
+        if (historyList) historyList.innerHTML += roundHistoryHtml;
+    }
+
+    cachedRoundRankProfit = roundRankProfit;
+
+    let overallMinScore = Infinity;
+    let overallMinAvg = Infinity;
+    golferAvgScores = {};
+    golferMinScores = {};
+    golferBadgesMap = {}; 
+
+    golfers.forEach(g => {
+        const validScores = (appData.scores && appData.scores[g]) 
+            ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
+            : [];
+
+        if (validScores.length > 0) {
+            const userMin = Math.min(...validScores);
+            golferMinScores[g] = userMin;
+            if (userMin < overallMinScore) {
+                overallMinScore = userMin;
+            }
+
+            const sum = validScores.reduce((acc, curr) => acc + curr, 0);
+            const userAvg = sum / validScores.length;
+            golferAvgScores[g] = userAvg;
+            if (userAvg < overallMinAvg) {
+                overallMinAvg = userAvg;
+            }
+        } else {
+            golferMinScores[g] = null;
+            golferAvgScores[g] = null;
+        }
+    });
+
+    const summaryGrid = document.getElementById('summaryGrid');
+    if (summaryGrid) {
+        summaryGrid.innerHTML = "";
+        golfers.forEach(g => {
+            const rankProfit = totalRankProfit[g] || 0; 
+            let totalPureStrokeProfit = 0; 
+
+            if (appData.roundMoney) {
+                for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                    const rMoney = appData.roundMoney[rIdx];
+                    if (!rMoney) continue;
+
+                    const m = rMoney[g] || { start: 0, end: 0 };
+                    if (m.start > 0 || m.end > 0) {
+                        const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
+                        const totalDiff = m.end - m.start;
+                        const pureStroke = totalDiff - rPenalty; 
+                        
+                        if (pureStroke < 0) {
+                            totalPureStrokeProfit += pureStroke;
+                        }
+                    }
+                }
+            }
+
+            const allBadges = getGolferBadgesArray(g, overallMinAvg, overallMinScore);
+            golferBadgesMap[g] = allBadges; 
+            const summaryBadgesHtml = allBadges.slice(0, 2).join('');
+            
+            const finalBalance = rankProfit + totalPureStrokeProfit;
+            
+            const rankProfitText = rankProfit === 0 ? "0.0만" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
+            const strokeProfitText = totalPureStrokeProfit === 0 ? "0.0만" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
+            
+            let finalColor = "#64748b";
+            let finalText = finalBalance === 0 ? "0.0만" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
+            
+            if (finalBalance > 0) finalColor = "#16a34a";
+            if (finalBalance < 0) finalColor = "#dc2626";
+
+            summaryGrid.innerHTML += `
+                <div class="summary-item">
+                    <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
+                    <div class="detail-line">계급: ${rankProfitText}</div>
+                    <div class="detail-line">타수: ${strokeProfitText}</div>
+                    ${summaryBadgesHtml}
+                    <div class="final-total" style="color: ${finalColor};">
+                        합산: ${finalText}
+                    </div>
+                </div>
+            `;
+        });
+    }
+}
+
+function renderHandicapMatchCard(r1, r2) {
+    const matchGrid = document.getElementById('matchGrid');
+    if (!matchGrid) return;
+    matchGrid.innerHTML = "";
+
+    const avgScores = {};
+    golfers.forEach(g => {
+        const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
+        const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
+        if (!isNaN(s1) && !isNaN(s2)) {
+            avgScores[g] = Math.floor((s1 + s2) / 2);
+        }
+    });
+
+    if (Object.keys(avgScores).length < 4) {
+        matchGrid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-sub);">스코어를 먼저 입력해 주세요.</div>`;
+        return;
+    }
+
+    for (let i = 0; i < golfers.length; i++) {
+        for (let j = i + 1; j < golfers.length; j++) {
+            const g1 = golfers[i];
+            const g2 = golfers[j];
+            const diff = avgScores[g1] - avgScores[g2];
+
+            let matchText = "";
+            if (diff > 0) {
+                matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음`;
+            } else if (diff < 0) {
+                matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음`;
+            } else {
+                matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = 'match-item';
+            item.innerHTML = matchText;
+            matchGrid.appendChild(item);
+        }
+    }
+}
+
+function openHistoryModal() {
+    const modal = document.getElementById('historyModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeHistoryModal(e) {
+    if(e && e.target !== document.getElementById('historyModal') && e.target.className !== 'close-btn') return;
+    const modal = document.getElementById('historyModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function openPersonalReport(name) {
+    document.getElementById('reportTitle').textContent = `⛳ ${name} 통계 리포트`;
+    
+    const validScores = [];
+    if (appData.scores && appData.scores[name]) {
+        appData.scores[name].forEach((s) => {
+            if (s !== "" && !isNaN(parseFloat(s))) {
+                validScores.push(parseFloat(s));
+            }
+        });
+    }
+
+    let max = "-", min = "-", avg = "-";
+    if(validScores.length > 0) {
+        max = Math.max(...validScores);
+        min = Math.min(...validScores);
+        avg = (validScores.reduce((a,b)=>a+b,0) / validScores.length).toFixed(1);
+    }
+
+    const ranks = golferRankHistory[name] || [];
+    const rankCounts = [0, 0, 0, 0]; 
+    ranks.forEach(r => rankCounts[r]++);
+
+    const personalBadgesHtml = (golferBadgesMap[name] || []).join('');
+    const badgeSection = personalBadgesHtml ? `<div class="report-badges-area" style="margin-bottom:12px; justify-content:center;">${personalBadgesHtml}</div>` : '';
+
+    const winRates = {};
+    golfers.forEach(g => { if(g !== name) winRates[g] = {w:0, l:0, t:0}; });
+
+    for (let r = 2; r < appData.totalRounds; r++) {
+        let isComplete = true;
+        const hAvg = {};
+        const cScore = {};
+        golfers.forEach(g => {
+            const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r-2] : NaN);
+            const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r-1] : NaN);
+            const sr = parseFloat(appData.scores[g] ? appData.scores[g][r] : NaN);
+            if(isNaN(s1) || isNaN(s2) || isNaN(sr)) isComplete = false;
+            hAvg[g] = Math.floor((s1+s2)/2);
+            cScore[g] = sr;
+        });
+
+        if(!isComplete) continue;
+
+        for(let opp in winRates) {
+            const myAdj = cScore[name] - (hAvg[name] - hAvg[opp]);
+            const oppAdj = cScore[opp];
+
+            if(myAdj < oppAdj) winRates[opp].w++;
+            else if(myAdj > oppAdj) winRates[opp].l++;
+            else {
+                if(hAvg[name] < hAvg[opp]) winRates[opp].w++;
+                else if(hAvg[opp] < hAvg[name]) winRates[opp].l++;
+                else winRates[opp].t++;
             }
         }
     }
 
-    function resetAllData() {
-        saveHistoryState();
-        localStorage.removeItem(STORAGE_KEY);
-        appData = getDefaultData();
-        renderTable();
-        renderMoneyTable();
-        calculateAndSave(false);
-        showToast("🔄 모든 데이터가 전체 초기화되었습니다.");
-    }
-</script>
+    let highestWinRate = -1;
+    let lowestWinRate = 101;
+    let atm = "-";
+    let nemesis = "-";
+    let atmWinCount = -1;
+    let nemesisLossCount = -1;
 
-</body>
-</html>
+    let winRateHtml = "";
+    for(let opp in winRates) {
+        const matchCount = winRates[opp].w + winRates[opp].l + winRates[opp].t;
+        if (matchCount > 0) {
+            const rate = Math.round((winRates[opp].w / matchCount) * 100);
+            winRateHtml += `<div><span>vs ${opp}</span> <b>승률 ${rate}%</b> <span>(${winRates[opp].w}승 ${winRates[opp].t}무 ${winRates[opp].l}패)</span></div>`;
+            
+            if (rate > highestWinRate) {
+                highestWinRate = rate; atm = opp; atmWinCount = winRates[opp].w;
+            } else if (rate === highestWinRate) {
+                if (winRates[opp].w > atmWinCount) { atm = opp; atmWinCount = winRates[opp].w; }
+            }
+
+            if (rate < lowestWinRate) {
+                lowestWinRate = rate; nemesis = opp; nemesisLossCount = winRates[opp].l;
+            } else if (rate === lowestWinRate) {
+                if (winRates[opp].l > nemesisLossCount) { nemesis = opp; nemesisLossCount = winRates[opp].l; }
+            }
+        }
+    }
+
+    if (highestWinRate === -1) { 
+        atm = "데이터 부족"; nemesis = "데이터 부족";
+        winRateHtml = "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
+    } else {
+        if (highestWinRate === lowestWinRate) {
+            if (highestWinRate >= 50) nemesis = "없음";
+            else atm = "없음";
+        }
+    }
+
+    const rivalHtml = `
+        <div class="stat-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 10px;">
+            <div class="stat-box" style="border-color:#fca5a5; background:#fef2f2;">
+                <div class="stat-label" style="color:#b91c1c;">😈 나의 천적</div>
+                <div class="stat-val" style="color:#7f1d1d; font-size:1rem;">${nemesis}</div>
+            </div>
+            <div class="stat-box" style="border-color:#7dd3fc; background:#f0f9ff;">
+                <div class="stat-label" style="color:#0369a1;">🏧 승점 자판기</div>
+                <div class="stat-val" style="color:#0c4a6e; font-size:1rem;">${atm}</div>
+            </div>
+        </div>
+    `;
+
+    const content = `
+        ${badgeSection}
+        <div class="report-section">
+            <div class="report-title">📊 스코어 요약</div>
+            <div class="stat-grid">
+                <div class="stat-box"><div class="stat-label">최저타</div><div class="stat-val" style="color:#2563eb;">${min}</div></div>
+                <div class="stat-box"><div class="stat-label">평균타수</div><div class="stat-val">${avg}</div></div>
+                <div class="stat-box"><div class="stat-label">최고타</div><div class="stat-val" style="color:#dc2626;">${max}</div></div>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <div class="report-title">🎖️ 계급별 달성 횟수</div>
+            <div class="stat-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-box"><div class="stat-label">🦅독수리</div><div class="stat-val">${rankCounts[0]}회</div></div>
+                <div class="stat-box"><div class="stat-label">⚡매</div><div class="stat-val">${rankCounts[1]}회</div></div>
+                <div class="stat-box"><div class="stat-label">🦩학</div><div class="stat-val">${rankCounts[2]}회</div></div>
+                <div class="stat-box"><div class="stat-label">🐦참새</div><div class="stat-val">${rankCounts[3]}회</div></div>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <div class="report-title">⚔️ 1:1 통산 승률 및 천적 관계</div>
+            ${rivalHtml}
+            <div class="winrate-list">${winRateHtml}</div>
+        </div>
+    `;
+
+    document.getElementById('reportContent').innerHTML = content;
+    document.getElementById('personalReportModal').classList.add('active');
+}
+
+function closePersonalReport(e) {
+    if(e && e.target !== document.getElementById('personalReportModal') && e.target.className !== 'close-btn') return;
+    document.getElementById('personalReportModal').classList.remove('active');
+}
+
+function resetAllData() {
+    if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
+        saveState();
+        appData = getDefaultData();
+        selectedMoneyRoundIdx = appData.totalRounds - 1;
+        syncToSupabase(appData);
+        renderAll();
+        showToast("🔄 모든 데이터가 초기화되었습니다.");
+    }
+}
