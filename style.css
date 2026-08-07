@@ -106,7 +106,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .reset-btn { background: #dc2626; color: white; }
 .undo-btn { background: #475569; color: white; }
 
-/* 🔥 차수 간격을 적당히 여유 있게 넓혀주는 테이블 세팅 🔥 */
+/* 🔥 가로 스크롤 및 차수 간격 세팅 🔥 */
 .table-wrapper { 
     overflow-x: auto; 
     -webkit-overflow-scrolling: touch; 
@@ -124,16 +124,16 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
     text-align: center; 
 }
 th, td { 
-    padding: 6px 5px; /* 좌우 여백을 살짝 늘려 차수 간격을 여유 있게 조정 */
+    padding: 6px 5px; 
     border-bottom: 1px solid #f1f5f9; 
     vertical-align: middle; 
-    min-width: 52px; /* 최소 칸 너비를 살짝 넓힘 */
+    min-width: 58px; /* 최소 칸 너비를 살짝 넓혀 여유 부여 */
 }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 table th:first-child, table td:first-child, .golfer-name { white-space: nowrap !important; word-break: keep-all !important; min-width: 54px !important; font-weight: 800; font-size: clamp(0.72rem, 2.8vw, 0.8rem); position: sticky; left: 0; background-color: #f1f5f9 !important; z-index: 2; padding-left: 6px !important; padding-right: 6px !important; }
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
-/* 🔥 입력칸 크기 및 여백 세팅 🔥 */
+/* 🔥 골프장 입력칸과 사진 갤러리 버튼 좌우로 살짝 확장 (50px 👉 58px) 🔥 */
 input.score-input { 
     width: 34px; 
     height: 28px; 
@@ -147,7 +147,7 @@ input.score-input {
     display: block; 
 }
 input.course-input { 
-    width: 50px; 
+    width: 58px; /* 좌우로 살짝 키움 */
     padding: 2px 1px; 
     border: 1px solid rgba(184, 134, 11, 0.4); 
     border-radius: 4px; 
@@ -159,7 +159,7 @@ input.course-input {
     display: block;
 }
 .photo-btn { 
-    width: 50px; 
+    width: 58px; /* 좌우로 살짝 키움 */
     padding: 2px 1px; 
     border: 1px solid rgba(184, 134, 11, 0.4); 
     border-radius: 4px; 
