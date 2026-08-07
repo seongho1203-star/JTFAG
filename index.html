@@ -35,7 +35,7 @@
         </h2>
         <div class="notice-grid">
             <div class="notice-box">
-                <label>📅 다음 라운 일시</label>
+                <label>📅 다음 라운드 일시</label>
                 <input type="text" id="nextRoundInput" class="notice-input" placeholder="예: 8월16일 함평엘리체" onchange="updateNoticeData()" oninput="updateNoticeData()">
             </div>
             <div class="notice-box">
@@ -111,8 +111,8 @@
 </div>
 
 <!-- 계급 이력 모달 -->
-<div class="modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="historyModal" onclick="if(event.target === this) closeHistoryModal()">
+    <div class="modal-content">
         <div class="modal-header">
             <h3>📜 라운드별 계급 정산 이력</h3>
             <button type="button" class="close-btn" onclick="closeHistoryModal()">✕</button>
@@ -124,8 +124,8 @@
 </div>
 
 <!-- 개인별 리포트 모달 -->
-<div class="modal-overlay" id="personalReportModal" onclick="closePersonalReport(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="personalReportModal" onclick="if(event.target === this) closePersonalReport()">
+    <div class="modal-content">
         <div class="modal-header">
             <h3 id="reportTitle">⛳ 개인별 통계 리포트</h3>
             <button type="button" class="close-btn" onclick="closePersonalReport()">✕</button>
@@ -137,8 +137,8 @@
 </div>
 
 <!-- 라운드별 사진 갤러리 모달 -->
-<div class="modal-overlay" id="roundPhotoModal" onclick="closeRoundPhotoModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="roundPhotoModal" onclick="if(event.target === this) closeRoundPhotoModal()">
+    <div class="modal-content">
         <div class="modal-header">
             <h3 id="roundPhotoTitle">📸 사진 갤러리</h3>
             <button type="button" class="close-btn" onclick="closeRoundPhotoModal()">✕</button>
@@ -152,8 +152,8 @@
 </div>
 
 <!-- 사진 크게 보기 모달 -->
-<div class="modal-overlay" id="imageViewModal" onclick="closeImageViewModal()">
-    <div class="modal-content" style="background:transparent; border:none; box-shadow:none; max-width:95vw;" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="imageViewModal" onclick="if(event.target === this) closeImageViewModal()">
+    <div class="modal-content" style="background:transparent; border:none; box-shadow:none; max-width:95vw;">
         <div style="text-align:right; margin-bottom:8px;">
             <button type="button" class="close-btn" style="color:white; font-size:1.5rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px;" onclick="closeImageViewModal()">✕</button>
         </div>
