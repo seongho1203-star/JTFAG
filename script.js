@@ -502,13 +502,13 @@ function addRound() {
     renderAll();
     showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     
-    // 차수 추가 시 테이블 맨 우측으로 부드럽게 자동 스크롤
+    // 스크롤 보장 로직 (렌더링 완료 후 실행되도록 지연 시간 증가 및 강제 스크롤 처리)
     setTimeout(() => {
         const wrapper = document.getElementById('tableWrapper');
         if(wrapper) {
-            wrapper.scrollTo({ left: wrapper.scrollWidth, behavior: 'smooth' });
+            wrapper.scrollTo({ left: wrapper.scrollWidth + 1000, behavior: 'smooth' });
         }
-    }, 100);
+    }, 150);
 }
 
 function removeRound() {
