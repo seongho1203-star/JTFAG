@@ -14,18 +14,6 @@
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Supabase 공식 최신 SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <script>
-        // 🔑 Supabase 연동 정보 설정 완료
-        const SUPABASE_URL = "https://xhulylksiexhtifyrokp.supabase.co"; 
-        const SUPABASE_ANON_KEY = "Sb_publishable_7ZcA31EuTcb5vDhTIyq-dQ_Og0UJZO4";
-
-        const { createClient } = window.supabase;
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        window.supabaseClient = supabase;
-    </script>
 
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -316,6 +304,9 @@
 <div id="customToast"></div>
 
 <script>
+    const SUPABASE_URL = "https://xhulylksiexhtifyrokp.supabase.co";
+    const SUPABASE_ANON_KEY = "Sb_publishable_7ZcA31EuTcb5vDhTIyq-dQ_Og0UJZO4";
+
     const ADMIN_PASSWORD = "1234";
     let isFundUnlocked = false;
     const golfers = ["이관교", "김지명", "신성호", "박승수"];
@@ -368,6 +359,7 @@
         return [];
     }
 
+    // 🚀 순수 Fetch API 기반 Supabase Storage 사진 업로드
     async function handleGlobalFileChange(inputElem) {
         const files = Array.from(inputElem.files);
         if (files.length === 0 || viewingPhotoRoundIdx < 0) return;
@@ -382,22 +374,23 @@
                 const fileExt = file.name.split('.').pop() || 'jpg';
                 const fileName = `${viewingPhotoRoundIdx + 1}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-                const { data, error } = await window.supabaseClient.storage
-                    .from('golf-photos')
-                    .upload(fileName, file);
+                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/golf-photos/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': file.type || 'image/jpeg'
+                    },
+                    body: file
+                });
 
-                if (error) {
-                    console.error("Storage 업로드 에러:", error);
+                if (!uploadRes.ok) {
+                    console.error("Storage 업로드 에러");
                     continue;
                 }
 
-                const { data: publicUrlData } = window.supabaseClient.storage
-                    .from('golf-photos')
-                    .getPublicUrl(fileName);
-
-                if (publicUrlData && publicUrlData.publicUrl) {
-                    currentPhotos.push(publicUrlData.publicUrl);
-                }
+                const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/golf-photos/${fileName}`;
+                currentPhotos.push(publicUrl);
             }
 
             appData.photos[viewingPhotoRoundIdx] = currentPhotos;
@@ -567,16 +560,22 @@
         showToast("↩️ 이전 상태로 복구됨");
     }
 
+    // 🚀 순수 Fetch API 기반 데이터 로드
     window.addEventListener('DOMContentLoaded', async () => {
         try {
-            const { data, error } = await window.supabaseClient
-                .from('jtfag_game')
-                .select('payload')
-                .eq('id', 'current_game')
-                .maybeSingle();
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/jtfag_game?id=eq.current_game`, {
+                method: 'GET',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
 
-            if (data && data.payload) {
-                appData = data.payload;
+            if (!res.ok) throw new Error("DB 통신 실패");
+            const rows = await res.json();
+
+            if (rows && rows.length > 0 && rows[0].payload) {
+                appData = rows[0].payload;
             } else {
                 appData = getDefaultData();
                 await syncToSupabase(appData);
@@ -590,22 +589,6 @@
             renderAll();
             showSaveStatus("⚡ 실시간 동기화 완료");
 
-            window.supabaseClient
-                .channel('realtime-jtfag')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'jtfag_game', filter: 'id=eq.current_game' },
-                    (payload) => {
-                        if (payload.new && payload.new.payload) {
-                            appData = payload.new.payload;
-                            renderNoticeArea();
-                            renderAll();
-                            showSaveStatus("⚡ 실시간 동기화 완료");
-                        }
-                    }
-                )
-                .subscribe();
-
         } catch (err) {
             console.error("Supabase 로드 오류:", err);
             showSaveStatus("⚠️ DB 연결 실패");
@@ -615,15 +598,22 @@
     async function syncToSupabase(dataToSave) {
         showSaveStatus("💾 저장 중...");
         try {
-            const { error } = await window.supabaseClient
-                .from('jtfag_game')
-                .upsert({
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/jtfag_game`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates'
+                },
+                body: JSON.stringify({
                     id: 'current_game',
                     payload: dataToSave,
                     updated_at: new Date().toISOString()
-                });
+                })
+            });
 
-            if (error) throw error;
+            if (!res.ok) throw new Error("저장 실패");
             showSaveStatus("⚡ 실시간 동기화 완료");
         } catch (err) {
             console.error("Supabase 저장 오류:", err);
