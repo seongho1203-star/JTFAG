@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JTFAG 골프 정산 시스템</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -22,8 +22,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        /* 🔥 데이터베이스 꽉 막힌 통로를 버리고 새 통로(season2)로 완벽하게 이사합니다 🔥 */
-        const gameDocRef = doc(db, "matches", "season2");
+        /* 통로를 다시 원래대로 복구 (규칙만 풀면 정상 작동합니다) */
+        const gameDocRef = doc(db, "matches", "current");
 
         window.gameDocRef = gameDocRef;
         window.setDoc = setDoc;
@@ -63,12 +63,37 @@
             </div>
         </div>
 
-        <!-- 통합 요약 카드 -->
+        <!-- 1순위: 시즌 통합 요약 카드 -->
         <div class="total-summary-card">
             <h2>🏆 시즌 통합 요약 (이름 클릭시 개인리포트)</h2>
             <div class="summary-grid" id="summaryGrid"></div>
         </div>
 
+        <!-- 2순위: 라운드별 정산 카드 -->
+        <div class="money-card">
+            <div class="money-header-flex">
+                <h3>💰 라운드별 정산 (타수 + 계급 벌금)</h3>
+                <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)">
+                    <option value="">정산 차수 선택 ▾</option>
+                </select>
+            </div>
+            <div class="table-wrapper">
+                <table class="money-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>시작 금액</th>
+                            <th>남은 금액</th>
+                            <th>계급정산</th>
+                            <th>타수정산</th>
+                        </tr>
+                    </thead>
+                    <tbody id="moneyTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3순위: 타수 입력 및 1:1 매치 -->
         <!-- 컨트롤 버튼 그룹 -->
         <div class="btn-group">
             <div class="left-btns">
@@ -94,30 +119,6 @@
             </table>
         </div>
 
-        <!-- 라운드별 정산 카드 -->
-        <div class="money-card">
-            <div class="money-header-flex">
-                <h3>💰 라운드별 정산 (타수 + 계급 벌금)</h3>
-                <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)">
-                    <option value="">정산 차수 선택 ▾</option>
-                </select>
-            </div>
-            <div class="table-wrapper">
-                <table class="money-table">
-                    <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>시작 금액</th>
-                            <th>남은 금액</th>
-                            <th>계급정산</th>
-                            <th>타수정산</th>
-                        </tr>
-                    </thead>
-                    <tbody id="moneyTbody"></tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- 1:1 핸디캡 매치 카드 -->
         <div class="match-card">
             <h3 id="matchCardTitle">🤝 핸디캡 기반 1:1 매치 관계</h3>
@@ -129,7 +130,7 @@
             <span class="info-text" id="infoText">💡 스코어 기준 1:1 핸디캡 산출 중...</span>
         </div>
 
-        <!-- 히스토리 버튼 -->
+        <!-- 4순위: 라운드별 계급 정산 히스토리 -->
         <div class="history-btn-container">
             <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
         </div>
@@ -199,8 +200,6 @@
     </div>
 
     <div id="customToast">알림 메시지</div>
-    
-    <!-- 🔥 아이폰 캐시를 무시하고 무조건 최신 자바스크립트를 불러오게 강제하는 마법의 코드 🔥 -->
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
