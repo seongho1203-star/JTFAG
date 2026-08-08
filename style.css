@@ -60,7 +60,21 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .sch-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .sch-row label { font-size: 0.75rem; font-weight: 800; color: #475569; }
 .sch-inputs { display: flex; align-items: center; gap: 4px; }
-.sch-inputs select, #schCourseSelect, #schCourseCustom { padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 700; background: #ffffff; color: var(--text-main); outline: none; }
+/* 🔥 화살표(appearance) 완전 제거 및 상하 패딩 축소 */
+.sch-inputs select, #schCourseSelect, #schCourseCustom { 
+    padding: 4px 6px; 
+    border-radius: 6px; 
+    border: 1px solid #cbd5e1; 
+    font-size: 0.8rem; 
+    font-weight: 700; 
+    background: #ffffff; 
+    color: var(--text-main); 
+    outline: none; 
+    -webkit-appearance: none; 
+    -moz-appearance: none; 
+    appearance: none; 
+    text-align: center;
+}
 .sch-inputs span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
 
 .total-summary-card { background: linear-gradient(145deg, #ffffff, #fefce8); border: 1px solid var(--card-border); border-radius: 14px; padding: 10px 4px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); }
@@ -160,7 +174,7 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .stat-val { font-size: 0.9rem; font-weight: 900; color: var(--text-main); margin-top: 2px; }
 .winrate-list { font-size: 0.75rem; color: var(--text-main); line-height: 1.6; }
 .winrate-list div { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding: 2px 0; }
-.report-badges-area { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; } /* 리포트 뱃지 세로 배열 변경 */
+.report-badges-area { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; } 
 .badge-desc-item { display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px; border-radius: 8px; border: 1px solid #cbd5e1; }
 .badge-desc-text { font-size: 0.7rem; color: var(--text-sub); font-weight: 600; line-height: 1.3; }
 
