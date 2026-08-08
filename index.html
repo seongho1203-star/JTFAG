@@ -36,7 +36,6 @@
         <div class="notice-grid">
             <div class="notice-box" onclick="openScheduleModal()" style="cursor:pointer;">
                 <label>📅 다음 라운드 일정</label>
-                <!-- 🔥 삼각형(▾) 기호 완전히 삭제 -->
                 <div id="nextRoundDisplay" class="notice-display-text" style="color:#ffffff; font-weight:800; font-size:clamp(0.78rem, 3vw, 0.88rem);">일정 등록하기</div>
             </div>
             <div class="notice-box">
@@ -188,13 +187,14 @@
     </div>
 </div>
 
-<!-- 사진 크게 보기 모달 -->
+<!-- 사진 크게 보기 및 다운로드 모달 🔥 -->
 <div class="modal-overlay" id="imageViewModal" onclick="if(event.target === this) closeImageViewModal()">
     <div class="modal-content" style="background:transparent; border:none; box-shadow:none; max-width:95vw;">
-        <div style="text-align:right; margin-bottom:8px;">
-            <button type="button" class="close-btn" style="color:white; font-size:1.5rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px;" onclick="closeImageViewModal()">✕</button>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
+            <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center;" onclick="downloadCurrentPhoto()" title="다운로드">⬇️</button>
+            <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:bold;" onclick="closeImageViewModal()">✕</button>
         </div>
-        <img id="fullImageView" src="" alt="Full Screen">
+        <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
     </div>
 </div>
 
