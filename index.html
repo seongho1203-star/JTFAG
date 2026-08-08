@@ -34,10 +34,10 @@
             <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="공금 수정 잠금/해제">🔒</button>
         </h2>
         <div class="notice-grid">
-            <!-- 🌟 스마트 일정 입력기로 변경 -->
             <div class="notice-box" onclick="openScheduleModal()" style="cursor:pointer;">
                 <label>📅 다음 라운드 일정</label>
-                <div id="nextRoundDisplay" class="notice-display-text" style="color:#ffffff; font-weight:800; font-size:clamp(0.78rem, 3vw, 0.88rem);">일정 등록하기 ▾</div>
+                <!-- 🔥 삼각형(▾) 기호 완전히 삭제 -->
+                <div id="nextRoundDisplay" class="notice-display-text" style="color:#ffffff; font-weight:800; font-size:clamp(0.78rem, 3vw, 0.88rem);">일정 등록하기</div>
             </div>
             <div class="notice-box">
                 <label style="text-align: center;">💰 남은 공금 잔액</label>
@@ -56,7 +56,6 @@
         <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
-    <!-- 차수별 정산 카드 -->
     <div class="money-card">
         <div class="money-header-flex">
             <h3>💵 차수별 정산</h3>
