@@ -135,6 +135,7 @@ function undoLastAction() {
     appData = JSON.parse(previousState);
     syncToSupabase(appData);
     showToast("↩️ 이전 상태로 되돌렸습니다.");
+    forceTableReflow();
 }
 
 function renderSkeleton() {
@@ -329,13 +330,26 @@ function renderNoticeArea() {
     const fundInput = document.getElementById('clubFundInput');
 
     if (dateDisplay) {
-        dateDisplay.innerHTML = appData.nextRoundDate ? `${appData.nextRoundDate} ▾` : `일정 등록하기 ▾`;
+        // 삼각형 글자 제거 적용
+        dateDisplay.innerHTML = appData.nextRoundDate ? appData.nextRoundDate : `일정 등록하기`;
         checkWeather(appData.nextRoundDate); 
     }
     if (fundInput && document.activeElement !== fundInput) {
         fundInput.value = formatFundString(appData.clubFund);
     }
     updateLockUI();
+}
+
+// 🔥 테이블 스크롤 먹통 해결용 강제 새로고침 함수
+function forceTableReflow() {
+    const wrapper = document.getElementById('tableWrapper');
+    if(wrapper) {
+        const currentScroll = wrapper.scrollLeft;
+        wrapper.style.display = 'none';
+        wrapper.offsetHeight; // 브라우저 렌더링 강제 업데이트
+        wrapper.style.display = 'block';
+        wrapper.scrollLeft = currentScroll;
+    }
 }
 
 // ==========================================
@@ -347,17 +361,13 @@ function initScheduleOptions() {
     const hSelect = document.getElementById('schHour');
     const minSelect = document.getElementById('schMinute');
 
-    if(mSelect) {
-        for(let i=1; i<=12; i++) mSelect.add(new Option(i, i));
-    }
-    if(dSelect) {
-        for(let i=1; i<=31; i++) dSelect.add(new Option(i, i));
-    }
-    if(hSelect) {
-        for(let i=1; i<=12; i++) hSelect.add(new Option(i, i));
-    }
-    // 🔥 분 단위를 1분씩 0~59분까지 모두 생성하도록 변경
+    if(mSelect) { mSelect.innerHTML = ""; for(let i=1; i<=12; i++) mSelect.add(new Option(i, i)); }
+    if(dSelect) { dSelect.innerHTML = ""; for(let i=1; i<=31; i++) dSelect.add(new Option(i, i)); }
+    if(hSelect) { hSelect.innerHTML = ""; for(let i=1; i<=12; i++) hSelect.add(new Option(i, i)); }
+    
+    // 🔥 분 단위를 1분씩 0~59분까지 완벽하게 초기화 후 덮어쓰기
     if(minSelect) {
+        minSelect.innerHTML = ""; 
         for(let i=0; i<60; i++) {
             const minStr = i < 10 ? "0" + i : String(i);
             minSelect.add(new Option(minStr, minStr));
@@ -603,6 +613,7 @@ function addRound() {
 
     syncToSupabase(appData);
     renderAll();
+    forceTableReflow(); // 🔥 스크롤 버그 해결
     showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     
     setTimeout(() => {
@@ -637,6 +648,7 @@ function removeRound() {
 
     syncToSupabase(appData);
     renderAll();
+    forceTableReflow(); // 🔥 스크롤 버그 해결
     showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
 }
 
@@ -1301,5 +1313,6 @@ function resetAllData() {
         syncToSupabase(appData);
         renderAll();
         showToast("🔄 모든 데이터가 초기화되었습니다.");
+        forceTableReflow();
     }
 }
