@@ -55,7 +55,6 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 #weatherWidget { margin-top: 8px; padding: 6px 10px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.75rem; display: none; align-items: center; justify-content: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1); }
 .weather-icon { font-size: 1.1rem; }
 
-/* 🌟 스마트 일정 설정 모달 내부 강제 화살표 제거 및 크기 축소 🔥 */
 .schedule-form-container { display: flex; flex-direction: column; gap: 10px; }
 .sch-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .sch-row label { font-size: 0.75rem; font-weight: 800; color: #475569; }
@@ -67,14 +66,14 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
     font-size: 0.8rem; 
     font-weight: 700; 
     background-color: #ffffff; 
-    background-image: none !important; /* 브라우저 기본 화살표 완벽 삭제 */
+    background-image: none !important;
     color: var(--text-main); 
     outline: none; 
     -webkit-appearance: none; 
     -moz-appearance: none; 
-    appearance: none; /* 크롬, 사파리 화살표 삭제 영역 */
+    appearance: none;
     text-align: center;
-    height: 28px; /* 칸 위아래 크기 슬림하게 고정 */
+    height: 28px;
 }
 .sch-inputs span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
 
@@ -89,10 +88,12 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .summary-item .detail-line .val { color: #1e293b; font-weight: 800; }
 .summary-item .final-total { font-size: clamp(0.68rem, 2.7vw, 0.78rem); font-weight: 900; margin-top: 5px; padding-top: 3px; border-top: 1px dashed #cbd5e1; white-space: nowrap; }
 
+/* 🏅 뱃지 공통 스타일 */
 .season-badge { display: inline-block; margin-top: 3px; padding: 3px 6px; border-radius: 6px; font-size: clamp(0.48rem, 1.8vw, 0.58rem); font-weight: 900; white-space: nowrap; letter-spacing: -0.3px; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.1); animation: premium-glow 0.8s infinite alternate ease-in-out; }
 .report-badges-area .season-badge { font-size: clamp(0.7rem, 3vw, 0.85rem) !important; padding: 4px 8px !important; margin: 2px !important; border-radius: 8px !important; }
 @keyframes premium-glow { 0% { filter: brightness(1) contrast(1) drop-shadow(0 1px 2px rgba(0,0,0,0.1)); } 100% { filter: brightness(1.1) contrast(1.05) drop-shadow(0 3px 6px rgba(0,0,0,0.25)); } }
 
+/* 뱃지 전용 테마 색상 */
 .badge-eagle-3 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #b45309; }
 .badge-eagle-2 { background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%); color: #78350f; border-color: #eab308; }
 .badge-avg-1 { background: linear-gradient(135deg, #60a5fa 0%, #2563eb 50%, #1d4ed8 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #1e3a8a; }
@@ -101,6 +102,12 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .badge-rebound { background: linear-gradient(135deg, #f472b6 0%, #db2777 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #be185d; }
 .badge-phoenix { background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #c2410c; }
 .badge-rookie { background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #6d28d9; }
+
+/* 🌟 신규 뱃지 색상 클래스 */
+.badge-donor { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #9f1239; } /* 핫레드 (기부왕) */
+.badge-uptrend { background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #0369a1; } /* 네온 블루 (상승세) */
+.badge-downtrend { background: linear-gradient(135deg, #64748b 0%, #334155 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #1e293b; } /* 다크 슬레이트 (하락세) */
+.badge-fluctuation { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #6b21a8; } /* 바이올렛 (기복왕) */
 
 .money-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 14px; padding: 10px 8px; margin-bottom: 10px; }
 .money-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px 4px; width: 100%; }
@@ -125,23 +132,8 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .reset-btn { background: #dc2626; color: white; }
 .undo-btn { background: #475569; color: white; }
 
-/* 🔥 가로 스크롤 보호 및 폭 조정 세팅 🔥 */
-.table-wrapper { 
-    overflow-x: auto; 
-    -webkit-overflow-scrolling: touch; 
-    border-radius: 12px; 
-    border: 1px solid rgba(0, 0, 0, 0.06); 
-    margin-bottom: 10px; 
-    background: var(--card-bg); 
-    width: 100%; 
-    scroll-behavior: smooth; 
-}
-.table-wrapper table { 
-    width: max-content; 
-    min-width: 100%; 
-    border-collapse: collapse; 
-    text-align: center; 
-}
+.table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); margin-bottom: 10px; background: var(--card-bg); width: 100%; scroll-behavior: smooth; }
+.table-wrapper table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: center; }
 th, td { padding: 6px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 58px; }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 table th:first-child, table td:first-child, .golfer-name { white-space: nowrap !important; word-break: keep-all !important; min-width: 54px !important; font-weight: 800; font-size: clamp(0.72rem, 2.8vw, 0.8rem); position: sticky; left: 0; background-color: #f1f5f9 !important; z-index: 2; padding-left: 6px !important; padding-right: 6px !important; }
