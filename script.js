@@ -53,6 +53,8 @@ let golferDonorMap = {};
 let golferUptrendMap = {};     
 let golferDowntrendMap = {};   
 let golferFluctuationMap = {}; 
+let golferRivalMap = {}; // 🔥 라이벌 뱃지 변수 추가
+
 let isLoaded = false;
 
 function authenticateAdmin() {
@@ -343,17 +345,14 @@ function renderNoticeArea() {
     updateLockUI();
 }
 
-// 🔥 테이블 스크롤 멈춤(Freezing) 완벽 방지 함수
 function forceTableReflow() {
     const wrapper = document.getElementById('tableWrapper');
     if(wrapper) {
-        // 현재 스크롤 위치 저장
         const currentScroll = wrapper.scrollLeft;
-        // iOS Safari 스크롤 강제 활성화를 위해 overflow-x를 숨겼다가 즉시 복구
         wrapper.style.overflowX = 'hidden';
-        void wrapper.offsetHeight; // 브라우저에 강제 렌더링 명령
+        void wrapper.offsetHeight; 
         wrapper.style.overflowX = 'auto';
-        wrapper.scrollLeft = currentScroll; // 스크롤 위치 원상복구
+        wrapper.scrollLeft = currentScroll; 
     }
 }
 
@@ -457,7 +456,6 @@ function renderAll() {
     calculateAndRender(); 
     renderMoneyTable();
     
-    // 화면의 모든 표가 새로 그려진 직후에 스크롤 버그 패치 함수 실행
     forceTableReflow();
 }
 
@@ -785,7 +783,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     if (golferPhoenixWins[g]) {
         badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급(독수리/매)을 상대로 1:1 최다승 기록" });
     }
-
     if (golferDonorMap[g]) {
         badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위 (모임의 든든한 후원자)" });
     }
@@ -797,6 +794,11 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     }
     if (golferFluctuationMap[g]) {
         badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "라운드별 스코어 기복(타수 편차)이 가장 큼" });
+    }
+    
+    // 🔥 신규: 라이벌 뱃지 (가장 무승부가 많은 끈질긴 승부사)
+    if (golferRivalMap[g]) {
+        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부(접전)를 기록함" });
     }
 
     if (badges.length === 0) {
@@ -875,6 +877,10 @@ function processAllRoundSettlements() {
     golferUptrendMap = {};
     golferDowntrendMap = {};
     golferFluctuationMap = {};
+    golferRivalMap = {}; // 라이벌 변수 초기화
+
+    // 전체 무승부 집계용 객체
+    const globalTies = {};
 
     golfers.forEach(g => {
         totalRankProfit[g] = 0;
@@ -885,6 +891,8 @@ function processAllRoundSettlements() {
         golferUptrendMap[g] = false;
         golferDowntrendMap[g] = false;
         golferFluctuationMap[g] = false;
+        golferRivalMap[g] = false;
+        globalTies[g] = 0;
     });
 
     golfers.forEach(g => {
@@ -1011,6 +1019,11 @@ function processAllRoundSettlements() {
             }
         }
 
+        // 🔥 매 라운드 무승부 횟수 누적
+        golfers.forEach(g => {
+            globalTies[g] += matchResults[g].ties;
+        });
+
         const sortedGolfers = [...golfers].sort((a, b) => {
             if (matchResults[b].wins !== matchResults[a].wins) {
                 return matchResults[b].wins - matchResults[a].wins;
@@ -1072,6 +1085,19 @@ function processAllRoundSettlements() {
     });
     if (phoenixWinner) {
         golferPhoenixWins[phoenixWinner] = true;
+    }
+
+    // 🔥 라이벌 뱃지 판독 (무승부가 가장 많은 사람 선별)
+    let maxTies = 0;
+    golfers.forEach(g => {
+        if (globalTies[g] > maxTies) maxTies = globalTies[g];
+    });
+    if (maxTies > 0) {
+        golfers.forEach(g => {
+            if (globalTies[g] === maxTies) {
+                golferRivalMap[g] = true;
+            }
+        });
     }
 
     cachedRoundRankProfit = roundRankProfit;
