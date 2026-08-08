@@ -49,6 +49,10 @@ let golferBadgesMap = {};
 let golferPhoenixWins = {}; 
 let golferReboundMap = {};  
 let golferSingleMap = {};   
+let golferDonorMap = {};       // 🌟 신규: 기부왕
+let golferUptrendMap = {};     // 🌟 신규: 상승세
+let golferDowntrendMap = {};   // 🌟 신규: 하락세
+let golferFluctuationMap = {}; // 🌟 신규: 기복왕
 let isLoaded = false;
 
 function authenticateAdmin() {
@@ -330,7 +334,6 @@ function renderNoticeArea() {
     const fundInput = document.getElementById('clubFundInput');
 
     if (dateDisplay) {
-        // 삼각형 글자 제거 적용
         dateDisplay.innerHTML = appData.nextRoundDate ? appData.nextRoundDate : `일정 등록하기`;
         checkWeather(appData.nextRoundDate); 
     }
@@ -340,21 +343,17 @@ function renderNoticeArea() {
     updateLockUI();
 }
 
-// 🔥 테이블 스크롤 먹통 해결용 강제 새로고침 함수
 function forceTableReflow() {
     const wrapper = document.getElementById('tableWrapper');
     if(wrapper) {
         const currentScroll = wrapper.scrollLeft;
         wrapper.style.display = 'none';
-        wrapper.offsetHeight; // 브라우저 렌더링 강제 업데이트
+        wrapper.offsetHeight; 
         wrapper.style.display = 'block';
         wrapper.scrollLeft = currentScroll;
     }
 }
 
-// ==========================================
-// 📅 스마트 일정 입력기 로직 (외부 데이터 연동)
-// ==========================================
 function initScheduleOptions() {
     const mSelect = document.getElementById('schMonth');
     const dSelect = document.getElementById('schDay');
@@ -365,7 +364,6 @@ function initScheduleOptions() {
     if(dSelect) { dSelect.innerHTML = ""; for(let i=1; i<=31; i++) dSelect.add(new Option(i, i)); }
     if(hSelect) { hSelect.innerHTML = ""; for(let i=1; i<=12; i++) hSelect.add(new Option(i, i)); }
     
-    // 🔥 분 단위를 1분씩 0~59분까지 완벽하게 초기화 후 덮어쓰기
     if(minSelect) {
         minSelect.innerHTML = ""; 
         for(let i=0; i<60; i++) {
@@ -450,7 +448,6 @@ function saveSchedule() {
     closeScheduleModal();
     showToast("✅ 일정이 성공적으로 저장되었습니다!");
 }
-
 
 function renderAll() {
     renderTable();
@@ -613,7 +610,7 @@ function addRound() {
 
     syncToSupabase(appData);
     renderAll();
-    forceTableReflow(); // 🔥 스크롤 버그 해결
+    forceTableReflow(); 
     showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     
     setTimeout(() => {
@@ -648,7 +645,7 @@ function removeRound() {
 
     syncToSupabase(appData);
     renderAll();
-    forceTableReflow(); // 🔥 스크롤 버그 해결
+    forceTableReflow(); 
     showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
 }
 
@@ -756,6 +753,9 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
+// ==========================================
+// 🎖️ 신규 뱃지 판독 배열 반환 함수
+// ==========================================
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -782,6 +782,21 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     if (golferPhoenixWins[g]) {
         badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급(독수리/매)을 상대로 1:1 최다승 기록" });
     }
+
+    // 🌟 신규 뱃지 반영
+    if (golferDonorMap[g]) {
+        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위 (모임의 든든한 후원자)" });
+    }
+    if (golferUptrendMap[g]) {
+        badges.push({ html: `<div class="season-badge badge-uptrend">📈 상승세</div>`, desc: "최근 경기 스코어가 지속적으로 줄어드는 중" });
+    }
+    if (golferDowntrendMap[g]) {
+        badges.push({ html: `<div class="season-badge badge-downtrend">📉 하락세</div>`, desc: "최근 경기 스코어가 지속적으로 늘어나는 중" });
+    }
+    if (golferFluctuationMap[g]) {
+        badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "라운드별 스코어 기복(타수 편차)이 가장 큼" });
+    }
+
     if (badges.length === 0) {
         badges.push({ html: `<div class="season-badge badge-rookie">🌱 루키</div>`, desc: "아직 획득한 뱃지가 없음 (분발 요망)" });
     }
@@ -854,12 +869,20 @@ function processAllRoundSettlements() {
     golferSingleMap = {};
     golferReboundMap = {};
     golferPhoenixWins = {};
+    golferDonorMap = {};
+    golferUptrendMap = {};
+    golferDowntrendMap = {};
+    golferFluctuationMap = {};
 
     golfers.forEach(g => {
         totalRankProfit[g] = 0;
         roundRankProfit[g] = {};
         golferRankHistory[g] = [];
         golferSingleMap[g] = false;
+        golferDonorMap[g] = false;
+        golferUptrendMap[g] = false;
+        golferDowntrendMap[g] = false;
+        golferFluctuationMap[g] = false;
     });
 
     golfers.forEach(g => {
@@ -893,8 +916,46 @@ function processAllRoundSettlements() {
         golferReboundMap[reboundGolfer] = true;
     }
 
-    const upperClassWins = {};
-    golfers.forEach(g => upperClassWins[g] = 0);
+    // 🌟 상승세 / 하락세 / 기복 계산 로직
+    const golferFluctuationRange = {};
+    golfers.forEach(g => {
+        const validScores = (appData.scores && appData.scores[g]) 
+            ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
+            : [];
+
+        if (validScores.length >= 2) {
+            // 최근 2~3경기 트렌드 확인
+            const len = validScores.length;
+            const last = validScores[len - 1];
+            const prev1 = validScores[len - 2];
+            
+            if (len >= 3) {
+                const prev2 = validScores[len - 3];
+                if (prev2 > prev1 && prev1 > last) golferUptrendMap[g] = true; // 연속 타수 감소
+                if (prev2 < prev1 && prev1 < last) golferDowntrendMap[g] = true; // 연속 타수 증가
+            } else {
+                if (prev1 > last + 2) golferUptrendMap[g] = true;
+                if (prev1 < last - 2) golferDowntrendMap[g] = true;
+            }
+
+            const maxS = Math.max(...validScores);
+            const minS = Math.min(...validScores);
+            golferFluctuationRange[g] = maxS - minS;
+        }
+    });
+
+    // 최고 기복왕 선정 (타수 차이가 가장 큰 멤버)
+    let maxRange = -1;
+    let fluctuationWinner = null;
+    golfers.forEach(g => {
+        if ((golferFluctuationRange[g] || 0) > maxRange && (golferFluctuationRange[g] || 0) >= 6) {
+            maxRange = golferFluctuationRange[g];
+            fluctuationWinner = g;
+        }
+    });
+    if (fluctuationWinner) {
+        golferFluctuationMap[fluctuationWinner] = true;
+    }
 
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
@@ -1001,9 +1062,6 @@ function processAllRoundSettlements() {
         if (historyList) historyList.innerHTML += roundHistoryHtml;
     }
 
-    const phoenixCandidateWins = {};
-    golfers.forEach(g => phoenixCandidateWins[g] = 0);
-
     let maxPhoenixWins = 0;
     let phoenixWinner = null;
     golfers.forEach(g => {
@@ -1025,6 +1083,8 @@ function processAllRoundSettlements() {
     golferMinScores = {};
     golferBadgesMap = {}; 
 
+    const golferFinalNetProfit = {};
+
     golfers.forEach(g => {
         const validScores = (appData.scores && appData.scores[g]) 
             ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
@@ -1044,6 +1104,40 @@ function processAllRoundSettlements() {
             golferAvgScores[g] = null;
         }
     });
+
+    // 🌟 기부왕 계산 (최대 마이너스 손실 기록한 사람)
+    golfers.forEach(g => {
+        const rankProfit = totalRankProfit[g] || 0; 
+        let totalPureStrokeProfit = 0; 
+
+        if (appData.roundMoney) {
+            for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                const rMoney = appData.roundMoney[rIdx];
+                if (!rMoney) continue;
+
+                const m = rMoney[g] || { start: 0, end: 0 };
+                if (m.start > 0 || m.end > 0) {
+                    const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
+                    const totalDiff = m.end - m.start;
+                    const pureStroke = totalDiff - rPenalty; 
+                    if (pureStroke < 0) { totalPureStrokeProfit += pureStroke; }
+                }
+            }
+        }
+        golferFinalNetProfit[g] = rankProfit + totalPureStrokeProfit;
+    });
+
+    let minNetProfit = Infinity;
+    let donorWinner = null;
+    golfers.forEach(g => {
+        if (golferFinalNetProfit[g] < minNetProfit && golferFinalNetProfit[g] < 0) {
+            minNetProfit = golferFinalNetProfit[g];
+            donorWinner = g;
+        }
+    });
+    if (donorWinner) {
+        golferDonorMap[donorWinner] = true;
+    }
 
     const summaryGrid = document.getElementById('summaryGrid');
     if (summaryGrid) {
