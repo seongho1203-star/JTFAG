@@ -49,10 +49,10 @@ let golferBadgesMap = {};
 let golferPhoenixWins = {}; 
 let golferReboundMap = {};  
 let golferSingleMap = {};   
-let golferDonorMap = {};       // 🌟 신규: 기부왕
-let golferUptrendMap = {};     // 🌟 신규: 상승세
-let golferDowntrendMap = {};   // 🌟 신규: 하락세
-let golferFluctuationMap = {}; // 🌟 신규: 기복왕
+let golferDonorMap = {};       
+let golferUptrendMap = {};     
+let golferDowntrendMap = {};   
+let golferFluctuationMap = {}; 
 let isLoaded = false;
 
 function authenticateAdmin() {
@@ -139,7 +139,7 @@ function undoLastAction() {
     appData = JSON.parse(previousState);
     syncToSupabase(appData);
     showToast("↩️ 이전 상태로 되돌렸습니다.");
-    forceTableReflow();
+    renderAll();
 }
 
 function renderSkeleton() {
@@ -343,14 +343,17 @@ function renderNoticeArea() {
     updateLockUI();
 }
 
+// 🔥 테이블 스크롤 멈춤(Freezing) 완벽 방지 함수
 function forceTableReflow() {
     const wrapper = document.getElementById('tableWrapper');
     if(wrapper) {
+        // 현재 스크롤 위치 저장
         const currentScroll = wrapper.scrollLeft;
-        wrapper.style.display = 'none';
-        wrapper.offsetHeight; 
-        wrapper.style.display = 'block';
-        wrapper.scrollLeft = currentScroll;
+        // iOS Safari 스크롤 강제 활성화를 위해 overflow-x를 숨겼다가 즉시 복구
+        wrapper.style.overflowX = 'hidden';
+        void wrapper.offsetHeight; // 브라우저에 강제 렌더링 명령
+        wrapper.style.overflowX = 'auto';
+        wrapper.scrollLeft = currentScroll; // 스크롤 위치 원상복구
     }
 }
 
@@ -453,6 +456,9 @@ function renderAll() {
     renderTable();
     calculateAndRender(); 
     renderMoneyTable();
+    
+    // 화면의 모든 표가 새로 그려진 직후에 스크롤 버그 패치 함수 실행
+    forceTableReflow();
 }
 
 function changeMoneyRound(idxVal) {
@@ -610,7 +616,7 @@ function addRound() {
 
     syncToSupabase(appData);
     renderAll();
-    forceTableReflow(); 
+    
     showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     
     setTimeout(() => {
@@ -645,7 +651,7 @@ function removeRound() {
 
     syncToSupabase(appData);
     renderAll();
-    forceTableReflow(); 
+    
     showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
 }
 
@@ -753,9 +759,6 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-// ==========================================
-// 🎖️ 신규 뱃지 판독 배열 반환 함수
-// ==========================================
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -783,7 +786,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급(독수리/매)을 상대로 1:1 최다승 기록" });
     }
 
-    // 🌟 신규 뱃지 반영
     if (golferDonorMap[g]) {
         badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위 (모임의 든든한 후원자)" });
     }
@@ -916,7 +918,6 @@ function processAllRoundSettlements() {
         golferReboundMap[reboundGolfer] = true;
     }
 
-    // 🌟 상승세 / 하락세 / 기복 계산 로직
     const golferFluctuationRange = {};
     golfers.forEach(g => {
         const validScores = (appData.scores && appData.scores[g]) 
@@ -924,15 +925,14 @@ function processAllRoundSettlements() {
             : [];
 
         if (validScores.length >= 2) {
-            // 최근 2~3경기 트렌드 확인
             const len = validScores.length;
             const last = validScores[len - 1];
             const prev1 = validScores[len - 2];
             
             if (len >= 3) {
                 const prev2 = validScores[len - 3];
-                if (prev2 > prev1 && prev1 > last) golferUptrendMap[g] = true; // 연속 타수 감소
-                if (prev2 < prev1 && prev1 < last) golferDowntrendMap[g] = true; // 연속 타수 증가
+                if (prev2 > prev1 && prev1 > last) golferUptrendMap[g] = true; 
+                if (prev2 < prev1 && prev1 < last) golferDowntrendMap[g] = true; 
             } else {
                 if (prev1 > last + 2) golferUptrendMap[g] = true;
                 if (prev1 < last - 2) golferDowntrendMap[g] = true;
@@ -944,7 +944,6 @@ function processAllRoundSettlements() {
         }
     });
 
-    // 최고 기복왕 선정 (타수 차이가 가장 큰 멤버)
     let maxRange = -1;
     let fluctuationWinner = null;
     golfers.forEach(g => {
@@ -1105,7 +1104,6 @@ function processAllRoundSettlements() {
         }
     });
 
-    // 🌟 기부왕 계산 (최대 마이너스 손실 기록한 사람)
     golfers.forEach(g => {
         const rankProfit = totalRankProfit[g] || 0; 
         let totalPureStrokeProfit = 0; 
