@@ -59,22 +59,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .sch-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .sch-row label { font-size: 0.75rem; font-weight: 800; color: #475569; }
 .sch-inputs { display: flex; align-items: center; gap: 4px; }
-.sch-inputs select, #schCourseSelect, #schCourseCustom { 
-    padding: 4px 6px; 
-    border-radius: 6px; 
-    border: 1px solid #cbd5e1; 
-    font-size: 0.8rem; 
-    font-weight: 700; 
-    background-color: #ffffff; 
-    background-image: none !important;
-    color: var(--text-main); 
-    outline: none; 
-    -webkit-appearance: none; 
-    -moz-appearance: none; 
-    appearance: none;
-    text-align: center;
-    height: 28px;
-}
+.sch-inputs select, #schCourseSelect, #schCourseCustom { padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 700; background-color: #ffffff; background-image: none !important; color: var(--text-main); outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; text-align: center; height: 28px; }
 .sch-inputs span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
 
 .total-summary-card { background: linear-gradient(145deg, #ffffff, #fefce8); border: 1px solid var(--card-border); border-radius: 14px; padding: 10px 4px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); }
@@ -104,10 +89,11 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .badge-rookie { background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #6d28d9; }
 
 /* 🌟 신규 뱃지 색상 클래스 */
-.badge-donor { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #9f1239; } /* 핫레드 (기부왕) */
-.badge-uptrend { background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #0369a1; } /* 네온 블루 (상승세) */
-.badge-downtrend { background: linear-gradient(135deg, #64748b 0%, #334155 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #1e293b; } /* 다크 슬레이트 (하락세) */
-.badge-fluctuation { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #6b21a8; } /* 바이올렛 (기복왕) */
+.badge-donor { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #9f1239; } 
+.badge-uptrend { background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #0369a1; } 
+.badge-downtrend { background: linear-gradient(135deg, #64748b 0%, #334155 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #1e293b; } 
+.badge-fluctuation { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #6b21a8; } 
+.badge-rival { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #991b1b; } /* 강렬한 레드 (라이벌) */
 
 .money-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 14px; padding: 10px 8px; margin-bottom: 10px; }
 .money-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px 4px; width: 100%; }
