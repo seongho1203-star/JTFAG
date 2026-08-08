@@ -356,13 +356,16 @@ function initScheduleOptions() {
     if(hSelect) {
         for(let i=1; i<=12; i++) hSelect.add(new Option(i, i));
     }
+    // 🔥 분 단위를 1분씩 0~59분까지 모두 생성하도록 변경
     if(minSelect) {
-        for(let i=0; i<60; i+=10) minSelect.add(new Option(i === 0 ? "00" : i, i === 0 ? "00" : i));
+        for(let i=0; i<60; i++) {
+            const minStr = i < 10 ? "0" + i : String(i);
+            minSelect.add(new Option(minStr, minStr));
+        }
     }
 }
 
 async function fetchExternalGolfCourses() {
-    // 외부 API 데이터를 불러오는 것을 흉내냅니다. (CORS 문제 방지)
     return new Promise(resolve => {
         setTimeout(() => {
             resolve([
@@ -370,14 +373,13 @@ async function fetchExternalGolfCourses() {
                 "빛고을", "푸른솔(장성)", "나주힐스", "화순", "보성", "순천", "아크로", 
                 "다산베아채", "JNJ", "파인비치", "사우스링스 영암", "직접 입력"
             ]);
-        }, 500); // 0.5초 외부 통신 지연 효과
+        }, 500); 
     });
 }
 
 async function openScheduleModal() {
     document.getElementById('scheduleModal').classList.add('active');
     
-    // 현재 날짜/시간 기본값 세팅
     const now = new Date();
     document.getElementById('schMonth').value = now.getMonth() + 1;
     document.getElementById('schDay').value = now.getDate();
@@ -742,9 +744,6 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-// ==========================================
-// 🎖️ 설명이 포함된 뱃지 배열 반환 함수
-// ==========================================
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -1157,7 +1156,6 @@ function openPersonalReport(name) {
     const rankCounts = [0, 0, 0, 0]; 
     ranks.forEach(r => rankCounts[r]++);
 
-    // 🌟 리포트용 상세 뱃지 렌더링 (설명 포함)
     const userBadges = golferBadgesMap[name] || [];
     const badgeHtmlWithDesc = userBadges.map(b => `
         <div class="badge-desc-item">
