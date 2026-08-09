@@ -760,38 +760,62 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-// 🔥 개선된 다운로드 함수 적용
+// 🔥 가장 튼튼하고 호환성 높은 완벽 다운로드 함수로 전면 교체
 async function downloadCurrentPhoto() {
     const imgSrc = document.getElementById('fullImageView').src;
     if (!imgSrc) return;
-    
-    try {
-        if (navigator.share && navigator.canShare) {
-            const response = await fetch(imgSrc);
-            const blob = await response.blob();
-            const file = new File([blob], `JTFAG_${new Date().getTime()}.jpeg`, { type: 'image/jpeg' });
 
+    // 카카오톡 인앱 브라우저 경고
+    if (navigator.userAgent.match(/kakaotalk/i)) {
+        showToast("⚠️ 카카오톡에선 다운로드가 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!");
+        return;
+    }
+
+    try {
+        // 1. Data URL을 Blob으로 안전하게 수동 변환 (fetch 에러 방지)
+        const splitDataURI = imgSrc.split(',');
+        const byteString = atob(splitDataURI[1]);
+        const mimeString = splitDataURI[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const fileName = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
+
+        // 2. iOS 및 지원 모바일 기기를 위한 공유 메뉴 (갤러리 직접 저장 기능)
+        if (navigator.share && navigator.canShare) {
+            const file = new File([blob], fileName, { type: mimeString });
             if (navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
-                    title: 'JTFAG 갤러리 사진'
+                    title: 'JTFAG 사진 저장'
                 });
-                showToast("💾 사진 앱에 저장하거나 공유할 수 있습니다.");
+                showToast("💾 갤러리 저장 메뉴를 성공적으로 열었습니다.");
                 return;
             }
         }
 
+        // 3. PC, 안드로이드, 기타 브라우저용 범용 다운로드 방식
+        const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = imgSrc;
-        a.download = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        showToast("💾 다운로드 시도! (아이폰은 사진을 꾹 눌러 저장해주세요)");
+        window.URL.revokeObjectURL(blobUrl);
+        
+        showToast("💾 기기에 성공적으로 저장되었습니다!");
 
     } catch (error) {
-        console.error(error);
-        showToast("⚠️ 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요!");
+        // 사용자가 공유를 취소했거나, 에러가 발생한 경우
+        console.error("다운로드 에러:", error);
+        if (error.name !== 'AbortError') {
+            showToast("⚠️ 다운로드 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요.");
+        }
     }
 }
 
