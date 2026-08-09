@@ -757,7 +757,6 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-// 🔥 다운로드 기능 함수 추가
 function downloadCurrentPhoto() {
     const imgSrc = document.getElementById('fullImageView').src;
     if (!imgSrc) return;
@@ -772,6 +771,7 @@ function downloadCurrentPhoto() {
     showToast("💾 갤러리에 저장되었습니다!");
 }
 
+// 🌟 뱃지 생성 함수 (괄호 설명 모두 제거됨)
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -786,7 +786,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
     }
     if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
-        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: `리그 전체 기록 중 가장 낮은 최저타(${overallMinScore}타) 달성` });
+        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: `리그 전체 기록 중 가장 낮은 최저타 달성` });
     }
 
     if (golferSingleMap[g]) {
@@ -796,11 +796,11 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-rebound">🔥 극적 반전</div>`, desc: "직전 경기 대비 타수를 가장 많이 줄임" });
     }
     if (golferPhoenixWins[g]) {
-        badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급(독수리/매)을 상대로 1:1 최다승 기록" });
+        badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
     }
 
     if (golferDonorMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위 (모임의 든든한 후원자)" });
+        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위" });
     }
     if (golferUptrendMap[g]) {
         badges.push({ html: `<div class="season-badge badge-uptrend">📈 상승세</div>`, desc: "최근 경기 스코어가 지속적으로 줄어드는 중" });
@@ -809,14 +809,14 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-downtrend">📉 하락세</div>`, desc: "최근 경기 스코어가 지속적으로 늘어나는 중" });
     }
     if (golferFluctuationMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "라운드별 스코어 기복(타수 편차)이 가장 큼" });
+        badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "라운드별 스코어 기복이 가장 큼" });
     }
     if (golferRivalMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부(접전)를 기록함" });
+        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부를 기록함" });
     }
 
     if (badges.length === 0) {
-        badges.push({ html: `<div class="season-badge badge-rookie">🌱 루키</div>`, desc: "아직 획득한 뱃지가 없음 (분발 요망)" });
+        badges.push({ html: `<div class="season-badge badge-rookie">🌱 루키</div>`, desc: "아직 획득한 뱃지가 없음" });
     }
 
     return badges;
