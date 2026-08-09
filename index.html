@@ -13,10 +13,7 @@
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
-    <!-- Supabase JS 라이브러리 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 🎨 외부 디자인 파일 연결 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body ontouchstart="">
@@ -43,7 +40,6 @@
                 <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="0원" readonly onclick="handleFundClick(this)">
             </div>
         </div>
-        <!-- 날씨 자동 표시 영역 -->
         <div id="weatherWidget">
             <span class="weather-icon">☁️</span>
             <span id="weatherText">날씨 정보를 불러오는 중...</span>
@@ -109,7 +105,6 @@
     </div>
 </div>
 
-<!-- 계급 이력 모달 -->
 <div class="modal-overlay" id="historyModal" onclick="if(event.target === this) closeHistoryModal()">
     <div class="modal-content">
         <div class="modal-header">
@@ -122,7 +117,6 @@
     </div>
 </div>
 
-<!-- 🌟 스마트 일정 설정 모달 -->
 <div class="modal-overlay" id="scheduleModal" onclick="if(event.target === this) closeScheduleModal()">
     <div class="modal-content">
         <div class="modal-header">
@@ -159,20 +153,16 @@
     </div>
 </div>
 
-<!-- 개인별 리포트 모달 -->
 <div class="modal-overlay" id="personalReportModal" onclick="if(event.target === this) closePersonalReport()">
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="reportTitle">⛳ 개인별 통계 리포트</h3>
             <button type="button" class="close-btn" onclick="closePersonalReport()">✕</button>
         </div>
-        <div class="modal-body" id="reportContent">
-            <!-- 동적 생성됨 -->
-        </div>
+        <div class="modal-body" id="reportContent"></div>
     </div>
 </div>
 
-<!-- 라운드별 사진 갤러리 모달 -->
 <div class="modal-overlay" id="roundPhotoModal" onclick="if(event.target === this) closeRoundPhotoModal()">
     <div class="modal-content">
         <div class="modal-header">
@@ -187,7 +177,6 @@
     </div>
 </div>
 
-<!-- 사진 크게 보기 및 다운로드 모달 🔥 -->
 <div class="modal-overlay" id="imageViewModal" onclick="if(event.target === this) closeImageViewModal()">
     <div class="modal-content" style="background:transparent; border:none; box-shadow:none; max-width:95vw;">
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
@@ -200,6 +189,8 @@
 
 <div id="customToast"></div>
 
+<!-- 🔥 여기에 stats.js 가 추가되어 먼저 데이터를 불러옵니다. -->
+<script src="stats.js"></script>
 <script src="script.js"></script>
 
 </body>
