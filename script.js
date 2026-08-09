@@ -760,18 +760,39 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-function downloadCurrentPhoto() {
+// 🔥 개선된 다운로드 함수 적용
+async function downloadCurrentPhoto() {
     const imgSrc = document.getElementById('fullImageView').src;
     if (!imgSrc) return;
     
-    const a = document.createElement('a');
-    a.href = imgSrc;
-    a.download = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
-    showToast("💾 갤러리에 저장되었습니다!");
+    try {
+        if (navigator.share && navigator.canShare) {
+            const response = await fetch(imgSrc);
+            const blob = await response.blob();
+            const file = new File([blob], `JTFAG_${new Date().getTime()}.jpeg`, { type: 'image/jpeg' });
+
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'JTFAG 갤러리 사진'
+                });
+                showToast("💾 사진 앱에 저장하거나 공유할 수 있습니다.");
+                return;
+            }
+        }
+
+        const a = document.createElement('a');
+        a.href = imgSrc;
+        a.download = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("💾 다운로드 시도! (아이폰은 사진을 꾹 눌러 저장해주세요)");
+
+    } catch (error) {
+        console.error(error);
+        showToast("⚠️ 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요!");
+    }
 }
 
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
