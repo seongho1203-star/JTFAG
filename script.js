@@ -17,12 +17,12 @@ const RANK_CONFIG = {
     3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
 };
 
-// 📊 [AI 전담 기록용] 누적 상세 스코어 데이터 (제가 지속적으로 업데이트해 드립니다!)
+// 📊 [AI 전담 기록용] 누적 상세 스코어 데이터 (2차전 스코어 반영 완료)
 const CUMULATIVE_STATS = {
-    "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
-    "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
-    "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
-    "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
+    "이관교": { holeInOne: 0, eagle: 0, birdie: 1, par: 7, doublePar: 0 },
+    "김지명": { holeInOne: 0, eagle: 0, birdie: 1, par: 7, doublePar: 1 },
+    "신성호": { holeInOne: 0, eagle: 0, birdie: 1, par: 6, doublePar: 0 },
+    "박승수": { holeInOne: 0, eagle: 0, birdie: 1, par: 2, doublePar: 0 }
 };
 
 function getDefaultData() {
@@ -170,11 +170,11 @@ function renderSkeleton() {
     }
 }
 
+// 🔥 마제스티 삭제
 const COURSE_GEO = {
     "함평엘리체": { lat: 35.109, lon: 126.545 },
     "어등산": { lat: 35.158, lon: 126.757 },
     "해피니스": { lat: 35.012, lon: 126.963 },
-    "마제스티": { lat: 35.200, lon: 126.800 },
     "골드레이크": { lat: 35.025, lon: 126.772 },
     "푸른솔": { lat: 35.275, lon: 126.652 }
 };
@@ -387,11 +387,12 @@ function initScheduleOptions() {
     }
 }
 
+// 🔥 마제스티 삭제
 async function fetchExternalGolfCourses() {
     return new Promise(resolve => {
         setTimeout(() => {
             resolve([
-                "함평엘리체", "어등산", "해피니스", "마제스티", "골드레이크", "무등산", 
+                "함평엘리체", "어등산", "해피니스", "골드레이크", "무등산", 
                 "빛고을", "푸른솔(장성)", "나주힐스", "화순", "보성", "순천", "아크로", 
                 "다산베아채", "JNJ", "파인비치", "사우스링스 영암", "직접 입력"
             ]);
@@ -769,20 +770,6 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-function downloadCurrentPhoto() {
-    const imgSrc = document.getElementById('fullImageView').src;
-    if (!imgSrc) return;
-    
-    const a = document.createElement('a');
-    a.href = imgSrc;
-    a.download = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
-    showToast("💾 갤러리에 저장되었습니다!");
-}
-
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -797,7 +784,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
     }
     if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
-        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: "리그 전체 기록 중 가장 낮은 최저타 달성" });
+        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: `리그 전체 기록 중 가장 낮은 최저타 달성` });
     }
 
     if (golferSingleMap[g]) {
@@ -809,6 +796,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     if (golferPhoenixWins[g]) {
         badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
     }
+
     if (golferDonorMap[g]) {
         badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위" });
     }
@@ -825,7 +813,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부를 기록함" });
     }
 
-    // 🔥 신규 상세 누적 뱃지
     if (CUMULATIVE_STATS[g].holeInOne > 0) {
         badges.push({ html: `<div class="season-badge badge-holeinone">👑 기적의 사나이</div>`, desc: "통산 홀인원 기록자" });
     }
@@ -935,7 +922,6 @@ function processAllRoundSettlements() {
         globalTies[g] = 0;
     });
 
-    // 🔥 누적 스코어 기반 최고기록자 선별 로직
     let maxBirdie = 0;
     let maxPar = 0;
     let maxDPar = 0;
@@ -1347,7 +1333,15 @@ function openPersonalReport(name) {
         </div>
     `).join('');
     
-    // 🔥 천적/자판기 영역 완전히 삭제하고 승률 리스트만 남김
+    const badgeSection = `
+        <div class="report-section">
+            <div class="report-title">🏆 획득한 뱃지 안내</div>
+            <div class="report-badges-area">
+                ${badgeHtmlWithDesc ? badgeHtmlWithDesc : '<span style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px;">아직 획득한 뱃지가 없습니다.</span>'}
+            </div>
+        </div>
+    `;
+
     const winRates = {};
     golfers.forEach(g => { if(g !== name) winRates[g] = {w:0, l:0, t:0}; });
 
@@ -1394,9 +1388,6 @@ function openPersonalReport(name) {
         winRateHtml = "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
     }
 
-    // 🌟 1. 누적 상세 타수 패널 추가 (제일 상단)
-    // 🌟 2. 괄호 없는 뱃지 설명 적용
-    // 🌟 3. 천적관계(rivalHtml) 삭제
     const content = `
         <div class="report-section">
             <div class="report-title">🎯 상세 타수 누적 기록</div>
@@ -1409,12 +1400,7 @@ function openPersonalReport(name) {
             </div>
         </div>
 
-        <div class="report-section">
-            <div class="report-title">🏆 획득한 뱃지 안내</div>
-            <div class="report-badges-area">
-                ${badgeHtmlWithDesc ? badgeHtmlWithDesc : '<span style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px;">아직 획득한 뱃지가 없습니다.</span>'}
-            </div>
-        </div>
+        ${badgeSection}
         
         <div class="report-section">
             <div class="report-title">📊 스코어 요약</div>
