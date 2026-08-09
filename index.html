@@ -186,12 +186,19 @@
         <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
     </div>
 </div>
+<!-- ... 위쪽 코드는 그대로 유지 ... -->
 
 <div id="customToast"></div>
 
-<!-- 🔥 여기에 stats.js 가 추가되어 먼저 데이터를 불러옵니다. -->
-<script src="stats.js"></script>
+<!-- 🔥 아래 부분이 핵심입니다! 기존 <script src="stats.js"></script>를 이걸로 교체하세요 -->
+<script>
+    // 브라우저가 옛날 데이터를 기억하지 못하도록 매번 새로운 버전 번호를 달아줍니다.
+    document.write('<script src="stats.js?ver=' + Math.random() + '"><\/script>');
+</script>
+
+<!-- 메인 스크립트 실행 -->
 <script src="script.js"></script>
 
 </body>
 </html>
+
