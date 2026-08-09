@@ -17,14 +17,6 @@ const RANK_CONFIG = {
     3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
 };
 
-// 📊 [AI 전담 기록용] 누적 상세 스코어 데이터 (2차전 스코어 반영 완료)
-const CUMULATIVE_STATS = {
-    "이관교": { holeInOne: 0, eagle: 0, birdie: 1, par: 7, doublePar: 0 },
-    "김지명": { holeInOne: 0, eagle: 0, birdie: 1, par: 7, doublePar: 1 },
-    "신성호": { holeInOne: 0, eagle: 0, birdie: 1, par: 6, doublePar: 0 },
-    "박승수": { holeInOne: 0, eagle: 0, birdie: 1, par: 2, doublePar: 0 }
-};
-
 function getDefaultData() {
     return {
         nextRoundDate: "",
@@ -170,7 +162,6 @@ function renderSkeleton() {
     }
 }
 
-// 🔥 마제스티 삭제
 const COURSE_GEO = {
     "함평엘리체": { lat: 35.109, lon: 126.545 },
     "어등산": { lat: 35.158, lon: 126.757 },
@@ -387,7 +378,6 @@ function initScheduleOptions() {
     }
 }
 
-// 🔥 마제스티 삭제
 async function fetchExternalGolfCourses() {
     return new Promise(resolve => {
         setTimeout(() => {
@@ -770,9 +760,30 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
+function downloadCurrentPhoto() {
+    const imgSrc = document.getElementById('fullImageView').src;
+    if (!imgSrc) return;
+    
+    const a = document.createElement('a');
+    a.href = imgSrc;
+    a.download = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    showToast("💾 갤러리에 저장되었습니다!");
+}
+
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
+
+    const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
+    };
 
     if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
         badges.push({ html: `<div class="season-badge badge-eagle-3">🦅 독수리 3연속!</div>`, desc: "최근 3경기 연속 독수리 계급 달성" });
@@ -784,7 +795,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
     }
     if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
-        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: `리그 전체 기록 중 가장 낮은 최저타 달성` });
+        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: "리그 전체 기록 중 가장 낮은 최저타 달성" });
     }
 
     if (golferSingleMap[g]) {
@@ -796,7 +807,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     if (golferPhoenixWins[g]) {
         badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
     }
-
     if (golferDonorMap[g]) {
         badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위" });
     }
@@ -813,10 +823,10 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부를 기록함" });
     }
 
-    if (CUMULATIVE_STATS[g].holeInOne > 0) {
+    if (myStats[g].holeInOne > 0) {
         badges.push({ html: `<div class="season-badge badge-holeinone">👑 기적의 사나이</div>`, desc: "통산 홀인원 기록자" });
     }
-    if (CUMULATIVE_STATS[g].eagle > 0) {
+    if (myStats[g].eagle > 0) {
         badges.push({ html: `<div class="season-badge badge-eagle-hit">🦅 이글 헌터</div>`, desc: "통산 이글 기록자" });
     }
     if (golferMaxBirdie.includes(g)) {
@@ -922,19 +932,26 @@ function processAllRoundSettlements() {
         globalTies[g] = 0;
     });
 
+    const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
+    };
+
     let maxBirdie = 0;
     let maxPar = 0;
     let maxDPar = 0;
 
     golfers.forEach(g => {
-        if (CUMULATIVE_STATS[g].birdie > maxBirdie) { maxBirdie = CUMULATIVE_STATS[g].birdie; }
-        if (CUMULATIVE_STATS[g].par > maxPar) { maxPar = CUMULATIVE_STATS[g].par; }
-        if (CUMULATIVE_STATS[g].doublePar > maxDPar) { maxDPar = CUMULATIVE_STATS[g].doublePar; }
+        if (myStats[g].birdie > maxBirdie) { maxBirdie = myStats[g].birdie; }
+        if (myStats[g].par > maxPar) { maxPar = myStats[g].par; }
+        if (myStats[g].doublePar > maxDPar) { maxDPar = myStats[g].doublePar; }
     });
 
-    golferMaxBirdie = golfers.filter(g => CUMULATIVE_STATS[g].birdie === maxBirdie && maxBirdie > 0);
-    golferMaxPar = golfers.filter(g => CUMULATIVE_STATS[g].par === maxPar && maxPar > 0);
-    golferMaxDoublePar = golfers.filter(g => CUMULATIVE_STATS[g].doublePar === maxDPar && maxDPar > 0);
+    golferMaxBirdie = golfers.filter(g => myStats[g].birdie === maxBirdie && maxBirdie > 0);
+    golferMaxPar = golfers.filter(g => myStats[g].par === maxPar && maxPar > 0);
+    golferMaxDoublePar = golfers.filter(g => myStats[g].doublePar === maxDPar && maxDPar > 0);
 
     golfers.forEach(g => {
         if (appData.scores && appData.scores[g]) {
@@ -1388,15 +1405,22 @@ function openPersonalReport(name) {
         winRateHtml = "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
     }
 
+    const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
+    };
+
     const content = `
         <div class="report-section">
             <div class="report-title">🎯 상세 타수 누적 기록</div>
             <div class="stat-grid" style="grid-template-columns: repeat(5, 1fr);">
-                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val" style="color:#dc2626;">${CUMULATIVE_STATS[name].holeInOne}</div></div>
-                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">이글</div><div class="stat-val" style="color:#ea580c;">${CUMULATIVE_STATS[name].eagle}</div></div>
-                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">버디</div><div class="stat-val" style="color:#059669;">${CUMULATIVE_STATS[name].birdie}</div></div>
-                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">파</div><div class="stat-val" style="color:#2563eb;">${CUMULATIVE_STATS[name].par}</div></div>
-                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">양파</div><div class="stat-val" style="color:#475569;">${CUMULATIVE_STATS[name].doublePar}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val" style="color:#dc2626;">${myStats[name].holeInOne}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">이글</div><div class="stat-val" style="color:#ea580c;">${myStats[name].eagle}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">버디</div><div class="stat-val" style="color:#059669;">${myStats[name].birdie}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">파</div><div class="stat-val" style="color:#2563eb;">${myStats[name].par}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">양파</div><div class="stat-val" style="color:#475569;">${myStats[name].doublePar}</div></div>
             </div>
         </div>
 
