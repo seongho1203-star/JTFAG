@@ -17,6 +17,14 @@ const RANK_CONFIG = {
     3: { name: "참새", icon: "🐦", penalty: -100000, class: "rank-sparrow" }
 };
 
+// 📊 [AI 전담 기록용] 누적 상세 스코어 데이터 (제가 지속적으로 업데이트해 드립니다!)
+const CUMULATIVE_STATS = {
+    "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+    "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+    "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+    "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
+};
+
 function getDefaultData() {
     return {
         nextRoundDate: "",
@@ -54,6 +62,10 @@ let golferUptrendMap = {};
 let golferDowntrendMap = {};   
 let golferFluctuationMap = {}; 
 let golferRivalMap = {}; 
+
+let golferMaxBirdie = [];
+let golferMaxPar = [];
+let golferMaxDoublePar = [];
 
 let isLoaded = false;
 
@@ -379,7 +391,7 @@ async function fetchExternalGolfCourses() {
     return new Promise(resolve => {
         setTimeout(() => {
             resolve([
-                "함평엘리체", "어등산", "해피니스", "골드레이크", "무등산", 
+                "함평엘리체", "어등산", "해피니스", "마제스티", "골드레이크", "무등산", 
                 "빛고을", "푸른솔(장성)", "나주힐스", "화순", "보성", "순천", "아크로", 
                 "다산베아채", "JNJ", "파인비치", "사우스링스 영암", "직접 입력"
             ]);
@@ -771,7 +783,6 @@ function downloadCurrentPhoto() {
     showToast("💾 갤러리에 저장되었습니다!");
 }
 
-// 🌟 뱃지 생성 함수 (괄호 설명 모두 제거됨)
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -786,7 +797,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
     }
     if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
-        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: `리그 전체 기록 중 가장 낮은 최저타 달성` });
+        badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: "리그 전체 기록 중 가장 낮은 최저타 달성" });
     }
 
     if (golferSingleMap[g]) {
@@ -798,7 +809,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     if (golferPhoenixWins[g]) {
         badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
     }
-
     if (golferDonorMap[g]) {
         badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위" });
     }
@@ -813,6 +823,23 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     }
     if (golferRivalMap[g]) {
         badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부를 기록함" });
+    }
+
+    // 🔥 신규 상세 누적 뱃지
+    if (CUMULATIVE_STATS[g].holeInOne > 0) {
+        badges.push({ html: `<div class="season-badge badge-holeinone">👑 기적의 사나이</div>`, desc: "통산 홀인원 기록자" });
+    }
+    if (CUMULATIVE_STATS[g].eagle > 0) {
+        badges.push({ html: `<div class="season-badge badge-eagle-hit">🦅 이글 헌터</div>`, desc: "통산 이글 기록자" });
+    }
+    if (golferMaxBirdie.includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-birdie">🦋 버디 수집가</div>`, desc: "리그 내 누적 버디 횟수 1위" });
+    }
+    if (golferMaxPar.includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-par">🛡️ 철벽 방어</div>`, desc: "리그 내 누적 파 횟수 1위" });
+    }
+    if (golferMaxDoublePar.includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-bomb">💣 지뢰 탐지기</div>`, desc: "리그 내 누적 양파 횟수 1위" });
     }
 
     if (badges.length === 0) {
@@ -907,6 +934,21 @@ function processAllRoundSettlements() {
         golferRivalMap[g] = false;
         globalTies[g] = 0;
     });
+
+    // 🔥 누적 스코어 기반 최고기록자 선별 로직
+    let maxBirdie = 0;
+    let maxPar = 0;
+    let maxDPar = 0;
+
+    golfers.forEach(g => {
+        if (CUMULATIVE_STATS[g].birdie > maxBirdie) { maxBirdie = CUMULATIVE_STATS[g].birdie; }
+        if (CUMULATIVE_STATS[g].par > maxPar) { maxPar = CUMULATIVE_STATS[g].par; }
+        if (CUMULATIVE_STATS[g].doublePar > maxDPar) { maxDPar = CUMULATIVE_STATS[g].doublePar; }
+    });
+
+    golferMaxBirdie = golfers.filter(g => CUMULATIVE_STATS[g].birdie === maxBirdie && maxBirdie > 0);
+    golferMaxPar = golfers.filter(g => CUMULATIVE_STATS[g].par === maxPar && maxPar > 0);
+    golferMaxDoublePar = golfers.filter(g => CUMULATIVE_STATS[g].doublePar === maxDPar && maxDPar > 0);
 
     golfers.forEach(g => {
         if (appData.scores && appData.scores[g]) {
@@ -1305,15 +1347,7 @@ function openPersonalReport(name) {
         </div>
     `).join('');
     
-    const badgeSection = `
-        <div class="report-section">
-            <div class="report-title">🏆 획득한 뱃지 안내</div>
-            <div class="report-badges-area">
-                ${badgeHtmlWithDesc ? badgeHtmlWithDesc : '<span style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px;">아직 획득한 뱃지가 없습니다.</span>'}
-            </div>
-        </div>
-    `;
-
+    // 🔥 천적/자판기 영역 완전히 삭제하고 승률 리스트만 남김
     const winRates = {};
     golfers.forEach(g => { if(g !== name) winRates[g] = {w:0, l:0, t:0}; });
 
@@ -1346,59 +1380,41 @@ function openPersonalReport(name) {
         }
     }
 
-    let highestWinRate = -1;
-    let lowestWinRate = 101;
-    let atm = "-";
-    let nemesis = "-";
-    let atmWinCount = -1;
-    let nemesisLossCount = -1;
-
     let winRateHtml = "";
+    let hasMatches = false;
     for(let opp in winRates) {
         const matchCount = winRates[opp].w + winRates[opp].l + winRates[opp].t;
         if (matchCount > 0) {
+            hasMatches = true;
             const rate = Math.round((winRates[opp].w / matchCount) * 100);
             winRateHtml += `<div><span>vs ${opp}</span> <b>승률 ${rate}%</b> <span>(${winRates[opp].w}승 ${winRates[opp].t}무 ${winRates[opp].l}패)</span></div>`;
-            
-            if (rate > highestWinRate) {
-                highestWinRate = rate; atm = opp; atmWinCount = winRates[opp].w;
-            } else if (rate === highestWinRate) {
-                if (winRates[opp].w > atmWinCount) { atm = opp; atmWinCount = winRates[opp].w; }
-            }
-
-            if (rate < lowestWinRate) {
-                lowestWinRate = rate; nemesis = opp; nemesisLossCount = winRates[opp].l;
-            } else if (rate === lowestWinRate) {
-                if (winRates[opp].l > nemesisLossCount) { nemesis = opp; nemesisLossCount = winRates[opp].l; }
-            }
         }
     }
-
-    if (highestWinRate === -1) { 
-        atm = "데이터 부족"; nemesis = "데이터 부족";
+    if (!hasMatches) {
         winRateHtml = "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
-    } else {
-        if (highestWinRate === lowestWinRate) {
-            if (highestWinRate >= 50) nemesis = "없음";
-            else atm = "없음";
-        }
     }
 
-    const rivalHtml = `
-        <div class="stat-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 10px;">
-            <div class="stat-box" style="border-color:#fca5a5; background:#fef2f2;">
-                <div class="stat-label" style="color:#b91c1c;">😈 나의 천적</div>
-                <div class="stat-val" style="color:#7f1d1d; font-size:1rem;">${nemesis}</div>
-            </div>
-            <div class="stat-box" style="border-color:#7dd3fc; background:#f0f9ff;">
-                <div class="stat-label" style="color:#0369a1;">🏧 승점 자판기</div>
-                <div class="stat-val" style="color:#0c4a6e; font-size:1rem;">${atm}</div>
+    // 🌟 1. 누적 상세 타수 패널 추가 (제일 상단)
+    // 🌟 2. 괄호 없는 뱃지 설명 적용
+    // 🌟 3. 천적관계(rivalHtml) 삭제
+    const content = `
+        <div class="report-section">
+            <div class="report-title">🎯 상세 타수 누적 기록</div>
+            <div class="stat-grid" style="grid-template-columns: repeat(5, 1fr);">
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val" style="color:#dc2626;">${CUMULATIVE_STATS[name].holeInOne}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">이글</div><div class="stat-val" style="color:#ea580c;">${CUMULATIVE_STATS[name].eagle}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">버디</div><div class="stat-val" style="color:#059669;">${CUMULATIVE_STATS[name].birdie}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">파</div><div class="stat-val" style="color:#2563eb;">${CUMULATIVE_STATS[name].par}</div></div>
+                <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">양파</div><div class="stat-val" style="color:#475569;">${CUMULATIVE_STATS[name].doublePar}</div></div>
             </div>
         </div>
-    `;
 
-    const content = `
-        ${badgeSection}
+        <div class="report-section">
+            <div class="report-title">🏆 획득한 뱃지 안내</div>
+            <div class="report-badges-area">
+                ${badgeHtmlWithDesc ? badgeHtmlWithDesc : '<span style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px;">아직 획득한 뱃지가 없습니다.</span>'}
+            </div>
+        </div>
         
         <div class="report-section">
             <div class="report-title">📊 스코어 요약</div>
@@ -1420,8 +1436,7 @@ function openPersonalReport(name) {
         </div>
 
         <div class="report-section">
-            <div class="report-title">⚔️ 1:1 통산 승률 및 천적 관계</div>
-            ${rivalHtml}
+            <div class="report-title">⚔️ 1:1 통산 승률</div>
             <div class="winrate-list">${winRateHtml}</div>
         </div>
     `;
