@@ -1074,7 +1074,7 @@ function processAllRoundSettlements() {
         golfers.forEach(g => {
             const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
             const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
-            if (isNaN(s1) || isComplete === false) isComplete = false;
+            if (isNaN(s1) || isNaN(s2)) isComplete = false;
             handicapAvg[g] = Math.floor((s1 + s2) / 2);
         });
 
@@ -1511,7 +1511,7 @@ function resetAllData() {
     }
 }
 
-// 🔥 완벽하게 동작하는 일정 자동 복사 로직 🔥
+// 🔥 자동 복사 후 카카오톡으로 앱 화면 넘기기 🔥
 let pushTimeout;
 
 function fallbackCopy(text) {
@@ -1523,11 +1523,17 @@ function fallbackCopy(text) {
     
     document.body.appendChild(ta);
     ta.select();
-    ta.setSelectionRange(0, 99999); // 모바일 완벽 복사를 위한 추가 설정
+    ta.setSelectionRange(0, 99999); 
     
     try {
         document.execCommand('copy');
         showToast("📋 일정이 복사되었습니다! 카톡 창에 붙여넣기 하세요.");
+        
+        // 🚀 핵심: 복사 완료 후 1초 뒤에 카카오톡 앱 강제 실행
+        setTimeout(() => {
+            window.location.href = 'kakaotalk://';
+        }, 1000);
+
     } catch (err) {
         showToast("⚠️ 복사에 실패했습니다. 일정을 수동으로 공유해주세요.");
     }
@@ -1552,7 +1558,6 @@ function sendNotification() {
     }
 
     const pushBody = document.getElementById('pushBody');
-    // 알림창 클릭 유도 문구 변경
     pushBody.innerHTML = `
         📅 <b>${appData.nextRoundDate}</b><br>
         ⛅ ${weatherStr}<br>
@@ -1583,6 +1588,5 @@ function shareSchedule() {
 
     const shareMsg = `[⛳ JTFAG 리그 일정 알림]\n\n📅 일정: ${appData.nextRoundDate}\n⛅ 날씨: ${weatherStr}\n\n결전의 날이 다가옵니다! 멘탈 꽉 잡고 준비하세요! 🔥`;
 
-    // 🔥 카카오톡 크래시를 막기 위해 무조건 복사 기능만 사용하도록 강제 우회 🔥
     fallbackCopy(shareMsg);
 }
