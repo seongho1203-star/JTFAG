@@ -50,7 +50,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .notice-input { width: 100%; background: transparent; border: none; color: #ffffff; font-size: clamp(0.78rem, 3vw, 0.88rem); font-weight: 800; outline: none; padding: 0; word-break: keep-all; }
 .notice-input[readonly] { color: #cbd5e1; }
 #clubFundInput { text-align: center; }
-.lock-btn { background: transparent; border: none; font-size: 1.1rem; padding: 0 4px; margin-left: 4px; }
+.lock-btn { background: transparent; border: none; font-size: 1.1rem; padding: 0 4px; margin-left: 2px; }
 
 #weatherWidget { margin-top: 8px; padding: 6px 10px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.75rem; display: none; align-items: center; justify-content: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1); }
 .weather-icon { font-size: 1.1rem; }
@@ -183,3 +183,14 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; color: transparent !important; }
 @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 #customToast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.95); border: 1px solid var(--primary-gold); color: #ffffff; padding: 10px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; white-space: nowrap !important; max-width: 90vw; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+/* 🔥 신규 알림(종) 버튼 및 푸시 알림창 UI CSS 🔥 */
+.bell-btn { background: transparent; border: none; font-size: 1.1rem; padding: 0 4px; margin-left: auto; animation: ring 4s infinite ease-in-out; transform-origin: top center; }
+@keyframes ring { 0%, 100% { transform: rotate(0deg); } 5% { transform: rotate(15deg); } 10% { transform: rotate(-10deg); } 15% { transform: rotate(5deg); } 20% { transform: rotate(-5deg); } 25% { transform: rotate(0deg); } }
+
+.push-notification { position: fixed; top: -120px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 10000; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: white; border: 1px solid rgba(212, 175, 55, 0.4); cursor: pointer; }
+.push-notification.show { top: 20px; }
+.push-icon { font-size: 1.8rem; background: rgba(255,255,255,0.1); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; flex-shrink: 0; }
+.push-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.push-title { font-size: 0.8rem; font-weight: 800; color: #fef08a; display: flex; align-items: center; gap: 6px; }
+.push-body { font-size: 0.75rem; color: #e2e8f0; line-height: 1.4; word-break: keep-all; font-weight: 600; }
