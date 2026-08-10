@@ -760,19 +760,16 @@ function closeImageViewModal() {
     document.getElementById('fullImageView').src = "";
 }
 
-// 🔥 가장 튼튼하고 호환성 높은 완벽 다운로드 함수로 전면 교체
 async function downloadCurrentPhoto() {
     const imgSrc = document.getElementById('fullImageView').src;
     if (!imgSrc) return;
 
-    // 카카오톡 인앱 브라우저 경고
     if (navigator.userAgent.match(/kakaotalk/i)) {
         showToast("⚠️ 카카오톡에선 다운로드가 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!");
         return;
     }
 
     try {
-        // 1. Data URL을 Blob으로 안전하게 수동 변환 (fetch 에러 방지)
         const splitDataURI = imgSrc.split(',');
         const byteString = atob(splitDataURI[1]);
         const mimeString = splitDataURI[0].split(':')[1].split(';')[0];
@@ -784,7 +781,6 @@ async function downloadCurrentPhoto() {
         const blob = new Blob([ab], { type: mimeString });
         const fileName = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
 
-        // 2. iOS 및 지원 모바일 기기를 위한 공유 메뉴 (갤러리 직접 저장 기능)
         if (navigator.share && navigator.canShare) {
             const file = new File([blob], fileName, { type: mimeString });
             if (navigator.canShare({ files: [file] })) {
@@ -797,7 +793,6 @@ async function downloadCurrentPhoto() {
             }
         }
 
-        // 3. PC, 안드로이드, 기타 브라우저용 범용 다운로드 방식
         const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.style.display = 'none';
@@ -811,7 +806,6 @@ async function downloadCurrentPhoto() {
         showToast("💾 기기에 성공적으로 저장되었습니다!");
 
     } catch (error) {
-        // 사용자가 공유를 취소했거나, 에러가 발생한 경우
         console.error("다운로드 에러:", error);
         if (error.name !== 'AbortError') {
             showToast("⚠️ 다운로드 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요.");
@@ -881,7 +875,8 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-par">🛡️ 철벽 방어</div>`, desc: "리그 내 누적 파 횟수 1위" });
     }
     if (golferMaxDoublePar.includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-bomb">💣 지뢰 탐지기</div>`, desc: "리그 내 누적 양파 횟수 1위" });
+        // 🔥 뱃지 이름 변경 적용 (지뢰 탐지기 -> 폭탄 처리반)
+        badges.push({ html: `<div class="season-badge badge-bomb">💣 폭탄 처리반</div>`, desc: "리그 내 누적 양파 횟수 1위" });
     }
 
     if (badges.length === 0) {
