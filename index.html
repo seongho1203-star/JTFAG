@@ -15,7 +15,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- 🔥 디자인(CSS) 파일도 폰이 옛날 기억을 못하게 강제로 매번 최신으로 불러옵니다 🔥 -->
+    <!-- 🔥 디자인(CSS) 파일 강제 새로고침 (유지) 🔥 -->
     <script>
         document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
     </script>
@@ -52,11 +52,6 @@
     <div class="total-summary-card">
         <h2>💰 JTFAG 통합 정산 요약</h2>
         <div class="summary-grid" id="summaryGrid"></div>
-    </div>
-
-    <!-- 🔥 삐까뻔쩍한 명예의 전당 입장 버튼 🔥 -->
-    <div class="hof-btn-container">
-        <button type="button" class="open-hof-btn" onclick="openHallOfFame()">🏆 JTFAG 역대 명예의 전당 입장 🏆</button>
     </div>
 
     <div class="money-card">
@@ -192,17 +187,6 @@
             <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:bold;" onclick="closeImageViewModal()">✕</button>
         </div>
         <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
-    </div>
-</div>
-
-<div class="modal-overlay" id="hofModal" onclick="if(event.target === this) closeHallOfFame()">
-    <div class="modal-content hof-content">
-        <div class="modal-header" style="background: linear-gradient(135deg, #b8860b, #d4af37);">
-            <h3 style="color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); font-size:1.1rem;">🏆 명예의 전당</h3>
-            <button type="button" class="close-btn" style="color:#fff;" onclick="closeHallOfFame()">✕</button>
-        </div>
-        <div class="modal-body" id="hofBody" style="background: #0f172a; padding: 20px 12px;">
-        </div>
     </div>
 </div>
 
