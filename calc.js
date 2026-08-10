@@ -1,4 +1,4 @@
-// calc.js - 정산 및 통계 핵심 로직
+// calc.js - 정산 및 뱃지 핵심 로직 전체
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -30,34 +30,8 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     return badges.length > 0 ? badges : [{ html: `<div class="season-badge badge-rookie">🌱 루키</div>`, desc: "아직 획득한 뱃지가 없음" }];
 }
 
-function calculateAndRender() {
-    let targetR1 = -1, targetR2 = -1;
-    for (let r = appData.totalRounds - 1; r >= 1; r--) {
-        let complete = true;
-        golfers.forEach(g => {
-            const sCurr = appData.scores[g] ? appData.scores[g][r] : "";
-            const sPrev = appData.scores[g] ? appData.scores[g][r - 1] : "";
-            if (sCurr === "" || sPrev === "" || isNaN(parseFloat(sCurr))) complete = false;
-        });
-        if (complete) { targetR1 = r - 1; targetR2 = r; break; }
-    }
-    if (targetR1 === -1) { targetR1 = 0; targetR2 = 1; }
-
-    document.getElementById('infoText').innerHTML = `💡 <b>${targetR1 + 1}차 & ${targetR2 + 1}차 스코어</b> 기준 1:1 핸디캡 산출`;
-    document.getElementById('matchCardTitle').innerHTML = `🤝 ${targetR1 + 1}·${targetR2 + 1}차 평균 핸디캡`;
-
-    document.querySelectorAll('#scoreTbody tr').forEach(row => {
-        const name = row.getAttribute('data-name');
-        const s1 = parseFloat(appData.scores[name][targetR1]), s2 = parseFloat(appData.scores[name][targetR2]);
-        const avg = Math.floor((s1 + s2) / 2);
-        row.querySelector('.avg-cell').textContent = isNaN(avg) ? "-" : avg;
-    });
-
-    processAllRoundSettlements();
-    renderHandicapMatchCard(targetR1, targetR2);
-}
-
 function processAllRoundSettlements() {
+    const totalRounds = appData.totalRounds;
     const totalRankProfit = {}; const roundRankProfit = {}; const globalTies = {};
     golferRankHistory = {}; golferSingleMap = {}; golferReboundMap = {}; golferPhoenixWins = {};
     golferDonorMap = {}; golferUptrendMap = {}; golferDowntrendMap = {}; golferFluctuationMap = {}; golferRivalMap = {}; 
@@ -77,12 +51,10 @@ function processAllRoundSettlements() {
         if (myStats[g].par > maxPar) maxPar = myStats[g].par;
         if (myStats[g].doublePar > maxDPar) maxDPar = myStats[g].doublePar;
     });
-
     golferMaxBirdie = golfers.filter(g => myStats[g].birdie === maxBirdie && maxBirdie > 0);
     golferMaxPar = golfers.filter(g => myStats[g].par === maxPar && maxPar > 0);
     golferMaxDoublePar = golfers.filter(g => myStats[g].doublePar === maxDPar && maxDPar > 0);
 
-    // 단일 라운드 뱃지 및 트렌드 분석 로직
     golfers.forEach(g => {
         if (appData.scores[g]) appData.scores[g].forEach(s => { if (parseFloat(s) <= 79) golferSingleMap[g] = true; });
     });
@@ -91,20 +63,21 @@ function processAllRoundSettlements() {
     golfers.forEach(g => {
         const scores = appData.scores[g] || [];
         for (let i = 1; i < scores.length; i++) {
-            const diff = parseFloat(scores[i - 1]) - parseFloat(scores[i]);
+            const diff = parseFloat(scores[i-1]) - parseFloat(scores[i]);
             if (diff > maxDiff) { maxDiff = diff; reboundGolfer = g; }
         }
     });
     if (reboundGolfer && maxDiff > 0) golferReboundMap[reboundGolfer] = true;
 
-    // 히스토리 및 순위 정산
-    for (let r = 2; r < appData.totalRounds; r++) {
-        const handicapAvg = {}, currentScores = {}, matchResults = {};
-        let isComplete = true;
+    const historyList = document.getElementById('historyList');
+    if (historyList) historyList.innerHTML = "";
+
+    for (let r = 2; r < totalRounds; r++) {
+        const handicapAvg = {}, currentScores = {}, matchResults = {}; let isComplete = true;
         golfers.forEach(g => {
-            const s1 = parseFloat(appData.scores[g][r - 2]), s2 = parseFloat(appData.scores[g][r - 1]), sr = parseFloat(appData.scores[g][r]);
+            const s1 = parseFloat(appData.scores[g][r-2]), s2 = parseFloat(appData.scores[g][r-1]), sr = parseFloat(appData.scores[g][r]);
             if (isNaN(s1) || isNaN(s2) || isNaN(sr)) isComplete = false;
-            handicapAvg[g] = Math.floor((s1 + s2) / 2); currentScores[g] = sr;
+            handicapAvg[g] = Math.floor((s1+s2)/2); currentScores[g] = sr;
             matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 };
         });
 
@@ -113,10 +86,10 @@ function processAllRoundSettlements() {
         for (let i = 0; i < golfers.length; i++) {
             for (let j = i + 1; j < golfers.length; j++) {
                 const g1 = golfers[i], g2 = golfers[j];
-                const g1Adjusted = currentScores[g1] - (handicapAvg[g1] - handicapAvg[g2]);
-                const g2Adjusted = currentScores[g2];
-                if (g1Adjusted < g2Adjusted) { matchResults[g1].wins++; matchResults[g2].losses++; }
-                else if (g1Adjusted > g2Adjusted) { matchResults[g1].losses++; matchResults[g2].wins++; }
+                const g1Adj = currentScores[g1] - (handicapAvg[g1] - handicapAvg[g2]);
+                const g2Adj = currentScores[g2];
+                if (g1Adj < g2Adj) { matchResults[g1].wins++; matchResults[g2].losses++; }
+                else if (g1Adj > g2Adj) { matchResults[g1].losses++; matchResults[g2].wins++; }
                 else {
                     if (handicapAvg[g1] < handicapAvg[g2]) { matchResults[g1].wins++; matchResults[g2].losses++; }
                     else if (handicapAvg[g2] < handicapAvg[g1]) { matchResults[g2].wins++; matchResults[g1].losses++; }
@@ -125,64 +98,17 @@ function processAllRoundSettlements() {
             }
         }
 
-        const sortedGolfers = [...golfers].sort((a, b) => matchResults[b].wins - matchResults[a].wins);
-        sortedGolfers.forEach((name, index) => {
-            const profit = RANK_CONFIG[index].penalty;
-            totalRankProfit[name] += profit; roundRankProfit[name][r] = profit; golferRankHistory[name].push(index);
+        const sorted = [...golfers].sort((a, b) => matchResults[b].wins - matchResults[a].wins);
+        sorted.forEach((name, idx) => {
+            const profit = RANK_CONFIG[idx].penalty;
+            totalRankProfit[name] += profit; roundRankProfit[name][r] = profit; golferRankHistory[name].push(idx);
             const row = document.querySelector(`tr[data-name="${name}"]`);
-            if (row) row.querySelector('.rank-cell').innerHTML = `<span class="rank-badge ${RANK_CONFIG[index].class}">${RANK_CONFIG[index].icon} ${RANK_CONFIG[index].name}</span>`;
+            if (row) row.querySelector('.rank-cell').innerHTML = `<span class="rank-badge ${RANK_CONFIG[idx].class}">${RANK_CONFIG[idx].icon} ${RANK_CONFIG[idx].name}</span>`;
         });
-    }
 
+        if (historyList) {
+            historyList.innerHTML += `<div class="history-item"><div class="history-header">⛳ ${r+1}차전 정산</div><div class="history-grid">${sorted.map((name, i) => `<div class="history-member"><span>${name}</span><span>${RANK_CONFIG[i].icon}</span></div>`).join('')}</div></div>`;
+        }
+    }
     cachedRoundRankProfit = roundRankProfit;
-
-    // 요약 계산
-    golferAvgScores = {}; golferMinScores = {};
-    golfers.forEach(g => {
-        const valid = (appData.scores[g] || []).filter(s => s !== "" && !isNaN(parseFloat(s))).map(parseFloat);
-        if (valid.length > 0) {
-            golferMinScores[g] = Math.min(...valid);
-            golferAvgScores[g] = valid.reduce((a, b) => a + b, 0) / valid.length;
-        }
-    });
-
-    // 정산 반영
-    golfers.forEach(g => {
-        const rankProfit = totalRankProfit[g] || 0;
-        let strokeProfit = 0;
-        appData.roundMoney.forEach((r, idx) => {
-            if (r[g]) {
-                const penalty = (roundRankProfit[g] && roundRankProfit[g][idx] !== undefined) ? roundRankProfit[g][idx] : 0;
-                const strokeDiff = (r[g].end - r[g].start) - penalty;
-                if (strokeDiff < 0) strokeProfit += strokeDiff;
-            }
-        });
-        golferFinalNetProfitMap[g] = rankProfit + strokeProfit;
-        if (golferFinalNetProfitMap[g] < 0 && golferFinalNetProfitMap[g] === Math.min(...Object.values(golferFinalNetProfitMap))) golferDonorMap[g] = true;
-    });
-
-    // 화면 반영 (렌더링)
-    const summaryGrid = document.getElementById('summaryGrid');
-    summaryGrid.innerHTML = golfers.map(g => {
-        const badges = getGolferBadgesArray(g, Math.min(...Object.values(golferAvgScores)), Math.min(...Object.values(golferMinScores)));
-        golferBadgesMap[g] = badges;
-        const bal = golferFinalNetProfitMap[g];
-        return `
-            <div class="summary-item">
-                <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
-                <div class="detail-line"><span class="label">계급</span> <span class="val">${(totalRankProfit[g] / 10000).toFixed(1)}만</span></div>
-                <div class="final-total" style="color: ${bal > 0 ? '#16a34a' : (bal < 0 ? '#dc2626' : '#64748b')};">합산: ${(bal / 10000).toFixed(1)}만</div>
-            </div>`;
-    }).join('');
-}
-
-function renderHandicapMatchCard(r1, r2) {
-    const grid = document.getElementById('matchGrid'); grid.innerHTML = "";
-    const avg = {}; golfers.forEach(g => avg[g] = Math.floor((parseFloat(appData.scores[g][r1]) + parseFloat(appData.scores[g][r2])) / 2));
-    for (let i = 0; i < golfers.length; i++) {
-        for (let j = i + 1; j < golfers.length; j++) {
-            const diff = avg[golfers[i]] - avg[golfers[j]];
-            grid.innerHTML += `<div class="match-item"><b>${diff > 0 ? golfers[i] : golfers[j]}</b> ➔ ${diff > 0 ? golfers[j] : golfers[i]}에게 <b style="color:var(--primary-gold);">${Math.abs(diff)}타</b> 받음</div>`;
-        }
-    }
 }
