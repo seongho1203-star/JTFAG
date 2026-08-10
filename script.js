@@ -58,6 +58,7 @@ let golferRivalMap = {};
 let golferMaxBirdie = [];
 let golferMaxPar = [];
 let golferMaxDoublePar = [];
+let golferFinalNetProfitMap = {}; 
 
 let isLoaded = false;
 
@@ -1073,7 +1074,7 @@ function processAllRoundSettlements() {
         golfers.forEach(g => {
             const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
             const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
-            if (isNaN(s1) || isNaN(s2)) isComplete = false;
+            if (isNaN(s1) || isComplete === false) isComplete = false;
             handicapAvg[g] = Math.floor((s1 + s2) / 2);
         });
 
@@ -1243,14 +1244,14 @@ function processAllRoundSettlements() {
                 }
             }
         }
-        golferFinalNetProfit[g] = rankProfit + totalPureStrokeProfit; 
+        golferFinalNetProfitMap[g] = rankProfit + totalPureStrokeProfit; 
     });
 
     let minNetProfit = Infinity;
     let donorWinner = null;
     golfers.forEach(g => {
-        if (golferFinalNetProfit[g] < minNetProfit && golferFinalNetProfit[g] < 0) {
-            minNetProfit = golferFinalNetProfit[g];
+        if (golferFinalNetProfitMap[g] < minNetProfit && golferFinalNetProfitMap[g] < 0) {
+            minNetProfit = golferFinalNetProfitMap[g];
             donorWinner = g;
         }
     });
@@ -1510,8 +1511,29 @@ function resetAllData() {
     }
 }
 
-// 🔥 신규 푸시 알림 및 카톡 공유 로직 🔥
+// 🔥 완벽하게 동작하는 일정 자동 복사 로직 🔥
 let pushTimeout;
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    ta.style.left = '-9999px';
+    
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, 99999); // 모바일 완벽 복사를 위한 추가 설정
+    
+    try {
+        document.execCommand('copy');
+        showToast("📋 일정이 복사되었습니다! 카톡 창에 붙여넣기 하세요.");
+    } catch (err) {
+        showToast("⚠️ 복사에 실패했습니다. 일정을 수동으로 공유해주세요.");
+    }
+    
+    document.body.removeChild(ta);
+}
 
 function sendNotification() {
     if (!appData.nextRoundDate || appData.nextRoundDate === "") {
@@ -1530,16 +1552,16 @@ function sendNotification() {
     }
 
     const pushBody = document.getElementById('pushBody');
+    // 알림창 클릭 유도 문구 변경
     pushBody.innerHTML = `
         📅 <b>${appData.nextRoundDate}</b><br>
         ⛅ ${weatherStr}<br>
-        <span style="color:#60a5fa; font-size:0.7rem; margin-top:4px; display:block;">👉 터치해서 단톡방에 공유하기</span>
+        <span style="color:#60a5fa; font-size:0.7rem; margin-top:4px; display:block;">👉 터치해서 일정 복사하기</span>
     `;
 
     const pushEl = document.getElementById('pushNotification');
     pushEl.classList.add('show');
 
-    // 기기 진동 효과 (지원하는 기기만)
     if (navigator.vibrate) navigator.vibrate(200);
 
     clearTimeout(pushTimeout);
@@ -1559,22 +1581,8 @@ function shareSchedule() {
         if (parts.length > 1) weatherStr = parts[1].trim();
     }
 
-    // 카톡으로 보낼 깔끔한 메시지 폼
     const shareMsg = `[⛳ JTFAG 리그 일정 알림]\n\n📅 일정: ${appData.nextRoundDate}\n⛅ 날씨: ${weatherStr}\n\n결전의 날이 다가옵니다! 멘탈 꽉 잡고 준비하세요! 🔥`;
 
-    if (navigator.share && navigator.canShare) {
-        navigator.share({
-            title: 'JTFAG 리그 일정',
-            text: shareMsg
-        }).catch(console.error);
-    } else {
-        // 공유 API가 안 먹히는 PC나 특정 환경에서는 텍스트 복사로 대체
-        const ta = document.createElement('textarea');
-        ta.value = shareMsg;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast("📋 알림 내용이 복사되었습니다! 카톡에 붙여넣기 하세요.");
-    }
+    // 🔥 카카오톡 크래시를 막기 위해 무조건 복사 기능만 사용하도록 강제 우회 🔥
+    fallbackCopy(shareMsg);
 }
