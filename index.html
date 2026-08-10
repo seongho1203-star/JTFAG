@@ -14,8 +14,6 @@
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- 🔥 디자인(CSS) 파일 강제 새로고침 (유지) 🔥 -->
     <script>
         document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
     </script>
@@ -31,7 +29,11 @@
     <div class="notice-card">
         <h2>
             <span>📢 공지 및 공금</span>
-            <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="공금 수정 잠금/해제">🔒</button>
+            <div style="display:flex; align-items:center;">
+                <!-- 🔥 신규 알림 버튼 추가 🔥 -->
+                <button type="button" class="bell-btn" onclick="sendNotification()" title="일정 알림">🔔</button>
+                <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="공금 수정 잠금/해제">🔒</button>
+            </div>
         </h2>
         <div class="notice-grid">
             <div class="notice-box" onclick="openScheduleModal()" style="cursor:pointer;">
@@ -187,6 +189,15 @@
             <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:bold;" onclick="closeImageViewModal()">✕</button>
         </div>
         <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
+    </div>
+</div>
+
+<!-- 🔥 마치 진짜 앱 같은 푸시 알림창 UI 🔥 -->
+<div id="pushNotification" class="push-notification" onclick="shareSchedule()">
+    <div class="push-icon">⛳</div>
+    <div class="push-content">
+        <div class="push-title">JTFAG 리그 알림 <span style="font-size:0.6rem; color:#94a3b8; font-weight:normal;">방금</span></div>
+        <div class="push-body" id="pushBody"></div>
     </div>
 </div>
 
