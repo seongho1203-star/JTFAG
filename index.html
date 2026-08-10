@@ -14,7 +14,11 @@
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- 🔥 디자인(CSS) 파일도 폰이 옛날 기억을 못하게 강제로 매번 최신으로 불러옵니다 🔥 -->
+    <script>
+        document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
+    </script>
 </head>
 <body ontouchstart="">
 
@@ -191,7 +195,6 @@
     </div>
 </div>
 
-<!-- 🔥 명예의 전당 전용 시상식 모달 🔥 -->
 <div class="modal-overlay" id="hofModal" onclick="if(event.target === this) closeHallOfFame()">
     <div class="modal-content hof-content">
         <div class="modal-header" style="background: linear-gradient(135deg, #b8860b, #d4af37);">
@@ -199,7 +202,6 @@
             <button type="button" class="close-btn" style="color:#fff;" onclick="closeHallOfFame()">✕</button>
         </div>
         <div class="modal-body" id="hofBody" style="background: #0f172a; padding: 20px 12px;">
-            <!-- 자바스크립트로 3D 단상이 자동 생성됩니다. -->
         </div>
     </div>
 </div>
