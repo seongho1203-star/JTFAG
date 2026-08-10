@@ -24,7 +24,6 @@
         <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 📢 공지사항 & 공금 잔액 카드 -->
     <div class="notice-card">
         <h2>
             <span>📢 공지 및 공금</span>
@@ -49,6 +48,11 @@
     <div class="total-summary-card">
         <h2>💰 JTFAG 통합 정산 요약</h2>
         <div class="summary-grid" id="summaryGrid"></div>
+    </div>
+
+    <!-- 🔥 삐까뻔쩍한 명예의 전당 입장 버튼 🔥 -->
+    <div class="hof-btn-container">
+        <button type="button" class="open-hof-btn" onclick="openHallOfFame()">🏆 JTFAG 역대 명예의 전당 입장 🏆</button>
     </div>
 
     <div class="money-card">
@@ -186,19 +190,26 @@
         <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
     </div>
 </div>
-<!-- ... 위쪽 코드는 그대로 유지 ... -->
+
+<!-- 🔥 명예의 전당 전용 시상식 모달 🔥 -->
+<div class="modal-overlay" id="hofModal" onclick="if(event.target === this) closeHallOfFame()">
+    <div class="modal-content hof-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #b8860b, #d4af37);">
+            <h3 style="color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); font-size:1.1rem;">🏆 명예의 전당</h3>
+            <button type="button" class="close-btn" style="color:#fff;" onclick="closeHallOfFame()">✕</button>
+        </div>
+        <div class="modal-body" id="hofBody" style="background: #0f172a; padding: 20px 12px;">
+            <!-- 자바스크립트로 3D 단상이 자동 생성됩니다. -->
+        </div>
+    </div>
+</div>
 
 <div id="customToast"></div>
 
-<!-- 🔥 아래 부분이 핵심입니다! 기존 <script src="stats.js"></script>를 이걸로 교체하세요 -->
 <script>
-    // 브라우저가 옛날 데이터를 기억하지 못하도록 매번 새로운 버전 번호를 달아줍니다.
     document.write('<script src="stats.js?ver=' + Math.random() + '"><\/script>');
 </script>
-
-<!-- 메인 스크립트 실행 -->
 <script src="script.js"></script>
 
 </body>
 </html>
-
