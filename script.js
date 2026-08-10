@@ -58,6 +58,7 @@ let golferRivalMap = {};
 let golferMaxBirdie = [];
 let golferMaxPar = [];
 let golferMaxDoublePar = [];
+let golferFinalNetProfitMap = {}; 
 
 let isLoaded = false;
 
@@ -875,7 +876,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-par">🛡️ 철벽 방어</div>`, desc: "리그 내 누적 파 횟수 1위" });
     }
     if (golferMaxDoublePar.includes(g)) {
-        // 🔥 뱃지 이름 변경 적용 (지뢰 탐지기 -> 폭탄 처리반)
         badges.push({ html: `<div class="season-badge badge-bomb">💣 폭탄 처리반</div>`, desc: "리그 내 누적 양파 횟수 1위" });
     }
 
@@ -1204,8 +1204,6 @@ function processAllRoundSettlements() {
     golferMinScores = {};
     golferBadgesMap = {}; 
 
-    const golferFinalNetProfit = {};
-
     golfers.forEach(g => {
         const validScores = (appData.scores && appData.scores[g]) 
             ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
@@ -1244,14 +1242,14 @@ function processAllRoundSettlements() {
                 }
             }
         }
-        golferFinalNetProfit[g] = rankProfit + totalPureStrokeProfit;
+        golferFinalNetProfitMap[g] = rankProfit + totalPureStrokeProfit; 
     });
 
     let minNetProfit = Infinity;
     let donorWinner = null;
     golfers.forEach(g => {
-        if (golferFinalNetProfit[g] < minNetProfit && golferFinalNetProfit[g] < 0) {
-            minNetProfit = golferFinalNetProfit[g];
+        if (golferFinalNetProfitMap[g] < minNetProfit && golferFinalNetProfitMap[g] < 0) {
+            minNetProfit = golferFinalNetProfitMap[g];
             donorWinner = g;
         }
     });
@@ -1509,4 +1507,86 @@ function resetAllData() {
         showToast("🔄 모든 데이터가 초기화되었습니다.");
         forceTableReflow();
     }
+}
+
+// 🔥 명예의 전당 (Hall of Fame) 3D 단상 생성기 🔥
+function openHallOfFame() {
+    const hofBody = document.getElementById('hofBody');
+    if (!hofBody) return;
+
+    const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
+    };
+
+    let lossList = golfers.map(g => ({ name: g, val: golferFinalNetProfitMap[g] || 0 }))
+                         .filter(item => item.val < 0)
+                         .sort((a, b) => a.val - b.val); 
+
+    let eagleList = golfers.map(g => {
+        let count = 0;
+        if(golferRankHistory[g]) count = golferRankHistory[g].filter(r => r === 0).length;
+        return { name: g, val: count };
+    }).filter(item => item.val > 0).sort((a, b) => b.val - a.val);
+
+    let birdieList = golfers.map(g => ({ name: g, val: myStats[g].birdie }))
+                           .filter(item => item.val > 0).sort((a, b) => b.val - a.val);
+
+    let bombList = golfers.map(g => ({ name: g, val: myStats[g].doublePar }))
+                         .filter(item => item.val > 0).sort((a, b) => b.val - a.val);
+
+    function createPodiumHTML(title, list, unit, isMoney) {
+        let p1 = list[0] || null;
+        let p2 = list[1] || null;
+        let p3 = list[2] || null;
+
+        function getStep(p, rank) {
+            if (!p || p.val === 0) return `<div class="podium-step step-${rank} step-empty"></div>`;
+            
+            let displayVal = "";
+            if (isMoney) {
+                let showNum = Math.abs(p.val) / 10000;
+                displayVal = (p.val > 0 ? "+" : "-") + showNum + "만";
+            } else {
+                displayVal = p.val + unit;
+            }
+
+            let medal = rank === 1 ? "👑" : (rank === 2 ? "🥈" : "🥉");
+
+            return `
+                <div class="podium-step step-${rank}">
+                    <div class="avatar">${medal}</div>
+                    <div class="name-tag">${p.name}</div>
+                    <div class="score-tag">${displayVal}</div>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="hof-section">
+                <div class="hof-title">${title}</div>
+                ${list.length === 0 ? `<div style="text-align:center; color:#94a3b8; font-size:0.8rem; padding:20px 0;">아직 데이터가 없습니다.</div>` : `
+                <div class="podium-container">
+                    ${getStep(p2, 2)}
+                    ${getStep(p1, 1)}
+                    ${getStep(p3, 3)}
+                </div>`}
+            </div>
+        `;
+    }
+
+    let finalHtml = "";
+    finalHtml += createPodiumHTML("💸 아낌없이 주는 나무", lossList, "", true);
+    finalHtml += createPodiumHTML("🦅 필드의 지배자", eagleList, "회", false);
+    finalHtml += createPodiumHTML("🦋 타수 암살자", birdieList, "개", false);
+    finalHtml += createPodiumHTML("💣 멘탈 붕괴", bombList, "개", false);
+
+    hofBody.innerHTML = finalHtml;
+    document.getElementById('hofModal').classList.add('active');
+}
+
+function closeHallOfFame() {
+    document.getElementById('hofModal').classList.remove('active');
 }
