@@ -15,6 +15,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // 항상 최신 CSS 파일을 불러옵니다
         document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
     </script>
 </head>
@@ -30,7 +31,6 @@
         <h2>
             <span>📢 공지 및 공금</span>
             <div style="display:flex; align-items:center;">
-                <!-- 🔥 신규 알림 버튼 추가 🔥 -->
                 <button type="button" class="bell-btn" onclick="sendNotification()" title="일정 알림">🔔</button>
                 <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="공금 수정 잠금/해제">🔒</button>
             </div>
@@ -192,7 +192,6 @@
     </div>
 </div>
 
-<!-- 🔥 마치 진짜 앱 같은 푸시 알림창 UI 🔥 -->
 <div id="pushNotification" class="push-notification" onclick="shareSchedule()">
     <div class="push-icon">⛳</div>
     <div class="push-content">
@@ -203,10 +202,14 @@
 
 <div id="customToast"></div>
 
+<!-- 🔥 분리된 4개의 자바스크립트 파일을 순서대로 묶어서 실행합니다 🔥 -->
 <script>
-    document.write('<script src="stats.js?ver=' + Math.random() + '"><\/script>');
+    const v = Math.random();
+    document.write('<script src="stats.js?ver=' + v + '"><\/script>');
+    document.write('<script src="api.js?ver=' + v + '"><\/script>');
+    document.write('<script src="calc.js?ver=' + v + '"><\/script>');
+    document.write('<script src="ui.js?ver=' + v + '"><\/script>');
 </script>
-<script src="script.js"></script>
 
 </body>
 </html>
