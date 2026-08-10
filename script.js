@@ -1511,7 +1511,7 @@ function resetAllData() {
     }
 }
 
-// 🔥 자동 복사 후 카카오톡으로 앱 화면 넘기기 🔥
+// 🔥 즉시 실행되는 카카오톡 강제 다이렉트 전환 모드 🔥
 let pushTimeout;
 
 function fallbackCopy(text) {
@@ -1527,12 +1527,17 @@ function fallbackCopy(text) {
     
     try {
         document.execCommand('copy');
-        showToast("📋 일정이 복사되었습니다! 카톡 창에 붙여넣기 하세요.");
+        showToast("📋 일정이 복사되었습니다! 단톡방에 붙여넣기 하세요.");
         
-        // 🚀 핵심: 복사 완료 후 1초 뒤에 카카오톡 앱 강제 실행
-        setTimeout(() => {
+        // 🔥 setTimeout을 완전히 제거하고 브라우저 클릭 액션 도중에 즉시 실행!
+        const isAndroid = /android/i.test(navigator.userAgent);
+        if (isAndroid) {
+            // 안드로이드(갤럭시) 전용 안전 우회 경로
+            window.location.href = 'intent://#Intent;scheme=kakaotalk;package=com.kakao.talk;end';
+        } else {
+            // 아이폰 전용 경로
             window.location.href = 'kakaotalk://';
-        }, 1000);
+        }
 
     } catch (err) {
         showToast("⚠️ 복사에 실패했습니다. 일정을 수동으로 공유해주세요.");
