@@ -1509,3 +1509,72 @@ function resetAllData() {
         forceTableReflow();
     }
 }
+
+// 🔥 신규 푸시 알림 및 카톡 공유 로직 🔥
+let pushTimeout;
+
+function sendNotification() {
+    if (!appData.nextRoundDate || appData.nextRoundDate === "") {
+        showToast("⚠️ 등록된 일정이 없습니다. 먼저 일정을 등록해주세요!");
+        return;
+    }
+
+    const weatherInfo = document.getElementById('weatherText').innerText;
+    let weatherStr = "날씨 정보 없음";
+    
+    if (weatherInfo && !weatherInfo.includes("확인중") && !weatherInfo.includes("못했습니다")) {
+        const parts = weatherInfo.split(': ');
+        if (parts.length > 1) {
+            weatherStr = parts[1].trim();
+        }
+    }
+
+    const pushBody = document.getElementById('pushBody');
+    pushBody.innerHTML = `
+        📅 <b>${appData.nextRoundDate}</b><br>
+        ⛅ ${weatherStr}<br>
+        <span style="color:#60a5fa; font-size:0.7rem; margin-top:4px; display:block;">👉 터치해서 단톡방에 공유하기</span>
+    `;
+
+    const pushEl = document.getElementById('pushNotification');
+    pushEl.classList.add('show');
+
+    // 기기 진동 효과 (지원하는 기기만)
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    clearTimeout(pushTimeout);
+    pushTimeout = setTimeout(() => {
+        pushEl.classList.remove('show');
+    }, 5000);
+}
+
+function shareSchedule() {
+    const pushEl = document.getElementById('pushNotification');
+    pushEl.classList.remove('show');
+
+    const weatherInfo = document.getElementById('weatherText').innerText;
+    let weatherStr = "날씨 정보 없음";
+    if (weatherInfo && !weatherInfo.includes("확인중") && !weatherInfo.includes("못했습니다")) {
+        const parts = weatherInfo.split(': ');
+        if (parts.length > 1) weatherStr = parts[1].trim();
+    }
+
+    // 카톡으로 보낼 깔끔한 메시지 폼
+    const shareMsg = `[⛳ JTFAG 리그 일정 알림]\n\n📅 일정: ${appData.nextRoundDate}\n⛅ 날씨: ${weatherStr}\n\n결전의 날이 다가옵니다! 멘탈 꽉 잡고 준비하세요! 🔥`;
+
+    if (navigator.share && navigator.canShare) {
+        navigator.share({
+            title: 'JTFAG 리그 일정',
+            text: shareMsg
+        }).catch(console.error);
+    } else {
+        // 공유 API가 안 먹히는 PC나 특정 환경에서는 텍스트 복사로 대체
+        const ta = document.createElement('textarea');
+        ta.value = shareMsg;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast("📋 알림 내용이 복사되었습니다! 카톡에 붙여넣기 하세요.");
+    }
+}
