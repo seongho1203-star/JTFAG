@@ -336,7 +336,32 @@ async function downloadCurrentPhoto() {
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
-// 🔥 명예의 전당 (프리미엄 화이트 골드 & 카운트업 적용) 🔥
+// 🔥 금빛 가루 (Confetti) 파티클 생성 함수 🔥
+function triggerGoldConfetti() {
+    const colors = ['#d4af37', '#fef08a', '#b8860b', '#fbbf24', '#ffffff'];
+    const count = 40;
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-particle';
+        p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        p.style.left = '50vw';
+        p.style.top = '40vh';
+        p.style.width = (Math.random() * 8 + 4) + 'px';
+        p.style.height = (Math.random() * 10 + 6) + 'px';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 260 + 100;
+        const dx = (Math.cos(angle) * velocity) + 'px';
+        const dy = (Math.sin(angle) * velocity + 150) + 'px';
+        
+        p.style.setProperty('--dx', dx);
+        p.style.setProperty('--dy', dy);
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 2500);
+    }
+}
+
+// 🔥 명예의 전당 (골드 네온 테두리 & 폭죽 연출 적용) 🔥
 function openPersonalReport(name) {
     document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#fef08a;">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
@@ -403,6 +428,7 @@ function openPersonalReport(name) {
     `;
     
     document.getElementById('personalReportModal').classList.add('active');
+    triggerGoldConfetti(); // 축하 폭죽 가루 실행
 
     // 카운트업 애니메이션 실행
     setTimeout(() => {
