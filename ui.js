@@ -208,20 +208,19 @@ function renderTable() {
         return; 
     }
 
-    // 💡 1차 변경: '현재 계급' 열을 이름 바로 다음(앞쪽)에 추가하고 금색 테마 부여
-    let headerHtml = `<th>이름</th><th style="white-space:nowrap; color:var(--primary-gold);">현재 계급</th>`;
+    // 🔥 1열 이름 고정, 2열 현재계급 고정 클래스 부여 🔥
+    let headerHtml = `<th class="sticky-col-1">이름</th><th class="sticky-col-2" style="color:var(--primary-gold);">현재 계급</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
         headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
-    // 가장 끝에 있던 최종 계급 삭제 후 평균만 남김
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
 
     tbody.innerHTML = "";
     golfers.forEach(name => {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
-        // 💡 2차 변경: rank-cell(계급 뱃지가 들어갈 자리)을 스코어 앞쪽으로 위치 이동
-        let rowHtml = `<td class="golfer-name">${name}</td><td class="rank-cell" style="background: rgba(212,175,55,0.05);">-</td>`;
+        // 🔥 동일하게 1열, 2열 고정 클래스 부여 🔥
+        let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td><td class="rank-cell sticky-col-2" style="padding: 2px !important;">-</td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
@@ -339,7 +338,7 @@ async function downloadCurrentPhoto() {
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
-// 🔥 명예의 전당 (골드 네온 테두리 & 카운트업 적용) 🔥
+// 🔥 명예의 전당 (골드 네온 테두리 & 카운트업 & 이미지 아이콘 적용) 🔥
 function openPersonalReport(name) {
     document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#fef08a;">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
@@ -382,6 +381,12 @@ function openPersonalReport(name) {
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : { "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 } };
 
+    // 🔥 커스텀 이미지 아이콘 정의 🔥
+    const iE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8337.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
+    const iH = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8331.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
+    const iC = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8333.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
+    const iS = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
+
     document.getElementById('reportContent').innerHTML = `
         <div class="report-section"><div class="report-title">🎯 상세 타수 누적 기록</div><div class="stat-grid" style="grid-template-columns: repeat(5, 1fr);">
             <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].holeInOne}" style="color:#dc2626; animation-delay: 0.1s;">0</div></div>
@@ -397,10 +402,10 @@ function openPersonalReport(name) {
             <div class="stat-box"><div class="stat-label">최고타</div><div class="stat-val slot-roll count-up" data-val="${maxStr}" style="color:#dc2626; animation-delay: 0.4s;">0</div></div>
         </div></div>
         <div class="report-section"><div class="report-title">🎖️ 계급별 달성 횟수</div><div class="stat-grid" style="grid-template-columns: repeat(4, 1fr);">
-            <div class="stat-box"><div class="stat-label">🦅독수리</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[0]}" data-suffix="회" style="color:#b8860b; animation-delay: 0.1s;">0회</div></div>
-            <div class="stat-box"><div class="stat-label">⚡매</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[1]}" data-suffix="회" style="color:#0ea5e9; animation-delay: 0.2s;">0회</div></div>
-            <div class="stat-box"><div class="stat-label">🦩학</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[2]}" data-suffix="회" style="color:#a855f7; animation-delay: 0.3s;">0회</div></div>
-            <div class="stat-box"><div class="stat-label">🐦참새</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[3]}" data-suffix="회" style="color:#64748b; animation-delay: 0.4s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">${iE}독수리</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[0]}" data-suffix="회" style="color:#b8860b; animation-delay: 0.1s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">${iH}매</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[1]}" data-suffix="회" style="color:#0ea5e9; animation-delay: 0.2s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">${iC}학</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[2]}" data-suffix="회" style="color:#a855f7; animation-delay: 0.3s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">${iS}참새</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[3]}" data-suffix="회" style="color:#64748b; animation-delay: 0.4s;">0회</div></div>
         </div></div>
         <div class="report-section"><div class="report-title">⚔️ 1:1 통산 승률</div><div class="winrate-list">${winRateHtml}</div></div>
     `;
