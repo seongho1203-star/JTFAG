@@ -22,6 +22,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if (isFundUnlocked) { appData.clubFund = parseNumber(this.value); this.value = formatFundString(appData.clubFund); syncToSupabase(appData); }
     });
     initScheduleOptions();
+
+    // 🔥 동반자 오입력 방지용 이름 삭제(초기화) 버튼 동적 추가 🔥
+    const nameDeleteBtn = document.createElement('div');
+    nameDeleteBtn.innerHTML = "👤 기기 등록 삭제";
+    nameDeleteBtn.style.cssText = "text-align:center; color:#94a3b8; font-size:0.7rem; margin-top:20px; padding-bottom:10px; text-decoration:underline; cursor:pointer;";
+    nameDeleteBtn.onclick = deleteMyName;
+    document.body.appendChild(nameDeleteBtn);
 });
 
 function authenticateAdmin() {
@@ -500,7 +507,8 @@ function checkAndGreetUser() {
     let myName = localStorage.getItem('jtfag_my_name');
     if (!myName || !golfers.includes(myName)) {
         setTimeout(() => {
-            myName = prompt("👋 환영합니다!\n개인 맞춤형 알림을 위해 본인의 이름을 선택해주세요.\n(이관교, 김지명, 신성호, 박승수 중 택1)");
+            // 🔥 초기 팝업 멘트 수정: 이름 나열 없이 깔끔하게 🔥
+            myName = prompt("👋 환영합니다!\n개인 맞춤형 알림을 위해 본인의 이름을 등록해주세요.");
             if (golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
                 showGreeting(myName);
@@ -514,6 +522,27 @@ function checkAndGreetUser() {
     hasGreeted = true;
 }
 
+// 🔥 이름 삭제(초기화) 기능으로 변경 🔥
+function deleteMyName() {
+    const currentName = localStorage.getItem('jtfag_my_name');
+    if (!currentName) {
+        showToast("⚠️ 현재 기기에 등록된 이름이 없습니다.");
+        checkAndGreetUser();
+        return;
+    }
+    
+    if (confirm("기기에 저장된 이름을 삭제하시겠습니까?\n(삭제 후 다음 접속 시 본인 이름을 다시 등록할 수 있습니다.)")) {
+        localStorage.removeItem('jtfag_my_name');
+        showToast("🗑️ 이름이 삭제되었습니다.");
+        hasGreeted = false; // 다시 인사 팝업이 뜨도록 상태 초기화
+        
+        // 0.5초 뒤에 초기 이름 등록 팝업 띄우기
+        setTimeout(() => {
+            checkAndGreetUser();
+        }, 500);
+    }
+}
+
 function showGreeting(myName) {
     const ranks = golferRankHistory[myName] || [];
     let myRankIdx = 3; 
@@ -524,18 +553,15 @@ function showGreeting(myName) {
     const rankInfo = RANK_CONFIG[myRankIdx];
     const iconHtml = rankInfo.icon;
 
-    // 🔥 요청하신 멘트 적용 🔥
     let greetMsg = "";
     if (myRankIdx === 0) greetMsg = `✨ 황제 귀환!<br><span style="color:#fef08a;">독수리등급 ${myName}님</span>이 입장하였습니다.`;
     else if (myRankIdx === 1) greetMsg = `⚔️ 맹수의 발톱!<br><span style="color:#0ea5e9;">매등급 ${myName}님</span>이 입장하였습니다.`;
     else if (myRankIdx === 2) greetMsg = `🦢 우아한 날개짓!<br><span style="color:#a855f7;">학등급 ${myName}님</span>이 입장하였습니다.`;
     else greetMsg = `💦 앗!<br><span style="color:#94a3b8;">참새등급 ${myName}님</span>이 입장하였습니다.`;
 
-    // 백그라운드 블러(반투명) 레이어 생성
     const overlay = document.createElement('div');
     overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
     
-    // 중앙 팝업 생성
     const toast = document.createElement('div');
     toast.innerHTML = `<div style="font-size: 2.5rem; margin-bottom: 12px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.95rem; line-height:1.5; word-break:keep-all;">${greetMsg}</div>`;
     toast.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0.7); opacity:0; width: 85%; max-width: 320px; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; color:#fff; padding:24px 16px; border-radius:16px; text-align:center; font-weight:800; z-index:10000; box-shadow:0 15px 40px rgba(0,0,0,0.6); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
@@ -543,14 +569,12 @@ function showGreeting(myName) {
     document.body.appendChild(overlay);
     document.body.appendChild(toast);
     
-    // 부드럽게 나타나는 애니메이션
     setTimeout(() => { 
         overlay.style.opacity = "1";
         toast.style.transform = "translate(-50%, -50%) scale(1)"; 
         toast.style.opacity = "1";
     }, 50);
     
-    // 3초 뒤에 부드럽게 사라짐
     setTimeout(() => { 
         toast.style.transform = "translate(-50%, -50%) scale(0.8)";
         toast.style.opacity = "0"; 
