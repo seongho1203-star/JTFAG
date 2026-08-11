@@ -120,20 +120,23 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .reset-btn { background: #dc2626; color: white; }
 .undo-btn { background: #475569; color: white; }
 
-/* 💡 틀고정을 위한 CSS 수정 완료 💡 */
+/* 💡 틀고정(Sticky) 공간 최소화 및 뱃지 다이어트 수정 💡 */
 .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); margin-bottom: 10px; background: var(--card-bg); width: 100%; scroll-behavior: smooth; }
 .table-wrapper table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: center; }
-th, td { padding: 6px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 58px; }
+th, td { padding: 6px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 54px; }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
-/* 1열 이름 고정 */
-.sticky-col-1 { position: sticky !important; left: 0 !important; z-index: 3 !important; background-color: #f1f5f9 !important; min-width: 54px !important; width: 54px !important; box-sizing: border-box; font-weight: 800; font-size: clamp(0.72rem, 2.8vw, 0.8rem); padding-left: 4px !important; padding-right: 4px !important; white-space: nowrap !important; word-break: keep-all !important; }
+/* 1열 이름 고정 (폭 축소) */
+.sticky-col-1 { position: sticky !important; left: 0 !important; z-index: 3 !important; background-color: #f1f5f9 !important; min-width: 44px !important; width: 44px !important; box-sizing: border-box; font-weight: 800; font-size: clamp(0.65rem, 2.5vw, 0.75rem); padding-left: 2px !important; padding-right: 2px !important; white-space: nowrap !important; word-break: keep-all !important; text-align: center; }
 
-/* 2열 현재 계급 고정 */
-.sticky-col-2 { position: sticky !important; left: 54px !important; z-index: 3 !important; background-color: #f8fafc !important; min-width: 86px !important; width: 86px !important; box-sizing: border-box; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.08); padding-left: 2px !important; padding-right: 2px !important; }
+/* 2열 현재 계급 고정 (폭 대폭 축소) */
+.sticky-col-2 { position: sticky !important; left: 44px !important; z-index: 3 !important; background-color: #f8fafc !important; min-width: 58px !important; width: 58px !important; box-sizing: border-box; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.08); padding-left: 2px !important; padding-right: 2px !important; font-size: clamp(0.6rem, 2.2vw, 0.65rem) !important; text-align: center; }
 
-/* 💡 계급 뱃지 넓이 고정 💡 */
-.rank-badge { display: inline-flex; align-items: center; justify-content: center; gap: 2px; padding: 2px 4px; border-radius: 6px; font-weight: 900; font-size: clamp(0.6rem, 2.2vw, 0.7rem); white-space: nowrap; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); width: 78px; box-sizing: border-box; }
+/* 계급 뱃지 넓이 고정 및 크기 축소 */
+.rank-badge { display: inline-flex; align-items: center; justify-content: center; gap: 2px; padding: 2px; border-radius: 4px; font-weight: 900; font-size: clamp(0.55rem, 2vw, 0.65rem); white-space: nowrap; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); width: 100%; box-sizing: border-box; letter-spacing: -0.5px; }
+
+/* 아이콘 이미지 크기 강제 제어 */
+.rank-badge img { height: 1.1em !important; margin-right: 1px !important; }
 
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
@@ -168,7 +171,10 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
 .history-header { font-size: clamp(0.68rem, 2.4vw, 0.75rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
 .history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
-.history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.62rem, 2.3vw, 0.68rem); }
+
+/* 💡 이력 모달 텍스트 축소로 겹침 현상 해결 💡 */
+.history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 4px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.55rem, 2vw, 0.62rem); }
+.history-member .rank-badge { width: auto; padding: 1px 3px; font-size: clamp(0.5rem, 1.8vw, 0.6rem); }
 
 .report-section { margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; }
 .report-title { font-size: 0.8rem; font-weight: 800; color: var(--primary-gold); margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
@@ -193,7 +199,6 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 #customToast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.95); border: 1px solid var(--primary-gold); color: #ffffff; padding: 10px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; white-space: nowrap !important; max-width: 90vw; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
-/* 신규 알림(종) 버튼 및 푸시 알림창 UI CSS */
 .bell-btn { background: transparent; border: none; font-size: 1.1rem; padding: 0 4px; margin-left: auto; animation: ring 4s infinite ease-in-out; transform-origin: top center; }
 @keyframes ring { 0%, 100% { transform: rotate(0deg); } 5% { transform: rotate(15deg); } 10% { transform: rotate(-10deg); } 15% { transform: rotate(5deg); } 20% { transform: rotate(-5deg); } 25% { transform: rotate(0deg); } }
 
@@ -264,7 +269,6 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 #personalReportModal .badge-desc-text { color: #334155; font-weight: 700; }
 #personalReportModal .winrate-list div { border-bottom: 1px dashed rgba(212, 175, 55, 0.3); color: #1e293b; }
 
-/* 슬롯 롤링 등장 효과 */
 .slot-roll {
     animation: slot-spin 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     opacity: 0;
