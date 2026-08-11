@@ -116,7 +116,13 @@ function saveSchedule() {
     syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
 }
 
-function renderAll() { renderTable(); calculateAndRender(); renderMoneyTable(); forceTableReflow(); }
+function renderAll() { 
+    renderTable(); 
+    calculateAndRender(); 
+    renderMoneyTable(); 
+    forceTableReflow(); 
+    checkAndGreetUser(); // 🔥 렌더링 완료 후 접속 알림 실행 🔥
+}
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
 
@@ -208,7 +214,6 @@ function renderTable() {
         return; 
     }
 
-    // 🔥 1열 이름 고정, 2열 현재계급 고정 클래스 부여 🔥
     let headerHtml = `<th class="sticky-col-1">이름</th><th class="sticky-col-2" style="color:var(--primary-gold);">현재 계급</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
         headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
@@ -219,7 +224,6 @@ function renderTable() {
     tbody.innerHTML = "";
     golfers.forEach(name => {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
-        // 🔥 동일하게 1열, 2열 고정 클래스 부여 🔥
         let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td><td class="rank-cell sticky-col-2" style="padding: 2px !important;">-</td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
@@ -338,7 +342,6 @@ async function downloadCurrentPhoto() {
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
-// 🔥 명예의 전당 (골드 네온 테두리 & 카운트업 & 이미지 아이콘 적용) 🔥
 function openPersonalReport(name) {
     document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#fef08a;">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
@@ -381,7 +384,6 @@ function openPersonalReport(name) {
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : { "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 } };
 
-    // 🔥 커스텀 이미지 아이콘 정의 🔥
     const iE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8337.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iH = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8331.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iC = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8333.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
@@ -489,4 +491,57 @@ function shareSchedule() {
     if (weatherInfo && !weatherInfo.includes("확인중") && !weatherInfo.includes("못했습니다")) { const parts = weatherInfo.split(': '); if (parts.length > 1) weatherStr = parts[1].trim(); }
     const shareMsg = `[⛳ JTFAG 리그 일정 알림]\n\n📅 일정: ${appData.nextRoundDate}\n⛅ 날씨: ${weatherStr}\n\n결전의 날이 다가옵니다! 멘탈 꽉 잡고 준비하세요! 🔥`;
     fallbackCopy(shareMsg);
+}
+
+// 🔥 로그인(접속) 시 계급 맞춤형 인사말 표시 기능 🔥
+let hasGreeted = false;
+
+function checkAndGreetUser() {
+    if (hasGreeted || !isLoaded || Object.keys(golferRankHistory).length === 0) return;
+
+    let myName = localStorage.getItem('jtfag_my_name');
+    if (!myName || !golfers.includes(myName)) {
+        setTimeout(() => {
+            myName = prompt("👋 환영합니다!\n개인 맞춤형 알림을 위해 본인의 이름을 선택해주세요.\n(이관교, 김지명, 신성호, 박승수 중 택1)");
+            if (golfers.includes(myName)) {
+                localStorage.setItem('jtfag_my_name', myName);
+                showGreeting(myName);
+            }
+        }, 500);
+        hasGreeted = true;
+        return;
+    }
+
+    showGreeting(myName);
+    hasGreeted = true;
+}
+
+function showGreeting(myName) {
+    const ranks = golferRankHistory[myName] || [];
+    let myRankIdx = 3; 
+    if (ranks.length > 0) {
+        myRankIdx = ranks[ranks.length - 1]; 
+    }
+
+    const rankInfo = RANK_CONFIG[myRankIdx];
+    const iconHtml = rankInfo.icon;
+
+    let greetMsg = "";
+    if (myRankIdx === 0) greetMsg = `✨ 황제 귀환! <span style="color:#fef08a;">${myName}</span>님, 오늘도 필드를 지배하십시오.`;
+    else if (myRankIdx === 1) greetMsg = `⚔️ 맹수의 발톱! <span style="color:#0ea5e9;">${myName}</span>님, 1등을 사냥할 시간입니다.`;
+    else if (myRankIdx === 2) greetMsg = `🦢 고고한 날갯짓! <span style="color:#a855f7;">${myName}</span>님, 오늘은 비상합시다.`;
+    else greetMsg = `💦 앗... <span style="color:#94a3b8;">${myName}</span> 참새님 오셨군요. 오늘은 양파 피합시다...`;
+
+    const toast = document.createElement('div');
+    toast.innerHTML = `<div style="font-size: 1.8rem; margin-bottom: 8px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.85rem; line-height:1.4; word-break:keep-all;">${greetMsg}</div>`;
+    toast.style.cssText = "position:fixed; top:-120px; left:50%; transform:translateX(-50%); width: 85%; max-width: 360px; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; color:#fff; padding:16px; border-radius:16px; text-align:center; font-weight:800; z-index:10000; box-shadow:0 10px 30px rgba(0,0,0,0.5); transition: top 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => { toast.style.top = "20px"; }, 100);
+    
+    setTimeout(() => { 
+        toast.style.top = "-150px"; 
+        setTimeout(() => toast.remove(), 600);
+    }, 4000);
 }
