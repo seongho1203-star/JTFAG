@@ -122,9 +122,10 @@ function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10)
 
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody'); const selectBox = document.getElementById('moneyRoundSelect'); if (!tbody || !selectBox) return;
+    
     let selectHtml = "";
     for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
-    selectBox.innerHTML = selectHtml;
+    if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
 
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[selectedMoneyRoundIdx]) {
@@ -132,6 +133,34 @@ function renderMoneyTable() {
         golfers.forEach(g => appData.roundMoney[selectedMoneyRoundIdx][g] = { start: 0, end: 0 });
     }
 
+    if (tbody.children.length === golfers.length && tbody.getAttribute('data-round') === String(selectedMoneyRoundIdx)) {
+        golfers.forEach(g => {
+            const m = appData.roundMoney[selectedMoneyRoundIdx][g] || { start: 0, end: 0 };
+            const sInput = document.getElementById(`money_start_${g}`);
+            const eInput = document.getElementById(`money_end_${g}`);
+            if (sInput && document.activeElement !== sInput) sInput.value = formatNumber(m.start);
+            if (eInput && document.activeElement !== eInput) eInput.value = formatNumber(m.end);
+            
+            const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][selectedMoneyRoundIdx] !== undefined) ? cachedRoundRankProfit[g][selectedMoneyRoundIdx] : 0;
+            const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : ((m.end - m.start) - rankPenalty);
+            
+            const rBadge = document.getElementById(`money_rank_${g}`);
+            if (rBadge) {
+                rBadge.style.background = rankPenalty < 0 ? "rgba(220,38,38,0.12)" : "rgba(0,0,0,0.03)";
+                rBadge.style.color = rankPenalty < 0 ? "#dc2626" : "#64748b";
+                rBadge.textContent = rankPenalty === 0 ? "0원" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
+            }
+            const sBadge = document.getElementById(`money_stroke_${g}`);
+            if (sBadge) {
+                sBadge.style.background = pureStrokeDiff > 0 ? "rgba(22,163,74,0.08)" : (pureStrokeDiff < 0 ? "rgba(220,38,38,0.08)" : "rgba(0,0,0,0.02)");
+                sBadge.style.color = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
+                sBadge.textContent = pureStrokeDiff === 0 ? "0원" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
+            }
+        });
+        return;
+    }
+
+    tbody.setAttribute('data-round', String(selectedMoneyRoundIdx));
     tbody.innerHTML = "";
     golfers.forEach(g => {
         const m = appData.roundMoney[selectedMoneyRoundIdx][g] || { start: 0, end: 0 };
@@ -141,10 +170,10 @@ function renderMoneyTable() {
         tbody.innerHTML += `
             <tr>
                 <td style="font-weight:800; color:var(--text-main);">${g}</td>
-                <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
-                <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
-                <td><span class="money-result-badge" style="background:${rankPenalty < 0 ? "rgba(220,38,38,0.12)" : "rgba(0,0,0,0.03)"}; color:${rankPenalty < 0 ? "#dc2626" : "#64748b"}; font-weight:900;">${rankPenalty === 0 ? "0원" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만"}</span></td>
-                <td><span class="money-result-badge" style="background:${pureStrokeDiff > 0 ? "rgba(22,163,74,0.08)" : (pureStrokeDiff < 0 ? "rgba(220,38,38,0.08)" : "rgba(0,0,0,0.02)")}; color:${pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b")}; font-weight:800;">${pureStrokeDiff === 0 ? "0원" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만"}</span></td>
+                <td><input type="text" id="money_start_${g}" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
+                <td><input type="text" id="money_end_${g}" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
+                <td><span id="money_rank_${g}" class="money-result-badge" style="background:${rankPenalty < 0 ? "rgba(220,38,38,0.12)" : "rgba(0,0,0,0.03)"}; color:${rankPenalty < 0 ? "#dc2626" : "#64748b"}; font-weight:900;">${rankPenalty === 0 ? "0원" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만"}</span></td>
+                <td><span id="money_stroke_${g}" class="money-result-badge" style="background:${pureStrokeDiff > 0 ? "rgba(22,163,74,0.08)" : (pureStrokeDiff < 0 ? "rgba(220,38,38,0.08)" : "rgba(0,0,0,0.02)")}; color:${pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b")}; font-weight:800;">${pureStrokeDiff === 0 ? "0원" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만"}</span></td>
             </tr>`;
     });
 }
@@ -159,9 +188,29 @@ function updateMoney(name, type, value) {
 
 function renderTable() {
     const headerRow = document.getElementById('headerRow'); const tbody = document.getElementById('scoreTbody');
+    
+    const currentInputs = tbody.querySelectorAll('.score-input');
+    const expectedCount = appData.totalRounds * golfers.length;
+    
+    if (currentInputs.length === expectedCount && tbody.children.length === golfers.length) {
+        for (let r = 0; r < appData.totalRounds; r++) {
+            const cInput = document.getElementById(`course_input_${r}`);
+            if (cInput && document.activeElement !== cInput) cInput.value = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
+            const pBtn = document.getElementById(`photo_btn_${r}`);
+            if (pBtn) pBtn.innerHTML = `📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장`;
+        }
+        golfers.forEach(name => {
+            for (let r = 0; r < appData.totalRounds; r++) {
+                const sInput = document.getElementById(`score_input_${name}_${r}`);
+                if (sInput && document.activeElement !== sInput) sInput.value = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+            }
+        });
+        return; 
+    }
+
     let headerHtml = `<th>이름</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
-        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
+        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th><th style="white-space:nowrap;">최종 계급</th>`;
     headerRow.innerHTML = headerHtml;
@@ -171,7 +220,7 @@ function renderTable() {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
         let rowHtml = `<td class="golfer-name">${name}</td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
-            rowHtml += `<td class="score-cell"><input type="text" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
+            rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
         rowHtml += `<td class="avg-cell">-</td><td class="rank-cell">-</td>`;
         tr.innerHTML = rowHtml; tbody.appendChild(tr);
@@ -365,7 +414,7 @@ function fallbackCopy(text) {
     
     try {
         document.execCommand('copy');
-        showToast("📋 일정이 복사되었습니다! 단톡방에 붙여넣기 하세요.");
+        showToast("📋 일정이 복되되었습니다! 단톡방에 붙여넣기 하세요.");
         
         const isAndroid = /android/i.test(navigator.userAgent);
         if (isAndroid) { window.location.href = 'intent://#Intent;scheme=kakaotalk;package=com.kakao.talk;end'; } 
