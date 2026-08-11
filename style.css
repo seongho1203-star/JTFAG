@@ -266,23 +266,3 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
     60% { transform: translateY(5px); opacity: 1; filter: blur(0); }
     100% { transform: translateY(0); opacity: 1; }
 }
-
-/* 🔥 신규 효과 3: 축하 금빛 가루 (Confetti) 파티클 애니메이션 🔥 */
-.confetti-particle {
-    position: fixed;
-    z-index: 10000;
-    pointer-events: none;
-    border-radius: 2px;
-    animation: confetti-fall 2.5s ease-out forwards;
-}
-
-@keyframes confetti-fall {
-    0% {
-        opacity: 1;
-        transform: translate(0, 0) rotate(0deg) scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.3);
-    }
-}
