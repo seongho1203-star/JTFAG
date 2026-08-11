@@ -3,6 +3,9 @@
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
+    
+    // 🔥 독수리 뱃지용 커스텀 이미지 변수 선언 🔥
+    const imgE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8337.png" style="height: 1.1em; vertical-align: middle;">`;
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
         "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
@@ -12,9 +15,9 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     };
 
     if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
-        badges.push({ html: `<div class="season-badge badge-eagle-3">🦅 독수리 3연속!</div>`, desc: "최근 3경기 연속 독수리 계급 달성" });
+        badges.push({ html: `<div class="season-badge badge-eagle-3">${imgE} 독수리 3연속!</div>`, desc: "최근 3경기 연속 독수리 계급 달성" });
     } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
-        badges.push({ html: `<div class="season-badge badge-eagle-2">🦅 독수리 2연속!</div>`, desc: "최근 2경기 연속 독수리 계급 달성" });
+        badges.push({ html: `<div class="season-badge badge-eagle-2">${imgE} 독수리 2연속!</div>`, desc: "최근 2경기 연속 독수리 계급 달성" });
     }
 
     if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
@@ -31,7 +34,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-rebound">🔥 극적 반전</div>`, desc: "직전 경기 대비 타수를 가장 많이 줄임" });
     }
     if (golferPhoenixWins[g]) {
-        badges.push({ html: `<div class="season-badge badge-phoenix">🦅 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
+        badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
     }
     if (golferDonorMap[g]) {
         badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위" });
@@ -53,7 +56,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-holeinone">👑 기적의 사나이</div>`, desc: "통산 홀인원 기록자" });
     }
     if (myStats[g].eagle > 0) {
-        badges.push({ html: `<div class="season-badge badge-eagle-hit">🦅 이글 헌터</div>`, desc: "통산 이글 기록자" });
+        badges.push({ html: `<div class="season-badge badge-eagle-hit">${imgE} 이글 헌터</div>`, desc: "통산 이글 기록자" });
     }
     if (golferMaxBirdie.includes(g)) {
         badges.push({ html: `<div class="season-badge badge-birdie">🦋 버디 수집가</div>`, desc: "리그 내 누적 버디 횟수 1위" });
@@ -248,7 +251,7 @@ function processAllRoundSettlements() {
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
 
-    document.querySelectorAll('.rank-cell').forEach(rc => rc.textContent = '-');
+    document.querySelectorAll('.rank-cell').forEach(rc => rc.innerHTML = '-');
 
     for (let r = 2; r < totalRounds; r++) {
         const handicapAvg = {};
@@ -311,15 +314,6 @@ function processAllRoundSettlements() {
             return matchResults[b].totalDiff - matchResults[a].totalDiff;
         });
 
-        sortedGolfers.forEach((golferName, index) => {
-            const rankInfo = RANK_CONFIG[index];
-            const profit = rankInfo.penalty;
-            
-            totalRankProfit[golferName] += profit;
-            roundRankProfit[golferName][r] = profit;
-            golferRankHistory[golferName].push(index);
-        });
-
         let roundHistoryHtml = `
             <div class="history-item">
                 <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
@@ -329,6 +323,11 @@ function processAllRoundSettlements() {
         sortedGolfers.forEach((golferName, index) => {
             const rankInfo = RANK_CONFIG[index];
             const profit = rankInfo.penalty;
+            
+            totalRankProfit[golferName] += profit;
+            roundRankProfit[golferName][r] = profit;
+            golferRankHistory[golferName].push(index);
+
             const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
 
             roundHistoryHtml += `
@@ -487,47 +486,5 @@ function processAllRoundSettlements() {
                 </div>
             `;
         });
-    }
-}
-
-function renderHandicapMatchCard(r1, r2) {
-    const matchGrid = document.getElementById('matchGrid');
-    if (!matchGrid) return;
-    matchGrid.innerHTML = "";
-
-    const avgScores = {};
-    golfers.forEach(g => {
-        const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
-        const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
-        if (!isNaN(s1) && !isNaN(s2)) {
-            avgScores[g] = Math.floor((s1 + s2) / 2);
-        }
-    });
-
-    if (Object.keys(avgScores).length < 4) {
-        matchGrid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-sub);">스코어를 먼저 입력해 주세요.</div>`;
-        return;
-    }
-
-    for (let i = 0; i < golfers.length; i++) {
-        for (let j = i + 1; j < golfers.length; j++) {
-            const g1 = golfers[i];
-            const g2 = golfers[j];
-            const diff = avgScores[g1] - avgScores[g2];
-
-            let matchText = "";
-            if (diff > 0) {
-                matchText = `<b>${g1}</b> ➔ ${g2}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음`;
-            } else if (diff < 0) {
-                matchText = `<b>${g2}</b> ➔ ${g1}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음`;
-            } else {
-                matchText = `<b>${g1}</b> vs <b>${g2}</b> ➔ <b style="color:#16a34a;">스크래치</b>`;
-            }
-
-            const item = document.createElement('div');
-            item.className = 'match-item';
-            item.innerHTML = matchText;
-            matchGrid.appendChild(item);
-        }
     }
 }
