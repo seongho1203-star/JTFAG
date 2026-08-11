@@ -121,7 +121,7 @@ function renderAll() {
     calculateAndRender(); 
     renderMoneyTable(); 
     forceTableReflow(); 
-    checkAndGreetUser(); // 🔥 렌더링 완료 후 접속 알림 실행 🔥
+    checkAndGreetUser(); // 접속 알림 실행
 }
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
@@ -414,7 +414,6 @@ function openPersonalReport(name) {
     
     document.getElementById('personalReportModal').classList.add('active');
 
-    // 카운트업 애니메이션 실행
     setTimeout(() => {
         document.querySelectorAll('#personalReportModal .count-up').forEach(el => {
             const targetVal = el.getAttribute('data-val');
@@ -453,7 +452,6 @@ function resetAllData() {
     }
 }
 
-// 🔥 즉시 실행되는 카카오톡 강제 다이렉트 전환 모드 🔥
 let pushTimeout;
 
 function fallbackCopy(text) {
@@ -493,7 +491,7 @@ function shareSchedule() {
     fallbackCopy(shareMsg);
 }
 
-// 🔥 로그인(접속) 시 계급 맞춤형 인사말 표시 기능 🔥
+// 🔥 로그인(접속) 시 중앙 화면 팝업 & 백그라운드 블러 효과 🔥
 let hasGreeted = false;
 
 function checkAndGreetUser() {
@@ -526,22 +524,37 @@ function showGreeting(myName) {
     const rankInfo = RANK_CONFIG[myRankIdx];
     const iconHtml = rankInfo.icon;
 
+    // 🔥 요청하신 멘트 적용 🔥
     let greetMsg = "";
-    if (myRankIdx === 0) greetMsg = `✨ 황제 귀환! <span style="color:#fef08a;">${myName}</span>님, 오늘도 필드를 지배하십시오.`;
-    else if (myRankIdx === 1) greetMsg = `⚔️ 맹수의 발톱! <span style="color:#0ea5e9;">${myName}</span>님, 1등을 사냥할 시간입니다.`;
-    else if (myRankIdx === 2) greetMsg = `🦢 고고한 날갯짓! <span style="color:#a855f7;">${myName}</span>님, 오늘은 비상합시다.`;
-    else greetMsg = `💦 앗... <span style="color:#94a3b8;">${myName}</span> 참새님 오셨군요. 오늘은 양파 피합시다...`;
+    if (myRankIdx === 0) greetMsg = `✨ 황제 귀환!<br><span style="color:#fef08a;">독수리등급 ${myName}님</span>이 입장하였습니다.`;
+    else if (myRankIdx === 1) greetMsg = `⚔️ 맹수의 발톱!<br><span style="color:#0ea5e9;">매등급 ${myName}님</span>이 입장하였습니다.`;
+    else if (myRankIdx === 2) greetMsg = `🦢 우아한 날개짓!<br><span style="color:#a855f7;">학등급 ${myName}님</span>이 입장하였습니다.`;
+    else greetMsg = `💦 앗!<br><span style="color:#94a3b8;">참새등급 ${myName}님</span>이 입장하였습니다.`;
 
-    const toast = document.createElement('div');
-    toast.innerHTML = `<div style="font-size: 1.8rem; margin-bottom: 8px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.85rem; line-height:1.4; word-break:keep-all;">${greetMsg}</div>`;
-    toast.style.cssText = "position:fixed; top:-120px; left:50%; transform:translateX(-50%); width: 85%; max-width: 360px; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; color:#fff; padding:16px; border-radius:16px; text-align:center; font-weight:800; z-index:10000; box-shadow:0 10px 30px rgba(0,0,0,0.5); transition: top 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
+    // 백그라운드 블러(반투명) 레이어 생성
+    const overlay = document.createElement('div');
+    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
     
+    // 중앙 팝업 생성
+    const toast = document.createElement('div');
+    toast.innerHTML = `<div style="font-size: 2.5rem; margin-bottom: 12px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.95rem; line-height:1.5; word-break:keep-all;">${greetMsg}</div>`;
+    toast.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0.7); opacity:0; width: 85%; max-width: 320px; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; color:#fff; padding:24px 16px; border-radius:16px; text-align:center; font-weight:800; z-index:10000; box-shadow:0 15px 40px rgba(0,0,0,0.6); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
+    
+    document.body.appendChild(overlay);
     document.body.appendChild(toast);
     
-    setTimeout(() => { toast.style.top = "20px"; }, 100);
-    
+    // 부드럽게 나타나는 애니메이션
     setTimeout(() => { 
-        toast.style.top = "-150px"; 
-        setTimeout(() => toast.remove(), 600);
-    }, 4000);
+        overlay.style.opacity = "1";
+        toast.style.transform = "translate(-50%, -50%) scale(1)"; 
+        toast.style.opacity = "1";
+    }, 50);
+    
+    // 3초 뒤에 부드럽게 사라짐
+    setTimeout(() => { 
+        toast.style.transform = "translate(-50%, -50%) scale(0.8)";
+        toast.style.opacity = "0"; 
+        overlay.style.opacity = "0"; 
+        setTimeout(() => { toast.remove(); overlay.remove(); }, 500);
+    }, 3000);
 }
