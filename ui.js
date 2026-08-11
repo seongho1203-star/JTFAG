@@ -336,14 +336,20 @@ async function downloadCurrentPhoto() {
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
+// 🔥 명예의 전당 (골드 카드 & 카운트업 적용) 🔥
 function openPersonalReport(name) {
-    document.getElementById('reportTitle').textContent = `⛳ ${name} 통계 리포트`;
+    document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#ffffff;">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
-    let max = "-", min = "-", avg = "-";
-    if(validScores.length > 0) { max = Math.max(...validScores); min = Math.min(...validScores); avg = (validScores.reduce((a,b)=>a+b,0) / validScores.length).toFixed(1); }
+    let maxStr = "-", minStr = "-", avgStr = "-";
+    
+    if(validScores.length > 0) { 
+        maxStr = Math.max(...validScores); 
+        minStr = Math.min(...validScores); 
+        avgStr = (validScores.reduce((a,b)=>a+b,0) / validScores.length).toFixed(1); 
+    }
     
     const rankCounts = [0, 0, 0, 0]; (golferRankHistory[name] || []).forEach(r => rankCounts[r]++);
-    const badgeHtmlWithDesc = (golferBadgesMap[name] || []).map(b => `<div class="badge-desc-item"><div style="flex-shrink:0;">${b.html}</div><div class="badge-desc-text">${b.desc}</div></div>`).join('');
+    const badgeHtmlWithDesc = (golferBadgesMap[name] || []).map((b, idx) => `<div class="badge-desc-item slot-roll" style="animation-delay: ${idx * 0.1}s;"><div style="flex-shrink:0;">${b.html}</div><div class="badge-desc-text">${b.desc}</div></div>`).join('');
     
     const winRates = {}; golfers.forEach(g => { if(g !== name) winRates[g] = {w:0, l:0, t:0}; });
     for (let r = 2; r < appData.totalRounds; r++) {
@@ -364,7 +370,10 @@ function openPersonalReport(name) {
     let winRateHtml = ""; let hasMatches = false;
     for(let opp in winRates) {
         const matchCount = winRates[opp].w + winRates[opp].l + winRates[opp].t;
-        if (matchCount > 0) { hasMatches = true; winRateHtml += `<div><span>vs ${opp}</span> <b>승률 ${Math.round((winRates[opp].w / matchCount) * 100)}%</b> <span>(${winRates[opp].w}승 ${winRates[opp].t}무 ${winRates[opp].l}패)</span></div>`; }
+        if (matchCount > 0) { 
+            hasMatches = true; 
+            winRateHtml += `<div class="slot-roll" style="display:flex; animation-delay: 0.3s; width: 100%;"><span>vs ${opp}</span> <b style="color:#fef08a;">승률 ${Math.round((winRates[opp].w / matchCount) * 100)}%</b> <span>(${winRates[opp].w}승 ${winRates[opp].t}무 ${winRates[opp].l}패)</span></div>`; 
+        }
     }
     if (!hasMatches) winRateHtml = "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
 
@@ -372,27 +381,57 @@ function openPersonalReport(name) {
 
     document.getElementById('reportContent').innerHTML = `
         <div class="report-section"><div class="report-title">🎯 상세 타수 누적 기록</div><div class="stat-grid" style="grid-template-columns: repeat(5, 1fr);">
-            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val" style="color:#dc2626;">${myStats[name].holeInOne}</div></div>
-            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">이글</div><div class="stat-val" style="color:#ea580c;">${myStats[name].eagle}</div></div>
-            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">버디</div><div class="stat-val" style="color:#059669;">${myStats[name].birdie}</div></div>
-            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">파</div><div class="stat-val" style="color:#2563eb;">${myStats[name].par}</div></div>
-            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">양파</div><div class="stat-val" style="color:#475569;">${myStats[name].doublePar}</div></div>
+            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].holeInOne}" style="color:#ef4444; animation-delay: 0.1s;">0</div></div>
+            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">이글</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].eagle}" style="color:#f97316; animation-delay: 0.2s;">0</div></div>
+            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">버디</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].birdie}" style="color:#10b981; animation-delay: 0.3s;">0</div></div>
+            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">파</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].par}" style="color:#3b82f6; animation-delay: 0.4s;">0</div></div>
+            <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">양파</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].doublePar}" style="color:#94a3b8; animation-delay: 0.5s;">0</div></div>
         </div></div>
-        <div class="report-section"><div class="report-title">🏆 획득한 뱃지 안내</div><div class="report-badges-area">${badgeHtmlWithDesc ? badgeHtmlWithDesc : '<span style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px;">아직 획득한 뱃지가 없습니다.</span>'}</div></div>
+        <div class="report-section"><div class="report-title">🏆 획득한 뱃지 컬렉션</div><div class="report-badges-area">${badgeHtmlWithDesc ? badgeHtmlWithDesc : '<span style="color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px;">아직 획득한 뱃지가 없습니다.</span>'}</div></div>
         <div class="report-section"><div class="report-title">📊 스코어 요약</div><div class="stat-grid">
-            <div class="stat-box"><div class="stat-label">최저타</div><div class="stat-val" style="color:#2563eb;">${min}</div></div>
-            <div class="stat-box"><div class="stat-label">평균타수</div><div class="stat-val">${avg}</div></div>
-            <div class="stat-box"><div class="stat-label">최고타</div><div class="stat-val" style="color:#dc2626;">${max}</div></div>
+            <div class="stat-box"><div class="stat-label">최저타</div><div class="stat-val slot-roll count-up" data-val="${minStr}" style="color:#60a5fa; animation-delay: 0.2s;">0</div></div>
+            <div class="stat-box"><div class="stat-label">평균타수</div><div class="stat-val slot-roll count-up" data-val="${avgStr}" style="color:#fef08a; animation-delay: 0.3s;">0</div></div>
+            <div class="stat-box"><div class="stat-label">최고타</div><div class="stat-val slot-roll count-up" data-val="${maxStr}" style="color:#f87171; animation-delay: 0.4s;">0</div></div>
         </div></div>
         <div class="report-section"><div class="report-title">🎖️ 계급별 달성 횟수</div><div class="stat-grid" style="grid-template-columns: repeat(4, 1fr);">
-            <div class="stat-box"><div class="stat-label">🦅독수리</div><div class="stat-val">${rankCounts[0]}회</div></div>
-            <div class="stat-box"><div class="stat-label">⚡매</div><div class="stat-val">${rankCounts[1]}회</div></div>
-            <div class="stat-box"><div class="stat-label">🦩학</div><div class="stat-val">${rankCounts[2]}회</div></div>
-            <div class="stat-box"><div class="stat-label">🐦참새</div><div class="stat-val">${rankCounts[3]}회</div></div>
+            <div class="stat-box"><div class="stat-label">🦅독수리</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[0]}" data-suffix="회" style="animation-delay: 0.1s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">⚡매</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[1]}" data-suffix="회" style="animation-delay: 0.2s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">🦩학</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[2]}" data-suffix="회" style="animation-delay: 0.3s;">0회</div></div>
+            <div class="stat-box"><div class="stat-label">🐦참새</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[3]}" data-suffix="회" style="animation-delay: 0.4s;">0회</div></div>
         </div></div>
         <div class="report-section"><div class="report-title">⚔️ 1:1 통산 승률</div><div class="winrate-list">${winRateHtml}</div></div>
     `;
+    
     document.getElementById('personalReportModal').classList.add('active');
+
+    // 카운트업 애니메이션 실행
+    setTimeout(() => {
+        document.querySelectorAll('#personalReportModal .count-up').forEach(el => {
+            const targetVal = el.getAttribute('data-val');
+            if(targetVal === "-") { el.textContent = "-"; return; }
+            const target = parseFloat(targetVal);
+            const suffix = el.getAttribute('data-suffix') || "";
+            const duration = 1200; 
+            const startTime = performance.now();
+            
+            function updateCount(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                const current = target * ease;
+                
+                if (Number.isInteger(target)) {
+                    el.textContent = Math.floor(current) + suffix;
+                } else {
+                    el.textContent = current.toFixed(1) + suffix;
+                }
+                
+                if (progress < 1) requestAnimationFrame(updateCount);
+                else el.textContent = targetVal + suffix;
+            }
+            requestAnimationFrame(updateCount);
+        });
+    }, 100);
 }
 
 function closePersonalReport() { document.getElementById('personalReportModal').classList.remove('active'); }
@@ -414,7 +453,7 @@ function fallbackCopy(text) {
     
     try {
         document.execCommand('copy');
-        showToast("📋 일정이 복되되었습니다! 단톡방에 붙여넣기 하세요.");
+        showToast("📋 일정이 복사되었습니다! 단톡방에 붙여넣기 하세요.");
         
         const isAndroid = /android/i.test(navigator.userAgent);
         if (isAndroid) { window.location.href = 'intent://#Intent;scheme=kakaotalk;package=com.kakao.talk;end'; } 
