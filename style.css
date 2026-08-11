@@ -125,16 +125,10 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 th, td { padding: 6px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 54px; }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
-/* 1열 이름 고정 (폭 축소) */
 .sticky-col-1 { position: sticky !important; left: 0 !important; z-index: 3 !important; background-color: #f1f5f9 !important; min-width: 44px !important; width: 44px !important; box-sizing: border-box; font-weight: 800; font-size: clamp(0.65rem, 2.5vw, 0.75rem); padding-left: 2px !important; padding-right: 2px !important; white-space: nowrap !important; word-break: keep-all !important; text-align: center; }
-
-/* 2열 현재 계급 고정 (폭 대폭 축소) */
 .sticky-col-2 { position: sticky !important; left: 44px !important; z-index: 3 !important; background-color: #f8fafc !important; min-width: 58px !important; width: 58px !important; box-sizing: border-box; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.08); padding-left: 2px !important; padding-right: 2px !important; font-size: clamp(0.6rem, 2.2vw, 0.65rem) !important; text-align: center; }
 
-/* 계급 뱃지 넓이 고정 및 크기 축소 */
 .rank-badge { display: inline-flex; align-items: center; justify-content: center; gap: 2px; padding: 2px; border-radius: 4px; font-weight: 900; font-size: clamp(0.55rem, 2vw, 0.65rem); white-space: nowrap; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); width: 100%; box-sizing: border-box; letter-spacing: -0.5px; }
-
-/* 아이콘 이미지 크기 강제 제어 */
 .rank-badge img { height: 1.1em !important; margin-right: 1px !important; }
 
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
@@ -170,11 +164,30 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
 .history-header { font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
 
-/* 🔥 이력 모달: 1열 리스트로 변경하여 크고 선명하게 보기 🔥 */
-.history-grid { display: flex; flex-direction: column; gap: 6px; }
-.history-member { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.75rem, 3vw, 0.85rem); }
-.history-member .rank-badge { width: auto; padding: 3px 6px; font-size: clamp(0.65rem, 2.5vw, 0.75rem); }
-.history-member .rank-badge img { height: 1.2em !important; margin-right: 4px !important; }
+/* 🔥 2열 복구 및 미니 카드형 세로 배치로 가독성 최적화 🔥 */
+.history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.history-member { 
+    background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; 
+    padding: 8px 6px; display: flex; flex-direction: column; 
+    align-items: stretch !important; gap: 6px; 
+}
+.history-member > span:first-child { 
+    font-size: clamp(0.72rem, 2.8vw, 0.82rem); font-weight: 800; color: var(--text-main);
+    border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; 
+}
+.history-member > div { 
+    display: flex; justify-content: space-between !important; align-items: center; 
+    width: 100%; gap: 0 !important; 
+}
+.history-member .rank-badge { 
+    width: auto; padding: 2px 5px; font-size: clamp(0.65rem, 2.3vw, 0.72rem); 
+}
+.history-member .rank-badge img { 
+    height: 1.1em !important; margin-right: 2px !important; 
+}
+.history-member > div > span:last-child { 
+    font-size: clamp(0.72rem, 2.6vw, 0.82rem); font-weight: 900; 
+}
 
 .report-section { margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; }
 .report-title { font-size: 0.8rem; font-weight: 800; color: var(--primary-gold); margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
