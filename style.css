@@ -195,12 +195,12 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .push-title { font-size: 0.8rem; font-weight: 800; color: #fef08a; display: flex; align-items: center; gap: 6px; }
 .push-body { font-size: 0.75rem; color: #e2e8f0; line-height: 1.4; word-break: keep-all; font-weight: 600; }
 
-/* 🔥 신규 추가: 명예의 전당 (골드 카드 UI) & 슬롯머신 애니메이션 🔥 */
+/* 🔥 명예의 전당 (프리미엄 화이트 골드 UI) & 슬롯머신 애니메이션 🔥 */
 #personalReportModal .modal-content {
-    background: linear-gradient(135deg, #121212 0%, #2a2a2a 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%);
     border: 2px solid #d4af37;
-    box-shadow: 0 10px 40px rgba(212, 175, 55, 0.4), inset 0 0 20px rgba(212, 175, 55, 0.1);
-    color: #f8fafc;
+    box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2), inset 0 0 15px rgba(212, 175, 55, 0.1);
+    color: #1e293b;
     position: relative;
     overflow: hidden;
 }
@@ -209,7 +209,7 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
     content: '';
     position: absolute;
     top: -150%; left: -150%; width: 300%; height: 300%;
-    background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
+    background: linear-gradient(45deg, transparent 40%, rgba(212, 175, 55, 0.1) 50%, transparent 60%);
     transform: rotate(30deg);
     animation: holo-shine 4s infinite linear;
     pointer-events: none;
@@ -222,8 +222,8 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 }
 
 #personalReportModal .modal-header {
-    background: transparent;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-bottom: 2px solid #d4af37;
     z-index: 1;
 }
 
@@ -235,17 +235,17 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 #personalReportModal .modal-body { z-index: 1; position: relative; }
 
 #personalReportModal .report-section {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    background: #ffffff;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-#personalReportModal .report-title { color: #fef08a; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
-#personalReportModal .stat-box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(212, 175, 55, 0.3); }
-#personalReportModal .stat-label { color: #cbd5e1; }
-#personalReportModal .badge-desc-item { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); }
-#personalReportModal .badge-desc-text { color: #e2e8f0; }
-#personalReportModal .winrate-list div { border-bottom: 1px dashed rgba(212, 175, 55, 0.2); color: #f8fafc; }
+#personalReportModal .report-title { color: #b8860b; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+#personalReportModal .stat-box { background: #f8fafc; border: 1px solid rgba(212, 175, 55, 0.3); }
+#personalReportModal .stat-label { color: #64748b; }
+#personalReportModal .badge-desc-item { background: #f8fafc; border: 1px solid rgba(212, 175, 55, 0.2); }
+#personalReportModal .badge-desc-text { color: #334155; font-weight: 700; }
+#personalReportModal .winrate-list div { border-bottom: 1px dashed rgba(212, 175, 55, 0.3); color: #1e293b; }
 
 /* 슬롯 롤링 등장 효과 */
 .slot-roll {
