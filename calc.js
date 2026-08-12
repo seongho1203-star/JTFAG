@@ -257,7 +257,7 @@ function processAllRoundSettlements() {
         golfers.forEach(g => {
             const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
             const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
-            if (isNaN(s1) || isComplete === false) isComplete = false;
+            if (isNaN(s1) || isNaN(s2)) isComplete = false;
             handicapAvg[g] = Math.floor((s1 + s2) / 2);
         });
 
@@ -469,24 +469,24 @@ function processAllRoundSettlements() {
             const currentRankIdx = ranks.length > 0 ? ranks[ranks.length - 1] : 3; 
             const currentRankInfo = RANK_CONFIG[currentRankIdx];
 
-            // 🔥 계급별 고유 테두리(Border) & 후광(Glow) 효과 동적 적용 🔥
-            let cardStyle = "";
+            // 🔥 카드는 깔끔하게 유지하고, 뱃지에만 계급별 테두리와 글로우 적용 🔥
+            let badgeGlowStyle = "";
             if (currentRankIdx === 0) {
-                cardStyle = "border: 2px solid #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);"; // 독수리: 황금색 테두리 + 빛
+                badgeGlowStyle = "box-shadow: 0 0 12px rgba(245, 158, 11, 0.6); border: 2px solid #f59e0b;"; // 독수리: 황금 테두리 + 빛
             } else if (currentRankIdx === 1) {
-                cardStyle = "border: 2px solid #0ea5e9; box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);"; // 매: 파란색 테두리 + 빛
+                badgeGlowStyle = "box-shadow: 0 0 10px rgba(14, 165, 233, 0.5); border: 2px solid #0ea5e9;"; // 매: 파란 테두리 + 빛
             } else if (currentRankIdx === 2) {
-                cardStyle = "border: 2px solid #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);"; // 학: 보라색 테두리 + 빛
+                badgeGlowStyle = "box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); border: 2px solid #a855f7;"; // 학: 보라 테두리 + 빛
             } else {
-                cardStyle = "border: 2px solid #94a3b8;"; // 참새: 칙칙한 회색 테두리 (빛 없음)
+                badgeGlowStyle = "border: 2px solid #94a3b8;"; // 참새: 회색 테두리 (빛 없음)
             }
 
             summaryGrid.innerHTML += `
-                <div class="summary-item" style="height: 100%; justify-content: flex-start; ${cardStyle}">
+                <div class="summary-item" style="height: 100%; justify-content: flex-start;">
                     <div>
                         <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
                         <div style="margin-top:-2px; margin-bottom: 6px;">
-                            <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:4px;">${currentRankInfo.icon} ${currentRankInfo.name}</span>
+                            <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:6px; ${badgeGlowStyle}">${currentRankInfo.icon} ${currentRankInfo.name}</span>
                         </div>
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                         <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
