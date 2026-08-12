@@ -1,10 +1,11 @@
 // ui.js - 화면 렌더링 및 사용자 이벤트 처리
 
-// 🔥 각 계급별 사운드 링크 (사진 올리셨던 것처럼 Supabase에 mp3 파일을 올리고 링크를 교체해주세요!) 🔥
+// 🔥 각 계급별 명예의 전당 오픈 시 재생될 사운드 링크 🔥
+// (보유하신 mp3 파일들을 Supabase에 올리신 후 아래 링크들을 교체해주세요)
 const SOUND_CONFIG = {
     0: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/eagle_sound.mp3",  // 독수리: 웅장한 오케스트라, 환호성
-    1: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/hawk_sound.mp3",   // 매: 칼 뽑는 소리, 경고음
-    2: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/crane_sound.mp3",  // 학: 우아한 하프 소리
+    1: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/hawk_sound.mp3",   // 매: 날카로운 맹수 소리
+    2: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/crane_sound.mp3",  // 학: 우아한 소리
     3: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/sparrow_sound.mp3" // 참새: 띠로리~ (실패/절망 소리)
 };
 
@@ -358,6 +359,14 @@ function openHistoryModal() { const modal = document.getElementById('historyModa
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
 function openPersonalReport(name) {
+    // 🔥 터치(클릭) 이벤트로 열리므로 자연스럽게 오디오 자동 재생이 가능합니다! 🔥
+    const ranksForSound = golferRankHistory[name] || [];
+    let currentRankForSound = ranksForSound.length > 0 ? ranksForSound[ranksForSound.length - 1] : 3;
+    try {
+        const audio = new Audio(SOUND_CONFIG[currentRankForSound]);
+        audio.play().catch(e => console.log("오디오 재생 실패:", e));
+    } catch(e) {}
+
     document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#fef08a;">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
     let maxStr = "-", minStr = "-", avgStr = "-";
@@ -506,7 +515,6 @@ function shareSchedule() {
     fallbackCopy(shareMsg);
 }
 
-// 🔥 로그인(접속) 시 사운드 재생 및 화면 터치 유도 기능 추가 🔥
 let hasGreeted = false;
 
 function checkAndGreetUser() {
@@ -525,22 +533,7 @@ function checkAndGreetUser() {
         return;
     }
 
-    // 스마트폰 브라우저 사운드 자동재생 차단 방지용 '입장 대기' 화면
-    const enterOverlay = document.createElement('div');
-    enterOverlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.95); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#fff; cursor:pointer; transition: opacity 0.3s ease;";
-    enterOverlay.innerHTML = `
-        <div style="font-size:2.5rem; margin-bottom:20px;">⛳</div>
-        <div style="font-size:1.2rem; font-weight:800; border:2px solid #d4af37; padding:12px 24px; border-radius:12px; color:#fef08a; box-shadow: 0 0 15px rgba(212,175,55,0.4);">JTFAG 리그 입장하기 (터치)</div>
-        <div style="margin-top:20px; font-size:0.8rem; color:#94a3b8;">🔊 입장 사운드가 재생됩니다</div>
-    `;
-    
-    enterOverlay.onclick = () => {
-        enterOverlay.style.opacity = "0";
-        setTimeout(() => enterOverlay.remove(), 300);
-        showGreeting(myName);
-    };
-    
-    document.body.appendChild(enterOverlay);
+    showGreeting(myName);
     hasGreeted = true;
 }
 
@@ -572,12 +565,6 @@ function showGreeting(myName) {
 
     const rankInfo = RANK_CONFIG[myRankIdx];
     const iconHtml = rankInfo.icon;
-
-    // 🔥 사운드 재생 시도 🔥
-    try {
-        const audio = new Audio(SOUND_CONFIG[myRankIdx]);
-        audio.play().catch(e => console.log("오디오 재생 실패:", e));
-    } catch(e) {}
 
     let greetMsg = "";
     if (myRankIdx === 0) greetMsg = `✨ 황제 귀환!<br><span style="color:#fef08a;">독수리등급 ${myName}님</span>이 입장하였습니다.`;
