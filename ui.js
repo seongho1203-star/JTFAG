@@ -220,7 +220,8 @@ function renderTable() {
         return; 
     }
 
-    let headerHtml = `<th class="sticky-col-1">이름</th><th class="sticky-col-2" style="color:var(--primary-gold);">현재 계급</th>`;
+    // 🔥 스코어 입력표에서 '현재 계급' 열을 완전히 제거했습니다. 🔥
+    let headerHtml = `<th class="sticky-col-1">이름</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
         headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
@@ -230,7 +231,8 @@ function renderTable() {
     tbody.innerHTML = "";
     golfers.forEach(name => {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
-        let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td><td class="rank-cell sticky-col-2" style="padding: 2px !important;">-</td>`;
+        // 🔥 스코어 입력표에서 '현재 계급' 열을 완전히 제거했습니다. 🔥
+        let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
@@ -390,7 +392,6 @@ function openPersonalReport(name) {
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : { "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 } };
 
-    // 🔥 최신 독수리 이미지(IMG_8343) 적용 🔥
     const iE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8343.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iH = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8331.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iC = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8333.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
