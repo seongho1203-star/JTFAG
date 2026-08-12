@@ -250,8 +250,6 @@ function processAllRoundSettlements() {
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
 
-    // '현재 계급' 열이 삭제되었으므로 DOM 업데이트 로직도 간소화되었습니다.
-
     for (let r = 2; r < totalRounds; r++) {
         const handicapAvg = {};
         let isComplete = true;
@@ -259,7 +257,7 @@ function processAllRoundSettlements() {
         golfers.forEach(g => {
             const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
             const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
-            if (isNaN(s1) || isNaN(s2)) isComplete = false;
+            if (isNaN(s1) || isComplete === false) isComplete = false;
             handicapAvg[g] = Math.floor((s1 + s2) / 2);
         });
 
@@ -471,9 +469,20 @@ function processAllRoundSettlements() {
             const currentRankIdx = ranks.length > 0 ? ranks[ranks.length - 1] : 3; 
             const currentRankInfo = RANK_CONFIG[currentRankIdx];
 
-            // 🔥 뱃지 영역에 flex-grow 적용으로 카드의 전체 높이를 고정(균일화)하고, 합산을 맨 밑으로 밀어냅니다. 🔥
+            // 🔥 계급별 고유 테두리(Border) & 후광(Glow) 효과 동적 적용 🔥
+            let cardStyle = "";
+            if (currentRankIdx === 0) {
+                cardStyle = "border: 2px solid #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);"; // 독수리: 황금색 테두리 + 빛
+            } else if (currentRankIdx === 1) {
+                cardStyle = "border: 2px solid #0ea5e9; box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);"; // 매: 파란색 테두리 + 빛
+            } else if (currentRankIdx === 2) {
+                cardStyle = "border: 2px solid #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);"; // 학: 보라색 테두리 + 빛
+            } else {
+                cardStyle = "border: 2px solid #94a3b8;"; // 참새: 칙칙한 회색 테두리 (빛 없음)
+            }
+
             summaryGrid.innerHTML += `
-                <div class="summary-item" style="height: 100%; justify-content: flex-start;">
+                <div class="summary-item" style="height: 100%; justify-content: flex-start; ${cardStyle}">
                     <div>
                         <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
                         <div style="margin-top:-2px; margin-bottom: 6px;">
