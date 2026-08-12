@@ -1,4 +1,13 @@
 // ui.js - 화면 렌더링 및 사용자 이벤트 처리
+
+// 🔥 각 계급별 사운드 링크 (사진 올리셨던 것처럼 Supabase에 mp3 파일을 올리고 링크를 교체해주세요!) 🔥
+const SOUND_CONFIG = {
+    0: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/eagle_sound.mp3",  // 독수리: 웅장한 오케스트라, 환호성
+    1: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/hawk_sound.mp3",   // 매: 칼 뽑는 소리, 경고음
+    2: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/crane_sound.mp3",  // 학: 우아한 하프 소리
+    3: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/sparrow_sound.mp3" // 참새: 띠로리~ (실패/절망 소리)
+};
+
 function parseNumber(val) { if (!val) return 0; const cleaned = String(val).replace(/[^0-9.-]/g, ''); return parseFloat(cleaned) || 0; }
 function formatNumber(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0"; return num.toLocaleString('ko-KR'); }
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
@@ -220,7 +229,6 @@ function renderTable() {
         return; 
     }
 
-    // 🔥 스코어 입력표에서 '현재 계급' 열을 완전히 제거했습니다. 🔥
     let headerHtml = `<th class="sticky-col-1">이름</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
         headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
@@ -231,7 +239,6 @@ function renderTable() {
     tbody.innerHTML = "";
     golfers.forEach(name => {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
-        // 🔥 스코어 입력표에서 '현재 계급' 열을 완전히 제거했습니다. 🔥
         let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
@@ -499,6 +506,7 @@ function shareSchedule() {
     fallbackCopy(shareMsg);
 }
 
+// 🔥 로그인(접속) 시 사운드 재생 및 화면 터치 유도 기능 추가 🔥
 let hasGreeted = false;
 
 function checkAndGreetUser() {
@@ -517,7 +525,22 @@ function checkAndGreetUser() {
         return;
     }
 
-    showGreeting(myName);
+    // 스마트폰 브라우저 사운드 자동재생 차단 방지용 '입장 대기' 화면
+    const enterOverlay = document.createElement('div');
+    enterOverlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.95); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#fff; cursor:pointer; transition: opacity 0.3s ease;";
+    enterOverlay.innerHTML = `
+        <div style="font-size:2.5rem; margin-bottom:20px;">⛳</div>
+        <div style="font-size:1.2rem; font-weight:800; border:2px solid #d4af37; padding:12px 24px; border-radius:12px; color:#fef08a; box-shadow: 0 0 15px rgba(212,175,55,0.4);">JTFAG 리그 입장하기 (터치)</div>
+        <div style="margin-top:20px; font-size:0.8rem; color:#94a3b8;">🔊 입장 사운드가 재생됩니다</div>
+    `;
+    
+    enterOverlay.onclick = () => {
+        enterOverlay.style.opacity = "0";
+        setTimeout(() => enterOverlay.remove(), 300);
+        showGreeting(myName);
+    };
+    
+    document.body.appendChild(enterOverlay);
     hasGreeted = true;
 }
 
@@ -549,6 +572,12 @@ function showGreeting(myName) {
 
     const rankInfo = RANK_CONFIG[myRankIdx];
     const iconHtml = rankInfo.icon;
+
+    // 🔥 사운드 재생 시도 🔥
+    try {
+        const audio = new Audio(SOUND_CONFIG[myRankIdx]);
+        audio.play().catch(e => console.log("오디오 재생 실패:", e));
+    } catch(e) {}
 
     let greetMsg = "";
     if (myRankIdx === 0) greetMsg = `✨ 황제 귀환!<br><span style="color:#fef08a;">독수리등급 ${myName}님</span>이 입장하였습니다.`;
