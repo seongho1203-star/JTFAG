@@ -23,9 +23,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
-    // 🔥 동반자 오입력 방지용 이름 삭제(초기화) 버튼 동적 추가 🔥
     const nameDeleteBtn = document.createElement('div');
-    nameDeleteBtn.innerHTML = "👤 기기 등록 삭제";
+    nameDeleteBtn.innerHTML = "👤 내 기기 등록 이름 삭제";
     nameDeleteBtn.style.cssText = "text-align:center; color:#94a3b8; font-size:0.7rem; margin-top:20px; padding-bottom:10px; text-decoration:underline; cursor:pointer;";
     nameDeleteBtn.onclick = deleteMyName;
     document.body.appendChild(nameDeleteBtn);
@@ -391,7 +390,8 @@ function openPersonalReport(name) {
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : { "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 } };
 
-    const iE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8337.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
+    // 🔥 최신 독수리 이미지(IMG_8343) 적용 🔥
+    const iE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8343.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iH = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8331.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iC = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8333.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
     const iS = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
@@ -498,7 +498,6 @@ function shareSchedule() {
     fallbackCopy(shareMsg);
 }
 
-// 🔥 로그인(접속) 시 중앙 화면 팝업 & 백그라운드 블러 효과 🔥
 let hasGreeted = false;
 
 function checkAndGreetUser() {
@@ -507,7 +506,6 @@ function checkAndGreetUser() {
     let myName = localStorage.getItem('jtfag_my_name');
     if (!myName || !golfers.includes(myName)) {
         setTimeout(() => {
-            // 🔥 초기 팝업 멘트 수정: 이름 나열 없이 깔끔하게 🔥
             myName = prompt("👋 환영합니다!\n개인 맞춤형 알림을 위해 본인의 이름을 등록해주세요.");
             if (golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
@@ -522,7 +520,6 @@ function checkAndGreetUser() {
     hasGreeted = true;
 }
 
-// 🔥 이름 삭제(초기화) 기능으로 변경 🔥
 function deleteMyName() {
     const currentName = localStorage.getItem('jtfag_my_name');
     if (!currentName) {
@@ -534,9 +531,8 @@ function deleteMyName() {
     if (confirm("기기에 저장된 이름을 삭제하시겠습니까?\n(삭제 후 다음 접속 시 본인 이름을 다시 등록할 수 있습니다.)")) {
         localStorage.removeItem('jtfag_my_name');
         showToast("🗑️ 이름이 삭제되었습니다.");
-        hasGreeted = false; // 다시 인사 팝업이 뜨도록 상태 초기화
+        hasGreeted = false; 
         
-        // 0.5초 뒤에 초기 이름 등록 팝업 띄우기
         setTimeout(() => {
             checkAndGreetUser();
         }, 500);
