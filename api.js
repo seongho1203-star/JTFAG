@@ -11,9 +11,9 @@ let isFundUnlocked = false;
 
 const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
-// 🔥 이미지 아이콘 기본 크기를 1.1em으로 축소 🔥
+// 🔥 독수리 이미지 최신 버전(IMG_8343)으로 교체 완료 🔥
 const RANK_CONFIG = {
-    0: { name: "독수리", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8337.png" style="height: 1.1em; vertical-align: middle;">`, penalty: 0, class: "rank-eagle" },
+    0: { name: "독수리", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8343.png" style="height: 1.1em; vertical-align: middle;">`, penalty: 0, class: "rank-eagle" },
     1: { name: "매", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8331.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -40000, class: "rank-hawk" },
     2: { name: "학", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8333.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -60000, class: "rank-crane" },
     3: { name: "참새", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
