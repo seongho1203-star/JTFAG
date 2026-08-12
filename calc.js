@@ -469,16 +469,16 @@ function processAllRoundSettlements() {
             const currentRankIdx = ranks.length > 0 ? ranks[ranks.length - 1] : 3; 
             const currentRankInfo = RANK_CONFIG[currentRankIdx];
 
-            // 🔥 카드는 깔끔하게 유지하고, 뱃지에만 계급별 테두리와 글로우 적용 🔥
+            // 🔥 후광 효과(box-shadow) 제거, 테두리(border)만 색상별로 깔끔하게 적용 🔥
             let badgeGlowStyle = "";
             if (currentRankIdx === 0) {
-                badgeGlowStyle = "box-shadow: 0 0 12px rgba(245, 158, 11, 0.6); border: 2px solid #f59e0b;"; // 독수리: 황금 테두리 + 빛
+                badgeGlowStyle = "border: 2px solid #f59e0b;"; // 독수리: 황금 테두리
             } else if (currentRankIdx === 1) {
-                badgeGlowStyle = "box-shadow: 0 0 10px rgba(14, 165, 233, 0.5); border: 2px solid #0ea5e9;"; // 매: 파란 테두리 + 빛
+                badgeGlowStyle = "border: 2px solid #0ea5e9;"; // 매: 파란 테두리
             } else if (currentRankIdx === 2) {
-                badgeGlowStyle = "box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); border: 2px solid #a855f7;"; // 학: 보라 테두리 + 빛
+                badgeGlowStyle = "border: 2px solid #a855f7;"; // 학: 보라 테두리
             } else {
-                badgeGlowStyle = "border: 2px solid #94a3b8;"; // 참새: 회색 테두리 (빛 없음)
+                badgeGlowStyle = "border: 2px solid #94a3b8;"; // 참새: 회색 테두리
             }
 
             summaryGrid.innerHTML += `
