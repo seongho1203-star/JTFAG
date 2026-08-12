@@ -4,7 +4,6 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
     
-    // 🔥 독수리 뱃지용 커스텀 이미지 최신 버전(IMG_8343) 적용 🔥
     const imgE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8343.png" style="height: 1.1em; vertical-align: middle;">`;
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
@@ -476,9 +475,17 @@ function processAllRoundSettlements() {
             if (finalBalance > 0) finalColor = "#16a34a";
             if (finalBalance < 0) finalColor = "#dc2626";
 
+            // 🔥 이름 바로 밑에 현재 계급 표시 추가 🔥
+            const ranks = golferRankHistory[g] || [];
+            const currentRankIdx = ranks.length > 0 ? ranks[ranks.length - 1] : 3; 
+            const currentRankInfo = RANK_CONFIG[currentRankIdx];
+
             summaryGrid.innerHTML += `
                 <div class="summary-item">
                     <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
+                    <div style="margin-top:-2px; margin-bottom: 6px;">
+                        <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:4px;">${currentRankInfo.icon} ${currentRankInfo.name}</span>
+                    </div>
                     <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                     <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
                     ${summaryBadgesHtml}
