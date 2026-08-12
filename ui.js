@@ -1,12 +1,8 @@
 // ui.js - 화면 렌더링 및 사용자 이벤트 처리
 
-// 🔥 각 계급별 명예의 전당 오픈 시 재생될 사운드 링크 🔥
-// (보유하신 mp3 파일들을 Supabase에 올리신 후 아래 링크들을 교체해주세요)
+// 🔥 오직 '독수리' 등급만 전용 사운드 재생 (나머지 등급은 소리 없음) 🔥
 const SOUND_CONFIG = {
-    0: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/eagle_sound.mp3",  // 독수리: 웅장한 오케스트라, 환호성
-    1: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/hawk_sound.mp3",   // 매: 날카로운 맹수 소리
-    2: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/crane_sound.mp3",  // 학: 우아한 소리
-    3: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/sparrow_sound.mp3" // 참새: 띠로리~ (실패/절망 소리)
+    0: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/sign/Sound/Eagle.mp3?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kYTIzZmVlMC04YTM4LTQ2NDYtYTVlNy0yZThhNjU4NTlmZWYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJTb3VuZC9FYWdsZS5tcDMiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg2NTM2ODY5LCJleHAiOjE4MTgwNzI4Njl9.W7A8HA7pleL5xtO1-TE-R8PiyuP8vNFV5wm0KTYnx08"
 };
 
 function parseNumber(val) { if (!val) return 0; const cleaned = String(val).replace(/[^0-9.-]/g, ''); return parseFloat(cleaned) || 0; }
@@ -359,13 +355,16 @@ function openHistoryModal() { const modal = document.getElementById('historyModa
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
 function openPersonalReport(name) {
-    // 🔥 터치(클릭) 이벤트로 열리므로 자연스럽게 오디오 자동 재생이 가능합니다! 🔥
     const ranksForSound = golferRankHistory[name] || [];
     let currentRankForSound = ranksForSound.length > 0 ? ranksForSound[ranksForSound.length - 1] : 3;
-    try {
-        const audio = new Audio(SOUND_CONFIG[currentRankForSound]);
-        audio.play().catch(e => console.log("오디오 재생 실패:", e));
-    } catch(e) {}
+    
+    // 🔥 독수리(0) 등급일 때만 사운드 재생 🔥
+    if (currentRankForSound === 0 && SOUND_CONFIG[0]) {
+        try {
+            const audio = new Audio(SOUND_CONFIG[0]);
+            audio.play().catch(e => console.log("오디오 재생 실패:", e));
+        } catch(e) {}
+    }
 
     document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#fef08a;">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
