@@ -250,7 +250,7 @@ function processAllRoundSettlements() {
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
 
-    document.querySelectorAll('.rank-cell').forEach(rc => rc.innerHTML = '-');
+    // '현재 계급' 열이 삭제되었으므로 DOM 업데이트 로직도 간소화되었습니다.
 
     for (let r = 2; r < totalRounds; r++) {
         const handicapAvg = {};
@@ -338,14 +338,6 @@ function processAllRoundSettlements() {
                     </div>
                 </div>
             `;
-
-            const row = document.querySelector(`tr[data-name="${golferName}"]`);
-            if (row) {
-                const rc = row.querySelector('.rank-cell');
-                if (rc) {
-                    rc.innerHTML = `<span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>`;
-                }
-            }
         });
 
         roundHistoryHtml += `</div></div>`;
@@ -475,21 +467,25 @@ function processAllRoundSettlements() {
             if (finalBalance > 0) finalColor = "#16a34a";
             if (finalBalance < 0) finalColor = "#dc2626";
 
-            // 🔥 이름 바로 밑에 현재 계급 표시 추가 🔥
             const ranks = golferRankHistory[g] || [];
             const currentRankIdx = ranks.length > 0 ? ranks[ranks.length - 1] : 3; 
             const currentRankInfo = RANK_CONFIG[currentRankIdx];
 
+            // 🔥 뱃지 영역에 flex-grow 적용으로 카드의 전체 높이를 고정(균일화)하고, 합산을 맨 밑으로 밀어냅니다. 🔥
             summaryGrid.innerHTML += `
-                <div class="summary-item">
-                    <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
-                    <div style="margin-top:-2px; margin-bottom: 6px;">
-                        <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:4px;">${currentRankInfo.icon} ${currentRankInfo.name}</span>
+                <div class="summary-item" style="height: 100%; justify-content: flex-start;">
+                    <div>
+                        <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
+                        <div style="margin-top:-2px; margin-bottom: 6px;">
+                            <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:4px;">${currentRankInfo.icon} ${currentRankInfo.name}</span>
+                        </div>
+                        <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
+                        <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
                     </div>
-                    <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
-                    <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
-                    ${summaryBadgesHtml}
-                    <div class="final-total" style="color: ${finalColor};">합산: ${finalText}</div>
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; margin-top: 4px;">
+                        ${summaryBadgesHtml}
+                    </div>
+                    <div class="final-total" style="color: ${finalColor}; margin-top: auto;">합산: ${finalText}</div>
                 </div>
             `;
         });
