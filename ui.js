@@ -46,6 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
+    // 공금 로그 모달 생성
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
@@ -82,6 +83,7 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
 
+    // 관리자 전용 하단 패널 생성
     const adminPanel = document.createElement('div');
     adminPanel.id = 'adminBottomPanel';
     adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
@@ -117,6 +119,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
+// 커스텀 비밀번호 입력 모달창
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -175,6 +178,7 @@ function showPasswordPrompt(message) {
     });
 }
 
+// 커스텀 이름 선택 모달창
 function showNameSelectionPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -202,14 +206,14 @@ function showNameSelectionPrompt(message) {
         golfers.forEach(name => {
             const btn = document.createElement('button');
             btn.textContent = name;
-            btn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.95rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
+            btn.style.cssText = "width:100%; padding:12px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:1rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
             btn.onclick = () => cleanup(name);
             btnContainer.appendChild(btn);
         });
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "다음에 하기";
-        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
         cancelBtn.onclick = () => cleanup(null);
         
         box.appendChild(cancelBtn);
@@ -223,7 +227,8 @@ function showNameSelectionPrompt(message) {
     });
 }
 
-function showConfirmPrompt(message) {
+// 🔥 초기화/삭제 등을 위한 다목적 커스텀 경고 모달창 (버튼 텍스트 동적 변경 기능 추가) 🔥
+function showConfirmPrompt(message, confirmText = "삭제") {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
@@ -233,18 +238,18 @@ function showConfirmPrompt(message) {
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.5;";
+        msgEl.style.cssText = "color:#f8fafc; font-size:1rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.5;";
         
         const btnRow = document.createElement('div');
         btnRow.style.cssText = "display:flex; gap:8px;";
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
         
         const confirmBtn = document.createElement('button');
-        confirmBtn.textContent = "삭제";
-        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#ef4444; color:#fff; font-size:0.85rem; font-weight:800; cursor:pointer;";
+        confirmBtn.textContent = confirmText;
+        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#ef4444; color:#fff; font-size:0.9rem; font-weight:800; cursor:pointer;";
         
         btnRow.appendChild(cancelBtn);
         btnRow.appendChild(confirmBtn);
@@ -410,7 +415,12 @@ function closeScheduleModal() { document.getElementById('scheduleModal').classLi
 
 function saveSchedule() {
     const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
-    if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { alert("골프장 이름을 입력해주세요!"); return; }
+    
+    // 🔥 기본 alert 창을 예쁜 커스텀 토스트 알림으로 교체 🔥
+    if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { 
+        showToast("⚠️ 골프장 이름을 입력해주세요!"); 
+        return; 
+    }
     saveState();
     appData.nextRoundDate = `${document.getElementById('schMonth').value}월 ${document.getElementById('schDay').value}일 ${document.getElementById('schAmpm').value} ${document.getElementById('schHour').value}:${document.getElementById('schMinute').value} ${course}`;
     syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
@@ -475,7 +485,9 @@ function renderMoneyTable() {
     if (!tbody || !selectBox) return;
 
     let selectHtml = "";
-    for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>⛳ ${r + 1}차전 정산 기록 ▾</option>`; }
+    for (let r = 0; r < appData.totalRounds; r++) { 
+        selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>⛳ ${r + 1}차전 정산 기록 ▾</option>`; 
+    }
     if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
 
     if (!appData.roundMoney) appData.roundMoney = [];
@@ -661,8 +673,17 @@ function handleRoundPhotoUpload(event) {
     });
 }
 
-function deleteRoundPhoto(photoIdx) {
-    if(confirm("이 사진을 삭제하시겠습니까?")) { saveState(); appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1); syncToSupabase(appData); renderRoundPhotos(); renderAll(); showToast("🗑️ 사진이 삭제되었습니다."); }
+// 🔥 기본 confirm 창을 예쁜 커스텀 디자인으로 교체 🔥
+async function deleteRoundPhoto(photoIdx) {
+    const isConfirmed = await showConfirmPrompt("이 사진을 삭제하시겠습니까?");
+    if (isConfirmed) {
+        saveState(); 
+        appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1); 
+        syncToSupabase(appData); 
+        renderRoundPhotos(); 
+        renderAll(); 
+        showToast("🗑️ 사진이 삭제되었습니다."); 
+    }
 }
 
 function openImageViewModal(src) { document.getElementById('fullImageView').src = src; document.getElementById('imageViewModal').classList.add('active'); }
@@ -800,10 +821,18 @@ function openPersonalReport(name) {
 
 function closePersonalReport() { document.getElementById('personalReportModal').classList.remove('active'); }
 
-function resetAllData() {
-    if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
-        saveState(); appData = getDefaultData(); selectedMoneyRoundIdx = appData.totalRounds - 1; syncToSupabase(appData);
-        renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
+// 🔥 초기화 버튼 클릭 시 뜨는 기본 알림창을 예쁜 커스텀 디자인으로 교체 🔥
+async function resetAllData() {
+    const isConfirmed = await showConfirmPrompt("정말로 모든 실시간 데이터를<br>초기화하시겠습니까?<br><span style='font-size:0.8rem; font-weight:400; color:#94a3b8;'>초기화 후에는 복구할 수 없습니다.</span>", "초기화");
+    
+    if (isConfirmed) {
+        saveState(); 
+        appData = getDefaultData(); 
+        selectedMoneyRoundIdx = appData.totalRounds - 1; 
+        syncToSupabase(appData);
+        renderAll(); 
+        showToast("🔄 모든 데이터가 초기화되었습니다."); 
+        forceTableReflow();
     }
 }
 
