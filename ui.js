@@ -9,24 +9,48 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 기본 디자인 강제 무력화 및 여백 완벽 압축 🔥
+    // 🔥 1. CSS 강제 주입: 상하 여백을 완벽하게 진공 압축 🔥
+    const tightenSpaceStyle = document.createElement('style');
+    tightenSpaceStyle.innerHTML = `
+        /* 버튼 자체의 높이를 강제로 줄이고 여백 없앰 */
+        #moneyRoundBtn { 
+            margin: 0 0 0 auto !important; 
+            padding: 0 8px !important; 
+            height: 28px !important; 
+            line-height: 28px !important; 
+            min-height: 0 !important;
+            box-sizing: border-box !important;
+        }
+        /* 테이블 헤더 셀 여백 최적화 */
+        th { padding-top: 6px !important; padding-bottom: 6px !important; }
+    `;
+    document.head.appendChild(tightenSpaceStyle);
+
+    // 🔥 2. 버튼 교체 및 '차수별 정산' 글씨 크기와 여백 똑같이 맞추기 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const parentDiv = oldSelect.parentNode;
         
         if (parentDiv) {
             // 부모 레이아웃 여백 강제 제거
-            parentDiv.setAttribute('style', 'display:flex; justify-content:space-between; align-items:center; margin-bottom:6px !important; padding-bottom:0 !important; margin-top:0 !important;');
-            // "차수별 정산" 텍스트의 숨겨진 기본 마진 깎아내기
-            const h3 = parentDiv.querySelector('h3');
-            if (h3) h3.setAttribute('style', 'margin:0 !important; font-size:1.05rem !important; line-height:1 !important;');
+            parentDiv.setAttribute('style', 'display:flex; justify-content:space-between; align-items:center; margin-bottom:4px !important; padding-bottom:0 !important; margin-top:0 !important;');
+            
+            // "차수별 정산" 텍스트의 크기(1.1rem)와 두께(800)를 "JTFAG 통합 정산 요약"과 똑같이 맞춤
+            const titleEl = parentDiv.querySelector('h3') || parentDiv.firstElementChild;
+            if (titleEl && titleEl.tagName !== 'SELECT') {
+                titleEl.setAttribute('style', 'margin:0 !important; font-size:1.1rem !important; font-weight:800 !important; line-height:1 !important; padding:0 !important;');
+            }
+            
+            // 바로 아래에 있는 표(Table 컨테이너)의 상단 여백 완전 제거
+            if (parentDiv.nextElementSibling) {
+                parentDiv.nextElementSibling.style.setProperty('margin-top', '0px', 'important');
+                parentDiv.nextElementSibling.style.setProperty('padding-top', '0px', 'important');
+            }
         }
 
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        // 🔥 버튼 높이(28px) 및 패딩 강제 고정 (절대 안 뚱뚱해짐) 🔥
-        moneyBtn.setAttribute('style', 'height:28px !important; min-height:28px !important; padding:0 10px !important; margin:0 !important; background:#1e293b !important; border:1px solid #d4af37 !important; border-radius:6px !important; color:#fef08a !important; font-size:0.8rem !important; font-weight:700 !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; gap:4px !important; box-sizing:border-box !important; cursor:pointer !important; outline:none !important;');
-        
+        moneyBtn.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; cursor:pointer; outline:none; white-space:nowrap;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
