@@ -9,19 +9,19 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 예쁜 커스텀 버튼 생성 (강제 여백 압축 코드 제거됨) 🔥
+    // 🔥 거대했던 버튼을 텍스트 크기에 딱 맞게 슬림하고 예쁘게 축소 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        moneyBtn.style.cssText = "padding:6px 12px; background:#1e293b; border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.85rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; cursor:pointer; outline:none; white-space:nowrap;";
+        moneyBtn.style.cssText = "padding:6px 12px; background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.85rem; font-weight:700; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); outline:none; white-space:nowrap; margin-left:auto;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
                 changeMoneyRound(selectedIdx);
             }
         };
-        oldSelect.parentNode.insertBefore(moneyBtn, oldSelect);
+        oldSelect.parentNode.replaceChild(moneyBtn, oldSelect);
     }
 
     renderSkeleton();
@@ -61,7 +61,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
-    // 공금 로그 모달
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
@@ -98,7 +97,6 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
 
-    // 관리자 하단 패널
     const adminPanel = document.createElement('div');
     adminPanel.id = 'adminBottomPanel';
     adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
@@ -134,7 +132,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
-// 차수 선택 커스텀 모달
 function showRoundSelectionPrompt(totalRounds, currentIndex) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -145,7 +142,7 @@ function showRoundSelectionPrompt(totalRounds, currentIndex) {
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = "⛳ 정산 차수 선택";
-        msgEl.style.cssText = "color:#f8fafc; font-size:1rem; margin-bottom:15px; font-weight:800; word-break:keep-all;";
+        msgEl.style.cssText = "color:#f8fafc; font-size:0.95rem; margin-bottom:15px; font-weight:800; word-break:keep-all;";
         
         const btnContainer = document.createElement('div');
         btnContainer.style.cssText = "display:flex; flex-direction:column; gap:8px; margin-bottom:15px; max-height:45vh; overflow-y:auto; padding-right:5px;";
@@ -163,14 +160,14 @@ function showRoundSelectionPrompt(totalRounds, currentIndex) {
             const btn = document.createElement('button');
             const isCurrent = r === currentIndex;
             btn.innerHTML = `${r + 1}차전 정산 기록 ${isCurrent ? '<span style="color:#d4af37; font-size:0.75rem; margin-left:4px;">(현재)</span>' : ''}`;
-            btn.style.cssText = `width:100%; padding:10px; border-radius:6px; border:1px solid ${isCurrent ? '#d4af37' : '#475569'}; background:${isCurrent ? 'rgba(212,175,55,0.1)' : '#0f172a'}; color:${isCurrent ? '#fef08a' : '#e2e8f0'}; font-size:0.95rem; font-weight:700; cursor:pointer; transition:all 0.2s;`;
+            btn.style.cssText = `width:100%; padding:10px; border-radius:6px; border:1px solid ${isCurrent ? '#d4af37' : '#475569'}; background:${isCurrent ? 'rgba(212,175,55,0.1)' : '#0f172a'}; color:${isCurrent ? '#fef08a' : '#e2e8f0'}; font-size:0.9rem; font-weight:700; cursor:pointer; transition:all 0.2s;`;
             btn.onclick = () => cleanup(r);
             btnContainer.appendChild(btn);
         }
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
         cancelBtn.onclick = () => cleanup(null);
         
         box.appendChild(cancelBtn);
@@ -184,7 +181,6 @@ function showRoundSelectionPrompt(totalRounds, currentIndex) {
     });
 }
 
-// 비밀번호 입력 모달
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -195,7 +191,7 @@ function showPasswordPrompt(message) {
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:1rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.4;";
+        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.4;";
         
         const inputEl = document.createElement('input');
         inputEl.type = "password";      
@@ -208,11 +204,11 @@ function showPasswordPrompt(message) {
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
         
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = "확인";
-        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#0f172a; font-size:0.9rem; font-weight:800; cursor:pointer;";
+        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#0f172a; font-size:0.85rem; font-weight:800; cursor:pointer;";
         
         btnRow.appendChild(cancelBtn);
         btnRow.appendChild(confirmBtn);
@@ -243,7 +239,6 @@ function showPasswordPrompt(message) {
     });
 }
 
-// 이름 선택 모달
 function showNameSelectionPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -254,7 +249,7 @@ function showNameSelectionPrompt(message) {
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:1.05rem; margin-bottom:15px; font-weight:800; word-break:keep-all; line-height:1.4;";
+        msgEl.style.cssText = "color:#f8fafc; font-size:0.95rem; margin-bottom:15px; font-weight:800; word-break:keep-all; line-height:1.4;";
         
         const btnContainer = document.createElement('div');
         btnContainer.style.cssText = "display:flex; flex-direction:column; gap:8px; margin-bottom:15px;";
@@ -271,14 +266,14 @@ function showNameSelectionPrompt(message) {
         golfers.forEach(name => {
             const btn = document.createElement('button');
             btn.textContent = name;
-            btn.style.cssText = "width:100%; padding:12px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:1rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
+            btn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.95rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
             btn.onclick = () => cleanup(name);
             btnContainer.appendChild(btn);
         });
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "다음에 하기";
-        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
         cancelBtn.onclick = () => cleanup(null);
         
         box.appendChild(cancelBtn);
@@ -292,7 +287,6 @@ function showNameSelectionPrompt(message) {
     });
 }
 
-// 삭제 확인 모달
 function showConfirmPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -303,18 +297,18 @@ function showConfirmPrompt(message) {
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:1rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.5;";
+        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.5;";
         
         const btnRow = document.createElement('div');
         btnRow.style.cssText = "display:flex; gap:8px;";
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
         
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = "삭제";
-        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#ef4444; color:#fff; font-size:0.9rem; font-weight:800; cursor:pointer;";
+        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#ef4444; color:#fff; font-size:0.85rem; font-weight:800; cursor:pointer;";
         
         btnRow.appendChild(cancelBtn);
         btnRow.appendChild(confirmBtn);
@@ -541,11 +535,17 @@ function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10)
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody'); 
     const moneyBtn = document.getElementById('moneyRoundBtn');
+    const selectBox = document.getElementById('moneyRoundSelect'); 
     
     if (!tbody) return;
 
     if (moneyBtn) {
-        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.6rem; margin-left:2px;">▼</span>`;
+        // 버튼 글씨에 들어가는 패딩과 크기도 작고 슬림하게 수정
+        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록</span> <span style="color:#d4af37; font-size:0.75rem;">▼</span>`;
+    } else if (selectBox) {
+        let selectHtml = "";
+        for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
+        if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
     }
 
     if (!appData.roundMoney) appData.roundMoney = [];
