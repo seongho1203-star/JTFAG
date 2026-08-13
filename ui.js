@@ -1,6 +1,5 @@
 // ui.js - 화면 렌더링 및 사용자 이벤트 처리
 
-// 🔥 오직 '독수리' 등급만 전용 사운드 재생 (나머지 등급은 소리 없음) 🔥
 const SOUND_CONFIG = {
     0: "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/sign/Sound/Eagle.mp3?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kYTIzZmVlMC04YTM4LTQ2NDYtYTVlNy0yZThhNjU4NTlmZWYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJTb3VuZC9FYWdsZS5tcDMiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg2NTM2ODY5LCJleHAiOjE4MTgwNzI4Njl9.W7A8HA7pleL5xtO1-TE-R8PiyuP8vNFV5wm0KTYnx08"
 };
@@ -29,9 +28,15 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
+    // 🔥 용량 게이지 UI 요소 동적 추가 🔥
+    const storageInfo = document.createElement('div');
+    storageInfo.id = 'storageInfoDisplay';
+    storageInfo.style.cssText = "text-align:center; font-size:0.75rem; margin-top:20px; padding:15px 10px; background:rgba(0,0,0,0.15); border-radius:12px;";
+    document.body.appendChild(storageInfo);
+
     const nameDeleteBtn = document.createElement('div');
     nameDeleteBtn.innerHTML = "👤 내 기기 등록 이름 삭제";
-    nameDeleteBtn.style.cssText = "text-align:center; color:#94a3b8; font-size:0.7rem; margin-top:20px; padding-bottom:10px; text-decoration:underline; cursor:pointer;";
+    nameDeleteBtn.style.cssText = "text-align:center; color:#94a3b8; font-size:0.7rem; margin-top:15px; padding-bottom:20px; text-decoration:underline; cursor:pointer;";
     nameDeleteBtn.onclick = deleteMyName;
     document.body.appendChild(nameDeleteBtn);
 });
@@ -133,7 +138,52 @@ function renderAll() {
     calculateAndRender(); 
     renderMoneyTable(); 
     forceTableReflow(); 
-    checkAndGreetUser(); // 접속 알림 실행
+    renderStorageUsage(); // 🔥 용량 게이지 업데이트 🔥
+    checkAndGreetUser(); 
+}
+
+// 🔥 앱의 전체 용량을 계산해서 화면에 보여주는 함수 🔥
+function renderStorageUsage() {
+    const storageInfo = document.getElementById('storageInfoDisplay');
+    if (!storageInfo) return;
+
+    // 현재 앱 데이터의 텍스트 크기를 계산 (사진이 Base64 텍스트로 저장되므로 매우 정확함)
+    const jsonString = JSON.stringify(appData);
+    const bytes = new Blob([jsonString]).size;
+    
+    // 권장 최대 한도를 5MB로 설정 (실시간 동기화 렉 방지 목적)
+    const maxBytes = 5 * 1024 * 1024; 
+    
+    const kb = (bytes / 1024).toFixed(1);
+    const mb = (bytes / (1024 * 1024)).toFixed(2);
+    
+    let displaySize = bytes > 1024 * 1024 ? `${mb} MB` : `${kb} KB`;
+    let percent = (bytes / maxBytes) * 100;
+    if (percent > 100) percent = 100;
+
+    let statusColor = "#16a34a"; // 🟢 원활 (초록색)
+    let statusIcon = "🟢";
+    let statusText = "원활";
+
+    if (percent > 85) {
+        statusColor = "#dc2626"; // 🔴 위험 (빨간색)
+        statusIcon = "🔴";
+        statusText = "위험 (사진 삭제 권장)";
+    } else if (percent > 60) {
+        statusColor = "#eab308"; // 🟡 주의 (노란색)
+        statusIcon = "🟡";
+        statusText = "주의 (사진 누적됨)";
+    }
+
+    storageInfo.innerHTML = `
+        <div style="color:var(--text-sub); margin-bottom:8px; font-weight:700;">💾 실시간 데이터 용량 (권장 한도 5MB)</div>
+        <div style="width:100%; max-width:280px; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; margin:0 auto; overflow:hidden;">
+            <div style="width:${percent}%; height:100%; background:${statusColor}; transition:width 0.4s ease;"></div>
+        </div>
+        <div style="margin-top:8px; color:${statusColor}; font-weight:800; font-size:0.8rem;">
+            ${statusIcon} ${displaySize} / 5.0 MB <span style="font-weight:400;">(${statusText})</span>
+        </div>
+    `;
 }
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
@@ -358,7 +408,6 @@ function openPersonalReport(name) {
     const ranksForSound = golferRankHistory[name] || [];
     let currentRankForSound = ranksForSound.length > 0 ? ranksForSound[ranksForSound.length - 1] : 3;
     
-    // 🔥 독수리(0) 등급일 때만 사운드 재생 🔥
     if (currentRankForSound === 0 && SOUND_CONFIG[0]) {
         try {
             const audio = new Audio(SOUND_CONFIG[0]);
