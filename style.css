@@ -63,7 +63,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .sch-inputs span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
 
 /* 골프장 선택 행: 세로 전체폭 배치라 날짜/시간 셀렉트보다 여유 있는 크기 사용 */
-#schCourseSelect, #schCourseCustom { width: 100%; box-sizing: border-box; height: 36px; padding: 8px 10px; text-align: left; }
+#schCourseSelect, #schCourseCustom { width: 100%; box-sizing: border-box; height: 36px; padding: 8px 10px; text-align: center; text-align-last: center; }
 #schCourseCustom::placeholder { color: #94a3b8; font-weight: 600; }
 #schCourseCustom:focus { border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18); }
 
