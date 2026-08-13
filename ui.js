@@ -9,37 +9,36 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 1. CSS 강제 주입: 두 타이틀의 크기를 똑같이 맞추고 불필요한 여백 완벽 제거 🔥
+    // 🔥 1. CSS 강제 주입: 모든 제목 크기 완벽 통일 & 여백 압축 🔥
     const tightenSpaceStyle = document.createElement('style');
     tightenSpaceStyle.innerHTML = `
-        /* JTFAG 통합 정산 요약 글씨 크기 고정 */
-        .section-title, h3 { 
+        /* JTFAG 통합 정산 요약 & 차수별 정산 글씨 크기 무조건 똑같이 강제 고정 */
+        h1, h2, h3, h4, h5, h6, .section-title { 
             font-size: 1.05rem !important; 
             font-weight: 800 !important; 
+            margin-top: 0 !important;
+            line-height: 1.2 !important;
         }
         
-        /* 버튼 컨테이너 강제 압축 */
+        /* 차수별 정산 버튼이 들어있는 칸 강제 압축 */
         .money-header-container {
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
             margin-top: 0px !important;
             margin-bottom: 4px !important;
+            padding-top: 0px !important;
             padding-bottom: 0px !important;
             min-height: 0px !important;
         }
 
-        /* 차수별 정산 텍스트 강제 고정 */
-        .money-header-title {
+        .money-header-container > * {
             margin: 0 !important;
             padding: 0 !important;
-            font-size: 1.05rem !important; /* 위쪽 타이틀과 완벽하게 동일한 크기 */
-            font-weight: 800 !important;
             line-height: 1 !important;
-            color: #1e293b !important;
         }
 
-        /* 버튼 자체의 높이를 강제로 줄이고 여백 없앰 */
+        /* 버튼 상하 크기 최소화 */
         #moneyRoundBtn { 
             margin: 0 0 0 auto !important; 
             padding: 0 8px !important; 
@@ -49,15 +48,13 @@ window.addEventListener('DOMContentLoaded', () => {
             box-sizing: border-box !important;
         }
         
-        /* 테이블 헤더 셀 여백 최적화 (더 타이트하게) */
+        /* 테이블 헤더 셀 여백 최적화 */
         th { padding-top: 4px !important; padding-bottom: 4px !important; }
-        
-        /* 테이블 위쪽 공간 강제 삭제 */
         .table-responsive { margin-top: 0 !important; padding-top: 0 !important; } 
     `;
     document.head.appendChild(tightenSpaceStyle);
 
-    // 🔥 2. "차수별 정산" 텍스트와 버튼을 컨테이너로 깔끔하게 묶어서 압축 🔥
+    // 🔥 2. 버튼 교체 및 DOM 직접 조작으로 여백 완전 제거 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const parentDiv = oldSelect.parentNode;
@@ -65,9 +62,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (parentDiv) {
             parentDiv.classList.add('money-header-container');
             
-            const titleEl = parentDiv.querySelector('h3') || parentDiv.firstElementChild;
+            // "차수별 정산" 태그가 무엇이든 간에 강제로 크기와 여백 제거
+            const titleEl = parentDiv.querySelector('h1, h2, h3, h4, h5, h6, p, span') || parentDiv.firstElementChild;
             if (titleEl && titleEl.tagName !== 'SELECT') {
-                titleEl.classList.add('money-header-title');
+                titleEl.setAttribute('style', 'font-size:1.05rem !important; font-weight:800 !important; margin:0 !important; padding:0 !important; line-height:1 !important; display:flex !important; align-items:center !important;');
+            }
+            
+            // 그 아래 표와의 여백 제거
+            if (parentDiv.nextElementSibling) {
+                parentDiv.nextElementSibling.style.setProperty('margin-top', '0px', 'important');
+                parentDiv.nextElementSibling.style.setProperty('padding-top', '0px', 'important');
             }
         }
 
