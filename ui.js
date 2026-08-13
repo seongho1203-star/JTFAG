@@ -9,12 +9,12 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 메인 차수 선택 버튼 크기 대폭 축소 (날씬하게) 🔥
+    // 🔥 거대했던 버튼을 텍스트 크기에 딱 맞게 슬림하고 예쁘게 축소 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        moneyBtn.style.cssText = "width:100%; padding:8px 12px; background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid #d4af37; border-radius:8px; color:#fef08a; font-size:0.9rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:10px; outline:none;";
+        moneyBtn.style.cssText = "padding:6px 12px; background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.85rem; font-weight:700; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); outline:none; white-space:nowrap; margin-left:auto;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
@@ -132,7 +132,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
-// 🔥 차수 선택 모달창 버튼 크기 대폭 축소 🔥
 function showRoundSelectionPrompt(totalRounds, currentIndex) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -182,7 +181,6 @@ function showRoundSelectionPrompt(totalRounds, currentIndex) {
     });
 }
 
-// 🔥 비밀번호 모달창 버튼 크기 대폭 축소 🔥
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -241,7 +239,6 @@ function showPasswordPrompt(message) {
     });
 }
 
-// 🔥 이름 선택 모달창 버튼 크기 대폭 축소 🔥
 function showNameSelectionPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -290,7 +287,6 @@ function showNameSelectionPrompt(message) {
     });
 }
 
-// 🔥 삭제 경고 모달창 버튼 크기 대폭 축소 🔥
 function showConfirmPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -544,7 +540,8 @@ function renderMoneyTable() {
     if (!tbody) return;
 
     if (moneyBtn) {
-        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록</span> <span style="color:#d4af37;">▼</span>`;
+        // 버튼 글씨에 들어가는 패딩과 크기도 작고 슬림하게 수정
+        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록</span> <span style="color:#d4af37; font-size:0.75rem;">▼</span>`;
     } else if (selectBox) {
         let selectHtml = "";
         for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
