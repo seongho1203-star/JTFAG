@@ -9,12 +9,12 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 기본 셀렉트 박스를 기존 버튼 사이즈와 완벽히 동일한 커스텀 모달 버튼으로 교체 🔥
+    // 🔥 차수별 정산 버튼을 제목 옆에 딱 맞고 콤팩트한 사이즈로 생성 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        moneyBtn.style.cssText = "padding: 6px 12px; height: 32px; background: #1e293b; border: 1px solid #d4af37; border-radius: 6px; color: #fef08a; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; outline: none; white-space: nowrap; margin-left: auto;";
+        moneyBtn.style.cssText = "padding: 4px 10px; height: 26px; background: #1e293b; border: 1px solid #d4af37; border-radius: 6px; color: #fef08a; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; outline: none; white-space: nowrap;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
@@ -132,7 +132,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
-// 🔥 5차전 정산 기록 버튼을 누를 때 뜨는 커스텀 모달 창 (기존 모달들과 동일한 사이즈 및 비율 적용) 🔥
 function showRoundSelectionPrompt(totalRounds, currentIndex) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -473,6 +472,7 @@ function handleCourseSelectChange(val) {
 
 function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('active'); }
 
+// 🔥 일정 저장 시 마지막 라운드 골프장 칸에 자동 연동 🔥
 function saveSchedule() {
     const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
     
@@ -548,7 +548,7 @@ function renderStorageUsage() {
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
 
-// 🔥 5차전 정산 기록 버튼 텍스트 업데이트 렌더링 🔥
+// 🔥 차수별 정산 버튼을 세련된 커스텀 모달 버튼으로 렌더링 🔥
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody'); 
     const moneyBtn = document.getElementById('moneyRoundBtn');
