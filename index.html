@@ -2,167 +2,214 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JTFAG LEAGUE</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Supabase 연동 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#edf2f7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>JTFAG League - 실시간 정산 시스템</title>
+
+    <link rel="apple-touch-icon" href="IMG_8075.jpeg">
+    <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- 기능 스크립트 -->
-    <script src="api.js"></script>
-    <script src="calc.js"></script>
-    <script src="ui.js"></script>
+    <script>
+        // 항상 최신 CSS 파일을 불러옵니다
+        document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
+    </script>
 </head>
-<body>
-    <!-- 상단 헤더 -->
-    <div class="header-title">
-        <h1 style="text-align: center; margin-bottom: 5px;">JTFAG LEAGUE</h1>
-        <p style="text-align: center; font-size: 0.8rem; color: #d4af37; margin-top: 0;">⛳ REALTIME GOLF SYSTEM</p>
+<body ontouchstart="">
+
+<div class="container">
+    <div class="header-area">
+        <h1>JTFAG LEAGUE</h1>
+        <p class="subtitle">⛳ REALTIME GOLF SYSTEM</p>
     </div>
 
-    <!-- 📢 공지 및 공금 -->
-    <div class="section-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-            <h3 class="section-title" style="margin:0;">📢 공지 및 공금</h3>
-            <div style="display: flex; gap: 10px;">
-                <span onclick="sendNotification()" style="cursor:pointer; font-size:1.2rem;">🔔</span>
-                <span id="lockToggleBtn" onclick="toggleFundLock()" style="cursor:pointer; font-size:1.2rem;">🔒</span>
+    <div class="notice-card">
+        <h2>
+            <span>📢 공지 및 공금</span>
+            <div style="display:flex; align-items:center;">
+                <button type="button" class="bell-btn" onclick="sendNotification()" title="일정 알림">🔔</button>
+                <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="공금 수정 잠금/해제">🔒</button>
+            </div>
+        </h2>
+        <div class="notice-grid">
+            <div class="notice-box" onclick="openScheduleModal()" style="cursor:pointer;">
+                <label>📅 다음 라운드 일정</label>
+                <div id="nextRoundDisplay" class="notice-display-text" style="color:#ffffff; font-weight:800; font-size:clamp(0.78rem, 3vw, 0.88rem);">일정 등록하기</div>
+            </div>
+            <div class="notice-box">
+                <label style="text-align: center;">💰 남은 공금 잔액</label>
+                <input type="text" inputmode="numeric" id="clubFundInput" class="notice-input" placeholder="0원" readonly onclick="handleFundClick(this)">
             </div>
         </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            <div class="notice-box" onclick="openScheduleModal()">
-                <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px;">📅 다음 라운드 일정</div>
-                <div id="nextRoundDisplay" style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">일정 등록하기</div>
-            </div>
-            <div class="fund-box">
-                <div style="font-size: 0.75rem; color: #d4af37; margin-bottom: 5px;">💰 남은 공금 잔액</div>
-                <input type="text" id="clubFundInput" value="0원" readonly style="width: 100%; background: transparent; border: none; color: #f8fafc; font-size: 1.1rem; font-weight: 800; text-align: center; outline: none; padding: 0;">
-            </div>
-        </div>
-        <div id="weatherText" style="text-align: center; font-size: 0.8rem; color: #cbd5e1; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">날씨 정보를 불러오는 중입니다...</div>
-    </div>
-
-    <!-- 💰 통합 정산 요약 -->
-    <div class="section-card" style="background: linear-gradient(145deg, #fefce8, #fef9c3); border: 1px solid #fef08a;">
-        <h3 class="section-title" style="text-align:center; color: #b45309; margin-bottom: 15px; font-size: 1.1rem; font-weight: 800;">💰 JTFAG 통합 정산 요약</h3>
-        <div id="summaryGrid" class="summary-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;"></div>
-    </div>
-
-    <!-- 💵 차수별 정산 (여백 깎고 글씨 크기 똑같이 맞춘 완벽한 버전) -->
-    <div class="section-card">
-        <!-- 타이틀과 버튼이 들어가는 한 줄 컨테이너 -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 class="section-title" style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; line-height: 1;">💵 차수별 정산</h3>
-            <select id="moneyRoundSelect" style="display:none;"></select>
-        </div>
-
-        <div class="table-responsive" style="margin-top: 0; padding-top: 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; color: #64748b;">
-                        <th style="padding: 6px; text-align: left;">이름</th>
-                        <th style="padding: 6px; text-align: center;">시작 금액</th>
-                        <th style="padding: 6px; text-align: center;">남은 금액</th>
-                        <th style="padding: 6px; text-align: center;">계급정산</th>
-                        <th style="padding: 6px; text-align: center;">타수정산</th>
-                    </tr>
-                </thead>
-                <tbody id="moneyTbody" style="font-size: 0.9rem; text-align: center;"></tbody>
-            </table>
+        <div id="weatherWidget">
+            <span class="weather-icon">☁️</span>
+            <span id="weatherText">날씨 정보를 불러오는 중...</span>
         </div>
     </div>
 
-    <!-- 🤝 핸디캡 매치 -->
-    <div class="section-card" style="background: #f8fafc; text-align: center;">
-        <div style="font-size: 0.8rem; color: #b45309; font-weight: 700; margin-bottom: 10px;">🤝 최근 2경기 평균 기준 1:1 핸디캡 산출</div>
-        <div id="matchGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem;"></div>
+    <div class="total-summary-card">
+        <h2>💰 JTFAG 통합 정산 요약</h2>
+        <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
-    <!-- ⛳ 데이터 컨트롤 및 메인 스코어 -->
-    <div style="display: flex; justify-content: space-between; padding: 0 10px; margin-bottom: 10px;">
-        <div style="display: flex; gap: 5px;">
-            <button onclick="addRound()" style="padding: 8px 12px; border-radius: 6px; border: none; background: #3b82f6; color: white; font-weight: 700; font-size: 0.8rem; cursor:pointer;">+ 차수 추가</button>
-            <button onclick="removeRound()" style="padding: 8px 12px; border-radius: 6px; border: none; background: #ea580c; color: white; font-weight: 700; font-size: 0.8rem; cursor:pointer;">- 최근 삭제</button>
+    <div class="money-card">
+        <div class="money-header-flex">
+            <h3>💵 차수별 정산</h3>
+            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
         </div>
-        <div style="display: flex; gap: 5px;">
-            <button onclick="resetAllData()" style="padding: 8px 12px; border-radius: 6px; border: none; background: #ef4444; color: white; font-weight: 700; font-size: 0.8rem; cursor:pointer;">🔄 초기화</button>
-            <button onclick="undoLastAction()" style="padding: 8px 12px; border-radius: 6px; border: none; background: #64748b; color: white; font-weight: 700; font-size: 0.8rem; cursor:pointer;">↩ 되돌리기</button>
+        <table class="money-table">
+            <thead>
+                <tr>
+                    <th style="width: 18%;">이름</th>
+                    <th style="width: 25%;">시작 금액</th>
+                    <th style="width: 25%;">남은 금액</th>
+                    <th style="width: 16%;">계급정산</th>
+                    <th style="width: 16%;">타수정산</th>
+                </tr>
+            </thead>
+            <tbody id="moneyTbody"></tbody>
+        </table>
+    </div>
+
+    <div class="info-card">
+        <span class="info-text" id="infoText">💡 <b>최근 2경기 스코어</b> 기준 1:1 핸디캡 산출</span>
+        <span class="save-status" id="saveStatus">⚡ 연결 중...</span>
+    </div>
+
+    <div class="btn-group">
+        <div class="left-btns">
+            <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
+            <button type="button" class="action-btn remove-btn" onclick="removeRound()">- 최근 삭제</button>
         </div>
-    </div>
-
-    <div class="section-card" style="padding: 0; overflow: hidden;">
-        <div class="table-responsive" id="tableWrapper" style="overflow-x: auto;">
-            <table id="mainTable" style="width: 100%; border-collapse: collapse; text-align: center; white-space: nowrap;">
-                <thead>
-                    <tr id="headerRow" style="background: #f1f5f9; font-size: 0.8rem; color: #475569;"></tr>
-                </thead>
-                <tbody id="scoreTbody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div style="text-align: center; color: #94a3b8; font-size: 0.7rem; padding: 20px 0 40px 0;">
-        JTFAG Realtime System v2.0
-    </div>
-
-    <!-- 숨겨진 모달(팝업) 및 알림 창들 -->
-    <div id="customToast" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:#fff; padding:12px 24px; border-radius:30px; font-size:0.9rem; font-weight:700; opacity:0; pointer-events:none; transition:opacity 0.3s; z-index:9999; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
-    <div id="saveStatus" style="position:fixed; top:10px; left:50%; transform:translateX(-50%); background:rgba(22,163,74,0.9); color:#fff; padding:6px 16px; border-radius:20px; font-size:0.75rem; font-weight:700; opacity:0; pointer-events:none; transition:opacity 0.3s; z-index:9999; box-shadow:0 2px 8px rgba(0,0,0,0.2);"></div>
-    <div id="pushNotification" onclick="shareSchedule()" style="position:fixed; top:-100px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; border-radius:16px; width:90%; max-width:350px; padding:16px; color:#fff; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:10000; transition:top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor:pointer; text-align:center;">
-        <div style="font-size:0.8rem; color:#d4af37; font-weight:800; margin-bottom:8px;">📢 JTFAG 일정 알림</div>
-        <div id="pushBody" style="font-size:0.9rem; line-height:1.5;"></div>
-    </div>
-    
-    <div id="personalReportModal" class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9998; opacity:0; pointer-events:none; transition:opacity 0.3s; display:flex; justify-content:center; align-items:center;">
-        <div style="background:#1e293b; border:1px solid #d4af37; border-radius:16px; padding:20px; width:90%; max-width:400px; max-height:85vh; overflow-y:auto; position:relative;">
-            <button onclick="closePersonalReport()" style="position:absolute; top:15px; right:15px; background:transparent; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">✕</button>
-            <h2 id="reportTitle" style="color:#fef08a; text-align:center; margin-top:0; margin-bottom:20px;">명예의 전당</h2>
-            <div id="reportContent"></div>
+        <div class="right-btns">
+            <button type="button" class="action-btn reset-btn" onclick="resetAllData()">🔄 초기화</button>
+            <button type="button" class="action-btn undo-btn" onclick="undoLastAction()">↩️ 되돌리기</button>
         </div>
     </div>
 
-    <div id="roundPhotoModal" class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9997; opacity:0; pointer-events:none; transition:opacity 0.3s; display:flex; justify-content:center; align-items:center;">
-        <div style="background:#1e293b; border-radius:16px; padding:20px; width:90%; max-width:400px; max-height:80vh; display:flex; flex-direction:column; position:relative;">
-            <h3 id="roundPhotoTitle" style="color:#f8fafc; margin-top:0; text-align:center;">차전 갤러리</h3>
-            <div id="photoGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; overflow-y:auto; flex-grow:1; margin-bottom:15px;"></div>
-            <label style="background:#d4af37; color:#0f172a; padding:12px; text-align:center; border-radius:8px; font-weight:800; cursor:pointer;">
-                📸 사진 업로드 (최대 10장)
-                <input type="file" id="roundPhotoUpload" accept="image/*" multiple style="display:none;" onchange="handleRoundPhotoUpload(event)">
-            </label>
-            <button onclick="closeRoundPhotoModal()" style="margin-top:10px; background:#475569; color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700;">닫기</button>
+    <div class="table-wrapper" id="tableWrapper">
+        <table id="scoreTable">
+            <thead>
+                <tr id="headerRow"><th>이름</th></tr>
+            </thead>
+            <tbody id="scoreTbody"></tbody>
+        </table>
+    </div>
+
+    <div class="match-card">
+        <h3 id="matchCardTitle">🤝 최근 2경기 평균 기반 1:1 핸디캡 관계</h3>
+        <div class="match-grid" id="matchGrid"></div>
+    </div>
+
+    <div class="history-btn-container">
+        <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal" onclick="if(event.target === this) closeHistoryModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📜 라운드별 계급 정산 이력</h3>
+            <button type="button" class="close-btn" onclick="closeHistoryModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="history-list" id="historyList"></div>
         </div>
     </div>
+</div>
 
-    <div id="imageViewModal" class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:10000; opacity:0; pointer-events:none; transition:opacity 0.3s; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <button onclick="closeImageViewModal()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.2); border:none; color:#fff; font-size:1.5rem; width:40px; height:40px; border-radius:20px; cursor:pointer; z-index:10001;">✕</button>
-        <img id="fullImageView" src="" style="max-width:100%; max-height:80vh; object-fit:contain;">
-        <button onclick="downloadCurrentPhoto()" style="margin-top:20px; background:#d4af37; color:#0f172a; border:none; padding:12px 24px; border-radius:8px; font-weight:800; font-size:1rem; cursor:pointer; z-index:10001;">💾 기기에 저장하기</button>
-    </div>
-
-    <div id="scheduleModal" class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9996; opacity:0; pointer-events:none; transition:opacity 0.3s; display:flex; justify-content:center; align-items:center;">
-        <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:25px; width:90%; max-width:350px;">
-            <h3 style="color:#f8fafc; margin-top:0; text-align:center;">📅 라운드 일정 등록</h3>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <select id="schMonth" style="flex:1; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff;"></select> <span style="color:#fff; line-height:38px;">월</span>
-                <select id="schDay" style="flex:1; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff;"></select> <span style="color:#fff; line-height:38px;">일</span>
-            </div>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <select id="schAmpm" style="padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff;"><option value="오전">오전</option><option value="오후">오후</option></select>
-                <select id="schHour" style="flex:1; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff;"></select> <span style="color:#fff; line-height:38px;">:</span>
-                <select id="schMinute" style="flex:1; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff;"></select>
-            </div>
-            <div style="margin-bottom:20px;">
-                <select id="schCourseSelect" onchange="handleCourseSelectChange(this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; margin-bottom:10px;">
-                    <option value="">골프장 선택</option>
-                </select>
-                <div id="courseLoadStatus" style="font-size:0.75rem; color:#94a3b8; text-align:right; margin-top:-5px; margin-bottom:10px;"></div>
-                <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; box-sizing:border-box;">
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button onclick="closeScheduleModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#475569; color:#fff; font-weight:700;">취소</button>
-                <button onclick="saveSchedule()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#d4af37; color:#0f172a; font-weight:800;">저장</button>
+<div class="modal-overlay" id="scheduleModal" onclick="if(event.target === this) closeScheduleModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📅 라운드 일정 설정</h3>
+            <button type="button" class="close-btn" onclick="closeScheduleModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="schedule-form-container">
+                <div class="sch-row">
+                    <label>날짜</label>
+                    <div class="sch-inputs">
+                        <select id="schMonth"></select><span>월</span>
+                        <select id="schDay"></select><span>일</span>
+                    </div>
+                </div>
+                <div class="sch-row">
+                    <label>티오프 시간</label>
+                    <div class="sch-inputs">
+                        <select id="schAmpm"><option value="오전">오전</option><option value="오후">오후</option></select>
+                        <select id="schHour"></select><span>시</span>
+                        <select id="schMinute"></select><span>분</span>
+                    </div>
+                </div>
+                <div class="sch-row" style="flex-direction: column; align-items: flex-start;">
+                    <label style="margin-bottom:6px;">⛳ 골프장 선택 <span id="courseLoadStatus" style="font-size:0.6rem; color:#10b981; font-weight:normal;"></span></label>
+                    <select id="schCourseSelect" style="width:100%; margin-bottom:6px;" onchange="handleCourseSelectChange(this.value)">
+                        <option value="">데이터 불러오는 중...</option>
+                    </select>
+                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%;" class="money-input" style="max-width:100% !important;">
+                </div>
+                <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
         </div>
     </div>
+</div>
+
+<div class="modal-overlay" id="personalReportModal" onclick="if(event.target === this) closePersonalReport()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="reportTitle">⛳ 개인별 통계 리포트</h3>
+            <button type="button" class="close-btn" onclick="closePersonalReport()">✕</button>
+        </div>
+        <div class="modal-body" id="reportContent"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="roundPhotoModal" onclick="if(event.target === this) closeRoundPhotoModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="roundPhotoTitle">📸 사진 갤러리</h3>
+            <button type="button" class="close-btn" onclick="closeRoundPhotoModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="file" accept="image/*" id="roundPhotoUpload" style="display:none;" onchange="handleRoundPhotoUpload(event)" multiple>
+            <button type="button" class="open-history-btn" onclick="document.getElementById('roundPhotoUpload').click()">+ 새로운 사진 업로드</button>
+            <div class="photo-grid" id="photoGrid"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="imageViewModal" onclick="if(event.target === this) closeImageViewModal()">
+    <div class="modal-content" style="background:transparent; border:none; box-shadow:none; max-width:95vw;">
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
+            <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center;" onclick="downloadCurrentPhoto()" title="다운로드">⬇️</button>
+            <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:bold;" onclick="closeImageViewModal()">✕</button>
+        </div>
+        <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
+    </div>
+</div>
+
+<div id="pushNotification" class="push-notification" onclick="shareSchedule()">
+    <div class="push-icon">⛳</div>
+    <div class="push-content">
+        <div class="push-title">JTFAG 리그 알림 <span style="font-size:0.6rem; color:#94a3b8; font-weight:normal;">방금</span></div>
+        <div class="push-body" id="pushBody"></div>
+    </div>
+</div>
+
+<div id="customToast"></div>
+
+<!-- 🔥 분리된 4개의 자바스크립트 파일을 순서대로 묶어서 실행합니다 🔥 -->
+<script>
+    const v = Math.random();
+    document.write('<script src="stats.js?ver=' + v + '"><\/script>');
+    document.write('<script src="api.js?ver=' + v + '"><\/script>');
+    document.write('<script src="calc.js?ver=' + v + '"><\/script>');
+    document.write('<script src="ui.js?ver=' + v + '"><\/script>');
+</script>
+
 </body>
 </html>
