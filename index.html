@@ -150,8 +150,7 @@
                     <select id="schCourseSelect" style="width:100%; margin-bottom:6px;" onchange="handleCourseSelectChange(this.value)">
                         <option value="">데이터 불러오는 중...</option>
                     </select>
-                    <!-- 🔥 골프장 직접 입력 칸 크기 확장 유지 🔥 -->
-                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%; padding:14px; font-size:1.05rem; box-sizing:border-box;" class="money-input">
+                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%;" class="money-input" style="max-width:100% !important;">
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
@@ -203,6 +202,7 @@
 
 <div id="customToast"></div>
 
+<!-- 🔥 분리된 4개의 자바스크립트 파일을 순서대로 묶어서 실행합니다 🔥 -->
 <script>
     const v = Math.random();
     document.write('<script src="stats.js?ver=' + v + '"><\/script>');
