@@ -9,12 +9,12 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 거대했던 버튼을 텍스트 크기에 딱 맞게 슬림하고 예쁘게 축소 🔥
+    // 🔥 버튼 여백 대폭 축소, 크기 최소화로 깔끔하게 수정 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        moneyBtn.style.cssText = "padding:6px 12px; background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.85rem; font-weight:700; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); outline:none; white-space:nowrap; margin-left:auto;";
+        moneyBtn.style.cssText = "padding:4px 10px; background:#1e293b; border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:6px; cursor:pointer; outline:none; white-space:nowrap; margin-left:auto;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
@@ -539,9 +539,9 @@ function renderMoneyTable() {
     
     if (!tbody) return;
 
+    // 🔥 '정산 기록'이라는 말도 빼고 "⛳ 5차전" 처럼 가장 심플하고 작게 텍스트 수정 🔥
     if (moneyBtn) {
-        // 버튼 글씨에 들어가는 패딩과 크기도 작고 슬림하게 수정
-        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록</span> <span style="color:#d4af37; font-size:0.75rem;">▼</span>`;
+        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.65rem;">▼</span>`;
     } else if (selectBox) {
         let selectHtml = "";
         for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
