@@ -16,7 +16,7 @@ window.addEventListener('DOMContentLoaded', () => {
             appData = payload.new.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
-            if (!appData.fundLogs) appData.fundLogs = []; // 로그 배열 초기화
+            if (!appData.fundLogs) appData.fundLogs = [];
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
@@ -29,7 +29,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const oldFund = appData.clubFund || 0;
             const newFund = parseNumber(this.value);
 
-            // 🔥 금액이 변경되었을 때만 로그를 기록 🔥
             if (oldFund !== newFund) {
                 if (!appData.fundLogs) appData.fundLogs = [];
                 const myName = localStorage.getItem('jtfag_my_name') || "알 수 없음";
@@ -37,7 +36,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                 
                 appData.fundLogs.push({ time: timeStr, name: myName, before: oldFund, after: newFund });
-                if (appData.fundLogs.length > 50) appData.fundLogs.shift(); // 최대 50개 유지
+                if (appData.fundLogs.length > 50) appData.fundLogs.shift(); 
             }
 
             appData.clubFund = newFund; 
@@ -47,7 +46,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
-    // 🔥 숨김 처리될 UI 요소들 동적 추가 🔥
     const storageInfo = document.createElement('div');
     storageInfo.id = 'storageInfoDisplay';
     storageInfo.style.cssText = "display:none; text-align:center; font-size:0.75rem; margin-top:20px; padding:15px 10px; background:rgba(0,0,0,0.15); border-radius:12px;";
@@ -60,7 +58,6 @@ window.addEventListener('DOMContentLoaded', () => {
     nameDeleteBtn.onclick = deleteMyName;
     document.body.appendChild(nameDeleteBtn);
 
-    // 🔥 공금 수정 로그 모달 UI 생성 🔥
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
@@ -100,9 +97,31 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function authenticateAdmin() {
     if (isFundUnlocked) return true;
-    const pwd = prompt("🔒 공금 수정 및 시스템 관리 비밀번호를 입력해주세요:");
-    if (pwd === ADMIN_PASSWORD) { isFundUnlocked = true; updateLockUI(); showToast("🔓 관리자 권한이 활성화되었습니다."); return true; } 
+    // DB에 저장된 비밀번호가 없으면 api.js의 기본 비밀번호(1234) 사용
+    const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
+    const pwd = prompt("🔒 시스템 관리 비밀번호를 입력해주세요:");
+    if (pwd === correctPwd) { isFundUnlocked = true; updateLockUI(); showToast("🔓 관리자 권한이 활성화되었습니다."); return true; } 
     else if (pwd !== null) { showToast("⚠️ 비밀번호가 일치하지 않습니다."); } return false;
+}
+
+// 🔥 비밀번호 변경 기능 추가 🔥
+function changeAdminPassword() {
+    const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
+    const oldPwd = prompt("현재 비밀번호를 입력해주세요:");
+    
+    if (oldPwd === correctPwd) {
+        const newPwd = prompt("새로운 비밀번호를 입력해주세요:\n(이 비밀번호로 모든 모임원이 공금을 수정하게 됩니다.)");
+        if (newPwd !== null && newPwd.trim() !== "") {
+            saveState();
+            appData.adminPassword = newPwd.trim();
+            syncToSupabase(appData);
+            showToast("🔑 비밀번호가 성공적으로 변경되었습니다.");
+        } else if (newPwd !== null) {
+            showToast("⚠️ 비밀번호는 공백일 수 없습니다.");
+        }
+    } else if (oldPwd !== null) {
+        showToast("⚠️ 현재 비밀번호가 일치하지 않습니다.");
+    }
 }
 
 function toggleFundLock() {
@@ -114,22 +133,32 @@ function handleFundClick(inputElem) {
     if (!isFundUnlocked) { if (authenticateAdmin()) { setTimeout(() => { inputElem.value = appData.clubFund || ""; inputElem.focus(); }, 50); } }
 }
 
-// 🔥 잠금 해제 시에만 로그 버튼, 용량 게이지, 이름 삭제 버튼 표시 🔥
 function updateLockUI() {
     const btn = document.getElementById('lockToggleBtn'); 
     const fundInput = document.getElementById('clubFundInput');
     const storageInfo = document.getElementById('storageInfoDisplay');
     const deleteBtn = document.getElementById('nameDeleteBtn');
-    let logBtn = document.getElementById('fundLogBtn');
+    let adminTools = document.getElementById('adminToolsWrap');
 
-    // 공금 로그 버튼 동적 생성
-    if (!logBtn && fundInput) {
-        logBtn = document.createElement('div');
-        logBtn.id = 'fundLogBtn';
-        logBtn.innerHTML = '📋 공금 수정 로그보기';
-        logBtn.style.cssText = "text-align:right; font-size:0.75rem; color:#94a3b8; text-decoration:underline; cursor:pointer; margin-top:6px;";
+    // 🔥 비번변경 및 로그보기 묶음 버튼 생성 🔥
+    if (!adminTools && fundInput) {
+        adminTools = document.createElement('div');
+        adminTools.id = 'adminToolsWrap';
+        adminTools.style.cssText = "display:flex; justify-content:flex-end; gap:15px; margin-top:8px;";
+
+        const pwdBtn = document.createElement('div');
+        pwdBtn.innerHTML = '🔑 비번변경';
+        pwdBtn.style.cssText = "font-size:0.75rem; color:#94a3b8; text-decoration:underline; cursor:pointer;";
+        pwdBtn.onclick = changeAdminPassword;
+
+        const logBtn = document.createElement('div');
+        logBtn.innerHTML = '📋 로그보기';
+        logBtn.style.cssText = "font-size:0.75rem; color:#94a3b8; text-decoration:underline; cursor:pointer;";
         logBtn.onclick = window.openFundLogModal;
-        fundInput.parentNode.appendChild(logBtn);
+
+        adminTools.appendChild(pwdBtn);
+        adminTools.appendChild(logBtn);
+        fundInput.parentNode.appendChild(adminTools);
     }
 
     if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
@@ -144,15 +173,14 @@ function updateLockUI() {
         }
     }
 
-    // 관리자(잠금 해제) 상태일 때만 관련 기능 노출
     if (isFundUnlocked) {
         if (storageInfo) storageInfo.style.display = "block";
         if (deleteBtn) deleteBtn.style.display = "block";
-        if (logBtn) logBtn.style.display = "block";
+        if (adminTools) adminTools.style.display = "flex";
     } else {
         if (storageInfo) storageInfo.style.display = "none";
         if (deleteBtn) deleteBtn.style.display = "none";
-        if (logBtn) logBtn.style.display = "none";
+        if (adminTools) adminTools.style.display = "none";
     }
 }
 
@@ -262,7 +290,6 @@ function renderStorageUsage() {
         statusText = "주의 (사진 누적됨)";
     }
 
-    // innerHTML만 변경하여 display 속성을 건드리지 않음
     storageInfo.innerHTML = `
         <div style="color:var(--text-sub); margin-bottom:8px; font-weight:700;">💾 실시간 데이터 용량 (권장 한도 5MB)</div>
         <div style="width:100%; max-width:280px; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; margin:0 auto; overflow:hidden;">
