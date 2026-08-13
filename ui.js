@@ -9,12 +9,12 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 거대했던 버튼을 텍스트 크기에 딱 맞게 슬림하고 예쁘게 축소 🔥
+    // 🔥 버튼 크기를 콤팩트하게(height: 26px) 줄이고 패딩 최적화 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        moneyBtn.style.cssText = "padding:6px 12px; background:linear-gradient(135deg, #1e293b, #0f172a); border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.85rem; font-weight:700; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); outline:none; white-space:nowrap; margin-left:auto;";
+        moneyBtn.style.cssText = "padding: 4px 10px; height: 26px; background: #1e293b; border: 1px solid #d4af37; border-radius: 6px; color: #fef08a; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); outline: none; white-space: nowrap; margin-left: auto;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
@@ -132,6 +132,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
+// 🔥 "O차전 정산 기록" -> "O차전" 으로 텍스트 심플하게 변경 🔥
 function showRoundSelectionPrompt(totalRounds, currentIndex) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -159,7 +160,7 @@ function showRoundSelectionPrompt(totalRounds, currentIndex) {
         for (let r = 0; r < totalRounds; r++) {
             const btn = document.createElement('button');
             const isCurrent = r === currentIndex;
-            btn.innerHTML = `${r + 1}차전 정산 기록 ${isCurrent ? '<span style="color:#d4af37; font-size:0.75rem; margin-left:4px;">(현재)</span>' : ''}`;
+            btn.innerHTML = `⛳ ${r + 1}차전 ${isCurrent ? '<span style="color:#d4af37; font-size:0.75rem; margin-left:4px;">(현재)</span>' : ''}`;
             btn.style.cssText = `width:100%; padding:10px; border-radius:6px; border:1px solid ${isCurrent ? '#d4af37' : '#475569'}; background:${isCurrent ? 'rgba(212,175,55,0.1)' : '#0f172a'}; color:${isCurrent ? '#fef08a' : '#e2e8f0'}; font-size:0.9rem; font-weight:700; cursor:pointer; transition:all 0.2s;`;
             btn.onclick = () => cleanup(r);
             btnContainer.appendChild(btn);
@@ -532,19 +533,18 @@ function renderStorageUsage() {
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
 
+// 🔥 이 부분에서 버튼 명칭을 "O차전"으로 깔끔하게 처리했습니다 🔥[span_1](start_span)[span_1](end_span)
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody'); 
     const moneyBtn = document.getElementById('moneyRoundBtn');
     const selectBox = document.getElementById('moneyRoundSelect'); 
-    
     if (!tbody) return;
 
     if (moneyBtn) {
-        // 버튼 글씨에 들어가는 패딩과 크기도 작고 슬림하게 수정
-        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록</span> <span style="color:#d4af37; font-size:0.75rem;">▼</span>`;
+        moneyBtn.innerHTML = `⛳ ${selectedMoneyRoundIdx + 1}차전 <span style="color:#d4af37; font-size:0.7rem; margin-left:4px;">▼</span>`;
     } else if (selectBox) {
         let selectHtml = "";
-        for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
+        for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>⛳ ${r + 1}차전 ▾</option>`; }
         if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
     }
 
