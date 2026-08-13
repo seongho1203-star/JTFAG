@@ -15,6 +15,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // 항상 최신 CSS 파일을 불러옵니다
         document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
     </script>
 </head>
@@ -56,10 +57,9 @@
     </div>
 
     <div class="money-card">
-        <!-- 🔥 '차수별 정산' 제목과 버튼을 좌측에 나란히 배치하고 크기를 컴팩트하게 맞춤 🔥 -->
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-            <h3 style="margin: 0; font-size: 1.1rem;">💵 차수별 정산</h3>
-            <select id="moneyRoundSelect" style="display:none;"></select>
+        <div class="money-header-flex">
+            <h3>💵 차수별 정산</h3>
+            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
         </div>
         <table class="money-table">
             <thead>
@@ -150,8 +150,8 @@
                     <select id="schCourseSelect" style="width:100%; margin-bottom:6px;" onchange="handleCourseSelectChange(this.value)">
                         <option value="">데이터 불러오는 중...</option>
                     </select>
-                    <!-- 🔥 골프장 직접 입력 칸 높이와 폰트 크기를 시원하게 확장 🔥 -->
-                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%; padding:14px; font-size:1.05rem; box-sizing:border-box; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a;" autocomplete="off">
+                    <!-- 🔥 골프장 직접 입력 칸 크기 확장 유지 🔥 -->
+                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%; padding:14px; font-size:1.05rem; box-sizing:border-box;" class="money-input">
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
