@@ -46,7 +46,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
-    // 🔥 1. 공금 수정 로그 모달 UI 및 기능 먼저 생성 (버그 수정됨) 🔥
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
@@ -83,25 +82,22 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
 
-    // 🔥 2. 관리자 모드 전용 하단 패널 생성 🔥
     const adminPanel = document.createElement('div');
     adminPanel.id = 'adminBottomPanel';
     adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
     
-    // 용량 정보 영역
     const storageInfo = document.createElement('div');
     storageInfo.id = 'storageInfoDisplay';
     storageInfo.style.cssText = "text-align:center; font-size:0.75rem; width:100%;";
     adminPanel.appendChild(storageInfo);
 
-    // 하단 버튼 영역
     const btnRow = document.createElement('div');
     btnRow.style.cssText = "display:flex; justify-content:center; align-items:center; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05); gap:20px; width:100%; flex-wrap:nowrap;";
     
     const logBtn = document.createElement('div');
     logBtn.innerHTML = "📋 공금로그";
     logBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    logBtn.onclick = window.openFundLogModal; // 이제 정상 작동합니다!
+    logBtn.onclick = window.openFundLogModal;
 
     const pwdBtn = document.createElement('div');
     pwdBtn.innerHTML = "🔑 비번변경";
@@ -121,20 +117,188 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
-function authenticateAdmin() {
-    if (isFundUnlocked) return true;
-    const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
-    const pwd = prompt("🔒 시스템 관리 비밀번호를 입력해주세요:");
-    if (pwd === correctPwd) { isFundUnlocked = true; updateLockUI(); showToast("🔓 관리자 권한이 활성화되었습니다."); return true; } 
-    else if (pwd !== null) { showToast("⚠️ 비밀번호가 일치하지 않습니다."); } return false;
+// 🔥 커스텀 비밀번호 입력 모달창 🔥
+function showPasswordPrompt(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        
+        const box = document.createElement('div');
+        box.style.cssText = "background:#1e293b; border:2px solid #d4af37; border-radius:16px; padding:25px; width:100%; max-width:320px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = message;
+        msgEl.style.cssText = "color:#f8fafc; font-size:1rem; margin-bottom:20px; font-weight:700; word-break:keep-all; line-height:1.4;";
+        
+        const inputEl = document.createElement('input');
+        inputEl.type = "password";      
+        inputEl.inputMode = "numeric";  
+        inputEl.pattern = "[0-9]*";
+        inputEl.style.cssText = "width:100%; padding:15px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:1.5rem; text-align:center; margin-bottom:20px; letter-spacing:8px; box-sizing:border-box; outline:none;";
+        
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = "display:flex; gap:10px;";
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "취소";
+        cancelBtn.style.cssText = "flex:1; padding:12px; border-radius:8px; border:none; background:#475569; color:#fff; font-weight:700; cursor:pointer;";
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = "확인";
+        confirmBtn.style.cssText = "flex:1; padding:12px; border-radius:8px; border:none; background:#d4af37; color:#0f172a; font-weight:800; cursor:pointer;";
+        
+        btnRow.appendChild(cancelBtn);
+        btnRow.appendChild(confirmBtn);
+        
+        box.appendChild(msgEl);
+        box.appendChild(inputEl);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            box.style.transform = "scale(1)";
+            inputEl.focus();
+        }, 10);
+        
+        function cleanup(value) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+        
+        cancelBtn.onclick = () => cleanup(null);
+        confirmBtn.onclick = () => cleanup(inputEl.value);
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') cleanup(inputEl.value);
+        });
+    });
 }
 
-function changeAdminPassword() {
+// 🔥 커스텀 이름 선택(버튼) 모달창 🔥
+function showNameSelectionPrompt(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        
+        const box = document.createElement('div');
+        box.style.cssText = "background:#1e293b; border:2px solid #d4af37; border-radius:16px; padding:25px; width:100%; max-width:320px; box-shadow:0 15px 40px rgba(0,0,0,0.8); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = message;
+        msgEl.style.cssText = "color:#f8fafc; font-size:1.1rem; margin-bottom:20px; font-weight:800; word-break:keep-all; line-height:1.4;";
+        
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = "display:flex; flex-direction:column; gap:10px; margin-bottom:20px;";
+        
+        box.appendChild(msgEl);
+        box.appendChild(btnContainer);
+
+        function cleanup(value) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+
+        // api.js의 golfers 배열을 기반으로 예쁜 선택 버튼 생성
+        golfers.forEach(name => {
+            const btn = document.createElement('button');
+            btn.textContent = name;
+            btn.style.cssText = "width:100%; padding:14px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:1.1rem; font-weight:800; cursor:pointer; transition:background 0.2s;";
+            btn.onclick = () => cleanup(name);
+            btnContainer.appendChild(btn);
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "다음에 하기";
+        cancelBtn.style.cssText = "width:100%; padding:12px; border-radius:8px; border:none; background:#475569; color:#fff; font-weight:700; cursor:pointer;";
+        cancelBtn.onclick = () => cleanup(null);
+        
+        box.appendChild(cancelBtn);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            box.style.transform = "scale(1)";
+        }, 10);
+    });
+}
+
+// 🔥 커스텀 이름 삭제 경고 모달창 🔥
+function showConfirmPrompt(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        
+        const box = document.createElement('div');
+        // 삭제 경고창이므로 빨간색 테두리 적용
+        box.style.cssText = "background:#1e293b; border:2px solid #ef4444; border-radius:16px; padding:25px; width:100%; max-width:320px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = message;
+        msgEl.style.cssText = "color:#f8fafc; font-size:1.05rem; margin-bottom:20px; font-weight:700; word-break:keep-all; line-height:1.5;";
+        
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = "display:flex; gap:10px;";
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "취소";
+        cancelBtn.style.cssText = "flex:1; padding:12px; border-radius:8px; border:none; background:#475569; color:#fff; font-weight:700; cursor:pointer;";
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = "삭제";
+        confirmBtn.style.cssText = "flex:1; padding:12px; border-radius:8px; border:none; background:#ef4444; color:#fff; font-weight:800; cursor:pointer;";
+        
+        btnRow.appendChild(cancelBtn);
+        btnRow.appendChild(confirmBtn);
+        
+        box.appendChild(msgEl);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            box.style.transform = "scale(1)";
+        }, 10);
+        
+        function cleanup(value) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+        
+        cancelBtn.onclick = () => cleanup(false);
+        confirmBtn.onclick = () => cleanup(true);
+    });
+}
+
+async function authenticateAdmin() {
+    if (isFundUnlocked) return true;
     const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
-    const oldPwd = prompt("현재 비밀번호를 입력해주세요:");
+    const pwd = await showPasswordPrompt("🔒 시스템 관리 비밀번호를<br>입력해주세요");
     
+    if (pwd === null) return false; 
+    if (pwd === correctPwd) { 
+        isFundUnlocked = true; 
+        updateLockUI(); 
+        showToast("🔓 관리자 권한이 활성화되었습니다."); 
+        return true; 
+    } else { 
+        showToast("⚠️ 비밀번호가 일치하지 않습니다."); 
+        return false; 
+    }
+}
+
+async function changeAdminPassword() {
+    const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
+    const oldPwd = await showPasswordPrompt("현재 사용 중인<br>비밀번호를 입력해주세요");
+    
+    if (oldPwd === null) return;
     if (oldPwd === correctPwd) {
-        const newPwd = prompt("새로운 비밀번호를 입력해주세요:\n(이 비밀번호로 모든 모임원이 시스템을 관리하게 됩니다.)");
+        const newPwd = await showPasswordPrompt("새로운 비밀번호를 입력해주세요<br><span style='font-size:0.75rem; font-weight:400; color:#94a3b8;'>(이 비번으로 모두가 시스템을 관리합니다)</span>");
         if (newPwd !== null && newPwd.trim() !== "") {
             saveState();
             appData.adminPassword = newPwd.trim();
@@ -143,18 +307,27 @@ function changeAdminPassword() {
         } else if (newPwd !== null) {
             showToast("⚠️ 비밀번호는 공백일 수 없습니다.");
         }
-    } else if (oldPwd !== null) {
+    } else {
         showToast("⚠️ 현재 비밀번호가 일치하지 않습니다.");
     }
 }
 
-function toggleFundLock() {
-    if (isFundUnlocked) { isFundUnlocked = false; updateLockUI(); document.getElementById('clubFundInput').value = formatFundString(appData.clubFund); showToast("🔒 관리자 권한이 잠겼습니다."); } 
-    else { authenticateAdmin(); }
+async function toggleFundLock() {
+    if (isFundUnlocked) { 
+        isFundUnlocked = false; 
+        updateLockUI(); 
+        document.getElementById('clubFundInput').value = formatFundString(appData.clubFund); 
+        showToast("🔒 관리자 권한이 잠겼습니다."); 
+    } else { 
+        await authenticateAdmin(); 
+    }
 }
 
-function handleFundClick(inputElem) {
-    if (!isFundUnlocked) { if (authenticateAdmin()) { setTimeout(() => { inputElem.value = appData.clubFund || ""; inputElem.focus(); }, 50); } }
+async function handleFundClick(inputElem) {
+    if (!isFundUnlocked) { 
+        const success = await authenticateAdmin();
+        if (success) { setTimeout(() => { inputElem.value = appData.clubFund || ""; inputElem.focus(); }, 50); } 
+    }
 }
 
 function updateLockUI() {
@@ -677,19 +850,22 @@ function shareSchedule() {
 
 let hasGreeted = false;
 
-function checkAndGreetUser() {
+async function checkAndGreetUser() {
     if (hasGreeted || !isLoaded || Object.keys(golferRankHistory).length === 0) return;
 
     let myName = localStorage.getItem('jtfag_my_name');
     if (!myName || !golfers.includes(myName)) {
-        setTimeout(() => {
-            myName = prompt("👋 환영합니다!\n개인 맞춤형 알림을 위해 본인의 이름을 등록해주세요.");
-            if (golfers.includes(myName)) {
+        hasGreeted = true; 
+        setTimeout(async () => {
+            // 🔥 타이핑 없이 예쁜 버튼들 중에서 터치로 선택하는 모달창 호출 🔥
+            myName = await showNameSelectionPrompt("👋 환영합니다!<br>본인의 이름을 선택해주세요.");
+            if (myName && golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
                 showGreeting(myName);
+            } else {
+                hasGreeted = false; 
             }
         }, 500);
-        hasGreeted = true;
         return;
     }
 
@@ -697,7 +873,8 @@ function checkAndGreetUser() {
     hasGreeted = true;
 }
 
-function deleteMyName() {
+// 🔥 이름 삭제 시 나타나는 빨간 테두리 커스텀 경고창 호출 🔥
+async function deleteMyName() {
     const currentName = localStorage.getItem('jtfag_my_name');
     if (!currentName) {
         showToast("⚠️ 현재 기기에 등록된 이름이 없습니다.");
@@ -705,7 +882,9 @@ function deleteMyName() {
         return;
     }
     
-    if (confirm("기기에 저장된 이름을 삭제하시겠습니까?\n(삭제 후 다음 접속 시 본인 이름을 다시 등록할 수 있습니다.)")) {
+    const isConfirmed = await showConfirmPrompt("기기에 저장된 이름을 삭제하시겠습니까?<br><span style='font-size:0.8rem; font-weight:400; color:#94a3b8;'>삭제 후 다음 접속 시 다시 등록할 수 있습니다.</span>");
+    
+    if (isConfirmed) {
         localStorage.removeItem('jtfag_my_name');
         showToast("🗑️ 이름이 삭제되었습니다.");
         hasGreeted = false; 
