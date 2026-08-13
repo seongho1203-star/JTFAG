@@ -9,6 +9,21 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
+    // 🔥 기본 셀렉트 박스를 기존 버튼 사이즈와 완벽히 동일한 커스텀 모달 버튼으로 교체 🔥
+    const oldSelect = document.getElementById('moneyRoundSelect');
+    if (oldSelect && oldSelect.tagName === 'SELECT') {
+        const moneyBtn = document.createElement('button');
+        moneyBtn.id = 'moneyRoundBtn';
+        moneyBtn.style.cssText = "padding: 6px 12px; height: 32px; background: #1e293b; border: 1px solid #d4af37; border-radius: 6px; color: #fef08a; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; outline: none; white-space: nowrap; margin-left: auto;";
+        moneyBtn.onclick = async () => {
+            const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
+            if (selectedIdx !== null) {
+                changeMoneyRound(selectedIdx);
+            }
+        };
+        oldSelect.parentNode.replaceChild(moneyBtn, oldSelect);
+    }
+
     renderSkeleton();
     fetchFromSupabase();
     window._supabase.channel('public:jtfag_league').on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
@@ -46,7 +61,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
-    // 공금 로그 모달 생성
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
@@ -83,7 +97,6 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
 
-    // 관리자 전용 하단 패널 생성
     const adminPanel = document.createElement('div');
     adminPanel.id = 'adminBottomPanel';
     adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
@@ -119,7 +132,56 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
-// 커스텀 비밀번호 입력 모달창
+// 🔥 5차전 정산 기록 버튼을 누를 때 뜨는 커스텀 모달 창 (기존 모달들과 동일한 사이즈 및 비율 적용) 🔥
+function showRoundSelectionPrompt(totalRounds, currentIndex) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        
+        const box = document.createElement('div');
+        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.8); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = "⛳ 정산 차수 선택";
+        msgEl.style.cssText = "color:#f8fafc; font-size:1rem; margin-bottom:15px; font-weight:800; word-break:keep-all;";
+        
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = "display:flex; flex-direction:column; gap:8px; margin-bottom:15px; max-height:45vh; overflow-y:auto; padding-right:5px;";
+        
+        box.appendChild(msgEl);
+        box.appendChild(btnContainer);
+
+        function cleanup(value) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+
+        for (let r = 0; r < totalRounds; r++) {
+            const btn = document.createElement('button');
+            const isCurrent = r === currentIndex;
+            btn.innerHTML = `⛳ ${r + 1}차전 정산 기록 ${isCurrent ? '<span style="color:#d4af37; font-size:0.75rem; margin-left:4px;">(현재)</span>' : ''}`;
+            btn.style.cssText = `width:100%; padding:10px; border-radius:6px; border:1px solid ${isCurrent ? '#d4af37' : '#475569'}; background:${isCurrent ? 'rgba(212,175,55,0.1)' : '#0f172a'}; color:${isCurrent ? '#fef08a' : '#e2e8f0'}; font-size:0.95rem; font-weight:700; cursor:pointer; transition:all 0.2s;`;
+            btn.onclick = () => cleanup(r);
+            btnContainer.appendChild(btn);
+        }
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "취소";
+        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
+        cancelBtn.onclick = () => cleanup(null);
+        
+        box.appendChild(cancelBtn);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            box.style.transform = "scale(1)";
+        }, 10);
+    });
+}
+
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -178,7 +240,6 @@ function showPasswordPrompt(message) {
     });
 }
 
-// 커스텀 이름 선택 모달창
 function showNameSelectionPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -206,14 +267,14 @@ function showNameSelectionPrompt(message) {
         golfers.forEach(name => {
             const btn = document.createElement('button');
             btn.textContent = name;
-            btn.style.cssText = "width:100%; padding:12px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:1rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
+            btn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.95rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
             btn.onclick = () => cleanup(name);
             btnContainer.appendChild(btn);
         });
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "다음에 하기";
-        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
         cancelBtn.onclick = () => cleanup(null);
         
         box.appendChild(cancelBtn);
@@ -227,7 +288,6 @@ function showNameSelectionPrompt(message) {
     });
 }
 
-// 🔥 초기화/삭제 등을 위한 다목적 커스텀 경고 모달창 (버튼 텍스트 동적 변경 기능 추가) 🔥
 function showConfirmPrompt(message, confirmText = "삭제") {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -416,14 +476,24 @@ function closeScheduleModal() { document.getElementById('scheduleModal').classLi
 function saveSchedule() {
     const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
     
-    // 🔥 기본 alert 창을 예쁜 커스텀 토스트 알림으로 교체 🔥
     if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { 
         showToast("⚠️ 골프장 이름을 입력해주세요!"); 
         return; 
     }
+    
     saveState();
-    appData.nextRoundDate = `${document.getElementById('schMonth').value}월 ${document.getElementById('schDay').value}일 ${document.getElementById('schAmpm').value} ${document.getElementById('schHour').value}:${document.getElementById('schMinute').value} ${course}`;
-    syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
+    const dateStr = `${document.getElementById('schMonth').value}월 ${document.getElementById('schDay').value}일 ${document.getElementById('schAmpm').value} ${document.getElementById('schHour').value}:${document.getElementById('schMinute').value} ${course}`;
+    appData.nextRoundDate = dateStr;
+
+    if (!appData.courses) appData.courses = [];
+    const lastRoundIdx = appData.totalRounds - 1;
+    appData.courses[lastRoundIdx] = course;
+
+    syncToSupabase(appData); 
+    renderNoticeArea(); 
+    renderAll(); 
+    closeScheduleModal(); 
+    showToast("✅ 일정 저장 및 골프장 자동 연동 완료!");
 }
 
 function renderAll() { 
@@ -478,17 +548,16 @@ function renderStorageUsage() {
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
 
+// 🔥 5차전 정산 기록 버튼 텍스트 업데이트 렌더링 🔥
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody'); 
-    const selectBox = document.getElementById('moneyRoundSelect'); 
+    const moneyBtn = document.getElementById('moneyRoundBtn');
     
-    if (!tbody || !selectBox) return;
+    if (!tbody) return;
 
-    let selectHtml = "";
-    for (let r = 0; r < appData.totalRounds; r++) { 
-        selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>⛳ ${r + 1}차전 정산 기록 ▾</option>`; 
+    if (moneyBtn) {
+        moneyBtn.innerHTML = `⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록 <span style="color:#d4af37; font-size:0.75rem; margin-left:4px;">▼</span>`;
     }
-    if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
 
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[selectedMoneyRoundIdx]) {
@@ -673,7 +742,6 @@ function handleRoundPhotoUpload(event) {
     });
 }
 
-// 🔥 기본 confirm 창을 예쁜 커스텀 디자인으로 교체 🔥
 async function deleteRoundPhoto(photoIdx) {
     const isConfirmed = await showConfirmPrompt("이 사진을 삭제하시겠습니까?");
     if (isConfirmed) {
@@ -821,7 +889,6 @@ function openPersonalReport(name) {
 
 function closePersonalReport() { document.getElementById('personalReportModal').classList.remove('active'); }
 
-// 🔥 초기화 버튼 클릭 시 뜨는 기본 알림창을 예쁜 커스텀 디자인으로 교체 🔥
 async function resetAllData() {
     const isConfirmed = await showConfirmPrompt("정말로 모든 실시간 데이터를<br>초기화하시겠습니까?<br><span style='font-size:0.8rem; font-weight:400; color:#94a3b8;'>초기화 후에는 복구할 수 없습니다.</span>", "초기화");
     
