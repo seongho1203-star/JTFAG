@@ -466,17 +466,34 @@ function renderStorageUsage() {
     `;
 }
 
-function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
+function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); closeRoundPickerModal(); renderMoneyTable(); }
+
+function openRoundPickerModal() { renderRoundPicker(); document.getElementById('roundPickerModal').classList.add('active'); }
+function closeRoundPickerModal() { const m = document.getElementById('roundPickerModal'); if (m) m.classList.remove('active'); }
+
+function renderRoundPicker() {
+    const grid = document.getElementById('roundPickerGrid');
+    if (!grid) return;
+    let html = "";
+    for (let r = 0; r < appData.totalRounds; r++) {
+        const course = (appData.courses && appData.courses[r]) ? appData.courses[r] : "미정";
+        const isSel = (r === selectedMoneyRoundIdx);
+        html += `<button type="button" class="round-picker-item${isSel ? ' selected' : ''}" onclick="changeMoneyRound(${r})">
+            <span class="rp-title">${isSel ? '✓ ' : ''}${r + 1}차전</span>
+            <span class="rp-course">${course}</span>
+        </button>`;
+    }
+    grid.innerHTML = html;
+}
 
 function renderMoneyTable() {
-    const tbody = document.getElementById('moneyTbody'); 
-    const selectBox = document.getElementById('moneyRoundSelect'); 
-    
-    if (!tbody || !selectBox) return;
+    const tbody = document.getElementById('moneyTbody');
+    const roundBtn = document.getElementById('moneyRoundBtn');
 
-    let selectHtml = "";
-    for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>⛳ ${r + 1}차전 정산 기록 ▾</option>`; }
-    if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
+    if (!tbody || !roundBtn) return;
+
+    const btnLabel = `⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록 ▾`;
+    if (roundBtn.textContent !== btnLabel) roundBtn.textContent = btnLabel;
 
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[selectedMoneyRoundIdx]) {

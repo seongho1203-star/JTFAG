@@ -59,7 +59,7 @@
     <div class="money-card">
         <div class="money-header-flex">
             <h3>💵 차수별 정산</h3>
-            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
+            <button type="button" id="moneyRoundBtn" class="round-select-badge" onclick="openRoundPickerModal()"></button>
         </div>
         <table class="money-table">
             <thead>
@@ -154,6 +154,18 @@
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="roundPickerModal" onclick="if(event.target === this) closeRoundPickerModal()">
+    <div class="modal-content" style="max-width: 340px;">
+        <div class="modal-header">
+            <h3>⛳ 차수 선택</h3>
+            <button type="button" class="close-btn" onclick="closeRoundPickerModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="round-picker-grid" id="roundPickerGrid"></div>
         </div>
     </div>
 </div>
