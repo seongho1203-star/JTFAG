@@ -9,89 +9,6 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 CSS 강제 주입: 타이틀 크기와 버튼 글씨 크기를 1.05rem으로 완벽 통일 🔥
-    const tightenSpaceStyle = document.createElement('style');
-    tightenSpaceStyle.innerHTML = `
-        /* JTFAG 통합 정산 요약 & 차수별 정산 글씨 크기 무조건 똑같이 강제 고정 */
-        h1, h2, h3, h4, h5, h6, .section-title { 
-            font-size: 1.05rem !important; 
-            font-weight: 800 !important; 
-            margin-top: 0 !important;
-            line-height: 1.2 !important;
-        }
-        
-        /* 버튼 컨테이너 여백 강제 압축 */
-        .money-header-container {
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            margin-top: 0px !important;
-            margin-bottom: 4px !important;
-            padding-bottom: 0px !important;
-            min-height: 0px !important;
-        }
-
-        .money-header-container > * {
-            margin: 0 !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-        }
-
-        /* 🔥 버튼 디자인 수정: 폰트 크기 1.05rem 고정, 이모티콘 제거, 높이 최적화 🔥 */
-        #moneyRoundBtn { 
-            margin: 0 0 0 auto !important; 
-            padding: 0 10px !important; 
-            height: 30px !important; 
-            min-height: 30px !important;
-            box-sizing: border-box !important;
-            background: #1e293b !important;
-            border: 1px solid #d4af37 !important;
-            border-radius: 6px !important;
-            color: #fef08a !important;
-            font-size: 1.05rem !important;  /* 글씨 크기 통일 */
-            font-weight: 800 !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: pointer !important;
-            outline: none !important;
-            white-space: nowrap !important;
-        }
-        
-        /* 테이블 헤더 셀 여백 최적화 */
-        th { padding-top: 4px !important; padding-bottom: 4px !important; }
-        .table-responsive { margin-top: 0 !important; padding-top: 0 !important; } 
-    `;
-    document.head.appendChild(tightenSpaceStyle);
-
-    const oldSelect = document.getElementById('moneyRoundSelect');
-    if (oldSelect && oldSelect.tagName === 'SELECT') {
-        const parentDiv = oldSelect.parentNode;
-        
-        if (parentDiv) {
-            parentDiv.classList.add('money-header-container');
-            const titleEl = parentDiv.querySelector('h1, h2, h3, h4, h5, h6, p, span') || parentDiv.firstElementChild;
-            if (titleEl && titleEl.tagName !== 'SELECT') {
-                titleEl.setAttribute('style', 'font-size:1.05rem !important; font-weight:800 !important; margin:0 !important; padding:0 !important; line-height:1 !important; display:flex !important; align-items:center !important;');
-            }
-            if (parentDiv.nextElementSibling) {
-                parentDiv.nextElementSibling.style.setProperty('margin-top', '0px', 'important');
-                parentDiv.nextElementSibling.style.setProperty('padding-top', '0px', 'important');
-            }
-        }
-
-        const moneyBtn = document.createElement('button');
-        moneyBtn.id = 'moneyRoundBtn';
-        
-        moneyBtn.onclick = async () => {
-            const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
-            if (selectedIdx !== null) {
-                changeMoneyRound(selectedIdx);
-            }
-        };
-        oldSelect.parentNode.replaceChild(moneyBtn, oldSelect);
-    }
-
     renderSkeleton();
     fetchFromSupabase();
     window._supabase.channel('public:jtfag_league').on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
@@ -199,56 +116,6 @@ window.addEventListener('DOMContentLoaded', () => {
     
     document.body.appendChild(adminPanel);
 });
-
-// 🔥 선택 모달창에서도 이모티콘 제거 🔥
-function showRoundSelectionPrompt(totalRounds, currentIndex) {
-    return new Promise((resolve) => {
-        const overlay = document.createElement('div');
-        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
-        
-        const box = document.createElement('div');
-        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.8); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
-        
-        const msgEl = document.createElement('div');
-        msgEl.innerHTML = "정산 차수 선택";
-        msgEl.style.cssText = "color:#f8fafc; font-size:1.05rem; margin-bottom:15px; font-weight:800; word-break:keep-all;";
-        
-        const btnContainer = document.createElement('div');
-        btnContainer.style.cssText = "display:flex; flex-direction:column; gap:8px; margin-bottom:15px; max-height:45vh; overflow-y:auto; padding-right:5px;";
-        
-        box.appendChild(msgEl);
-        box.appendChild(btnContainer);
-
-        function cleanup(value) {
-            overlay.style.opacity = "0";
-            box.style.transform = "scale(0.9)";
-            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
-        }
-
-        for (let r = 0; r < totalRounds; r++) {
-            const btn = document.createElement('button');
-            const isCurrent = r === currentIndex;
-            btn.innerHTML = `${r + 1}차전 ${isCurrent ? '<span style="color:#d4af37; font-size:0.75rem; margin-left:4px;">(현재)</span>' : ''}`;
-            btn.style.cssText = `width:100%; padding:10px; border-radius:6px; border:1px solid ${isCurrent ? '#d4af37' : '#475569'}; background:${isCurrent ? 'rgba(212,175,55,0.1)' : '#0f172a'}; color:${isCurrent ? '#fef08a' : '#e2e8f0'}; font-size:1rem; font-weight:700; cursor:pointer; transition:all 0.2s;`;
-            btn.onclick = () => cleanup(r);
-            btnContainer.appendChild(btn);
-        }
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;";
-        cancelBtn.onclick = () => cleanup(null);
-        
-        box.appendChild(cancelBtn);
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-        
-        setTimeout(() => {
-            overlay.style.opacity = "1";
-            box.style.transform = "scale(1)";
-        }, 10);
-    });
-}
 
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
@@ -603,19 +470,13 @@ function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10)
 
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody'); 
-    const moneyBtn = document.getElementById('moneyRoundBtn');
     const selectBox = document.getElementById('moneyRoundSelect'); 
     
-    if (!tbody) return;
+    if (!tbody || !selectBox) return;
 
-    // 🔥 이모티콘 제거 및 텍스트만 표시되도록 수정 🔥
-    if (moneyBtn) {
-        moneyBtn.innerHTML = `<span>${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.7rem; margin-left:4px;">▼</span>`;
-    } else if (selectBox) {
-        let selectHtml = "";
-        for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 ▾</option>`; }
-        if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
-    }
+    let selectHtml = "";
+    for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>⛳ ${r + 1}차전 정산 기록 ▾</option>`; }
+    if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
 
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[selectedMoneyRoundIdx]) {
