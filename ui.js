@@ -9,12 +9,44 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 버튼 여백 대폭 축소, 크기 최소화로 깔끔하게 수정 🔥
+    // 🔥 1. CSS 강제 주입: 상하 여백을 완벽하게 진공 압축 🔥
+    const tightenSpaceStyle = document.createElement('style');
+    tightenSpaceStyle.innerHTML = `
+        /* 버튼 자체의 높이를 강제로 줄이고 여백 없앰 */
+        #moneyRoundBtn { 
+            margin: 0 0 0 auto !important; 
+            padding: 0 8px !important; 
+            height: 28px !important; 
+            line-height: 28px !important; 
+            min-height: 0 !important;
+            box-sizing: border-box !important;
+        }
+        /* 테이블 헤더 셀 여백 최적화 */
+        th { padding-top: 6px !important; padding-bottom: 6px !important; }
+    `;
+    document.head.appendChild(tightenSpaceStyle);
+
+    // 🔥 2. 버튼 교체 및 부모/형제 컨테이너 뚱뚱한 여백 강제 깎아내기 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
+        const parentDiv = oldSelect.parentNode;
+        
+        if (parentDiv) {
+            // 버튼을 감싸는 박스의 하단 여백 완전 제거
+            parentDiv.style.setProperty('margin-bottom', '4px', 'important');
+            parentDiv.style.setProperty('padding-bottom', '0px', 'important');
+            parentDiv.style.setProperty('align-items', 'center', 'important');
+            
+            // 바로 아래에 있는 표(Table 컨테이너)의 상단 여백 완전 제거
+            if (parentDiv.nextElementSibling) {
+                parentDiv.nextElementSibling.style.setProperty('margin-top', '0px', 'important');
+                parentDiv.nextElementSibling.style.setProperty('padding-top', '0px', 'important');
+            }
+        }
+
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        moneyBtn.style.cssText = "padding:4px 10px; background:#1e293b; border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:6px; cursor:pointer; outline:none; white-space:nowrap; margin-left:auto;";
+        moneyBtn.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:6px; color:#fef08a; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; cursor:pointer; outline:none; white-space:nowrap;";
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
             if (selectedIdx !== null) {
@@ -539,9 +571,8 @@ function renderMoneyTable() {
     
     if (!tbody) return;
 
-    // 🔥 '정산 기록'이라는 말도 빼고 "⛳ 5차전" 처럼 가장 심플하고 작게 텍스트 수정 🔥
     if (moneyBtn) {
-        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.65rem;">▼</span>`;
+        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.6rem; transform:scale(0.8);">▼</span>`;
     } else if (selectBox) {
         let selectHtml = "";
         for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
