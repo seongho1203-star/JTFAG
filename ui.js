@@ -16,6 +16,7 @@ window.addEventListener('DOMContentLoaded', () => {
             appData = payload.new.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
+            if (!appData.fundLogs) appData.fundLogs = []; // 로그 배열 초기화
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
@@ -24,32 +25,88 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const fundInput = document.getElementById('clubFundInput');
     fundInput.addEventListener('blur', function() {
-        if (isFundUnlocked) { appData.clubFund = parseNumber(this.value); this.value = formatFundString(appData.clubFund); syncToSupabase(appData); }
+        if (isFundUnlocked) { 
+            const oldFund = appData.clubFund || 0;
+            const newFund = parseNumber(this.value);
+
+            // 🔥 금액이 변경되었을 때만 로그를 기록 🔥
+            if (oldFund !== newFund) {
+                if (!appData.fundLogs) appData.fundLogs = [];
+                const myName = localStorage.getItem('jtfag_my_name') || "알 수 없음";
+                const now = new Date();
+                const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                
+                appData.fundLogs.push({ time: timeStr, name: myName, before: oldFund, after: newFund });
+                if (appData.fundLogs.length > 50) appData.fundLogs.shift(); // 최대 50개 유지
+            }
+
+            appData.clubFund = newFund; 
+            this.value = formatFundString(appData.clubFund); 
+            syncToSupabase(appData); 
+        }
     });
     initScheduleOptions();
 
-    // 🔥 용량 게이지 UI 요소 동적 추가 🔥
+    // 🔥 숨김 처리될 UI 요소들 동적 추가 🔥
     const storageInfo = document.createElement('div');
     storageInfo.id = 'storageInfoDisplay';
-    storageInfo.style.cssText = "text-align:center; font-size:0.75rem; margin-top:20px; padding:15px 10px; background:rgba(0,0,0,0.15); border-radius:12px;";
+    storageInfo.style.cssText = "display:none; text-align:center; font-size:0.75rem; margin-top:20px; padding:15px 10px; background:rgba(0,0,0,0.15); border-radius:12px;";
     document.body.appendChild(storageInfo);
 
     const nameDeleteBtn = document.createElement('div');
+    nameDeleteBtn.id = 'nameDeleteBtn';
     nameDeleteBtn.innerHTML = "👤 내 기기 등록 이름 삭제";
-    nameDeleteBtn.style.cssText = "text-align:center; color:#94a3b8; font-size:0.7rem; margin-top:15px; padding-bottom:20px; text-decoration:underline; cursor:pointer;";
+    nameDeleteBtn.style.cssText = "display:none; text-align:center; color:#94a3b8; font-size:0.7rem; margin-top:15px; padding-bottom:20px; text-decoration:underline; cursor:pointer;";
     nameDeleteBtn.onclick = deleteMyName;
     document.body.appendChild(nameDeleteBtn);
+
+    // 🔥 공금 수정 로그 모달 UI 생성 🔥
+    const fundLogModal = document.createElement('div');
+    fundLogModal.id = 'fundLogModal';
+    fundLogModal.className = 'modal-overlay';
+    fundLogModal.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s;";
+    fundLogModal.innerHTML = `
+        <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:20px; width:85%; max-width:350px; max-height:70vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.3s;">
+            <h3 style="margin-top:0; margin-bottom:15px; color:#d4af37; font-size:1.1rem; text-align:center;">📜 공금 수정 로그</h3>
+            <div id="fundLogContent" style="font-size:0.85rem; color:#94a3b8; text-align:left; margin-bottom:20px;"></div>
+            <button type="button" onclick="closeFundLogModal()" style="width:100%; padding:12px; background:#334155; border:none; border-radius:8px; color:#fff; font-weight:700; cursor:pointer;">닫기</button>
+        </div>
+    `;
+    document.body.appendChild(fundLogModal);
+    
+    window.openFundLogModal = () => {
+        const content = document.getElementById('fundLogContent');
+        if (!appData.fundLogs || appData.fundLogs.length === 0) {
+            content.innerHTML = "<div style='text-align:center; padding:20px;'>기록된 수정 내역이 없습니다.</div>";
+        } else {
+            content.innerHTML = appData.fundLogs.slice().reverse().map(log => 
+                `<div style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="font-size:0.75rem; color:#64748b; margin-bottom:4px;">${log.time} - <span style="color:#fef08a; font-weight:700;">${log.name}</span> 변경</div>
+                    <div style="color:#e2e8f0; font-size:0.9rem;">${formatNumber(log.before)}원 ➔ <b style="color:#16a34a;">${formatNumber(log.after)}원</b></div>
+                 </div>`
+            ).join('');
+        }
+        fundLogModal.style.opacity = "1";
+        fundLogModal.style.pointerEvents = "auto";
+        fundLogModal.querySelector('div').style.transform = "scale(1)";
+    };
+    
+    window.closeFundLogModal = () => {
+        fundLogModal.style.opacity = "0";
+        fundLogModal.style.pointerEvents = "none";
+        fundLogModal.querySelector('div').style.transform = "scale(0.9)";
+    };
 });
 
 function authenticateAdmin() {
     if (isFundUnlocked) return true;
-    const pwd = prompt("🔒 공금 수정 비밀번호를 입력해주세요:");
-    if (pwd === ADMIN_PASSWORD) { isFundUnlocked = true; updateLockUI(); showToast("🔓 공금 수정 권한이 인증되었습니다."); return true; } 
+    const pwd = prompt("🔒 공금 수정 및 시스템 관리 비밀번호를 입력해주세요:");
+    if (pwd === ADMIN_PASSWORD) { isFundUnlocked = true; updateLockUI(); showToast("🔓 관리자 권한이 활성화되었습니다."); return true; } 
     else if (pwd !== null) { showToast("⚠️ 비밀번호가 일치하지 않습니다."); } return false;
 }
 
 function toggleFundLock() {
-    if (isFundUnlocked) { isFundUnlocked = false; updateLockUI(); document.getElementById('clubFundInput').value = formatFundString(appData.clubFund); showToast("🔒 공금 수정이 잠겼습니다."); } 
+    if (isFundUnlocked) { isFundUnlocked = false; updateLockUI(); document.getElementById('clubFundInput').value = formatFundString(appData.clubFund); showToast("🔒 관리자 권한이 잠겼습니다."); } 
     else { authenticateAdmin(); }
 }
 
@@ -57,12 +114,45 @@ function handleFundClick(inputElem) {
     if (!isFundUnlocked) { if (authenticateAdmin()) { setTimeout(() => { inputElem.value = appData.clubFund || ""; inputElem.focus(); }, 50); } }
 }
 
+// 🔥 잠금 해제 시에만 로그 버튼, 용량 게이지, 이름 삭제 버튼 표시 🔥
 function updateLockUI() {
-    const btn = document.getElementById('lockToggleBtn'); const fundInput = document.getElementById('clubFundInput');
+    const btn = document.getElementById('lockToggleBtn'); 
+    const fundInput = document.getElementById('clubFundInput');
+    const storageInfo = document.getElementById('storageInfoDisplay');
+    const deleteBtn = document.getElementById('nameDeleteBtn');
+    let logBtn = document.getElementById('fundLogBtn');
+
+    // 공금 로그 버튼 동적 생성
+    if (!logBtn && fundInput) {
+        logBtn = document.createElement('div');
+        logBtn.id = 'fundLogBtn';
+        logBtn.innerHTML = '📋 공금 수정 로그보기';
+        logBtn.style.cssText = "text-align:right; font-size:0.75rem; color:#94a3b8; text-decoration:underline; cursor:pointer; margin-top:6px;";
+        logBtn.onclick = window.openFundLogModal;
+        fundInput.parentNode.appendChild(logBtn);
+    }
+
     if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
+    
     if (fundInput) {
-        if (isFundUnlocked) { fundInput.removeAttribute('readonly'); fundInput.value = appData.clubFund || ""; } 
-        else { fundInput.setAttribute('readonly', 'true'); fundInput.value = formatFundString(appData.clubFund); }
+        if (isFundUnlocked) { 
+            fundInput.removeAttribute('readonly'); 
+            fundInput.value = appData.clubFund || ""; 
+        } else { 
+            fundInput.setAttribute('readonly', 'true'); 
+            fundInput.value = formatFundString(appData.clubFund); 
+        }
+    }
+
+    // 관리자(잠금 해제) 상태일 때만 관련 기능 노출
+    if (isFundUnlocked) {
+        if (storageInfo) storageInfo.style.display = "block";
+        if (deleteBtn) deleteBtn.style.display = "block";
+        if (logBtn) logBtn.style.display = "block";
+    } else {
+        if (storageInfo) storageInfo.style.display = "none";
+        if (deleteBtn) deleteBtn.style.display = "none";
+        if (logBtn) logBtn.style.display = "none";
     }
 }
 
@@ -138,20 +228,17 @@ function renderAll() {
     calculateAndRender(); 
     renderMoneyTable(); 
     forceTableReflow(); 
-    renderStorageUsage(); // 🔥 용량 게이지 업데이트 🔥
+    renderStorageUsage(); 
     checkAndGreetUser(); 
 }
 
-// 🔥 앱의 전체 용량을 계산해서 화면에 보여주는 함수 🔥
 function renderStorageUsage() {
     const storageInfo = document.getElementById('storageInfoDisplay');
     if (!storageInfo) return;
 
-    // 현재 앱 데이터의 텍스트 크기를 계산 (사진이 Base64 텍스트로 저장되므로 매우 정확함)
     const jsonString = JSON.stringify(appData);
     const bytes = new Blob([jsonString]).size;
     
-    // 권장 최대 한도를 5MB로 설정 (실시간 동기화 렉 방지 목적)
     const maxBytes = 5 * 1024 * 1024; 
     
     const kb = (bytes / 1024).toFixed(1);
@@ -161,20 +248,21 @@ function renderStorageUsage() {
     let percent = (bytes / maxBytes) * 100;
     if (percent > 100) percent = 100;
 
-    let statusColor = "#16a34a"; // 🟢 원활 (초록색)
+    let statusColor = "#16a34a"; 
     let statusIcon = "🟢";
     let statusText = "원활";
 
     if (percent > 85) {
-        statusColor = "#dc2626"; // 🔴 위험 (빨간색)
+        statusColor = "#dc2626"; 
         statusIcon = "🔴";
         statusText = "위험 (사진 삭제 권장)";
     } else if (percent > 60) {
-        statusColor = "#eab308"; // 🟡 주의 (노란색)
+        statusColor = "#eab308"; 
         statusIcon = "🟡";
         statusText = "주의 (사진 누적됨)";
     }
 
+    // innerHTML만 변경하여 display 속성을 건드리지 않음
     storageInfo.innerHTML = `
         <div style="color:var(--text-sub); margin-bottom:8px; font-weight:700;">💾 실시간 데이터 용량 (권장 한도 5MB)</div>
         <div style="width:100%; max-width:280px; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; margin:0 auto; overflow:hidden;">
