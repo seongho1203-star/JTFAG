@@ -46,44 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     initScheduleOptions();
 
-    // 🔥 관리자 모드 전용 하단 패널 생성 (용량 + 버튼들) 🔥
-    const adminPanel = document.createElement('div');
-    adminPanel.id = 'adminBottomPanel';
-    adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
-    
-    // 1. 용량 정보 영역
-    const storageInfo = document.createElement('div');
-    storageInfo.id = 'storageInfoDisplay';
-    storageInfo.style.cssText = "text-align:center; font-size:0.75rem; width:100%;";
-    adminPanel.appendChild(storageInfo);
-
-    // 2. 버튼들을 가로로 예쁘게 배치하는 영역 (줄바꿈 방지)
-    const btnRow = document.createElement('div');
-    btnRow.style.cssText = "display:flex; justify-content:center; align-items:center; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05); gap:20px; width:100%; flex-wrap:nowrap;";
-    
-    const logBtn = document.createElement('div');
-    logBtn.innerHTML = "📋 공금로그";
-    logBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    logBtn.onclick = window.openFundLogModal;
-
-    const pwdBtn = document.createElement('div');
-    pwdBtn.innerHTML = "🔑 비번변경";
-    pwdBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    pwdBtn.onclick = changeAdminPassword;
-
-    const nameDeleteBtn = document.createElement('div');
-    nameDeleteBtn.innerHTML = "👤 이름삭제";
-    nameDeleteBtn.style.cssText = "color:#ef4444; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    nameDeleteBtn.onclick = deleteMyName;
-
-    btnRow.appendChild(logBtn);
-    btnRow.appendChild(pwdBtn);
-    btnRow.appendChild(nameDeleteBtn);
-    adminPanel.appendChild(btnRow);
-    
-    document.body.appendChild(adminPanel);
-
-    // 🔥 공금 수정 로그 모달 UI 생성 🔥
+    // 🔥 1. 공금 수정 로그 모달 UI 및 기능 먼저 생성 (버그 수정됨) 🔥
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
@@ -119,6 +82,43 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.style.pointerEvents = "none";
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
+
+    // 🔥 2. 관리자 모드 전용 하단 패널 생성 🔥
+    const adminPanel = document.createElement('div');
+    adminPanel.id = 'adminBottomPanel';
+    adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
+    
+    // 용량 정보 영역
+    const storageInfo = document.createElement('div');
+    storageInfo.id = 'storageInfoDisplay';
+    storageInfo.style.cssText = "text-align:center; font-size:0.75rem; width:100%;";
+    adminPanel.appendChild(storageInfo);
+
+    // 하단 버튼 영역
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = "display:flex; justify-content:center; align-items:center; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05); gap:20px; width:100%; flex-wrap:nowrap;";
+    
+    const logBtn = document.createElement('div');
+    logBtn.innerHTML = "📋 공금로그";
+    logBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
+    logBtn.onclick = window.openFundLogModal; // 이제 정상 작동합니다!
+
+    const pwdBtn = document.createElement('div');
+    pwdBtn.innerHTML = "🔑 비번변경";
+    pwdBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
+    pwdBtn.onclick = changeAdminPassword;
+
+    const nameDeleteBtn = document.createElement('div');
+    nameDeleteBtn.innerHTML = "👤 이름삭제";
+    nameDeleteBtn.style.cssText = "color:#ef4444; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
+    nameDeleteBtn.onclick = deleteMyName;
+
+    btnRow.appendChild(logBtn);
+    btnRow.appendChild(pwdBtn);
+    btnRow.appendChild(nameDeleteBtn);
+    adminPanel.appendChild(btnRow);
+    
+    document.body.appendChild(adminPanel);
 });
 
 function authenticateAdmin() {
@@ -129,7 +129,6 @@ function authenticateAdmin() {
     else if (pwd !== null) { showToast("⚠️ 비밀번호가 일치하지 않습니다."); } return false;
 }
 
-// 🔥 비밀번호 변경 기능 🔥
 function changeAdminPassword() {
     const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
     const oldPwd = prompt("현재 비밀번호를 입력해주세요:");
@@ -175,7 +174,6 @@ function updateLockUI() {
         }
     }
 
-    // 🔥 잠금 상태에 따라 하단 관리자 패널(게이지+버튼들) 전체를 켜고 끔 🔥
     if (isFundUnlocked) {
         if (adminPanel) adminPanel.style.display = "flex";
     } else {
