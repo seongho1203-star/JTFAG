@@ -9,46 +9,71 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 1. 빈 공간을 만드는 숨겨진 패딩과 마진을 모조리 강제 압축 🔥
+    // 🔥 1. CSS 강제 주입: 두 타이틀의 크기를 똑같이 맞추고 불필요한 여백 완벽 제거 🔥
     const tightenSpaceStyle = document.createElement('style');
     tightenSpaceStyle.innerHTML = `
+        /* JTFAG 통합 정산 요약 글씨 크기 고정 */
+        .section-title, h3 { 
+            font-size: 1.05rem !important; 
+            font-weight: 800 !important; 
+        }
+        
+        /* 버튼 컨테이너 강제 압축 */
+        .money-header-container {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-top: 0px !important;
+            margin-bottom: 4px !important;
+            padding-bottom: 0px !important;
+            min-height: 0px !important;
+        }
+
+        /* 차수별 정산 텍스트 강제 고정 */
+        .money-header-title {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 1.05rem !important; /* 위쪽 타이틀과 완벽하게 동일한 크기 */
+            font-weight: 800 !important;
+            line-height: 1 !important;
+            color: #1e293b !important;
+        }
+
+        /* 버튼 자체의 높이를 강제로 줄이고 여백 없앰 */
+        #moneyRoundBtn { 
+            margin: 0 0 0 auto !important; 
+            padding: 0 8px !important; 
+            height: 24px !important; 
+            line-height: 24px !important; 
+            min-height: 0 !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* 테이블 헤더 셀 여백 최적화 (더 타이트하게) */
         th { padding-top: 4px !important; padding-bottom: 4px !important; }
+        
         /* 테이블 위쪽 공간 강제 삭제 */
-        .table-responsive { margin-top: 0 !important; } 
+        .table-responsive { margin-top: 0 !important; padding-top: 0 !important; } 
     `;
     document.head.appendChild(tightenSpaceStyle);
 
-    // 🔥 2. 타이틀 축소, 버튼 축소, 부모 박스 여백 압축 🔥
+    // 🔥 2. "차수별 정산" 텍스트와 버튼을 컨테이너로 깔끔하게 묶어서 압축 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const parentDiv = oldSelect.parentNode;
         
         if (parentDiv) {
-            // 버튼과 타이틀이 있는 줄의 여백 압축
-            parentDiv.setAttribute('style', 'display:flex; justify-content:space-between; align-items:center; margin-top:0 !important; margin-bottom:4px !important; padding-bottom:0 !important; min-height:auto !important;');
+            parentDiv.classList.add('money-header-container');
             
-            // 🔥 핵심: 이 부분 전체를 감싸는 바깥쪽 큰 하얀 박스의 상단 텅 빈 공간(Padding)을 깎아냄 🔥
-            if(parentDiv.parentNode) {
-                parentDiv.parentNode.style.setProperty('padding-top', '8px', 'important');
-                parentDiv.parentNode.style.setProperty('margin-top', '8px', 'important');
-            }
-
-            // "차수별 정산" 글씨 크기를 작고 앙증맞게 축소
             const titleEl = parentDiv.querySelector('h3') || parentDiv.firstElementChild;
             if (titleEl && titleEl.tagName !== 'SELECT') {
-                titleEl.setAttribute('style', 'margin:0 !important; font-size:0.9rem !important; font-weight:800 !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center;');
-            }
-            
-            if (parentDiv.nextElementSibling) {
-                parentDiv.nextElementSibling.style.setProperty('margin-top', '0px', 'important');
-                parentDiv.nextElementSibling.style.setProperty('padding-top', '0px', 'important');
+                titleEl.classList.add('money-header-title');
             }
         }
 
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        // 🔥 버튼 높이를 22px로 초소형 압축, 폰트 크기 0.65rem으로 극소화 🔥
-        moneyBtn.setAttribute('style', 'height:22px !important; min-height:22px !important; padding:0 6px !important; margin:0 !important; background:#1e293b !important; border:1px solid #d4af37 !important; border-radius:4px !important; color:#fef08a !important; font-size:0.65rem !important; font-weight:700 !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; gap:2px !important; box-sizing:border-box !important; cursor:pointer !important; outline:none !important; line-height:1 !important;');
+        moneyBtn.setAttribute('style', 'height:24px !important; min-height:24px !important; padding:0 8px !important; margin:0 !important; background:#1e293b !important; border:1px solid #d4af37 !important; border-radius:4px !important; color:#fef08a !important; font-size:0.7rem !important; font-weight:700 !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; gap:4px !important; box-sizing:border-box !important; cursor:pointer !important; outline:none !important; line-height:1 !important;');
         
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
