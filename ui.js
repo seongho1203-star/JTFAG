@@ -9,6 +9,21 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
+    // 🔥 기본 드롭다운(select)을 럭셔리 커스텀 버튼으로 동적 교체 🔥
+    const oldSelect = document.getElementById('moneyRoundSelect');
+    if (oldSelect && oldSelect.tagName === 'SELECT') {
+        const moneyBtn = document.createElement('button');
+        moneyBtn.id = 'moneyRoundBtn';
+        moneyBtn.style.cssText = "width:100%; padding:14px 20px; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; border-radius:12px; color:#fef08a; font-size:1.1rem; font-weight:800; display:flex; justify-content:space-between; align-items:center; cursor:pointer; box-shadow:0 6px 15px rgba(0,0,0,0.4); margin-bottom:15px; outline:none;";
+        moneyBtn.onclick = async () => {
+            const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
+            if (selectedIdx !== null) {
+                changeMoneyRound(selectedIdx);
+            }
+        };
+        oldSelect.parentNode.replaceChild(moneyBtn, oldSelect);
+    }
+
     renderSkeleton();
     fetchFromSupabase();
     window._supabase.channel('public:jtfag_league').on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
@@ -117,7 +132,57 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(adminPanel);
 });
 
-// 🔥 커스텀 비밀번호 입력 모달창 🔥
+// 🔥 커스텀 라운드(차수) 선택 모달창 🔥
+function showRoundSelectionPrompt(totalRounds, currentIndex) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        
+        const box = document.createElement('div');
+        box.style.cssText = "background:#1e293b; border:2px solid #d4af37; border-radius:16px; padding:25px; width:100%; max-width:320px; box-shadow:0 15px 40px rgba(0,0,0,0.8); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = "⛳ 정산 차수 선택";
+        msgEl.style.cssText = "color:#f8fafc; font-size:1.1rem; margin-bottom:20px; font-weight:800; word-break:keep-all;";
+        
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = "display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:50vh; overflow-y:auto; padding-right:5px;";
+        
+        box.appendChild(msgEl);
+        box.appendChild(btnContainer);
+
+        function cleanup(value) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+
+        // 라운드 수만큼 버튼 생성
+        for (let r = 0; r < totalRounds; r++) {
+            const btn = document.createElement('button');
+            const isCurrent = r === currentIndex;
+            btn.innerHTML = `${r + 1}차전 정산 기록 ${isCurrent ? '<span style="color:#d4af37; font-size:0.8rem; margin-left:5px;">(현재)</span>' : ''}`;
+            btn.style.cssText = `width:100%; padding:14px; border-radius:8px; border:1px solid ${isCurrent ? '#d4af37' : '#475569'}; background:${isCurrent ? 'rgba(212,175,55,0.1)' : '#0f172a'}; color:${isCurrent ? '#fef08a' : '#e2e8f0'}; font-size:1.05rem; font-weight:800; cursor:pointer; transition:all 0.2s;`;
+            btn.onclick = () => cleanup(r);
+            btnContainer.appendChild(btn);
+        }
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "취소";
+        cancelBtn.style.cssText = "width:100%; padding:12px; border-radius:8px; border:none; background:#475569; color:#fff; font-weight:700; cursor:pointer;";
+        cancelBtn.onclick = () => cleanup(null);
+        
+        box.appendChild(cancelBtn);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            box.style.transform = "scale(1)";
+        }, 10);
+    });
+}
+
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -176,7 +241,6 @@ function showPasswordPrompt(message) {
     });
 }
 
-// 🔥 커스텀 이름 선택(버튼) 모달창 🔥
 function showNameSelectionPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -201,7 +265,6 @@ function showNameSelectionPrompt(message) {
             setTimeout(() => { overlay.remove(); resolve(value); }, 200);
         }
 
-        // api.js의 golfers 배열을 기반으로 예쁜 선택 버튼 생성
         golfers.forEach(name => {
             const btn = document.createElement('button');
             btn.textContent = name;
@@ -226,14 +289,12 @@ function showNameSelectionPrompt(message) {
     });
 }
 
-// 🔥 커스텀 이름 삭제 경고 모달창 🔥
 function showConfirmPrompt(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
         
         const box = document.createElement('div');
-        // 삭제 경고창이므로 빨간색 테두리 적용
         box.style.cssText = "background:#1e293b; border:2px solid #ef4444; border-radius:16px; padding:25px; width:100%; max-width:320px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
         
         const msgEl = document.createElement('div');
@@ -474,11 +535,21 @@ function renderStorageUsage() {
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
 
 function renderMoneyTable() {
-    const tbody = document.getElementById('moneyTbody'); const selectBox = document.getElementById('moneyRoundSelect'); if (!tbody || !selectBox) return;
+    const tbody = document.getElementById('moneyTbody'); 
+    const moneyBtn = document.getElementById('moneyRoundBtn');
+    const selectBox = document.getElementById('moneyRoundSelect'); 
     
-    let selectHtml = "";
-    for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
-    if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
+    if (!tbody) return;
+
+    // 🔥 새롭게 만든 커스텀 버튼 텍스트 업데이트 🔥
+    if (moneyBtn) {
+        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록</span> <span style="color:#d4af37;">▼</span>`;
+    } else if (selectBox) {
+        // 백업용 (기존 select 태그가 남아있을 경우)
+        let selectHtml = "";
+        for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
+        if (selectBox.innerHTML !== selectHtml) selectBox.innerHTML = selectHtml;
+    }
 
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[selectedMoneyRoundIdx]) {
@@ -857,7 +928,6 @@ async function checkAndGreetUser() {
     if (!myName || !golfers.includes(myName)) {
         hasGreeted = true; 
         setTimeout(async () => {
-            // 🔥 타이핑 없이 예쁜 버튼들 중에서 터치로 선택하는 모달창 호출 🔥
             myName = await showNameSelectionPrompt("👋 환영합니다!<br>본인의 이름을 선택해주세요.");
             if (myName && golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
@@ -873,7 +943,6 @@ async function checkAndGreetUser() {
     hasGreeted = true;
 }
 
-// 🔥 이름 삭제 시 나타나는 빨간 테두리 커스텀 경고창 호출 🔥
 async function deleteMyName() {
     const currentName = localStorage.getItem('jtfag_my_name');
     if (!currentName) {
