@@ -15,7 +15,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 항상 최신 CSS 파일을 불러옵니다
         document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
     </script>
 </head>
@@ -59,7 +58,8 @@
     <div class="money-card">
         <div class="money-header-flex">
             <h3>💵 차수별 정산</h3>
-            <select id="moneyRoundSelect" class="round-select-badge" onchange="changeMoneyRound(this.value)"></select>
+            <!-- 자바스크립트가 이 select를 예쁜 커스텀 모달 버튼으로 자동 교체합니다 -->
+            <select id="moneyRoundSelect" style="display:none;"></select>
         </div>
         <table class="money-table">
             <thead>
@@ -150,7 +150,7 @@
                     <select id="schCourseSelect" style="width:100%; margin-bottom:6px;" onchange="handleCourseSelectChange(this.value)">
                         <option value="">데이터 불러오는 중...</option>
                     </select>
-                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%;" class="money-input" style="max-width:100% !important;">
+                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none; width:100%; padding:12px; font-size:0.95rem; box-sizing:border-box;" class="money-input">
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
@@ -202,7 +202,6 @@
 
 <div id="customToast"></div>
 
-<!-- 🔥 분리된 4개의 자바스크립트 파일을 순서대로 묶어서 실행합니다 🔥 -->
 <script>
     const v = Math.random();
     document.write('<script src="stats.js?ver=' + v + '"><\/script>');
