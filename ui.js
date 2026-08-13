@@ -9,39 +9,36 @@ function formatNumber(num) { if (num === null || num === undefined || isNaN(num)
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🔥 1. CSS 강제 주입: 상하 여백을 완벽하게 진공 압축 🔥
+    // 🔥 1. 빈 공간을 만드는 숨겨진 패딩과 마진을 모조리 강제 압축 🔥
     const tightenSpaceStyle = document.createElement('style');
     tightenSpaceStyle.innerHTML = `
-        /* 버튼 자체의 높이를 강제로 더 줄이고 여백 없앰 */
-        #moneyRoundBtn { 
-            margin: 0 0 0 auto !important; 
-            padding: 0 8px !important; 
-            height: 24px !important; 
-            line-height: 24px !important; 
-            min-height: 0 !important;
-            box-sizing: border-box !important;
-        }
-        /* 테이블 헤더 셀 여백 최적화 (더 타이트하게) */
         th { padding-top: 4px !important; padding-bottom: 4px !important; }
+        /* 테이블 위쪽 공간 강제 삭제 */
+        .table-responsive { margin-top: 0 !important; } 
     `;
     document.head.appendChild(tightenSpaceStyle);
 
-    // 🔥 2. "차수별 정산" 텍스트와 버튼을 아주 작고 타이트하게 압축 🔥
+    // 🔥 2. 타이틀 축소, 버튼 축소, 부모 박스 여백 압축 🔥
     const oldSelect = document.getElementById('moneyRoundSelect');
     if (oldSelect && oldSelect.tagName === 'SELECT') {
         const parentDiv = oldSelect.parentNode;
         
         if (parentDiv) {
-            // 부모 레이아웃 여백 강제 제거
-            parentDiv.setAttribute('style', 'display:flex; justify-content:space-between; align-items:center; margin-bottom:2px !important; padding-bottom:0 !important; margin-top:0 !important; min-height:auto !important;');
+            // 버튼과 타이틀이 있는 줄의 여백 압축
+            parentDiv.setAttribute('style', 'display:flex; justify-content:space-between; align-items:center; margin-top:0 !important; margin-bottom:4px !important; padding-bottom:0 !important; min-height:auto !important;');
             
-            // "차수별 정산" 텍스트의 크기를 확 줄임 (0.9rem)
+            // 🔥 핵심: 이 부분 전체를 감싸는 바깥쪽 큰 하얀 박스의 상단 텅 빈 공간(Padding)을 깎아냄 🔥
+            if(parentDiv.parentNode) {
+                parentDiv.parentNode.style.setProperty('padding-top', '8px', 'important');
+                parentDiv.parentNode.style.setProperty('margin-top', '8px', 'important');
+            }
+
+            // "차수별 정산" 글씨 크기를 작고 앙증맞게 축소
             const titleEl = parentDiv.querySelector('h3') || parentDiv.firstElementChild;
             if (titleEl && titleEl.tagName !== 'SELECT') {
-                titleEl.setAttribute('style', 'margin:0 !important; font-size:0.9rem !important; font-weight:800 !important; line-height:1 !important; padding:0 !important;');
+                titleEl.setAttribute('style', 'margin:0 !important; font-size:0.9rem !important; font-weight:800 !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center;');
             }
             
-            // 바로 아래에 있는 표(Table 컨테이너)의 상단 여백 완전 제거
             if (parentDiv.nextElementSibling) {
                 parentDiv.nextElementSibling.style.setProperty('margin-top', '0px', 'important');
                 parentDiv.nextElementSibling.style.setProperty('padding-top', '0px', 'important');
@@ -50,8 +47,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const moneyBtn = document.createElement('button');
         moneyBtn.id = 'moneyRoundBtn';
-        // 버튼 크기, 폰트, 패딩을 극한으로 줄여서 날렵하게 만듦
-        moneyBtn.setAttribute('style', 'height:24px !important; min-height:24px !important; padding:0 8px !important; margin:0 !important; background:#1e293b !important; border:1px solid #d4af37 !important; border-radius:4px !important; color:#fef08a !important; font-size:0.7rem !important; font-weight:700 !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; gap:4px !important; box-sizing:border-box !important; cursor:pointer !important; outline:none !important;');
+        // 🔥 버튼 높이를 22px로 초소형 압축, 폰트 크기 0.65rem으로 극소화 🔥
+        moneyBtn.setAttribute('style', 'height:22px !important; min-height:22px !important; padding:0 6px !important; margin:0 !important; background:#1e293b !important; border:1px solid #d4af37 !important; border-radius:4px !important; color:#fef08a !important; font-size:0.65rem !important; font-weight:700 !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; gap:2px !important; box-sizing:border-box !important; cursor:pointer !important; outline:none !important; line-height:1 !important;');
         
         moneyBtn.onclick = async () => {
             const selectedIdx = await showRoundSelectionPrompt(appData.totalRounds, selectedMoneyRoundIdx);
@@ -578,7 +575,7 @@ function renderMoneyTable() {
     if (!tbody) return;
 
     if (moneyBtn) {
-        moneyBtn.innerHTML = `<span>⛳ ${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.55rem; transform:scale(0.8);">▼</span>`;
+        moneyBtn.innerHTML = `<span style="display:flex; align-items:center; gap:2px;">⛳ ${selectedMoneyRoundIdx + 1}차전</span> <span style="color:#d4af37; font-size:0.5rem; transform:scale(0.8);">▼</span>`;
     } else if (selectBox) {
         let selectHtml = "";
         for (let r = 0; r < appData.totalRounds; r++) { selectHtml += `<option value="${r}" ${(r === selectedMoneyRoundIdx) ? "selected" : ""}>${r + 1}차전 정산 입력 ▾</option>`; }
