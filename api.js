@@ -27,6 +27,34 @@ const COURSE_GEO = {
     "푸른솔": { lat: 35.275, lon: 126.652 }
 };
 
+// 라운드 사진은 Storage 버킷에 올리고 payload에는 공개 URL만 저장한다.
+// (예전에 등록된 사진은 payload 안에 base64로 들어 있어, 두 형태가 함께 존재할 수 있다)
+const PHOTO_BUCKET = 'round-photos';
+const MAX_PHOTOS_PER_ROUND = 30;
+
+function storagePathFromUrl(src) {
+    const marker = '/object/public/' + PHOTO_BUCKET + '/';
+    const idx = String(src).indexOf(marker);
+    return idx === -1 ? null : decodeURIComponent(String(src).slice(idx + marker.length));
+}
+
+async function uploadPhotoBlob(blob, roundIdx) {
+    const rand = Math.random().toString(36).slice(2, 8);
+    const path = `round${roundIdx + 1}/${Date.now()}_${rand}.jpg`;
+    const { error } = await window._supabase.storage.from(PHOTO_BUCKET)
+        .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+    return window._supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+// 사진을 지울 때 Storage 파일도 함께 정리한다. 실패해도 앱 동작은 막지 않는다.
+async function deletePhotoFromStorage(src) {
+    const path = storagePathFromUrl(src);
+    if (!path) return;
+    const { error } = await window._supabase.storage.from(PHOTO_BUCKET).remove([path]);
+    if (error) console.error("Storage 삭제 실패:", error);
+}
+
 function getDefaultData() {
     return {
         nextRoundDate: "", clubFund: 0, noticeMemo: "", totalRounds: 4,

@@ -651,35 +651,99 @@ function renderRoundPhotos() {
     const grid = document.getElementById('photoGrid'); grid.innerHTML = "";
     const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) ? appData.roundPhotos[selectedPhotoRoundIdx] : [];
     if (photos.length === 0) { grid.innerHTML = `<div style="grid-column: span 2; text-align:center; padding: 20px; color:#94a3b8; font-size: 0.8rem;">등록된 사진이 없습니다.</div>`; return; }
-    photos.forEach((photoBase64, index) => {
-        grid.innerHTML += `<div class="photo-item"><img src="${photoBase64}" onclick="openImageViewModal('${photoBase64}')"><button type="button" class="photo-delete-btn" onclick="deleteRoundPhoto(${index})">✕</button></div>`;
+    photos.forEach((src, index) => {
+        grid.innerHTML += `<div class="photo-item"><img src="${src}" loading="lazy" onclick="openImageViewModal(appData.roundPhotos[selectedPhotoRoundIdx][${index}])"><button type="button" class="photo-delete-btn" onclick="deleteRoundPhoto(${index})">✕</button></div>`;
     });
 }
 
-function handleRoundPhotoUpload(event) {
-    const files = event.target.files; if (!files || files.length === 0) return;
+// 원본을 그대로 올리면 용량이 커서, 긴 변 기준 800px JPEG으로 줄여 올린다.
+function compressImageToBlob(file, maxSize) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("파일을 읽지 못했습니다."));
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onerror = () => reject(new Error("이미지를 열지 못했습니다."));
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                if (w > h) { if (w > maxSize) { h *= maxSize / w; w = maxSize; } }
+                else { if (h > maxSize) { w *= maxSize / h; h = maxSize; } }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                canvas.toBlob(b => b ? resolve(b) : reject(new Error("압축에 실패했습니다.")), 'image/jpeg', 0.6);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function handleRoundPhotoUpload(event) {
+    const input = event.target;
+    const files = Array.from(input.files || []);
+    if (files.length === 0) return;
     if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
     if (!appData.roundPhotos[selectedPhotoRoundIdx]) appData.roundPhotos[selectedPhotoRoundIdx] = [];
-    if (appData.roundPhotos[selectedPhotoRoundIdx].length + files.length > 10) { showToast("⚠️ 사진은 차수별로 최대 10장까지만 등록 가능합니다."); return; }
+    if (appData.roundPhotos[selectedPhotoRoundIdx].length + files.length > MAX_PHOTOS_PER_ROUND) {
+        showToast(`⚠️ 사진은 차수별로 최대 ${MAX_PHOTOS_PER_ROUND}장까지만 등록 가능합니다.`);
+        input.value = ''; return;
+    }
 
-    showToast("⏳ 사진을 압축하여 업로드 중입니다..."); saveState(); let loadedCount = 0;
-    Array.from(files).forEach(file => {
-        const reader = new FileReader(); reader.readAsDataURL(file);
-        reader.onload = (e) => {
-            const img = new Image(); img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas'); const MAX = 800; let w = img.width; let h = img.height;
-                if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
-                appData.roundPhotos[selectedPhotoRoundIdx].push(canvas.toDataURL('image/jpeg', 0.6)); loadedCount++;
-                if (loadedCount === files.length) { syncToSupabase(appData); renderRoundPhotos(); renderAll(); showToast("✅ 사진 업로드 완료!"); document.getElementById('roundPhotoUpload').value = ''; }
-            }
-        }
-    });
+    showToast("⏳ 사진을 압축하여 업로드 중입니다...");
+    const urls = [];
+    let failed = 0;
+    for (const file of files) {
+        try {
+            urls.push(await uploadPhotoBlob(await compressImageToBlob(file, 800), selectedPhotoRoundIdx));
+        } catch (err) { console.error("사진 업로드 실패:", err); failed++; }
+    }
+    input.value = '';
+
+    // 한 장이라도 올라갔으면 그만큼만 반영한다. 전부 실패하면 상태를 건드리지 않는다.
+    if (urls.length === 0) { showToast("⚠️ 사진 업로드에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
+    saveState();
+    appData.roundPhotos[selectedPhotoRoundIdx].push(...urls);
+    syncToSupabase(appData); renderRoundPhotos(); renderAll();
+    showToast(failed === 0 ? `✅ 사진 ${urls.length}장 업로드 완료!` : `⚠️ ${urls.length}장 완료, ${failed}장 실패`);
 }
 
-function deleteRoundPhoto(photoIdx) {
-    if(confirm("이 사진을 삭제하시겠습니까?")) { saveState(); appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1); syncToSupabase(appData); renderRoundPhotos(); renderAll(); showToast("🗑️ 사진이 삭제되었습니다."); }
+// payload에 base64로 들어 있는 기존 사진을 Storage로 옮긴다. 되돌릴 수 없어 관리자만 실행한다.
+async function migratePhotosToStorage() {
+    if (!(await authenticateAdmin())) return;
+    const rounds = appData.roundPhotos || [];
+    let targetCount = 0;
+    rounds.forEach(list => (list || []).forEach(src => {
+        if (typeof src === 'string' && src.startsWith('data:')) targetCount++;
+    }));
+    if (targetCount === 0) { showToast("✅ 이전할 사진이 없습니다. 이미 모두 Storage에 있습니다."); return; }
+    if (!(await showConfirmPrompt(`사진 ${targetCount}장을 Storage로 옮깁니다.<br>되돌릴 수 없습니다. 진행할까요?`))) return;
+
+    showToast(`⏳ 사진 ${targetCount}장 이전 중...`);
+    saveState();
+    let done = 0, failed = 0;
+    for (let r = 0; r < rounds.length; r++) {
+        const list = rounds[r] || [];
+        for (let i = 0; i < list.length; i++) {
+            const src = list[i];
+            if (typeof src !== 'string' || !src.startsWith('data:')) continue;
+            try {
+                list[i] = await uploadPhotoBlob(await (await fetch(src)).blob(), r);
+                done++;
+            } catch (err) { console.error("사진 이전 실패:", err); failed++; }
+        }
+    }
+    syncToSupabase(appData); renderRoundPhotos(); renderAll();
+    showToast(failed === 0 ? `✅ 사진 ${done}장 이전 완료!` : `⚠️ ${done}장 완료, ${failed}장 실패`);
+}
+
+async function deleteRoundPhoto(photoIdx) {
+    if (!confirm("이 사진을 삭제하시겠습니까?")) return;
+    const removed = appData.roundPhotos[selectedPhotoRoundIdx][photoIdx];
+    saveState(); appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1);
+    syncToSupabase(appData); renderRoundPhotos(); renderAll();
+    showToast("🗑️ 사진이 삭제되었습니다.");
+    await deletePhotoFromStorage(removed);
 }
 
 function openImageViewModal(src) { document.getElementById('fullImageView').src = src; document.getElementById('imageViewModal').classList.add('active'); }
@@ -689,9 +753,18 @@ async function downloadCurrentPhoto() {
     const imgSrc = document.getElementById('fullImageView').src; if (!imgSrc) return;
     if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡에선 다운로드가 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!"); return; }
     try {
-        const splitDataURI = imgSrc.split(','); const byteString = atob(splitDataURI[1]); const mimeString = splitDataURI[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
-        const blob = new Blob([ab], { type: mimeString }); const fileName = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
+        // 사진은 Storage URL이거나, 아직 이전하지 않은 예전 base64일 수 있다.
+        let blob;
+        if (imgSrc.startsWith('data:')) {
+            const splitDataURI = imgSrc.split(','); const byteString = atob(splitDataURI[1]); const mime = splitDataURI[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
+            blob = new Blob([ab], { type: mime });
+        } else {
+            const res = await fetch(imgSrc);
+            if (!res.ok) throw new Error("사진을 불러오지 못했습니다.");
+            blob = await res.blob();
+        }
+        const mimeString = blob.type || 'image/jpeg'; const fileName = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
         if (navigator.share && navigator.canShare) {
             const file = new File([blob], fileName, { type: mimeString });
             if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'JTFAG 사진 저장' }); showToast("💾 갤러리 저장 메뉴를 성공적으로 열었습니다."); return; }
