@@ -4,16 +4,31 @@
 // ▸ 같은 차수를 다시 등록하면 덮어쓰므로 중복 집계되지 않는다.
 // ▸ 아래 CUMULATIVE_STATS(누적 총합)는 자동 계산되므로 직접 고치지 말 것.
 // ▸ doublePar(양파) = 파의 2배 타수를 친 홀. 파4에서 8타, 파3에서 6타.
+// ▸ 1~4차전은 스코어카드 사진을 판독해 홀별로 집계한 값이다.
 //
-// "1-3"은 차수별 원본 스코어카드가 남아있지 않아 1~3차전을 합산해 보관한 값이다.
-// 나중에 개별 스코어카드를 확보하면 "1"/"2"/"3"으로 나누고 이 항목을 지우면 된다.
-
 const ROUND_STATS = {
-    "1-3": {
-        "이관교": { holeInOne: 0, eagle: 0, birdie: 4, par: 13, doublePar: 1 },
-        "김지명": { holeInOne: 0, eagle: 0, birdie: 4, par: 18, doublePar: 1 },
-        "신성호": { holeInOne: 0, eagle: 0, birdie: 3, par: 20, doublePar: 0 },
-        "박승수": { holeInOne: 0, eagle: 0, birdie: 3, par: 12, doublePar: 2 }
+    // 1차전 · 함평엘리체(임페리얼-마제스티) — 스코어카드 판독
+    "1": {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 2, par: 4, doublePar: 0 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 7, doublePar: 0 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 1, par: 5, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 1, par: 4, doublePar: 0 }
+    },
+
+    // 2차전 · 함평엘리체(마제스티-펠리스) — 스코어카드 판독
+    "2": {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 1, par: 7, doublePar: 0 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 1, par: 7, doublePar: 1 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 1, par: 6, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 1, par: 2, doublePar: 0 }
+    },
+
+    // 3차전 · 어등산(하남-어등) — 스코어카드 판독
+    "3": {
+        "이관교": { holeInOne: 0, eagle: 0, birdie: 1, par: 2, doublePar: 1 },
+        "김지명": { holeInOne: 0, eagle: 0, birdie: 3, par: 4, doublePar: 0 },
+        "신성호": { holeInOne: 0, eagle: 0, birdie: 1, par: 9, doublePar: 0 },
+        "박승수": { holeInOne: 0, eagle: 0, birdie: 1, par: 6, doublePar: 2 }
     },
 
     // 4차전 · 해피니스(힐링-하트) — 스코어카드 판독
