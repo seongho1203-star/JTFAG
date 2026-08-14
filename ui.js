@@ -23,27 +23,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }).subscribe();
 
-    const fundInput = document.getElementById('clubFundInput');
-    fundInput.addEventListener('blur', function() {
-        if (isFundUnlocked) { 
-            const oldFund = appData.clubFund || 0;
-            const newFund = parseNumber(this.value);
-
-            if (oldFund !== newFund) {
-                if (!appData.fundLogs) appData.fundLogs = [];
-                const myName = localStorage.getItem('jtfag_my_name') || "알 수 없음";
-                const now = new Date();
-                const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                
-                appData.fundLogs.push({ time: timeStr, name: myName, before: oldFund, after: newFund });
-                if (appData.fundLogs.length > 50) appData.fundLogs.shift(); 
-            }
-
-            appData.clubFund = newFund; 
-            this.value = formatFundString(appData.clubFund); 
-            syncToSupabase(appData); 
-        }
-    });
     initScheduleOptions();
 
     const fundLogModal = document.createElement('div');
@@ -278,30 +257,69 @@ async function changeAdminPassword() {
 }
 
 
-async function handleFundClick(inputElem) {
-    if (!isFundUnlocked) { 
-        const success = await authenticateAdmin();
-        if (success) { setTimeout(() => { inputElem.value = appData.clubFund || ""; inputElem.focus(); }, 50); } 
-    }
+// 숫자 입력을 받는 공용 창. 취소하면 null을 반환한다.
+function showInputPrompt(message, initial) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        const box = document.createElement('div');
+        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = message;
+        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:12px; font-weight:800; word-break:keep-all;";
+        const input = document.createElement('input');
+        input.type = "text"; input.inputMode = "numeric"; input.value = (initial === undefined || initial === null) ? "" : initial;
+        input.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
+        const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "취소";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
+        const okBtn = document.createElement('button');
+        okBtn.textContent = "저장";
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#1e293b; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        row.appendChild(cancelBtn); row.appendChild(okBtn);
+        box.appendChild(msgEl); box.appendChild(input); box.appendChild(row);
+        overlay.appendChild(box); document.body.appendChild(overlay);
+        setTimeout(() => { overlay.style.opacity = "1"; box.style.transform = "scale(1)"; input.focus(); input.select(); }, 10);
+
+        function cleanup(value) {
+            overlay.style.opacity = "0"; box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+        cancelBtn.onclick = () => cleanup(null);
+        okBtn.onclick = () => cleanup(input.value);
+        input.onkeydown = (e) => { if (e.key === 'Enter') cleanup(input.value); };
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
+    });
 }
 
+// 공금 수정. 화면의 표시칸은 손댈 수 없고 이 경로로만 바뀐다.
+async function editClubFund() {
+    const before = appData.clubFund || 0;
+    const entered = await showInputPrompt("💰 남은 공금 잔액", before);
+    if (entered === null) return;
+    const after = parseNumber(entered);
+    if (after === before) { showToast("변경 사항이 없습니다."); return; }
+
+    saveState();
+    if (!appData.fundLogs) appData.fundLogs = [];
+    const now = new Date();
+    appData.fundLogs.push({
+        time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        name: localStorage.getItem('jtfag_my_name') || "알 수 없음",
+        before: before, after: after
+    });
+    while (appData.fundLogs.length > 50) appData.fundLogs.shift();
+
+    appData.clubFund = after;
+    syncToSupabase(appData); renderNoticeArea(); renderAll();
+    showToast(`💰 공금이 ${formatFundString(after)}으로 변경되었습니다.`);
+}
+
+// 공금은 화면에서 직접 고칠 수 없다. 관리자 메뉴의 '공금 수정'으로만 바뀐다.
 function updateLockUI() {
-    const fundInput = document.getElementById('clubFundInput');
-
-    
-    if (fundInput) {
-        if (isFundUnlocked) { 
-            fundInput.removeAttribute('readonly'); 
-            fundInput.value = appData.clubFund || ""; 
-        } else { 
-            fundInput.setAttribute('readonly', 'true'); 
-            fundInput.value = formatFundString(appData.clubFund); 
-        }
-    }
-
-    if (isFundUnlocked) {
-    } else {
-    }
+    const fundDisplay = document.getElementById('clubFundInput');
+    if (fundDisplay) fundDisplay.textContent = formatFundString(appData.clubFund);
 }
 
 function undoLastAction() {
@@ -324,9 +342,8 @@ function showSaveStatus(msg) {
 }
 
 function renderNoticeArea() {
-    const dateDisplay = document.getElementById('nextRoundDisplay'); const fundInput = document.getElementById('clubFundInput');
+    const dateDisplay = document.getElementById('nextRoundDisplay');
     if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? appData.nextRoundDate : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
-    if (fundInput && document.activeElement !== fundInput) { fundInput.value = formatFundString(appData.clubFund); }
     updateLockUI();
 }
 
@@ -883,13 +900,19 @@ function openPersonalReport(name) {
     }, 100);
 }
 
-function openAdminModal() { renderAdminModal(); renderStorageUsage(); document.getElementById('adminModal').classList.add('active'); }
+// 메뉴를 열기 전에 인증한다. 인증 전에는 로그도 메뉴도 보이지 않는다.
+async function openAdminModal() {
+    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    renderAdminModal(); renderStorageUsage();
+    document.getElementById('adminModal').classList.add('active');
+}
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('active'); }
 
-async function adminToggleAuth() {
-    if (isFundUnlocked) { isFundUnlocked = false; updateLockUI(); showToast("🔒 관리자 권한을 해제했습니다."); }
-    else { await authenticateAdmin(); }
-    renderAdminModal();
+function adminLock() {
+    isFundUnlocked = false;
+    updateLockUI();
+    closeAdminModal();
+    showToast("🔒 관리자 권한을 해제했습니다.");
 }
 
 async function adminRunAction(fn) {
@@ -902,14 +925,15 @@ function renderAdminModal() {
     const actions = document.getElementById('adminActions');
     if (!status || !actions) return;
 
-    status.innerHTML = `<div class="admin-state ${isFundUnlocked ? 'on' : ''}">
-            <span>${isFundUnlocked ? '🔓 관리자 권한 활성' : '🔒 잠김'}</span>
-            <button type="button" class="admin-state-btn" onclick="adminToggleAuth()">${isFundUnlocked ? '해제' : '인증'}</button>
+    status.innerHTML = `<div class="admin-state on">
+            <span>🔓 관리자 권한 활성</span>
+            <button type="button" class="admin-state-btn" onclick="adminLock()">잠그기</button>
         </div>`;
 
     const legacy = countLegacyPhotos();
     let btns = `
-        <button type="button" class="admin-btn" onclick="openFundLogModal()">💰 공금 수정 로그</button>
+        <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
+        <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {

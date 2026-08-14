@@ -351,3 +351,4 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .storage-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.66rem; font-weight: 700; color: #94a3b8; }
 .storage-bar { height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: 5px; overflow: hidden; }
 .storage-bar span { display: block; height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.admin-btn-sub { float: right; color: var(--primary-gold); font-weight: 900; }
