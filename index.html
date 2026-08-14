@@ -189,7 +189,7 @@
         <div class="modal-body">
             <input type="file" accept="image/*" id="roundPhotoUpload" style="display:none;" onchange="handleRoundPhotoUpload(event)" multiple>
             <button type="button" class="open-history-btn" onclick="document.getElementById('roundPhotoUpload').click()">+ 새로운 사진 업로드</button>
-            <button type="button" class="open-history-btn" style="margin-top:6px; background:linear-gradient(135deg,#475569,#334155); border-color:#64748b; color:#e2e8f0; font-size:0.72rem; padding:7px;" onclick="migratePhotosToStorage()">🗄️ 기존 사진 Storage로 이전 (관리자)</button>
+            <button type="button" id="migratePhotosBtn" class="open-history-btn" style="display:none; margin-top:6px; background:linear-gradient(135deg,#475569,#334155); border-color:#64748b; color:#e2e8f0; font-size:0.72rem; padding:7px;" onclick="migratePhotosToStorage()">🗄️ 기존 사진 Storage로 이전 (관리자)</button>
             <div class="photo-grid" id="photoGrid"></div>
         </div>
     </div>

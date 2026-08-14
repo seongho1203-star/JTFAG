@@ -647,8 +647,23 @@ let selectedPhotoRoundIdx = -1;
 function openRoundPhotoModal(r) { selectedPhotoRoundIdx = r; document.getElementById('roundPhotoTitle').textContent = `📸 ${r + 1}차전 갤러리`; renderRoundPhotos(); document.getElementById('roundPhotoModal').classList.add('active'); }
 function closeRoundPhotoModal() { document.getElementById('roundPhotoModal').classList.remove('active'); }
 
+// payload에 base64로 남아 있는 예전 사진 수. 0이면 이전 버튼을 숨긴다.
+function countLegacyPhotos() {
+    return (appData.roundPhotos || []).reduce((n, list) =>
+        n + (list || []).filter(src => typeof src === 'string' && src.startsWith('data:')).length, 0);
+}
+
 function renderRoundPhotos() {
     const grid = document.getElementById('photoGrid'); grid.innerHTML = "";
+
+    // 다른 차수에 남아 있을 수도 있으므로 전체를 세고, 아래 조기 반환보다 먼저 갱신한다.
+    const migrateBtn = document.getElementById('migratePhotosBtn');
+    if (migrateBtn) {
+        const legacy = countLegacyPhotos();
+        migrateBtn.style.display = legacy > 0 ? 'block' : 'none';
+        migrateBtn.textContent = `🗄️ 기존 사진 ${legacy}장 Storage로 이전 (관리자)`;
+    }
+
     const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) ? appData.roundPhotos[selectedPhotoRoundIdx] : [];
     if (photos.length === 0) { grid.innerHTML = `<div style="grid-column: span 2; text-align:center; padding: 20px; color:#94a3b8; font-size: 0.8rem;">등록된 사진이 없습니다.</div>`; return; }
     photos.forEach((src, index) => {
