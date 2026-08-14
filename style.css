@@ -382,7 +382,7 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 /* 계급 뱃지(요약 카드 한정) — 아이콘을 키우고 광택·그림자로 도드라지게.
    후광 대신 안쪽 하이라이트만 써서 과하지 않게 유지한다. */
 .summary-item .rank-badge {
-    padding: 5px 0 !important;
+    padding: 3px 0 !important;
     font-size: clamp(0.6rem, 2.2vw, 0.72rem);
     letter-spacing: -0.2px;
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2),
