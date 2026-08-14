@@ -70,7 +70,14 @@ async function subscribeToPush(userName) {
         auth: json.keys.auth,
         name: userName || null
     }, { onConflict: 'endpoint' });
-    if (error) throw error;
+
+    // 서버에 못 남겼으면 브라우저 구독도 되돌린다. 안 그러면 버튼은 켜진 것처럼 보이는데
+    // 발송 목록에는 없는 상태가 된다.
+    if (error) {
+        try { await sub.unsubscribe(); } catch (e) { /* 되돌리기 실패는 무시 */ }
+        const detail = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' / ');
+        throw new Error(detail || '알 수 없는 오류');
+    }
     return sub;
 }
 

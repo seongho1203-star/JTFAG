@@ -333,9 +333,12 @@ function renderSkeleton() {
     if (summaryGrid) { summaryGrid.innerHTML = golfers.map(() => `<div class="summary-item skeleton"><div class="name">---</div><div class="detail-line">---</div><div class="detail-line">---</div><div class="final-total">---</div></div>`).join(''); }
 }
 
-function showToast(msg) {
+let toastTimer = null;
+function showToast(msg, ms) {
     const toast = document.getElementById('customToast'); if (!toast) return;
-    toast.textContent = msg; toast.style.opacity = '1'; setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+    toast.textContent = msg; toast.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, ms || 2200);
 }
 
 function showSaveStatus(msg) {
@@ -1126,7 +1129,7 @@ async function toggleRoundAlarm() {
         showToast("🔔 라운드 알림을 켰습니다! 라운드 2일 전에 알려드립니다.");
     } catch (err) {
         console.error("구독 실패:", err);
-        showToast("⚠️ 알림 등록에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        showToast(`⚠️ 알림 등록 실패 — ${(err && err.message) ? err.message : err}`, 9000);
     }
     updateAlarmUI();
 }
