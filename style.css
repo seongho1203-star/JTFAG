@@ -379,3 +379,22 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .install-steps span { font-size: 0.72rem; font-weight: 600; color: #e2e8f0; word-break: keep-all; }
 .install-steps b { color: #fef08a; font-weight: 800; }
 .ios-share { display: inline-block; padding: 0 5px; border: 1px solid #64748b; border-radius: 4px; color: #60a5fa; }
+
+/* 계급 뱃지(요약 카드 한정) — 아이콘을 키우고 광택·그림자로 도드라지게.
+   후광 대신 안쪽 하이라이트만 써서 과하지 않게 유지한다. */
+.summary-item .rank-badge {
+    padding: 5px 0 !important;
+    font-size: clamp(0.6rem, 2.2vw, 0.72rem);
+    letter-spacing: -0.2px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+.summary-item .rank-badge img {
+    height: 1.4em !important;
+    filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.3));
+}
+/* 흰 글씨인 계급만 그림자를 넣는다. 독수리는 밝은 바탕에 어두운 글씨라 필요 없다. */
+.summary-item .rank-hawk,
+.summary-item .rank-crane,
+.summary-item .rank-sparrow { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
