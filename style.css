@@ -71,7 +71,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .total-summary-card { background: linear-gradient(145deg, #ffffff, #fefce8); border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 4px 10px 4px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); }
 .total-summary-card h2 { font-size: clamp(0.75rem, 3vw, 0.88rem); margin: 0 0 5px 0; text-align: center; color: var(--primary-gold); font-weight: 800; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-.summary-item { background: #ffffff; border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 4px 3px 6px 3px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+.summary-item { background: #ffffff; border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 2px 3px 6px 3px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
 .summary-item .name { font-size: clamp(0.68rem, 2.8vw, 0.78rem); font-weight: 800; color: var(--text-main); background-color: #f1f5f9; border-radius: 6px; padding: 4px 2px; margin-bottom: 4px; border-bottom: none; white-space: nowrap; text-decoration: none; }
 .summary-item .name:hover { background-color: #e2e8f0; color: var(--primary-gold); }
 .summary-item .detail-line { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-radius: 4px; padding: 2px 4px; margin-top: 3px; font-size: clamp(0.58rem, 2.2vw, 0.68rem); white-space: nowrap; }

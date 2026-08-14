@@ -485,7 +485,7 @@ function processAllRoundSettlements() {
                 <div class="summary-item" style="height: 100%; justify-content: flex-start;">
                     <div>
                         <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
-                        <div style="margin-top:-2px; margin-bottom: 6px;">
+                        <div style="margin-top:2px; margin-bottom: 6px;">
                             <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:6px; ${badgeGlowStyle}">${currentRankInfo.icon} ${currentRankInfo.name}</span>
                         </div>
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
