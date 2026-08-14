@@ -452,10 +452,6 @@ function processAllRoundSettlements() {
                 }
             }
 
-            // 뱃지는 사람마다 개수가 달라 카드가 들쭉날쭉해진다. 항상 있는 값을 한 줄 넣는다.
-            const avgVal = golferAvgScores[g];
-            const avgText = (avgVal !== undefined && !isNaN(avgVal)) ? `${Math.round(avgVal)}타` : '-';
-
             const allBadges = getGolferBadgesArray(g, overallMinAvg, overallMinScore);
             golferBadgesMap[g] = allBadges; 
             const summaryBadgesHtml = allBadges.slice(0, 2).map(b => b.html).join('');
@@ -492,7 +488,6 @@ function processAllRoundSettlements() {
                         <div style="margin-top:-2px; margin-bottom: 6px;">
                             <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:6px; ${badgeGlowStyle}">${currentRankInfo.icon} ${currentRankInfo.name}</span>
                         </div>
-                        <div class="summary-score">${avgText}<span>평균</span></div>
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                         <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
                     </div>

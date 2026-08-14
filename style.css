@@ -379,5 +379,3 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .install-steps span { font-size: 0.72rem; font-weight: 600; color: #e2e8f0; word-break: keep-all; }
 .install-steps b { color: #fef08a; font-weight: 800; }
 .ios-share { display: inline-block; padding: 0 5px; border: 1px solid #64748b; border-radius: 4px; color: #60a5fa; }
-.summary-item .summary-score { display: flex; align-items: baseline; justify-content: center; gap: 3px; font-size: clamp(0.8rem, 3.2vw, 0.92rem); font-weight: 900; color: var(--primary-gold); line-height: 1.1; margin-bottom: 5px; white-space: nowrap; }
-.summary-item .summary-score span { font-size: clamp(0.5rem, 1.9vw, 0.58rem); font-weight: 700; color: #94a3b8; }
