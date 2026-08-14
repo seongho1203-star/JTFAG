@@ -138,7 +138,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 
 .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); margin-bottom: 10px; background: var(--card-bg); width: 100%; scroll-behavior: smooth; }
 .table-wrapper table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: center; }
-th, td { padding: 6px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 54px; }
+th, td { padding: 6px 3px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 50px; }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
 
 .sticky-col-1 { position: sticky !important; left: 0 !important; z-index: 3 !important; background-color: #f1f5f9 !important; min-width: 44px !important; width: 44px !important; box-sizing: border-box; font-weight: 800; font-size: clamp(0.65rem, 2.5vw, 0.75rem); padding-left: 2px !important; padding-right: 2px !important; white-space: nowrap !important; word-break: keep-all !important; text-align: center; }
@@ -149,9 +149,9 @@ th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-s
 
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
-input.score-input { width: 34px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg); margin: 0 auto; display: block; }
-input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7; margin: 0 auto; display: block; }
-.photo-btn { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
+input.score-input { width: 42px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg); margin: 0 auto; display: block; }
+input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7; margin: 0 auto; display: block; }
+.photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
 .photo-btn:hover { background: #fef9e7; }
 
 .avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--text-main); }
