@@ -320,8 +320,9 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .analysis-note { margin-top: 7px; font-size: 0.66rem; font-weight: 600; color: #94a3b8; text-align: center; word-break: keep-all; }
 .analysis-empty { padding: 16px 8px; text-align: center; color: #94a3b8; font-size: 0.72rem; font-weight: 600; line-height: 1.5; }
 
-.trend-row { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
-.trend-label { flex: 0 0 30px; font-size: 0.68rem; font-weight: 800; color: #64748b; }
-.trend-bar { flex: 1; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-.trend-bar span { display: block; height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-.trend-val { flex: 0 0 32px; text-align: right; font-size: 0.72rem; font-weight: 800; }
+/* 세로 막대 추이 — 차수가 늘어도 높이가 고정이라 리포트가 길어지지 않는다 */
+.trend-chart { display: flex; align-items: flex-end; gap: 3px; height: 74px; }
+.trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+.trend-col span { display: block; width: 100%; border-radius: 3px 3px 0 0; transition: height 0.4s ease; }
+.trend-axis { display: flex; gap: 3px; margin-top: 5px; }
+.trend-axis span { flex: 1; min-width: 0; text-align: center; font-size: 0.56rem; font-weight: 700; color: #94a3b8; }

@@ -938,17 +938,21 @@ function buildAnalysisHtml(name) {
         // ① 파 종류별 강약 — 값이 낮을수록 좋다. 가장 좋은 쪽 초록, 나쁜 쪽 빨강.
         const pars = [{ k: '파3', v: a.par3 }, { k: '파4', v: a.par4 }, { k: '파5', v: a.par5 }].filter(x => x.v !== null);
         const best = Math.min(...pars.map(x => x.v)), worst = Math.max(...pars.map(x => x.v));
+        // 세 값이 거의 같으면 억지로 강약을 가르지 않고 전부 '보통'으로 둔다.
+        const meaningful = (worst - best) >= 0.3;
         const parCells = pars.map(x => {
-            const color = (pars.length > 1 && x.v === best) ? '#059669' : (pars.length > 1 && x.v === worst) ? '#dc2626' : '#475569';
+            let label = '보통', color = '#475569';
+            if (meaningful && x.v === best) { label = '강함'; color = '#059669'; }
+            else if (meaningful && x.v === worst) { label = '약함'; color = '#dc2626'; }
             const width = worst > 0 ? Math.max(8, (x.v / worst) * 100) : 8;
             return `<div class="stat-box" style="padding:6px 4px;">
                 <div class="stat-label" style="font-size:0.62rem;">${x.k}</div>
-                <div class="analysis-val" style="color:${color};">+${x.v.toFixed(2)}</div>
+                <div class="analysis-val" style="color:${color};">${label}</div>
                 <div class="analysis-bar"><span style="width:${width}%; background:${color};"></span></div></div>`;
         }).join('');
         html += `<div class="report-section"><div class="report-title">🕳️ 파 종류별 강약</div>
             <div class="stat-grid" style="grid-template-columns: repeat(${pars.length}, 1fr);">${parCells}</div>
-            <div class="analysis-note">홀당 파 대비 평균 · 낮을수록 강함</div></div>`;
+            <div class="analysis-note">${meaningful ? '막대가 짧을수록 잘 치는 홀입니다.' : '파 종류별 차이가 거의 없습니다.'}</div></div>`;
 
         // ② 전반 / 후반
         const diff = a.back - a.front;
@@ -971,13 +975,19 @@ function buildAnalysisHtml(name) {
         const lo = Math.min(...valid.map(x => x.v)), hi = Math.max(...valid.map(x => x.v));
         // 눈금 최소 폭을 둬서 1~2타 차이가 막대에서 과장돼 보이지 않게 한다.
         const span = Math.max(hi - lo, 8);
-        trend = valid.map(x => {
+        // 세로 막대라 차수가 늘어도 높이는 그대로다. 막대만 얇아진다.
+        const step = valid.length > 12 ? Math.ceil(valid.length / 8) : 1;
+        const cols = valid.map((x, i) => {
             const isBest = (x.v === lo && valid.length > 1);
-            return `<div class="trend-row">
-                <span class="trend-label">${x.r}차</span>
-                <span class="trend-bar"><span style="width:${30 + ((x.v - lo) / span) * 70}%; background:${isBest ? '#059669' : '#cbd5e1'};"></span></span>
-                <span class="trend-val" style="color:${isBest ? '#059669' : '#475569'};">${x.v}</span></div>`;
+            return `<div class="trend-col" title="${x.r}차전 ${x.v}타"><span style="height:${30 + ((x.v - lo) / span) * 70}%; background:${isBest ? '#059669' : '#cbd5e1'};"></span></div>`;
         }).join('');
+        const axis = valid.map((x, i) => {
+            const show = (step === 1) || (i % step === 0) || (i === valid.length - 1);
+            return `<span>${show ? x.r : ''}</span>`;
+        }).join('');
+        const last = valid[valid.length - 1];
+        trend = `<div class="trend-chart">${cols}</div><div class="trend-axis">${axis}</div>
+            <div class="analysis-note">최저 <b style="color:#059669;">${lo}타</b> · 최고 ${hi}타 · 최근 <b>${last.v}타</b>(${last.r}차)</div>`;
     }
     html += `<div class="report-section"><div class="report-title">📈 차수별 추이</div>${trend}
         ${a ? `<div class="analysis-note">위 분석은 홀 기록이 있는 ${a.roundCount}개 차수 기준입니다.</div>` : ''}</div>`;
