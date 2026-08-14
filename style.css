@@ -176,33 +176,33 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .close-btn { background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; font-weight: 700; padding: 0 5px; }
 .modal-body { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-.history-list { display: flex; flex-direction: column; gap: 8px; }
-.history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; }
-.history-header { font-size: clamp(0.68rem, 2.4vw, 0.78rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+.history-header { font-size: clamp(0.72rem, 2.6vw, 0.84rem); font-weight: 800; color: #15803d; background: rgba(22, 163, 74, 0.1); padding: 5px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
 
 /* 🔥 이력 모달: 다시 2열(가로)로 복구 및 간격/크기 겹침 최적화 🔥 */
-.history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+.history-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
 .history-member { 
     background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; 
-    padding: 4px 3px; display: flex; justify-content: space-between; align-items: center; 
+    padding: 7px 4px; display: flex; justify-content: space-between; align-items: center; 
     gap: 2px; overflow: hidden;
 }
 .history-member > span:first-child { 
-    font-size: clamp(0.58rem, 2vw, 0.65rem); font-weight: 800; color: var(--text-main);
+    font-size: clamp(0.64rem, 2.25vw, 0.73rem); font-weight: 800; color: var(--text-main);
     white-space: nowrap; flex-shrink: 0;
 }
 .history-member > div { 
     display: flex; justify-content: flex-end; align-items: center; gap: 2px !important; flex-shrink: 1; min-width: 0;
 }
 .history-member .rank-badge { 
-    width: auto; padding: 1px 3px; font-size: clamp(0.5rem, 1.8vw, 0.58rem); letter-spacing: -0.5px;
+    width: auto; padding: 2px 4px; font-size: clamp(0.54rem, 1.95vw, 0.63rem); letter-spacing: -0.5px;
     white-space: nowrap; flex-shrink: 1; text-overflow: ellipsis; overflow: hidden;
 }
 .history-member .rank-badge img { 
     height: 1em !important; margin-right: 1px !important; vertical-align: text-top;
 }
 .history-member > div > span:last-child { 
-    font-size: clamp(0.58rem, 2vw, 0.68rem); font-weight: 900; white-space: nowrap; flex-shrink: 0; letter-spacing: -0.5px;
+    font-size: clamp(0.64rem, 2.25vw, 0.75rem); font-weight: 900; white-space: nowrap; flex-shrink: 0; letter-spacing: -0.5px;
 }
 
 .report-section { margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; }
