@@ -71,7 +71,17 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 
 ### 인증
 
-`ADMIN_PASSWORD` (api.js)는 클라이언트에 평문 상수로 있고, 사용자 식별은 `localStorage`의 `jtfag_my_name`에 의존한다. 보안 경계가 아니라 모임 내부용 실수 방지 장치다. 실제 접근 제어는 Supabase RLS에 달려 있다.
+`ADMIN_PASSWORD` (api.js)는 클라이언트에 평문 상수로 있고, 사용자 식별은 `localStorage`의 `jtfag_my_name`에 의존한다.
+보안 경계가 아니라 모임 내부용 실수 방지 장치다. 로그인이 없어 서버는 접속자를 구분하지 못한다.
+
+`jtfag_league` 테이블의 RLS 정책은 이렇게 걸려 있다:
+
+- SELECT — 허용
+- INSERT / UPDATE — `id = 1` 행에만 허용 (앱이 쓰는 `upsert`가 둘 다 필요로 한다)
+- DELETE — 정책 없음 = 차단
+
+행 삭제와 쓰레기 행 삽입은 막히지만, **데이터 덮어쓰기는 여전히 가능하다.** 정책을 바꿀 때 이 전제를 깨지 말 것.
+`storage.objects`에는 `round-photos` 버킷 한정 INSERT/DELETE 정책이 있다.
 
 ## 주의사항
 
