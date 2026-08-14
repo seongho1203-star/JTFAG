@@ -35,7 +35,10 @@ python3 -m http.server 8000        # http://localhost:8000
 stats.js → api.js → calc.js → ui.js
 ```
 
-- **`stats.js`** — `CUMULATIVE_STATS` 상수만 존재. 버디/파/더블파 누적 기록을 **사람이 손으로 갱신**한다. DB에 없는 유일한 데이터.
+- **`stats.js`** — 홀 단위 스코어 기록. DB에 없는 유일한 데이터로, 스코어카드 사진을 판독해 갱신한다.
+  `ROUND_HOLES`(원본, 차수별 18홀 파+파대비타수) → `ROUND_STATS`(차수별 집계) → `CUMULATIVE_STATS`(누적 총합)로
+  **자동 계산**된다. 뒤 두 개는 직접 고치지 말 것. 새 차수는 `ROUND_HOLES`에만 추가하면 된다.
+  판독 검산법: `par + rel`의 18홀 합계가 `appData.scores[이름][차수]`의 그로스와 일치해야 한다.
 - **`api.js`** — Supabase 클라이언트, 전역 상태(`appData`), 상수(`golfers`, `RANK_CONFIG`, `COURSE_GEO`), Open-Meteo 날씨 조회.
 - **`calc.js`** — 순수 계산 계층. 정산/등급/핸디캡을 산출해 `golfer*Map` 전역 변수들에 채운다.
 - **`ui.js`** — DOM 렌더링, 모달, 이벤트 핸들러. 진입점(`DOMContentLoaded` → `fetchFromSupabase()`)이 여기 있다.
@@ -72,7 +75,6 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 
 ## 주의사항
 
-- **`script backup`** 은 확장자 없는 60KB짜리 레거시 파일이다. 어디서도 로드되지 않는다. 검색 결과에 자주 걸리지만 **수정해도 아무 효과가 없다.** 실제 코드는 `api.js`/`calc.js`/`ui.js`에 있다.
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
 - CSS/JS는 `document.write`로 `?ver=` 랜덤 쿼리를 붙여 캐시를 우회한다. 로컬에서 안 바뀌어 보이면 강력 새로고침(`Ctrl+Shift+R`)을 시도한다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.
