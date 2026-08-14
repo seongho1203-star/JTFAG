@@ -4,6 +4,12 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
+// 크롬이 '설치 가능'으로 판정하려면 fetch 핸들러가 있어야 한다.
+// 일부러 캐시를 두지 않는다 — 캐시하면 코드를 고쳐도 예전 화면이 남는다.
+self.addEventListener('fetch', (event) => {
+    if (event.request.mode === 'navigate') event.respondWith(fetch(event.request));
+});
+
 self.addEventListener('push', (event) => {
     let data = {};
     try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }

@@ -25,6 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     initScheduleOptions();
     registerServiceWorker().then(() => updateAlarmUI());
+    setTimeout(renderInstallBanner, 2500);   // iOS는 이벤트가 없으므로 직접 띄운다
 
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
@@ -1135,6 +1136,75 @@ function fallbackCopy(text) {
     } catch (err) { showToast("⚠️ 복사에 실패했습니다. 일정을 수동으로 공유해주세요."); }
     document.body.removeChild(ta);
 }
+
+// ─── 앱 설치 안내 ───
+// 안드로이드는 크롬이 실제 설치를 지원해 버튼 한 번으로 끝나지만,
+// iOS는 애플이 프로그램적 설치를 막아뒀다. 그래서 방법을 안내만 한다.
+let deferredInstallPrompt = null;
+const INSTALL_DISMISS_KEY = 'jtfag_install_dismissed';
+
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // 아이패드 사파리
+}
+
+function dismissInstallBanner() {
+    localStorage.setItem(INSTALL_DISMISS_KEY, '1');
+    const el = document.getElementById('installBanner');
+    if (el) el.classList.remove('show');
+}
+
+function renderInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (!banner) return;
+    if (isAppInstalled() || localStorage.getItem(INSTALL_DISMISS_KEY)) { banner.classList.remove('show'); return; }
+
+    const desc = document.getElementById('installDesc');
+    const action = document.getElementById('installAction');
+
+    if (deferredInstallPrompt) {
+        desc.textContent = '홈 화면에 앱으로 추가하고 라운드 알림을 받아보세요.';
+        action.innerHTML = `<button type="button" class="install-btn" onclick="runInstall()">📲 설치하기</button>`;
+    } else if (isIOS()) {
+        desc.textContent = '앱처럼 쓰고 라운드 알림을 받으려면 홈 화면에 추가하세요.';
+        action.innerHTML = `<div class="install-steps">
+            <span><b>1</b> 아래 <b>공유</b> <span class="ios-share">⬆︎</span> 를 누르고</span>
+            <span><b>2</b> <b>‘홈 화면에 추가’</b> 를 선택하세요</span>
+        </div>`;
+    } else {
+        banner.classList.remove('show');
+        return;
+    }
+    banner.classList.add('show');
+}
+
+async function runInstall() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    if (outcome === 'accepted') {
+        document.getElementById('installBanner').classList.remove('show');
+    } else {
+        showToast("설치를 취소했습니다. 나중에 다시 설치할 수 있습니다.");
+        renderInstallBanner();
+    }
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();               // 크롬 기본 배너 대신 우리 안내를 쓴다
+    deferredInstallPrompt = e;
+    renderInstallBanner();
+});
+window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    const el = document.getElementById('installBanner');
+    if (el) el.classList.remove('show');
+    showToast("🎉 앱이 설치되었습니다!");
+});
 
 // ─── 라운드 알림 구독 ───
 // 실제 발송은 GitHub Actions가 한다. 여기서는 각자 기기의 구독을 켜고 끈다.

@@ -68,6 +68,8 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
 - 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`. 공개키는 `api.js`의 `VAPID_PUBLIC_KEY`와 같아야 한다.
 - 수동 확인은 Actions 탭에서 workflow_dispatch로 실행한다 (기본이 dry run이라 실제로 안 보낸다).
+- `sw.js`의 `fetch` 핸들러는 **크롬이 '설치 가능'으로 판정하는 조건**이라 있는 것이다.
+  일부러 캐시를 두지 않았다 — 캐시하면 코드를 고쳐도 예전 화면이 남는다. 지우거나 캐시를 넣지 말 것.
 
 ### 데이터 흐름
 
