@@ -277,16 +277,6 @@ async function changeAdminPassword() {
     }
 }
 
-async function toggleFundLock() {
-    if (isFundUnlocked) { 
-        isFundUnlocked = false; 
-        updateLockUI(); 
-        document.getElementById('clubFundInput').value = formatFundString(appData.clubFund); 
-        showToast("🔒 관리자 권한이 잠겼습니다."); 
-    } else { 
-        await authenticateAdmin(); 
-    }
-}
 
 async function handleFundClick(inputElem) {
     if (!isFundUnlocked) { 
@@ -296,10 +286,8 @@ async function handleFundClick(inputElem) {
 }
 
 function updateLockUI() {
-    const btn = document.getElementById('lockToggleBtn'); 
     const fundInput = document.getElementById('clubFundInput');
 
-    if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
     
     if (fundInput) {
         if (isFundUnlocked) { 
