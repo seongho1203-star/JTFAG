@@ -10,6 +10,7 @@
 
     <title>JTFAG League - 실시간 정산 시스템</title>
 
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="IMG_8075.jpeg">
     <link rel="icon" type="image/jpeg" href="IMG_8075.jpeg">
 
@@ -31,7 +32,7 @@
         <h2>
             <span>📢 공지 및 공금</span>
             <div style="display:flex; align-items:center;">
-                <button type="button" class="bell-btn" onclick="sendNotification()" title="일정 알림">🔔</button>
+                <button type="button" class="bell-btn" id="alarmToggleBtn" onclick="toggleRoundAlarm()" title="라운드 알림">🔕</button>
                 <button type="button" class="lock-btn" onclick="openAdminModal()" title="관리자 메뉴">⚙️</button>
             </div>
         </h2>
@@ -153,6 +154,7 @@
                     <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none;">
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
+                <button type="button" class="open-history-btn" style="margin-top:6px; padding:8px; font-size:0.78rem;" onclick="sendNotification()">📤 일정 미리보기 · 공유</button>
             </div>
         </div>
     </div>

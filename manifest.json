@@ -1,0 +1,16 @@
+{
+  "name": "JTFAG League",
+  "short_name": "JTFAG",
+  "description": "JTFAG 골프 모임 스코어 · 정산 · 통계",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#edf2f7",
+  "theme_color": "#edf2f7",
+  "lang": "ko",
+  "icons": [
+    { "src": "IMG_8075.jpeg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any" },
+    { "src": "IMG_8075.jpeg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+  ]
+}

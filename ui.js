@@ -24,6 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }).subscribe();
 
     initScheduleOptions();
+    registerServiceWorker().then(() => updateAlarmUI());
 
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
@@ -380,11 +381,30 @@ function handleCourseSelectChange(val) {
 
 function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('active'); }
 
+// 화면 문구에는 연도가 없다. 월/일만으로 실제 라운드 날짜(YYYY-MM-DD)를 정한다.
+// 이미 한 달 넘게 지난 날짜를 고르면 내년으로 본다 — 12월에 1월 일정을 잡는 경우.
+function resolveRoundDate(month, day) {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    let year = now.getFullYear();
+    const candidate = new Date(year, month - 1, day);
+    const monthAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+    if (candidate < monthAgo) year += 1;
+    return `${year}-${pad(month)}-${pad(day)}`;
+}
+
 function saveSchedule() {
     const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
     if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { showToast("⚠️ 골프장 이름을 입력해주세요!"); document.getElementById('schCourseCustom').focus(); return; }
     saveState();
-    appData.nextRoundDate = `${document.getElementById('schMonth').value}월 ${document.getElementById('schDay').value}일 ${document.getElementById('schAmpm').value} ${document.getElementById('schHour').value}:${document.getElementById('schMinute').value} ${course}`;
+    const m = parseInt(document.getElementById('schMonth').value, 10);
+    const d = parseInt(document.getElementById('schDay').value, 10);
+    const ampm = document.getElementById('schAmpm').value;
+    const hh = document.getElementById('schHour').value;
+    const mm = document.getElementById('schMinute').value;
+    appData.nextRoundDate = `${m}월 ${d}일 ${ampm} ${hh}:${mm} ${course}`;
+    // 표시용 문구에는 연도가 없어 알림이 연도를 알 수 없다. 별도로 남긴다.
+    appData.nextRoundISO = resolveRoundDate(m, d);
     syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
 }
 
@@ -1065,6 +1085,50 @@ function fallbackCopy(text) {
         else { window.location.href = 'kakaotalk://'; }
     } catch (err) { showToast("⚠️ 복사에 실패했습니다. 일정을 수동으로 공유해주세요."); }
     document.body.removeChild(ta);
+}
+
+// ─── 라운드 알림 구독 ───
+// 실제 발송은 GitHub Actions가 한다. 여기서는 각자 기기의 구독을 켜고 끈다.
+async function updateAlarmUI() {
+    const btn = document.getElementById('alarmToggleBtn');
+    if (!btn) return;
+    if (!pushSupported()) { btn.textContent = '🔕'; btn.title = '이 브라우저는 알림을 지원하지 않습니다'; return; }
+    const sub = await getPushSubscription();
+    const on = !!sub && Notification.permission === 'granted';
+    btn.textContent = on ? '🔔' : '🔕';
+    btn.title = on ? '라운드 알림 켜짐 — 눌러서 끄기' : '라운드 알림 받기';
+}
+
+async function toggleRoundAlarm() {
+    if (!pushSupported()) {
+        showToast("⚠️ 이 브라우저는 알림을 지원하지 않습니다. 홈 화면에 추가한 앱에서 열어주세요.");
+        return;
+    }
+    if (Notification.permission === 'denied') {
+        showToast("⚠️ 알림이 차단돼 있습니다. 기기 설정에서 이 앱의 알림을 허용해주세요.");
+        return;
+    }
+
+    const existing = await getPushSubscription();
+    if (existing && Notification.permission === 'granted') {
+        if (!(await showConfirmPrompt("라운드 알림을 끌까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>이 기기로 알림이 오지 않습니다.</span>", "끄기"))) return;
+        try { await unsubscribeFromPush(); showToast("🔕 라운드 알림을 껐습니다."); }
+        catch (err) { console.error(err); showToast("⚠️ 알림 해제에 실패했습니다."); }
+        updateAlarmUI();
+        return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { showToast("⚠️ 알림 권한이 허용되지 않았습니다."); updateAlarmUI(); return; }
+
+    try {
+        await subscribeToPush(localStorage.getItem('jtfag_my_name'));
+        showToast("🔔 라운드 알림을 켰습니다! 라운드 2일 전에 알려드립니다.");
+    } catch (err) {
+        console.error("구독 실패:", err);
+        showToast("⚠️ 알림 등록에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    }
+    updateAlarmUI();
 }
 
 function sendNotification() {

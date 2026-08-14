@@ -27,6 +27,62 @@ const COURSE_GEO = {
     "푸른솔": { lat: 35.275, lon: 126.652 }
 };
 
+// ─── 푸시 알림 ───
+// 발송은 GitHub Actions가 매일 한 번 돌면서 처리한다 (.github/workflows/round-reminder.yml).
+// 여기서는 브라우저 구독 정보를 push_subscriptions 테이블에 등록/해지만 한다.
+const VAPID_PUBLIC_KEY = 'BB74vxit3DwG4BhbEbDICkkUCa0WgYX23D2TShNh0aZcqD67n3zYFW4pVFQtyN4DYUW08wypS0upbDMIQ2MrAbA';
+const PUSH_TABLE = 'push_subscriptions';
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = window.atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return null;
+    try { return await navigator.serviceWorker.register('sw.js'); }
+    catch (err) { console.error("서비스워커 등록 실패:", err); return null; }
+}
+
+async function getPushSubscription() {
+    if (!pushSupported()) return null;
+    const reg = await navigator.serviceWorker.ready;
+    return reg.pushManager.getSubscription();
+}
+
+// 구독을 만들고 Supabase에 저장한다. endpoint가 기본키라 같은 기기는 덮어쓴다.
+async function subscribeToPush(userName) {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    const json = sub.toJSON();
+    const { error } = await window._supabase.from(PUSH_TABLE).upsert({
+        endpoint: json.endpoint,
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
+        name: userName || null
+    }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    return sub;
+}
+
+async function unsubscribeFromPush() {
+    const sub = await getPushSubscription();
+    if (!sub) return;
+    const endpoint = sub.endpoint;
+    await sub.unsubscribe();
+    const { error } = await window._supabase.from(PUSH_TABLE).delete().eq('endpoint', endpoint);
+    if (error) console.error("구독 해지 기록 실패:", error);
+}
+
 // 라운드 사진은 Storage 버킷에 올리고 payload에는 공개 URL만 저장한다.
 // (예전에 등록된 사진은 payload 안에 base64로 들어 있어, 두 형태가 함께 존재할 수 있다)
 const PHOTO_BUCKET = 'round-photos';

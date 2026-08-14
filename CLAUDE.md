@@ -45,6 +45,26 @@ stats.js → api.js → calc.js → ui.js
 
 새 파일을 추가하면 `index.html`의 `document.write` 블록에도 등록해야 한다.
 
+### 라운드 알림 (푸시)
+
+정적 사이트에는 "정해진 시각에 도는 것"이 없어, 발송을 GitHub Actions가 맡는다.
+
+```
+sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
+      ↑구독                        ↓ 읽기
+  api.js: subscribeToPush()   Supabase: jtfag_league.payload.nextRoundISO
+      ↓                                 push_subscriptions 테이블
+  push_subscriptions 테이블
+```
+
+- 발송 조건은 `scripts/send-reminder.js`가 판단한다. 오늘(KST)과 `nextRoundISO`의 차이가
+  `REMIND_DAYS_BEFORE`(기본 2)와 같을 때만 보내고, 아니면 아무것도 안 한다.
+- **`nextRoundDate`(화면 문구)에는 연도가 없다.** 그래서 `saveSchedule()`이 `resolveRoundDate()`로
+  `nextRoundISO`(`YYYY-MM-DD`)를 따로 저장한다. 알림은 이 값만 본다. 문구 형식을 바꿔도 알림은 안 깨진다.
+- 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
+  `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`. 공개키는 `api.js`의 `VAPID_PUBLIC_KEY`와 같아야 한다.
+- 수동 확인은 Actions 탭에서 workflow_dispatch로 실행한다 (기본이 dry run이라 실제로 안 보낸다).
+
 ### 데이터 흐름
 
 전체 앱 상태가 Supabase 테이블 `jtfag_league`의 **단일 행(`id = 1`)** 의 `payload` JSON 컬럼 하나에 통째로 들어 있다.
