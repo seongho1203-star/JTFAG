@@ -361,3 +361,6 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .notify-preview-label { font-size: 0.58rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
 .notify-preview-title { font-size: 0.8rem; font-weight: 800; color: #fef08a; word-break: keep-all; }
 .notify-preview-body { font-size: 0.74rem; font-weight: 600; color: #e2e8f0; margin-top: 2px; word-break: keep-all; }
+
+/* 관리자 메뉴 위에 겹쳐 여는 모달 — 같은 z-index면 DOM 순서상 관리자 메뉴에 가린다 */
+#notifySettingsModal { z-index: 1001; }
