@@ -326,3 +326,22 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .trend-col span { display: block; width: 100%; border-radius: 3px 3px 0 0; transition: height 0.4s ease; }
 .trend-axis { display: flex; gap: 3px; margin-top: 5px; }
 .trend-axis span { flex: 1; min-width: 0; text-align: center; font-size: 0.56rem; font-weight: 700; color: #94a3b8; }
+
+/* 관리자 메뉴 */
+.admin-state { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 0.78rem; font-weight: 800; color: #64748b; }
+.admin-state.on { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.35); color: #15803d; }
+.admin-state-btn { padding: 5px 12px; border-radius: 8px; border: none; background: #334155; color: #fff; font-family: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
+.admin-state.on .admin-state-btn { background: #15803d; }
+
+.admin-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.admin-btn { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; background: #ffffff; color: var(--text-main); font-family: inherit; font-size: 0.78rem; font-weight: 800; text-align: left; cursor: pointer; }
+
+.change-log-list { max-height: 260px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; }
+.change-log-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 9px; }
+.log-meta { font-size: 0.62rem; font-weight: 700; color: #94a3b8; }
+.log-meta b { color: var(--primary-gold); }
+.log-target { font-size: 0.74rem; font-weight: 800; color: var(--text-main); margin-top: 2px; }
+.log-diff { font-size: 0.72rem; font-weight: 700; color: #64748b; margin-top: 2px; }
+.log-diff b { color: #15803d; }
+.log-arrow { color: #cbd5e1; margin: 0 2px; }
+.log-empty { color: #cbd5e1; font-weight: 600; }

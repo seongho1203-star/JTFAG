@@ -33,6 +33,7 @@
             <div style="display:flex; align-items:center;">
                 <button type="button" class="bell-btn" onclick="sendNotification()" title="일정 알림">🔔</button>
                 <button type="button" class="lock-btn" id="lockToggleBtn" onclick="toggleFundLock()" title="공금 수정 잠금/해제">🔒</button>
+                <button type="button" class="lock-btn" onclick="openAdminModal()" title="관리자 메뉴">⚙️</button>
             </div>
         </h2>
         <div class="notice-grid">
@@ -158,6 +159,23 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="adminModal" onclick="if(event.target === this) closeAdminModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>⚙️ 관리자 메뉴</h3>
+            <button type="button" class="close-btn" onclick="closeAdminModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="admin-status" id="adminStatus"></div>
+            <div class="admin-actions" id="adminActions"></div>
+            <div class="report-section" style="margin-top:10px;">
+                <div class="report-title">📋 변경 이력</div>
+                <div class="change-log-list" id="changeLogList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="roundPickerModal" onclick="if(event.target === this) closeRoundPickerModal()">
     <div class="modal-content" style="max-width: 340px;">
         <div class="modal-header">
@@ -189,7 +207,6 @@
         <div class="modal-body">
             <input type="file" accept="image/*" id="roundPhotoUpload" style="display:none;" onchange="handleRoundPhotoUpload(event)" multiple>
             <button type="button" class="open-history-btn" onclick="document.getElementById('roundPhotoUpload').click()">+ 새로운 사진 업로드</button>
-            <button type="button" id="migratePhotosBtn" class="open-history-btn" style="display:none; margin-top:6px; background:linear-gradient(135deg,#475569,#334155); border-color:#64748b; color:#e2e8f0; font-size:0.72rem; padding:7px;" onclick="migratePhotosToStorage()">🗄️ 기존 사진 Storage로 이전 (관리자)</button>
             <div class="photo-grid" id="photoGrid"></div>
         </div>
     </div>

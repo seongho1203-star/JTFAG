@@ -554,7 +554,10 @@ function updateMoney(name, type, value) {
     saveState();
     if (!appData.roundMoney[selectedMoneyRoundIdx]) appData.roundMoney[selectedMoneyRoundIdx] = {};
     if (!appData.roundMoney[selectedMoneyRoundIdx][name]) appData.roundMoney[selectedMoneyRoundIdx][name] = { start: 0, end: 0 };
-    appData.roundMoney[selectedMoneyRoundIdx][name][type] = parseNumber(value);
+    const after = parseNumber(value);
+    pushChangeLog(`${name} ${selectedMoneyRoundIdx + 1}차 ${type === 'start' ? '시작' : '남은'} 금액`,
+                  appData.roundMoney[selectedMoneyRoundIdx][name][type], after, 'money');
+    appData.roundMoney[selectedMoneyRoundIdx][name][type] = after;
     syncToSupabase(appData); renderAll();
 }
 
@@ -621,8 +624,32 @@ function renderHandicapMatchCard(r1, r2) {
     }
 }
 
-function updateCourse(r, val) { saveState(); if (!appData.courses) appData.courses = []; appData.courses[r] = val; syncToSupabase(appData); }
-function updateScore(name, r, val) { saveState(); if (!appData.scores) appData.scores = {}; if (!appData.scores[name]) appData.scores[name] = []; appData.scores[name][r] = val === "" ? "" : parseNumber(val); syncToSupabase(appData); renderAll(); }
+// 누가 무엇을 어떻게 바꿨는지 남긴다. 값이 실제로 달라졌을 때만 기록한다.
+// (공금은 별도로 fundLogs에 쌓인다)
+const MAX_CHANGE_LOGS = 100;
+function pushChangeLog(target, before, after, kind) {
+    if (String(before === undefined || before === null ? "" : before) === String(after === undefined || after === null ? "" : after)) return;
+    if (!appData.changeLogs) appData.changeLogs = [];
+    const now = new Date();
+    appData.changeLogs.push({
+        time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        who: localStorage.getItem('jtfag_my_name') || "알 수 없음",
+        target: target, before: before, after: after, kind: kind || 'text'
+    });
+    while (appData.changeLogs.length > MAX_CHANGE_LOGS) appData.changeLogs.shift();
+}
+
+function updateCourse(r, val) {
+    saveState(); if (!appData.courses) appData.courses = [];
+    pushChangeLog(`${r + 1}차 골프장`, appData.courses[r], val, 'text');
+    appData.courses[r] = val; syncToSupabase(appData);
+}
+function updateScore(name, r, val) {
+    saveState(); if (!appData.scores) appData.scores = {}; if (!appData.scores[name]) appData.scores[name] = [];
+    const after = val === "" ? "" : parseNumber(val);
+    pushChangeLog(`${name} ${r + 1}차 스코어`, appData.scores[name][r], after, 'score');
+    appData.scores[name][r] = after; syncToSupabase(appData); renderAll();
+}
 
 function addRound() {
     saveState(); appData.totalRounds++;
@@ -659,14 +686,6 @@ function countLegacyPhotos() {
 
 function renderRoundPhotos() {
     const grid = document.getElementById('photoGrid'); grid.innerHTML = "";
-
-    // 다른 차수에 남아 있을 수도 있으므로 전체를 세고, 아래 조기 반환보다 먼저 갱신한다.
-    const migrateBtn = document.getElementById('migratePhotosBtn');
-    if (migrateBtn) {
-        const legacy = countLegacyPhotos();
-        migrateBtn.style.display = legacy > 0 ? 'block' : 'none';
-        migrateBtn.textContent = `🗄️ 기존 사진 ${legacy}장 Storage로 이전 (관리자)`;
-    }
 
     const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) ? appData.roundPhotos[selectedPhotoRoundIdx] : [];
     if (photos.length === 0) { grid.innerHTML = `<div style="grid-column: span 2; text-align:center; padding: 20px; color:#94a3b8; font-size: 0.8rem;">등록된 사진이 없습니다.</div>`; return; }
@@ -915,6 +934,57 @@ function openPersonalReport(name) {
     }, 100);
 }
 
+function openAdminModal() { renderAdminModal(); document.getElementById('adminModal').classList.add('active'); }
+function closeAdminModal() { document.getElementById('adminModal').classList.remove('active'); }
+
+async function adminToggleAuth() {
+    if (isFundUnlocked) { isFundUnlocked = false; updateLockUI(); showToast("🔒 관리자 권한을 해제했습니다."); }
+    else { await authenticateAdmin(); }
+    renderAdminModal();
+}
+
+async function adminRunAction(fn) {
+    await fn();
+    renderAdminModal();
+}
+
+function renderAdminModal() {
+    const status = document.getElementById('adminStatus');
+    const actions = document.getElementById('adminActions');
+    if (!status || !actions) return;
+
+    status.innerHTML = `<div class="admin-state ${isFundUnlocked ? 'on' : ''}">
+            <span>${isFundUnlocked ? '🔓 관리자 권한 활성' : '🔒 잠김'}</span>
+            <button type="button" class="admin-state-btn" onclick="adminToggleAuth()">${isFundUnlocked ? '해제' : '인증'}</button>
+        </div>`;
+
+    const legacy = countLegacyPhotos();
+    let btns = `
+        <button type="button" class="admin-btn" onclick="openFundLogModal()">💰 공금 수정 로그</button>
+        <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>`;
+    if (legacy > 0) {
+        btns += `<button type="button" class="admin-btn" onclick="adminRunAction(migratePhotosToStorage)">🗄️ 기존 사진 ${legacy}장 Storage로 이전</button>`;
+    }
+    actions.innerHTML = btns;
+
+    const list = document.getElementById('changeLogList');
+    const logs = appData.changeLogs || [];
+    if (logs.length === 0) {
+        list.innerHTML = `<div class="analysis-empty">기록된 변경 내역이 없습니다.</div>`;
+        return;
+    }
+    const fmt = (v, kind) => {
+        if (v === "" || v === undefined || v === null) return '<span class="log-empty">비어 있음</span>';
+        return kind === 'money' ? formatNumber(v) + '원' : String(v);
+    };
+    list.innerHTML = logs.slice().reverse().map(l => `
+        <div class="change-log-item">
+            <div class="log-meta">${l.time} · <b>${l.who}</b></div>
+            <div class="log-target">${l.target}</div>
+            <div class="log-diff">${fmt(l.before, l.kind)} <span class="log-arrow">→</span> <b>${fmt(l.after, l.kind)}</b></div>
+        </div>`).join('');
+}
+
 function switchReportTab(tab) {
     const showRecord = (tab !== 'analysis');
     const rec = document.getElementById('reportPaneRecord');
@@ -999,6 +1069,7 @@ function buildAnalysisHtml(name) {
 function closePersonalReport() { document.getElementById('personalReportModal').classList.remove('active'); }
 
 async function resetAllData() {
+    if (!(await authenticateAdmin())) return;
     if (!(await showConfirmPrompt("정말로 모든 데이터를<br>초기화할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>스코어·정산·사진이 모두 사라집니다.</span>", "초기화"))) return;
     saveState(); appData = getDefaultData(); selectedMoneyRoundIdx = appData.totalRounds - 1; syncToSupabase(appData);
     renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
