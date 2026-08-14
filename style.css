@@ -105,7 +105,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .money-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 14px; padding: 10px 8px; margin-bottom: 10px; }
 .money-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px 4px; width: 100%; }
 .money-card h3 { margin: 0; font-size: clamp(0.75rem, 3vw, 0.88rem); color: var(--text-main); font-weight: 800; white-space: nowrap; }
-.round-select-badge { background: var(--gold-light); color: var(--primary-gold); border: 1px solid var(--card-border); padding: 3px 8px; border-radius: 12px; font-size: clamp(0.65rem, 2.4vw, 0.75rem); font-weight: 800; outline: none; cursor: pointer; font-family: inherit; white-space: nowrap; -webkit-appearance: none; appearance: none; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.round-select-badge { background: var(--gold-light); color: var(--primary-gold); border: 1px solid var(--card-border); padding: 3px 9px; border-radius: 10px; font-size: clamp(0.62rem, 2.2vw, 0.7rem); font-weight: 800; outline: none; cursor: pointer; font-family: inherit; white-space: nowrap; -webkit-appearance: none; appearance: none; transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .round-select-badge:active { transform: scale(0.95); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.18); }
 
 /* 차수 선택 팝업 */

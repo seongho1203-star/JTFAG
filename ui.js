@@ -495,7 +495,8 @@ function renderMoneyTable() {
 
     if (!tbody || !roundBtn) return;
 
-    const btnLabel = `⛳ ${selectedMoneyRoundIdx + 1}차전 정산 기록 ▾`;
+    // 카드 제목이 이미 '차수별 정산'이라 버튼은 차수만 밝힌다.
+    const btnLabel = `${selectedMoneyRoundIdx + 1}차전 ▾`;
     if (roundBtn.textContent !== btnLabel) roundBtn.textContent = btnLabel;
 
     if (!appData.roundMoney) appData.roundMoney = [];
