@@ -223,13 +223,15 @@ function showNameSelectionPrompt(message) {
     });
 }
 
-function showConfirmPrompt(message) {
+// confirmLabel / accent를 주면 확인 버튼의 문구와 색이 바뀐다. 없으면 삭제용(빨강).
+function showConfirmPrompt(message, confirmLabel, accent) {
+    const color = accent || "#ef4444";
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
-        
+
         const box = document.createElement('div');
-        box.style.cssText = "background:#1e293b; border:1px solid #ef4444; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        box.style.cssText = `background:#1e293b; border:1px solid ${color}; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;`;
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
@@ -243,8 +245,8 @@ function showConfirmPrompt(message) {
         cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
         
         const confirmBtn = document.createElement('button');
-        confirmBtn.textContent = "삭제";
-        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#ef4444; color:#fff; font-size:0.85rem; font-weight:800; cursor:pointer;";
+        confirmBtn.textContent = confirmLabel || "삭제";
+        confirmBtn.style.cssText = `flex:1; padding:10px; border-radius:6px; border:none; background:${color}; color:#fff; font-size:0.85rem; font-weight:800; cursor:pointer;`;
         
         btnRow.appendChild(cancelBtn);
         btnRow.appendChild(confirmBtn);
@@ -267,6 +269,7 @@ function showConfirmPrompt(message) {
         
         cancelBtn.onclick = () => cleanup(false);
         confirmBtn.onclick = () => cleanup(true);
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
     });
 }
 
@@ -410,7 +413,7 @@ function closeScheduleModal() { document.getElementById('scheduleModal').classLi
 
 function saveSchedule() {
     const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
-    if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { alert("골프장 이름을 입력해주세요!"); return; }
+    if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { showToast("⚠️ 골프장 이름을 입력해주세요!"); document.getElementById('schCourseCustom').focus(); return; }
     saveState();
     appData.nextRoundDate = `${document.getElementById('schMonth').value}월 ${document.getElementById('schDay').value}일 ${document.getElementById('schAmpm').value} ${document.getElementById('schHour').value}:${document.getElementById('schMinute').value} ${course}`;
     syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
@@ -732,7 +735,7 @@ async function migratePhotosToStorage() {
         if (typeof src === 'string' && src.startsWith('data:')) targetCount++;
     }));
     if (targetCount === 0) { showToast("✅ 이전할 사진이 없습니다. 이미 모두 Storage에 있습니다."); return; }
-    if (!(await showConfirmPrompt(`사진 ${targetCount}장을 Storage로 옮깁니다.<br>되돌릴 수 없습니다. 진행할까요?`))) return;
+    if (!(await showConfirmPrompt(`사진 ${targetCount}장을 Storage로 옮깁니다.<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>되돌릴 수 없습니다.</span>`, "이전하기", "#d4af37"))) return;
 
     showToast(`⏳ 사진 ${targetCount}장 이전 중...`);
     saveState();
@@ -753,7 +756,7 @@ async function migratePhotosToStorage() {
 }
 
 async function deleteRoundPhoto(photoIdx) {
-    if (!confirm("이 사진을 삭제하시겠습니까?")) return;
+    if (!(await showConfirmPrompt("이 사진을 삭제할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>되돌릴 수 없습니다.</span>"))) return;
     const removed = appData.roundPhotos[selectedPhotoRoundIdx][photoIdx];
     saveState(); appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1);
     syncToSupabase(appData); renderRoundPhotos(); renderAll();
@@ -905,11 +908,10 @@ function openPersonalReport(name) {
 
 function closePersonalReport() { document.getElementById('personalReportModal').classList.remove('active'); }
 
-function resetAllData() {
-    if (confirm("정말로 모든 실시간 데이터를 초기화하시겠습니까?")) {
-        saveState(); appData = getDefaultData(); selectedMoneyRoundIdx = appData.totalRounds - 1; syncToSupabase(appData);
-        renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
-    }
+async function resetAllData() {
+    if (!(await showConfirmPrompt("정말로 모든 데이터를<br>초기화할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>스코어·정산·사진이 모두 사라집니다.</span>", "초기화"))) return;
+    saveState(); appData = getDefaultData(); selectedMoneyRoundIdx = appData.totalRounds - 1; syncToSupabase(appData);
+    renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
 }
 
 let pushTimeout;
