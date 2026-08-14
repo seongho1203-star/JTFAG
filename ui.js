@@ -1009,6 +1009,7 @@ function renderAdminModal() {
     if (legacy > 0) {
         btns += `<button type="button" class="admin-btn" onclick="adminRunAction(migratePhotosToStorage)">🗄️ 기존 사진 ${legacy}장 Storage로 이전</button>`;
     }
+    btns += `<button type="button" class="admin-btn danger-strong" onclick="resetAllData()">🔄 전체 데이터 초기화</button>`;
     actions.innerHTML = btns;
 
     const list = document.getElementById('changeLogList');
@@ -1116,6 +1117,7 @@ async function resetAllData() {
     if (!(await authenticateAdmin())) return;
     if (!(await showConfirmPrompt("정말로 모든 데이터를<br>초기화할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>스코어·정산·사진이 모두 사라집니다.</span>", "초기화"))) return;
     saveState(); appData = getDefaultData(); selectedMoneyRoundIdx = appData.totalRounds - 1; syncToSupabase(appData);
+    closeAdminModal();
     renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
 }
 
