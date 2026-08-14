@@ -853,6 +853,12 @@ function openPersonalReport(name) {
     const iS = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height:1.2em; vertical-align:middle; margin-right:2px;">`;
 
     document.getElementById('reportContent').innerHTML = `
+        <div class="report-tabs">
+            <button type="button" class="report-tab active" data-tab="record" onclick="switchReportTab('record')">기록</button>
+            <button type="button" class="report-tab" data-tab="analysis" onclick="switchReportTab('analysis')">분석</button>
+        </div>
+        <div id="reportPaneAnalysis" style="display:none;">${buildAnalysisHtml(name)}</div>
+        <div id="reportPaneRecord">
         <div class="report-section"><div class="report-title">🎯 상세 타수 누적 기록</div><div class="stat-grid" style="grid-template-columns: repeat(5, 1fr);">
             <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">홀인원</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].holeInOne}" style="color:#dc2626; animation-delay: 0.1s;">0</div></div>
             <div class="stat-box" style="padding: 4px;"><div class="stat-label" style="font-size:0.6rem;">이글</div><div class="stat-val slot-roll count-up" data-val="${myStats[name].eagle}" style="color:#ea580c; animation-delay: 0.2s;">0</div></div>
@@ -873,7 +879,9 @@ function openPersonalReport(name) {
             <div class="stat-box"><div class="stat-label">${iS}참새</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[3]}" data-suffix="회" style="color:#64748b; animation-delay: 0.4s;">0회</div></div>
         </div></div>
         <div class="report-section"><div class="report-title">⚔️ 1:1 통산 승률</div><div class="winrate-list">${winRateHtml}</div></div>
+        </div>
     `;
+    switchReportTab('record');
     
     document.getElementById('personalReportModal').classList.add('active');
 
@@ -904,6 +912,77 @@ function openPersonalReport(name) {
             requestAnimationFrame(updateCount);
         });
     }, 100);
+}
+
+function switchReportTab(tab) {
+    const showRecord = (tab !== 'analysis');
+    const rec = document.getElementById('reportPaneRecord');
+    const ana = document.getElementById('reportPaneAnalysis');
+    if (rec) rec.style.display = showRecord ? 'block' : 'none';
+    if (ana) ana.style.display = showRecord ? 'none' : 'block';
+    document.querySelectorAll('.report-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === (showRecord ? 'record' : 'analysis')));
+    const body = document.getElementById('reportContent');
+    if (body) body.scrollTop = 0;
+}
+
+// 개인 리포트 '분석' 탭. 홀 기록이 있는 차수만 ①②에 쓰이고, ③은 입력된 스코어 전체를 쓴다.
+function buildAnalysisHtml(name) {
+    const a = (typeof getHoleAnalysis === 'function') ? getHoleAnalysis(name) : null;
+    let html = "";
+
+    if (!a) {
+        html += `<div class="report-section"><div class="report-title">🕳️ 홀별 분석</div>
+            <div class="analysis-empty">홀 단위 기록이 아직 없습니다.<br>스코어카드가 등록되면 표시됩니다.</div></div>`;
+    } else {
+        // ① 파 종류별 강약 — 값이 낮을수록 좋다. 가장 좋은 쪽 초록, 나쁜 쪽 빨강.
+        const pars = [{ k: '파3', v: a.par3 }, { k: '파4', v: a.par4 }, { k: '파5', v: a.par5 }].filter(x => x.v !== null);
+        const best = Math.min(...pars.map(x => x.v)), worst = Math.max(...pars.map(x => x.v));
+        const parCells = pars.map(x => {
+            const color = (pars.length > 1 && x.v === best) ? '#059669' : (pars.length > 1 && x.v === worst) ? '#dc2626' : '#475569';
+            const width = worst > 0 ? Math.max(8, (x.v / worst) * 100) : 8;
+            return `<div class="stat-box" style="padding:6px 4px;">
+                <div class="stat-label" style="font-size:0.62rem;">${x.k}</div>
+                <div class="analysis-val" style="color:${color};">+${x.v.toFixed(2)}</div>
+                <div class="analysis-bar"><span style="width:${width}%; background:${color};"></span></div></div>`;
+        }).join('');
+        html += `<div class="report-section"><div class="report-title">🕳️ 파 종류별 강약</div>
+            <div class="stat-grid" style="grid-template-columns: repeat(${pars.length}, 1fr);">${parCells}</div>
+            <div class="analysis-note">홀당 파 대비 평균 · 낮을수록 강함</div></div>`;
+
+        // ② 전반 / 후반
+        const diff = a.back - a.front;
+        let comment = "전반과 후반이 고릅니다.";
+        if (diff >= 5) comment = `후반에 ${diff}타를 더 잃습니다.`;
+        else if (diff <= -5) comment = `후반에 ${Math.abs(diff)}타를 더 줄입니다.`;
+        html += `<div class="report-section"><div class="report-title">🌗 전반 / 후반</div>
+            <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="stat-box"><div class="stat-label">전반 9홀</div><div class="analysis-val" style="color:${a.front <= a.back ? '#059669' : '#dc2626'};">+${a.front}</div></div>
+                <div class="stat-box"><div class="stat-label">후반 9홀</div><div class="analysis-val" style="color:${a.back < a.front ? '#059669' : '#dc2626'};">+${a.back}</div></div>
+            </div>
+            <div class="analysis-note">${comment}</div></div>`;
+    }
+
+    // ③ 차수별 추이
+    const scores = (appData.scores && appData.scores[name]) ? appData.scores[name] : [];
+    const valid = scores.map((s, i) => ({ r: i + 1, v: parseFloat(s) })).filter(x => !isNaN(x.v) && x.v > 0);
+    let trend = `<div class="analysis-empty">입력된 스코어가 없습니다.</div>`;
+    if (valid.length > 0) {
+        const lo = Math.min(...valid.map(x => x.v)), hi = Math.max(...valid.map(x => x.v));
+        // 눈금 최소 폭을 둬서 1~2타 차이가 막대에서 과장돼 보이지 않게 한다.
+        const span = Math.max(hi - lo, 8);
+        trend = valid.map(x => {
+            const isBest = (x.v === lo && valid.length > 1);
+            return `<div class="trend-row">
+                <span class="trend-label">${x.r}차</span>
+                <span class="trend-bar"><span style="width:${30 + ((x.v - lo) / span) * 70}%; background:${isBest ? '#059669' : '#cbd5e1'};"></span></span>
+                <span class="trend-val" style="color:${isBest ? '#059669' : '#475569'};">${x.v}</span></div>`;
+        }).join('');
+    }
+    html += `<div class="report-section"><div class="report-title">📈 차수별 추이</div>${trend}
+        ${a ? `<div class="analysis-note">위 분석은 홀 기록이 있는 ${a.roundCount}개 차수 기준입니다.</div>` : ''}</div>`;
+
+    return html;
 }
 
 function closePersonalReport() { document.getElementById('personalReportModal').classList.remove('active'); }

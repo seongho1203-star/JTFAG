@@ -308,3 +308,20 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
     60% { transform: translateY(5px); opacity: 1; filter: blur(0); }
     100% { transform: translateY(0); opacity: 1; }
 }
+
+/* 개인 리포트 탭 · 분석 */
+.report-tabs { display: flex; gap: 6px; margin-bottom: 10px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
+.report-tab { flex: 1; padding: 7px 0; border: none; border-radius: 7px; background: transparent; color: #64748b; font-family: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: background 0.18s ease, color 0.18s ease; }
+.report-tab.active { background: #ffffff; color: var(--primary-gold); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+.analysis-val { font-size: clamp(0.85rem, 3.4vw, 1rem); font-weight: 800; margin-top: 2px; }
+.analysis-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.analysis-bar span { display: block; height: 100%; border-radius: 2px; }
+.analysis-note { margin-top: 7px; font-size: 0.66rem; font-weight: 600; color: #94a3b8; text-align: center; word-break: keep-all; }
+.analysis-empty { padding: 16px 8px; text-align: center; color: #94a3b8; font-size: 0.72rem; font-weight: 600; line-height: 1.5; }
+
+.trend-row { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
+.trend-label { flex: 0 0 30px; font-size: 0.68rem; font-weight: 800; color: #64748b; }
+.trend-bar { flex: 1; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.trend-bar span { display: block; height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.trend-val { flex: 0 0 32px; text-align: right; font-size: 0.72rem; font-weight: 800; }

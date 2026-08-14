@@ -500,3 +500,28 @@ function processAllRoundSettlements() {
         });
     }
 }
+
+// ROUND_HOLES(stats.js)를 이용한 홀별 분석. 개인 리포트의 '분석' 탭이 사용한다.
+// 홀 기록이 있는 차수만 대상이라, 개수만 등록된 차수는 자동으로 빠진다.
+function getHoleAnalysis(name) {
+    if (typeof ROUND_HOLES === 'undefined') return null;
+    const rounds = Object.keys(ROUND_HOLES).filter(r => ROUND_HOLES[r].rel && ROUND_HOLES[r].rel[name]);
+    if (rounds.length === 0) return null;
+
+    const byPar = { 3: [], 4: [], 5: [] };
+    let front = 0, back = 0;
+    rounds.forEach(r => {
+        const par = ROUND_HOLES[r].par, rel = ROUND_HOLES[r].rel[name];
+        rel.forEach((x, i) => { if (byPar[par[i]]) byPar[par[i]].push(x); });
+        front += rel.slice(0, 9).reduce((a, b) => a + b, 0);
+        back += rel.slice(9).reduce((a, b) => a + b, 0);
+    });
+
+    const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    return {
+        roundCount: rounds.length,
+        rounds: rounds.slice().sort((a, b) => Number(a) - Number(b)),
+        par3: avg(byPar[3]), par4: avg(byPar[4]), par5: avg(byPar[5]),
+        front: front, back: back
+    };
+}
