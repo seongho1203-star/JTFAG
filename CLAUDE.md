@@ -58,7 +58,11 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
 ```
 
 - 발송 조건은 `scripts/send-reminder.js`가 판단한다. 오늘(KST)과 `nextRoundISO`의 차이가
-  `REMIND_DAYS_BEFORE`(기본 2)와 같을 때만 보내고, 아니면 아무것도 안 한다.
+  설정한 일수와 같을 때만 보내고, 아니면 아무것도 안 한다.
+- **알림 시점과 문구는 앱의 관리자 메뉴 → 알림 설정**에서 정하고 `payload.notifySettings`에 저장된다.
+  기본값은 `DEFAULT_NOTIFY_SETTINGS` (api.js)와 발송 스크립트 양쪽에 같은 값으로 있다 — 한쪽만 고치지 말 것.
+  문구의 `{남은일수}` / `{일정}` 자리표시자는 발송 시 치환된다.
+  워크플로의 `REMIND_DAYS_BEFORE`는 설정이 없을 때만 쓰이는 예비값이다.
 - **`nextRoundDate`(화면 문구)에는 연도가 없다.** 그래서 `saveSchedule()`이 `resolveRoundDate()`로
   `nextRoundISO`(`YYYY-MM-DD`)를 따로 저장한다. 알림은 이 값만 본다. 문구 형식을 바꿔도 알림은 안 깨진다.
 - 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,

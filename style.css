@@ -352,3 +352,12 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .storage-bar { height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: 5px; overflow: hidden; }
 .storage-bar span { display: block; height: 100%; border-radius: 2px; transition: width 0.4s ease; }
 .admin-btn-sub { float: right; color: var(--primary-gold); font-weight: 900; }
+
+/* 알림 설정 */
+.notify-num { width: 70px; height: 34px; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-family: inherit; font-size: 0.85rem; font-weight: 800; text-align: center; color: var(--text-main); }
+.notify-text { width: 100%; box-sizing: border-box; height: 34px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-family: inherit; font-size: 0.8rem; font-weight: 700; color: var(--text-main); }
+.notify-text:focus, .notify-num:focus { outline: none; border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(212,175,55,0.18); }
+.notify-preview { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--primary-gold); }
+.notify-preview-label { font-size: 0.58rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
+.notify-preview-title { font-size: 0.8rem; font-weight: 800; color: #fef08a; word-break: keep-all; }
+.notify-preview-body { font-size: 0.74rem; font-weight: 600; color: #e2e8f0; margin-top: 2px; word-break: keep-all; }

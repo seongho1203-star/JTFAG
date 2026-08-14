@@ -22,7 +22,7 @@ for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_KEY, VAPID_
 
 const TABLE = 'jtfag_league';
 const PUSH_TABLE = 'push_subscriptions';
-const daysBefore = parseInt(REMIND_DAYS_BEFORE, 10);
+const envDaysBefore = parseInt(REMIND_DAYS_BEFORE, 10);
 
 const headers = {
     apikey: SUPABASE_SERVICE_KEY,
@@ -59,9 +59,20 @@ async function main() {
         return;
     }
 
+    // 알림 시점·문구는 앱의 관리자 메뉴에서 정한다. 없으면 아래 기본값을 쓴다.
+    const settings = payload.notifySettings || {};
+    const configuredDays = parseInt(settings.daysBefore, 10);
+    const daysBefore = (Number.isFinite(configuredDays) && configuredDays > 0) ? configuredDays : envDaysBefore;
+    const titleTemplate = settings.title || '⛳ {남은일수}일 뒤 라운드입니다';
+    const bodyTemplate = settings.body || '{일정}';
+
     const remaining = daysUntil(roundDate, today);
     console.log(`오늘(KST) ${today} · 라운드 ${roundDate} · D-${remaining} · 알림 기준 D-${daysBefore}`);
     if (remaining !== daysBefore) { console.log('알림 보낼 날이 아닙니다. 종료.'); return; }
+
+    const fill = (s) => String(s)
+        .replace(/\{남은일수\}/g, String(remaining))
+        .replace(/\{일정\}/g, label || roundDate);
 
     const subRes = await fetch(`${SUPABASE_URL}/rest/v1/${PUSH_TABLE}?select=*`, { headers });
     if (!subRes.ok) throw new Error(`구독 조회 실패: ${subRes.status} ${await subRes.text()}`);
@@ -69,8 +80,8 @@ async function main() {
     if (subs.length === 0) { console.log('구독자가 없습니다. 종료.'); return; }
 
     const body = JSON.stringify({
-        title: `⛳ ${remaining}일 뒤 라운드입니다`,
-        body: label || roundDate,
+        title: fill(titleTemplate),
+        body: fill(bodyTemplate),
         tag: `round-${roundDate}`
     });
 

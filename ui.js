@@ -924,6 +924,51 @@ function openPersonalReport(name) {
 }
 
 // 메뉴를 열기 전에 인증한다. 인증 전에는 로그도 메뉴도 보이지 않는다.
+// ─── 알림 설정 ───
+function getNotifySettings() {
+    return Object.assign({}, DEFAULT_NOTIFY_SETTINGS, appData.notifySettings || {});
+}
+
+function renderNotifyPreview() {
+    const box = document.getElementById('notifyPreview');
+    if (!box) return;
+    const days = document.getElementById('notifyDays').value || '?';
+    const fill = (s) => String(s)
+        .replace(/\{남은일수\}/g, days)
+        .replace(/\{일정\}/g, appData.nextRoundDate || '(등록된 일정 없음)');
+    box.innerHTML = `<div class="notify-preview-label">미리보기</div>
+        <div class="notify-preview-title">${fill(document.getElementById('notifyTitle').value)}</div>
+        <div class="notify-preview-body">${fill(document.getElementById('notifyBody').value)}</div>`;
+}
+
+function openNotifySettings() {
+    const s = getNotifySettings();
+    document.getElementById('notifyDays').value = s.daysBefore;
+    document.getElementById('notifyTitle').value = s.title;
+    document.getElementById('notifyBody').value = s.body;
+    ['notifyDays', 'notifyTitle', 'notifyBody'].forEach(id =>
+        document.getElementById(id).oninput = renderNotifyPreview);
+    renderNotifyPreview();
+    document.getElementById('notifySettingsModal').classList.add('active');
+}
+function closeNotifySettings() { document.getElementById('notifySettingsModal').classList.remove('active'); }
+
+function saveNotifySettings() {
+    const days = parseInt(document.getElementById('notifyDays').value, 10);
+    const title = document.getElementById('notifyTitle').value.trim();
+    const body = document.getElementById('notifyBody').value.trim();
+
+    if (!Number.isFinite(days) || days < 1 || days > 30) { showToast("⚠️ 며칠 전 알림은 1~30 사이로 입력해주세요."); return; }
+    if (!title) { showToast("⚠️ 알림 제목을 입력해주세요."); return; }
+
+    saveState();
+    appData.notifySettings = { daysBefore: days, title: title, body: body || '{일정}' };
+    syncToSupabase(appData);
+    closeNotifySettings();
+    renderAdminModal();
+    showToast(`🔔 라운드 ${days}일 전에 알리도록 저장했습니다.`);
+}
+
 async function openAdminModal() {
     if (!isFundUnlocked && !(await authenticateAdmin())) return;
     renderAdminModal(); renderStorageUsage();
@@ -955,6 +1000,7 @@ function renderAdminModal() {
 
     const legacy = countLegacyPhotos();
     let btns = `
+        <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore}일 전</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>

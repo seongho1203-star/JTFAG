@@ -90,6 +90,14 @@ async function unsubscribeFromPush() {
     if (error) console.error("구독 해지 기록 실패:", error);
 }
 
+// 알림 문구·시점 기본값. 관리자 메뉴에서 바꾸면 payload.notifySettings에 저장되고,
+// 발송 스크립트(scripts/send-reminder.js)가 같은 기본값으로 대체한다.
+const DEFAULT_NOTIFY_SETTINGS = {
+    daysBefore: 2,
+    title: '⛳ {남은일수}일 뒤 라운드입니다',
+    body: '{일정}'
+};
+
 // 라운드 사진은 Storage 버킷에 올리고 payload에는 공개 URL만 저장한다.
 // (예전에 등록된 사진은 payload 안에 base64로 들어 있어, 두 형태가 함께 존재할 수 있다)
 const PHOTO_BUCKET = 'round-photos';
@@ -121,6 +129,7 @@ async function deletePhotoFromStorage(src) {
 function getDefaultData() {
     return {
         nextRoundDate: "", clubFund: 0, noticeMemo: "", totalRounds: 4,
+        notifySettings: { ...DEFAULT_NOTIFY_SETTINGS },
         courses: ["함평엘리체", "함평엘리체", "어등산", "해피니스"],
         scores: { "이관교": [90, 83, 97, 92], "김지명": [87, 87, 86, 86], "신성호": [88, 85, 85, 93], "박승수": [96, 96, 88, 90] },
         roundMoney: [
