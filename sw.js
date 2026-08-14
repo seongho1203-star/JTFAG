@@ -11,8 +11,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || '⛳ JTFAG 라운드 알림';
     const options = {
         body: data.body || '다음 라운드가 다가옵니다.',
-        icon: 'IMG_8075.jpeg',
-        badge: 'IMG_8075.jpeg',
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
         vibrate: [200, 100, 200],
         tag: data.tag || 'jtfag-round',   // 같은 tag면 알림이 쌓이지 않고 갱신된다
         renotify: true,
