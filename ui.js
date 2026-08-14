@@ -82,39 +82,6 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
 
-    const adminPanel = document.createElement('div');
-    adminPanel.id = 'adminBottomPanel';
-    adminPanel.style.cssText = "display:none; margin-top:20px; margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.15); border-radius:12px; flex-direction:column; align-items:center; width:100%; box-sizing:border-box;";
-    
-    const storageInfo = document.createElement('div');
-    storageInfo.id = 'storageInfoDisplay';
-    storageInfo.style.cssText = "text-align:center; font-size:0.75rem; width:100%;";
-    adminPanel.appendChild(storageInfo);
-
-    const btnRow = document.createElement('div');
-    btnRow.style.cssText = "display:flex; justify-content:center; align-items:center; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05); gap:20px; width:100%; flex-wrap:nowrap;";
-    
-    const logBtn = document.createElement('div');
-    logBtn.innerHTML = "📋 공금로그";
-    logBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    logBtn.onclick = window.openFundLogModal;
-
-    const pwdBtn = document.createElement('div');
-    pwdBtn.innerHTML = "🔑 비번변경";
-    pwdBtn.style.cssText = "color:#94a3b8; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    pwdBtn.onclick = changeAdminPassword;
-
-    const nameDeleteBtn = document.createElement('div');
-    nameDeleteBtn.innerHTML = "👤 이름삭제";
-    nameDeleteBtn.style.cssText = "color:#ef4444; font-size:0.8rem; text-decoration:underline; cursor:pointer; white-space:nowrap;";
-    nameDeleteBtn.onclick = deleteMyName;
-
-    btnRow.appendChild(logBtn);
-    btnRow.appendChild(pwdBtn);
-    btnRow.appendChild(nameDeleteBtn);
-    adminPanel.appendChild(btnRow);
-    
-    document.body.appendChild(adminPanel);
 });
 
 function showPasswordPrompt(message) {
@@ -331,7 +298,6 @@ async function handleFundClick(inputElem) {
 function updateLockUI() {
     const btn = document.getElementById('lockToggleBtn'); 
     const fundInput = document.getElementById('clubFundInput');
-    const adminPanel = document.getElementById('adminBottomPanel');
 
     if (btn) btn.textContent = isFundUnlocked ? "🔓" : "🔒";
     
@@ -346,9 +312,7 @@ function updateLockUI() {
     }
 
     if (isFundUnlocked) {
-        if (adminPanel) adminPanel.style.display = "flex";
     } else {
-        if (adminPanel) adminPanel.style.display = "none";
     }
 }
 
@@ -459,14 +423,11 @@ function renderStorageUsage() {
     }
 
     storageInfo.innerHTML = `
-        <div style="color:var(--text-sub); margin-bottom:8px; font-weight:700;">💾 실시간 데이터 용량 (권장 한도 5MB)</div>
-        <div style="width:100%; max-width:280px; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; margin:0 auto; overflow:hidden;">
-            <div style="width:${percent}%; height:100%; background:${statusColor}; transition:width 0.4s ease;"></div>
+        <div class="storage-line">
+            <span>💾 데이터 용량</span>
+            <span style="color:${statusColor}; font-weight:800;">${statusIcon} ${displaySize} / 5.0 MB · ${statusText}</span>
         </div>
-        <div style="margin-top:8px; color:${statusColor}; font-weight:800; font-size:0.8rem;">
-            ${statusIcon} ${displaySize} / 5.0 MB <span style="font-weight:400;">(${statusText})</span>
-        </div>
-    `;
+        <div class="storage-bar"><span style="width:${Math.max(percent, 1)}%; background:${statusColor};"></span></div>`;
 }
 
 function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); closeRoundPickerModal(); renderMoneyTable(); }
@@ -934,7 +895,7 @@ function openPersonalReport(name) {
     }, 100);
 }
 
-function openAdminModal() { renderAdminModal(); document.getElementById('adminModal').classList.add('active'); }
+function openAdminModal() { renderAdminModal(); renderStorageUsage(); document.getElementById('adminModal').classList.add('active'); }
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('active'); }
 
 async function adminToggleAuth() {
@@ -961,7 +922,8 @@ function renderAdminModal() {
     const legacy = countLegacyPhotos();
     let btns = `
         <button type="button" class="admin-btn" onclick="openFundLogModal()">💰 공금 수정 로그</button>
-        <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>`;
+        <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
+        <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {
         btns += `<button type="button" class="admin-btn" onclick="adminRunAction(migratePhotosToStorage)">🗄️ 기존 사진 ${legacy}장 Storage로 이전</button>`;
     }

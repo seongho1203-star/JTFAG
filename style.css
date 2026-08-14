@@ -345,3 +345,8 @@ input.course-input { width: 58px; padding: 2px 1px; border: 1px solid rgba(184, 
 .log-diff b { color: #15803d; }
 .log-arrow { color: #cbd5e1; margin: 0 2px; }
 .log-empty { color: #cbd5e1; font-weight: 600; }
+.admin-btn.danger { color: #dc2626; }
+.storage-info { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+.storage-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.66rem; font-weight: 700; color: #94a3b8; }
+.storage-bar { height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.storage-bar span { display: block; height: 100%; border-radius: 2px; transition: width 0.4s ease; }
