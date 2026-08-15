@@ -141,10 +141,7 @@ function getDefaultData() {
             { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
             { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
         ],
-        roundPhotos: [[], [], [], []],
-        // 관리자가 손으로 고친 타수 칸("이름|차수인덱스" → true). 고친 칸만 들어간다.
-        // 여기 있는 칸은 스코어카드 판독 값이 덮어쓰지 않는다.
-        scoreOverrides: {}
+        roundPhotos: [[], [], [], []]
     };
 }
 
@@ -185,7 +182,6 @@ async function fetchFromSupabase() {
             appData = data.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
-            if (!appData.scoreOverrides) appData.scoreOverrides = {};
         }
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다

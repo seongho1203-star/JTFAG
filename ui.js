@@ -17,7 +17,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
             if (!appData.fundLogs) appData.fundLogs = [];
-            if (!appData.scoreOverrides) appData.scoreOverrides = {};
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
             applyHoleScores();
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
@@ -588,25 +587,13 @@ function hasHoleRecord(r) {   // r은 0부터 시작하는 차수 인덱스
     return typeof ROUND_HOLES !== 'undefined' && !!ROUND_HOLES[String(r + 1)];
 }
 
-// 잠긴 칸인가. 관리자 메뉴로 열면 홀 기록이 있는 차수까지 전부 풀린다.
+// 잠긴 칸인가. 홀 기록이 있는 차수는 관리자가 열어도 잠긴 채로 둔다 —
+// 손으로 고쳐 봐야 다음 접속 때 홀 기록 값으로 되돌아가기 때문이다.
 function isScoreCellLocked(r) {
-    return !isScoreUnlocked;
-}
-
-// 관리자가 손으로 고친 칸의 표식. 이게 없으면 다음 접속 때 홀 기록 값으로 되돌아간다.
-// payload에는 고친 칸만 남으므로 평소에는 비어 있다.
-function scoreOverrideKey(name, r) { return `${name}|${r}`; }
-
-function isScoreOverridden(name, r) {
-    return !!(appData.scoreOverrides && appData.scoreOverrides[scoreOverrideKey(name, r)]);
-}
-
-function countScoreOverrides() {
-    return Object.keys(appData.scoreOverrides || {}).length;
+    return hasHoleRecord(r) || !isScoreUnlocked;
 }
 
 // 홀 기록에서 뽑은 그로스를 appData.scores에 반영한다. 실제로 바뀐 게 있을 때만 true.
-// 관리자가 고쳐 둔 칸은 건드리지 않는다.
 function syncScoresFromHoles() {
     if (typeof grossFromHoles !== 'function') return false;
     let changed = false;
@@ -614,7 +601,6 @@ function syncScoresFromHoles() {
     for (let r = 0; r < appData.totalRounds; r++) {
         if (!hasHoleRecord(r)) continue;
         golfers.forEach(name => {
-            if (isScoreOverridden(name, r)) return;
             const gross = grossFromHoles(r + 1, name);
             if (gross === null) return;
             if (!appData.scores[name]) appData.scores[name] = [];
@@ -622,26 +608,6 @@ function syncScoresFromHoles() {
         });
     }
     return changed;
-}
-
-// 손으로 고친 값을 전부 버리고 스코어카드 판독 값으로 되돌린다.
-async function revertScoreOverrides() {
-    const n = countScoreOverrides();
-    if (n === 0) { showToast("되돌릴 수동 수정이 없습니다."); return; }
-    if (!await showConfirmPrompt(
-        `손으로 고친 타수 ${n}칸을\n스코어카드 판독 값으로 되돌립니다.`, "되돌리기", "#3b82f6")) return;
-    saveState();
-    Object.keys(appData.scoreOverrides).forEach(key => {
-        const [name, r] = key.split('|');
-        const gross = grossFromHoles(Number(r) + 1, name);
-        if (gross !== null) {
-            pushChangeLog(`${name} ${Number(r) + 1}차 타수(되돌림)`, appData.scores[name][r], gross, 'score');
-        }
-    });
-    appData.scoreOverrides = {};
-    syncScoresFromHoles();
-    syncToSupabase(appData); renderAll(); renderAdminModal();
-    showToast(`↩️ ${n}칸을 스코어카드 값으로 되돌렸습니다.`);
 }
 
 // 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
@@ -654,7 +620,7 @@ function toggleScoreEdit() {
     renderTable();
     renderAdminModal();
     showToast(isScoreUnlocked
-        ? "✏️ 타수 칸을 열었습니다. 고친 내역은 변경 로그에 남습니다."
+        ? "✏️ 타수 칸을 열었습니다. 홀 기록이 있는 차수는 그대로 잠깁니다."
         : "🔒 타수 칸을 다시 잠갔습니다.");
 }
 
@@ -756,20 +722,8 @@ function updateScore(name, r, val) {
     }
     saveState(); if (!appData.scores) appData.scores = {}; if (!appData.scores[name]) appData.scores[name] = [];
     const after = val === "" ? "" : parseNumber(val);
-
-    // 홀 기록이 있는 차수를 고쳤다면 표식을 남겨야 자동 입력이 덮어쓰지 않는다.
-    // 판독 값과 같아지면 표식을 지워 다시 스코어카드에 맡긴다.
-    let suffix = '';
-    if (hasHoleRecord(r)) {
-        if (!appData.scoreOverrides) appData.scoreOverrides = {};
-        const key = scoreOverrideKey(name, r);
-        const gross = grossFromHoles(r + 1, name);
-        if (gross !== null && after === gross) { delete appData.scoreOverrides[key]; }
-        else { appData.scoreOverrides[key] = true; suffix = '(수동)'; }
-    }
-
-    pushChangeLog(`${name} ${r + 1}차 타수${suffix}`, appData.scores[name][r], after, 'score');
-    appData.scores[name][r] = after; syncToSupabase(appData); renderAll(); renderAdminModal();
+    pushChangeLog(`${name} ${r + 1}차 스코어`, appData.scores[name][r], after, 'score');
+    appData.scores[name][r] = after; syncToSupabase(appData); renderAll();
 }
 
 function addRound() {
@@ -791,12 +745,6 @@ function removeRound() {
     if (appData.roundPhotos && appData.roundPhotos.length > 0) appData.roundPhotos.pop();
     golfers.forEach(name => { if (appData.scores[name]) appData.scores[name].pop(); });
     if (appData.roundMoney && appData.roundMoney.length > 0) appData.roundMoney.pop();
-    // 지워진 차수의 수동 수정 표식도 함께 정리한다.
-    if (appData.scoreOverrides) {
-        Object.keys(appData.scoreOverrides).forEach(key => {
-            if (Number(key.split('|')[1]) >= appData.totalRounds) delete appData.scoreOverrides[key];
-        });
-    }
     if (selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
     syncToSupabase(appData); renderAll(); showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
 }
@@ -1143,12 +1091,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore}일 전</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
-        <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림 — 모든 차수' : '잠김'}</span></button>`;
-    const overrides = countScoreOverrides();
-    if (overrides > 0) {
-        btns += `<button type="button" class="admin-btn" onclick="adminRunAction(revertScoreOverrides)">↩️ 스코어카드 값으로 되돌리기 <span class="admin-btn-sub">수동 수정 ${overrides}칸</span></button>`;
-    }
-    btns += `
+        <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {
