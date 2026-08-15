@@ -38,7 +38,13 @@ stats.js → api.js → calc.js → ui.js
 - **`stats.js`** — 홀 단위 스코어 기록. DB에 없는 유일한 데이터로, 스코어카드 사진을 판독해 갱신한다.
   `ROUND_HOLES`(원본, 차수별 18홀 파+파대비타수) → `ROUND_STATS`(차수별 집계) → `CUMULATIVE_STATS`(누적 총합)로
   **자동 계산**된다. 뒤 두 개는 직접 고치지 말 것. 새 차수는 `ROUND_HOLES`에만 추가하면 된다.
-  판독 검산법: `par + rel`의 18홀 합계가 `appData.scores[이름][차수]`의 그로스와 일치해야 한다.
+  판독 검산법: `par + rel`의 18홀 합계가 그 차수의 그로스가 되어야 한다.
+- **타수는 사람이 입력하지 않는다.** 화면의 타수 칸은 전부 잠겨 있고(`readonly`),
+  `syncScoresFromHoles()`(ui.js)가 `grossFromHoles()`로 계산한 값을 `appData.scores`에 채운다.
+  즉 **`ROUND_HOLES`에 차수를 추가하고 푸시하면 표의 타수가 저절로 채워진다.**
+  홀 기록이 있는 차수는 관리자 메뉴로도 못 고친다 — 고쳐 봐야 다음 접속 때 되돌아가기 때문이다.
+  홀 기록이 아직 없는 차수만 관리자 메뉴 → `✏️ 타수 직접 수정`으로 잠시 열 수 있다.
+  핸디캡·정산·평균은 예전처럼 `appData.scores`를 읽으므로 계산 쪽은 손댈 필요가 없다.
 - **`api.js`** — Supabase 클라이언트, 전역 상태(`appData`), 상수(`golfers`, `RANK_CONFIG`, `COURSE_GEO`), Open-Meteo 날씨 조회.
 - **`calc.js`** — 순수 계산 계층. 정산/등급/핸디캡을 산출해 `golfer*Map` 전역 변수들에 채운다.
 - **`ui.js`** — DOM 렌더링, 모달, 이벤트 핸들러. 진입점(`DOMContentLoaded` → `fetchFromSupabase()`)이 여기 있다.

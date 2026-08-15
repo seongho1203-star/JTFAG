@@ -90,6 +90,17 @@ const ROUND_STATS = (function () {
     return result;
 })();
 
+// 그 차수 그로스 = par + rel 18홀 합계.
+// 앱의 타수 칸은 이 값으로 자동으로 채워진다(ui.js: syncScoresFromHoles).
+// 기록이 없거나 18홀이 안 차면 null을 돌려주고, 그 차수는 자동 입력에서 빠진다.
+function grossFromHoles(round, name) {
+    const record = ROUND_HOLES[String(round)];
+    if (!record || !record.par || !record.rel || !record.rel[name]) return null;
+    const rel = record.rel[name];
+    if (record.par.length !== 18 || rel.length !== 18) return null;
+    return record.par.reduce(function (sum, p, i) { return sum + p + rel[i]; }, 0);
+}
+
 // 차수별 집계 → 누적 총합. calc.js와 ui.js가 이 값을 그대로 사용한다.
 // stats.js는 api.js보다 먼저 로드되므로 golfers 상수에 의존하지 않고
 // 기록에 등장하는 이름만으로 집계한다.

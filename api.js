@@ -6,8 +6,11 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window._supabase = _supabase;
 window.SUPABASE_TABLE = 'jtfag_league';
 
-const ADMIN_PASSWORD = "1234"; 
-let isFundUnlocked = false;    
+const ADMIN_PASSWORD = "1234";
+let isFundUnlocked = false;
+// 타수 칸은 기본이 잠김이다. 홀 기록(stats.js)에서 자동으로 채워지므로 손댈 일이 없고,
+// 홀 기록이 없는 차수만 관리자가 잠시 열어 직접 넣을 수 있다.
+let isScoreUnlocked = false;
 
 const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
@@ -181,6 +184,7 @@ async function fetchFromSupabase() {
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
         }
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
+        applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
         isLoaded = true;
         renderNoticeArea();
         renderAll();

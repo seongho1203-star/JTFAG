@@ -18,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
             if (!appData.fundLogs) appData.fundLogs = [];
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
+            applyHoleScores();
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
         }
@@ -577,6 +578,52 @@ function updateMoney(name, type, value) {
     syncToSupabase(appData); renderAll();
 }
 
+// ─── 타수 자동 입력 ───
+// 타수는 사람이 넣지 않는다. 스코어카드를 판독해 stats.js의 ROUND_HOLES에 넣으면
+// par + rel 합계가 그 차수의 그로스가 되고, 그 값이 appData.scores로 흘러들어간다.
+// 핸디캡·정산·평균은 예전처럼 appData.scores를 읽으므로 아래 계산은 손대지 않아도 된다.
+
+function hasHoleRecord(r) {   // r은 0부터 시작하는 차수 인덱스
+    return typeof ROUND_HOLES !== 'undefined' && !!ROUND_HOLES[String(r + 1)];
+}
+
+// 잠긴 칸인가. 홀 기록이 있는 차수는 관리자가 열어도 잠긴 채로 둔다 —
+// 손으로 고쳐 봐야 다음 접속 때 홀 기록 값으로 되돌아가기 때문이다.
+function isScoreCellLocked(r) {
+    return hasHoleRecord(r) || !isScoreUnlocked;
+}
+
+// 홀 기록에서 뽑은 그로스를 appData.scores에 반영한다. 실제로 바뀐 게 있을 때만 true.
+function syncScoresFromHoles() {
+    if (typeof grossFromHoles !== 'function') return false;
+    let changed = false;
+    if (!appData.scores) appData.scores = {};
+    for (let r = 0; r < appData.totalRounds; r++) {
+        if (!hasHoleRecord(r)) continue;
+        golfers.forEach(name => {
+            const gross = grossFromHoles(r + 1, name);
+            if (gross === null) return;
+            if (!appData.scores[name]) appData.scores[name] = [];
+            if (appData.scores[name][r] !== gross) { appData.scores[name][r] = gross; changed = true; }
+        });
+    }
+    return changed;
+}
+
+// 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
+function applyHoleScores() {
+    if (syncScoresFromHoles()) syncToSupabase(appData);
+}
+
+function toggleScoreEdit() {
+    isScoreUnlocked = !isScoreUnlocked;
+    renderTable();
+    renderAdminModal();
+    showToast(isScoreUnlocked
+        ? "✏️ 타수 칸을 열었습니다. 홀 기록이 있는 차수는 그대로 잠깁니다."
+        : "🔒 타수 칸을 다시 잠갔습니다.");
+}
+
 function renderTable() {
     const headerRow = document.getElementById('headerRow'); const tbody = document.getElementById('scoreTbody');
     
@@ -593,10 +640,14 @@ function renderTable() {
         golfers.forEach(name => {
             for (let r = 0; r < appData.totalRounds; r++) {
                 const sInput = document.getElementById(`score_input_${name}_${r}`);
-                if (sInput && document.activeElement !== sInput) sInput.value = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+                if (!sInput) continue;
+                if (document.activeElement !== sInput) sInput.value = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+                const locked = isScoreCellLocked(r);
+                sInput.readOnly = locked;
+                sInput.classList.toggle('locked', locked);
             }
         });
-        return; 
+        return;
     }
 
     let headerHtml = `<th class="sticky-col-1">이름</th>`;
@@ -611,7 +662,8 @@ function renderTable() {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
         let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
-            rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input" value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
+            const locked = isScoreCellLocked(r);
+            rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input${locked ? ' locked' : ''}"${locked ? ' readonly' : ''} value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
         rowHtml += `<td class="avg-cell">-</td>`;
         tr.innerHTML = rowHtml; tbody.appendChild(tr);
@@ -661,6 +713,13 @@ function updateCourse(r, val) {
     appData.courses[r] = val; syncToSupabase(appData);
 }
 function updateScore(name, r, val) {
+    // readonly 칸은 onchange가 안 뜨지만, 잠금 상태가 바뀌는 순간을 대비해 한 번 더 막는다.
+    // renderTable()은 커서가 놓인 칸을 건너뛰므로, 여기서 그 칸을 직접 되돌린다.
+    if (isScoreCellLocked(r)) {
+        const cell = document.getElementById(`score_input_${name}_${r}`);
+        if (cell) cell.value = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
+        return;
+    }
     saveState(); if (!appData.scores) appData.scores = {}; if (!appData.scores[name]) appData.scores[name] = [];
     const after = val === "" ? "" : parseNumber(val);
     pushChangeLog(`${name} ${r + 1}차 스코어`, appData.scores[name][r], after, 'score');
@@ -1005,6 +1064,8 @@ function closeAdminModal() { document.getElementById('adminModal').classList.rem
 
 function adminLock() {
     isFundUnlocked = false;
+    isScoreUnlocked = false;
+    renderTable();
     updateLockUI();
     closeAdminModal();
     showToast("🔒 관리자 권한을 해제했습니다.");
@@ -1030,6 +1091,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore}일 전</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
+        <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {

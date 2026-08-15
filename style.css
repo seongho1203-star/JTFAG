@@ -160,6 +160,9 @@ th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-s
 .header-round-title { font-size: clamp(0.68rem, 2.5vw, 0.78rem); color: var(--primary-gold); font-weight: 900; white-space: nowrap; }
 
 input.score-input { width: 42px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg); margin: 0 auto; display: block; }
+/* 잠긴 타수 칸 — 입력칸 테두리를 지워 '누를 수 있는 곳'으로 안 보이게 한다.
+   값은 스코어카드 판독 결과(stats.js)에서 자동으로 들어온다. */
+input.score-input.locked { border-color: transparent; background-color: transparent; color: var(--text-main, #1e293b); cursor: default; }
 input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7; margin: 0 auto; display: block; }
 .photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
 .photo-btn:hover { background: #fef9e7; }
