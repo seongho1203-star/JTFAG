@@ -64,7 +64,11 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
   문구의 `{남은일수}` / `{일정}` 자리표시자는 발송 시 치환된다.
   워크플로의 `REMIND_DAYS_BEFORE`는 설정이 없을 때만 쓰이는 예비값이다.
 - **`nextRoundDate`(화면 문구)에는 연도가 없다.** 그래서 `saveSchedule()`이 `resolveRoundDate()`로
-  `nextRoundISO`(`YYYY-MM-DD`)를 따로 저장한다. 알림은 이 값만 본다. 문구 형식을 바꿔도 알림은 안 깨진다.
+  `nextRoundISO`(`YYYY-MM-DD`)를 따로 저장한다. 문구 형식을 바꿔도 안 깨지도록 한 것이다.
+  **이 값에 의존하는 곳이 둘이다** — 알림 발송(`scripts/send-reminder.js`)과 공지 카드의
+  D-day 뱃지(`daysUntilNextRound()` in ui.js). 둘 다 기기 시간대와 무관하게 한국 날짜로 비교한다.
+  D-day는 자정을 넘겨도 갱신되도록 `visibilitychange`에서 `renderNoticeArea()`를 다시 부른다
+  (홈 화면 앱은 백그라운드에 계속 떠 있어서 필요하다).
 - 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`. 공개키는 `api.js`의 `VAPID_PUBLIC_KEY`와 같아야 한다.
 - 수동 확인은 Actions 탭에서 workflow_dispatch로 실행한다 (기본이 dry run이라 실제로 안 보낸다).

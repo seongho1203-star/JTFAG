@@ -47,6 +47,16 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .notice-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 8px; }
 .notice-box { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 8px 10px; min-width: 0; display: flex; flex-direction: column; justify-content: center; position: relative; }
 .notice-display-text { word-break: keep-all; line-height: 1.35; }
+/* 다음 라운드 D-day. 날짜 문구 앞에 붙어 같이 흐른다.
+   임박할수록(3일 이내 → 당일) 색이 세진다. */
+.dday-badge {
+    display: inline-block; margin-right: 5px; padding: 1px 6px; border-radius: 6px;
+    font-size: clamp(0.6rem, 2.3vw, 0.7rem); font-weight: 900; letter-spacing: -0.3px;
+    vertical-align: 1px; white-space: nowrap;
+}
+.dday-far   { background: rgba(148, 163, 184, 0.25); color: #e2e8f0; }
+.dday-soon  { background: rgba(251, 146, 60, 0.9);  color: #1e293b; }
+.dday-today { background: #ef4444; color: #ffffff; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3); }
 .notice-box label { display: block; font-size: clamp(0.62rem, 2.3vw, 0.7rem); color: #cbd5e1; font-weight: 700; margin-bottom: 4px; white-space: nowrap; pointer-events: none;}
 .notice-input { width: 100%; background: transparent; border: none; color: #ffffff; font-size: clamp(0.78rem, 3vw, 0.88rem); font-weight: 800; outline: none; padding: 0; word-break: keep-all; }
 .notice-input[readonly] { color: #cbd5e1; }

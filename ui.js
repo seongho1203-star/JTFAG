@@ -346,11 +346,37 @@ function showSaveStatus(msg) {
     const saveStatus = document.getElementById('saveStatus'); if (saveStatus) { saveStatus.textContent = msg; saveStatus.style.opacity = '1'; setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200); }
 }
 
+// 다음 라운드까지 남은 날. 표시 문구(nextRoundDate)에는 연도가 없으므로
+// 일정 저장 때 따로 남겨 둔 nextRoundISO(YYYY-MM-DD)만 본다. 알림 발송기와 같은 값이다.
+// 기기 시간대와 무관하게 한국 날짜끼리 비교한다.
+function daysUntilNextRound() {
+    const iso = appData.nextRoundISO;
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+    return Math.round((Date.parse(iso + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 86400000);
+}
+
+// 일정이 없거나 이미 지난 날짜면 뱃지를 붙이지 않는다.
+function ddayBadgeHtml() {
+    const left = daysUntilNextRound();
+    if (left === null || left < 0) return '';
+    if (left === 0) return `<span class="dday-badge dday-today">D-DAY</span>`;
+    return `<span class="dday-badge ${left <= 3 ? 'dday-soon' : 'dday-far'}">D-${left}</span>`;
+}
+
 function renderNoticeArea() {
     const dateDisplay = document.getElementById('nextRoundDisplay');
-    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? appData.nextRoundDate : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
+    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + appData.nextRoundDate) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
     updateLockUI();
 }
+
+// 홈 화면 앱은 백그라운드에 그대로 떠 있어, 자정을 넘겨도 어제 계산한 D-day가 남는다.
+// 다시 앞으로 불러올 때 한 번 더 그린다.
+document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && isLoaded) renderNoticeArea();
+});
 
 function forceTableReflow() {
     const wrapper = document.getElementById('tableWrapper');
