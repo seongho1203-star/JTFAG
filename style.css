@@ -347,15 +347,6 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 .admin-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .admin-btn { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; background: #ffffff; color: var(--text-main); font-family: inherit; font-size: 0.78rem; font-weight: 800; text-align: left; cursor: pointer; }
 
-.change-log-list { max-height: 260px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; }
-.change-log-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 9px; }
-.log-meta { font-size: 0.62rem; font-weight: 700; color: #94a3b8; }
-.log-meta b { color: var(--primary-gold); }
-.log-target { font-size: 0.74rem; font-weight: 800; color: var(--text-main); margin-top: 2px; }
-.log-diff { font-size: 0.72rem; font-weight: 700; color: #64748b; margin-top: 2px; }
-.log-diff b { color: #15803d; }
-.log-arrow { color: #cbd5e1; margin: 0 2px; }
-.log-empty { color: #cbd5e1; font-weight: 600; }
 .admin-btn.danger { color: #dc2626; }
 .storage-info { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
 .storage-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.66rem; font-weight: 700; color: #94a3b8; }

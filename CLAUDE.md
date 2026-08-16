@@ -134,9 +134,9 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   (`downloadCurrentPhoto()` 참고). 사진 갤러리의 관리자 버튼이 `migratePhotosToStorage()`로 남은 base64를 옮긴다.
   Storage 헬퍼(`uploadPhotoBlob` / `deletePhotoFromStorage` / `storagePathFromUrl`)는 api.js에 있다.
 - payload는 매 저장마다 행 전체가 전송되므로 용량 증가에 민감하다 (`renderStorageUsage()`가 현재 사용량을 표시한다).
-- **변경 이력(`changeLogs`)에는 공금만 남긴다.** 타수·골프장·정산 금액·게스트 표시에는
-  `pushChangeLog()`를 붙이지 말 것 — 일부러 뺀 것이다. 예전에 쌓인 비-공금 기록은
-  접속 시 `pruneNonFundLogs()`가 한 번 걷어낸다.
+- **변경 이력은 없앴다. 남은 로그는 공금뿐이다** (`fundLogs` · 관리자 메뉴의 `📜 공금 수정 로그`).
+  타수·골프장·정산 금액·게스트 표시는 일부러 기록하지 않는다 — 화면을 보면 알 수 있고
+  payload만 불린다. 예전 `changeLogs` 배열은 접속 시 `dropChangeLogs()`가 걷어낸다.
 - UI 문구, 골퍼 이름, 등급명이 모두 한국어다. 문자열을 다룰 때 영어로 바꾸지 말 것.
 
 ### 게스트 라운드
