@@ -369,8 +369,17 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 .notify-num { width: 70px; height: 34px; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-family: inherit; font-size: 0.85rem; font-weight: 800; text-align: center; color: var(--text-main); }
 .notify-text { width: 100%; box-sizing: border-box; height: 34px; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-family: inherit; font-size: 0.8rem; font-weight: 700; color: var(--text-main); }
 .notify-text:focus, .notify-num:focus { outline: none; border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(212,175,55,0.18); }
+/* 알림 시점 고르기 — 여러 날을 켜고 끌 수 있다 */
+.notify-day-chips { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.notify-day-chip { padding: 6px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: var(--text-sub); font-family: inherit; font-size: 0.76rem; font-weight: 800; }
+.notify-day-chip.on { background: var(--primary-gold); border-color: var(--primary-gold); color: #fff; }
+.notify-day-hint { font-size: 0.62rem; color: var(--text-sub); margin-top: 6px; }
+
 .notify-preview { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--primary-gold); }
 .notify-preview-label { font-size: 0.58rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
+.notify-preview-card + .notify-preview-card { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.15); }
+.notify-preview-when { font-size: 0.6rem; font-weight: 800; color: var(--primary-gold); margin-bottom: 2px; }
+.notify-preview-empty { font-size: 0.72rem; color: #94a3b8; }
 .notify-preview-title { font-size: 0.8rem; font-weight: 800; color: #fef08a; word-break: keep-all; }
 .notify-preview-body { font-size: 0.74rem; font-weight: 600; color: #e2e8f0; margin-top: 2px; word-break: keep-all; }
 

@@ -1012,39 +1012,81 @@ function openPersonalReport(name) {
 // 메뉴를 열기 전에 인증한다. 인증 전에는 로그도 메뉴도 보이지 않는다.
 // ─── 알림 설정 ───
 function getNotifySettings() {
-    return Object.assign({}, DEFAULT_NOTIFY_SETTINGS, appData.notifySettings || {});
+    const s = Object.assign({}, DEFAULT_NOTIFY_SETTINGS, appData.notifySettings || {});
+    s.daysBefore = normalizeDaysBefore(s.daysBefore);
+    if (s.daysBefore.length === 0) s.daysBefore = normalizeDaysBefore(DEFAULT_NOTIFY_SETTINGS.daysBefore);
+    return s;
+}
+
+// 알림 설정 모달이 열려 있는 동안의 선택 상태. 저장을 눌러야 payload에 들어간다.
+let notifyDaysDraft = [];
+
+function notifyDayName(d) { return d === 0 ? '당일' : `${d}일 전`; }
+
+function renderNotifyDayChips() {
+    const box = document.getElementById('notifyDayChips');
+    if (!box) return;
+    box.innerHTML = NOTIFY_DAY_CHOICES.map(d =>
+        `<button type="button" class="notify-day-chip${notifyDaysDraft.includes(d) ? ' on' : ''}" onclick="toggleNotifyDay(${d})">${notifyDayName(d)}</button>`
+    ).join('');
+}
+
+function toggleNotifyDay(d) {
+    const i = notifyDaysDraft.indexOf(d);
+    if (i >= 0) notifyDaysDraft.splice(i, 1);
+    else {
+        if (notifyDaysDraft.length >= MAX_NOTIFY_DAYS) { showToast(`⚠️ 최대 ${MAX_NOTIFY_DAYS}개까지 고를 수 있습니다.`); return; }
+        notifyDaysDraft.push(d);
+    }
+    notifyDaysDraft = normalizeDaysBefore(notifyDaysDraft);
+    renderNotifyDayChips();
+    renderNotifyPreview();
 }
 
 function renderNotifyPreview() {
     const box = document.getElementById('notifyPreview');
     if (!box) return;
-    const days = document.getElementById('notifyDays').value || '?';
-    const fill = (s) => String(s)
-        .replace(/\{남은일수\}/g, days)
+    const fill = (s, days) => String(s)
+        .replace(/\{남은일수\}/g, String(days))
+        .replace(/\{디데이\}/g, ddayLabel(days))
         .replace(/\{일정\}/g, appData.nextRoundDate || '(등록된 일정 없음)');
-    box.innerHTML = `<div class="notify-preview-label">미리보기</div>
-        <div class="notify-preview-title">${fill(document.getElementById('notifyTitle').value)}</div>
-        <div class="notify-preview-body">${fill(document.getElementById('notifyBody').value)}</div>`;
+    const title = document.getElementById('notifyTitle').value;
+    const body = document.getElementById('notifyBody').value;
+
+    if (notifyDaysDraft.length === 0) {
+        box.innerHTML = `<div class="notify-preview-label">미리보기</div>
+            <div class="notify-preview-empty">알릴 날을 하나 이상 골라주세요.</div>`;
+        return;
+    }
+    // 고른 날마다 실제로 어떤 문구가 나가는지 따로 보여준다.
+    // 당일에 "0일 뒤 라운드입니다"처럼 어색해지는 걸 여기서 바로 알아챌 수 있다.
+    box.innerHTML = `<div class="notify-preview-label">미리보기 · ${notifyDaysDraft.length}번 발송</div>` +
+        notifyDaysDraft.map(d => `<div class="notify-preview-card">
+            <div class="notify-preview-when">${notifyDayName(d)}</div>
+            <div class="notify-preview-title">${fill(title, d)}</div>
+            <div class="notify-preview-body">${fill(body, d)}</div>
+        </div>`).join('');
 }
 
 function openNotifySettings() {
     const s = getNotifySettings();
-    document.getElementById('notifyDays').value = s.daysBefore;
+    notifyDaysDraft = s.daysBefore.slice();
     document.getElementById('notifyTitle').value = s.title;
     document.getElementById('notifyBody').value = s.body;
-    ['notifyDays', 'notifyTitle', 'notifyBody'].forEach(id =>
+    ['notifyTitle', 'notifyBody'].forEach(id =>
         document.getElementById(id).oninput = renderNotifyPreview);
+    renderNotifyDayChips();
     renderNotifyPreview();
     document.getElementById('notifySettingsModal').classList.add('active');
 }
 function closeNotifySettings() { document.getElementById('notifySettingsModal').classList.remove('active'); }
 
 function saveNotifySettings() {
-    const days = parseInt(document.getElementById('notifyDays').value, 10);
+    const days = normalizeDaysBefore(notifyDaysDraft);
     const title = document.getElementById('notifyTitle').value.trim();
     const body = document.getElementById('notifyBody').value.trim();
 
-    if (!Number.isFinite(days) || days < 1 || days > 30) { showToast("⚠️ 며칠 전 알림은 1~30 사이로 입력해주세요."); return; }
+    if (days.length === 0) { showToast("⚠️ 알릴 날을 하나 이상 골라주세요."); return; }
     if (!title) { showToast("⚠️ 알림 제목을 입력해주세요."); return; }
 
     saveState();
@@ -1052,7 +1094,7 @@ function saveNotifySettings() {
     syncToSupabase(appData);
     closeNotifySettings();
     renderAdminModal();
-    showToast(`🔔 라운드 ${days}일 전에 알리도록 저장했습니다.`);
+    showToast(`🔔 ${days.map(notifyDayName).join(' · ')}에 알리도록 저장했습니다.`);
 }
 
 async function openAdminModal() {
@@ -1088,7 +1130,7 @@ function renderAdminModal() {
 
     const legacy = countLegacyPhotos();
     let btns = `
-        <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore}일 전</span></button>
+        <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>

@@ -95,11 +95,32 @@ async function unsubscribeFromPush() {
 
 // 알림 문구·시점 기본값. 관리자 메뉴에서 바꾸면 payload.notifySettings에 저장되고,
 // 발송 스크립트(scripts/send-reminder.js)가 같은 기본값으로 대체한다.
+// daysBefore는 배열이다 — [3, 0]이면 3일 전과 당일, 두 번 간다. 0이 당일이다.
+// 예전 payload에는 숫자 하나(2)로 들어 있어, normalizeDaysBefore가 양쪽을 다 받는다.
 const DEFAULT_NOTIFY_SETTINGS = {
-    daysBefore: 2,
-    title: '⛳ {남은일수}일 뒤 라운드입니다',
+    daysBefore: [2],
+    title: '⛳ {디데이} 라운드입니다',
     body: '{일정}'
 };
+
+const NOTIFY_DAY_CHOICES = [0, 1, 2, 3, 5, 7];
+const MAX_NOTIFY_DAYS = 4;
+
+// 숫자 하나든 배열이든 받아서, 중복 없이 먼 날 → 가까운 날 순으로 돌려준다.
+function normalizeDaysBefore(value) {
+    const list = Array.isArray(value) ? value : [value];
+    const out = [];
+    list.forEach(function (x) {
+        const n = parseInt(x, 10);
+        if (Number.isFinite(n) && n >= 0 && n <= 30 && out.indexOf(n) === -1) out.push(n);
+    });
+    return out.sort(function (a, b) { return b - a; });
+}
+
+// {디데이} 자리표시자. 당일에 "0일 뒤"라고 나가는 걸 막으려고 둔 것이다.
+function ddayLabel(days) {
+    return days === 0 ? '오늘' : `${days}일 뒤`;
+}
 
 // 라운드 사진은 Storage 버킷에 올리고 payload에는 공개 URL만 저장한다.
 // (예전에 등록된 사진은 payload 안에 base64로 들어 있어, 두 형태가 함께 존재할 수 있다)
