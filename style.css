@@ -136,7 +136,13 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .money-table th { padding: 4px 0; color: var(--text-sub); font-weight: 700; font-size: clamp(0.58rem, 2.1vw, 0.65rem); border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
 .money-table td { padding: 4px 1px; }
 .money-input { width: 95% !important; max-width: 68px !important; height: 26px !important; background-color: var(--input-bg) !important; border: 1px solid #cbd5e1 !important; border-radius: 6px !important; text-align: center !important; font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important; font-weight: 700 !important; }
+/* 계급정산·타수정산 두 칸이 같은 모양을 쓴다.
+   예전에는 각 칸에 인라인 스타일을 따로 적어 굵기·배경 농도가 어긋나 있었다.
+   색은 여기서만 정한다 — JS는 pos/neg/zero 중 하나만 붙인다. */
 .money-result-badge { display: inline-block; padding: 2px 3px; border-radius: 4px; font-weight: 800; font-size: clamp(0.6rem, 2.2vw, 0.68rem); white-space: nowrap; }
+.money-result-badge.pos  { background: rgba(22, 163, 74, 0.10); color: #16a34a; }
+.money-result-badge.neg  { background: rgba(220, 38, 38, 0.10); color: #dc2626; }
+.money-result-badge.zero { background: rgba(0, 0, 0, 0.03);     color: #64748b; }
 
 .info-card { background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 6px 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.65rem, 2.5vw, 0.75rem); gap: 6px; }
 .info-text { color: var(--primary-gold); font-weight: 700; flex: 1; }

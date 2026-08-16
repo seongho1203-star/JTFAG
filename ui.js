@@ -506,6 +506,15 @@ function renderRoundPicker() {
     grid.innerHTML = html;
 }
 
+// 정산 금액 뱃지. 계급정산·타수정산이 같은 함수를 쓰므로 두 칸이 어긋날 수 없다.
+function moneyResultTone(v) { return v > 0 ? 'pos' : (v < 0 ? 'neg' : 'zero'); }
+function moneyResultText(v) { return v === 0 ? "0원" : (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만"; }
+function paintMoneyResult(el, v) {
+    if (!el) return;
+    el.className = `money-result-badge ${moneyResultTone(v)}`;
+    el.textContent = moneyResultText(v);
+}
+
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody');
     const roundBtn = document.getElementById('moneyRoundBtn');
@@ -533,18 +542,8 @@ function renderMoneyTable() {
             const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][selectedMoneyRoundIdx] !== undefined) ? cachedRoundRankProfit[g][selectedMoneyRoundIdx] : 0;
             const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : ((m.end - m.start) - rankPenalty);
             
-            const rBadge = document.getElementById(`money_rank_${g}`);
-            if (rBadge) {
-                rBadge.style.background = rankPenalty < 0 ? "rgba(220,38,38,0.12)" : "rgba(0,0,0,0.03)";
-                rBadge.style.color = rankPenalty < 0 ? "#dc2626" : "#64748b";
-                rBadge.textContent = rankPenalty === 0 ? "0원" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만";
-            }
-            const sBadge = document.getElementById(`money_stroke_${g}`);
-            if (sBadge) {
-                sBadge.style.background = pureStrokeDiff > 0 ? "rgba(22,163,74,0.08)" : (pureStrokeDiff < 0 ? "rgba(220,38,38,0.08)" : "rgba(0,0,0,0.02)");
-                sBadge.style.color = pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b");
-                sBadge.textContent = pureStrokeDiff === 0 ? "0원" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만";
-            }
+            paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenalty);
+            paintMoneyResult(document.getElementById(`money_stroke_${g}`), pureStrokeDiff);
         });
         return;
     }
@@ -561,8 +560,8 @@ function renderMoneyTable() {
                 <td style="font-weight:800; color:var(--text-main);">${g}</td>
                 <td><input type="text" id="money_start_${g}" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
                 <td><input type="text" id="money_end_${g}" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
-                <td><span id="money_rank_${g}" class="money-result-badge" style="background:${rankPenalty < 0 ? "rgba(220,38,38,0.12)" : "rgba(0,0,0,0.03)"}; color:${rankPenalty < 0 ? "#dc2626" : "#64748b"}; font-weight:900;">${rankPenalty === 0 ? "0원" : (rankPenalty > 0 ? "+" : "") + (rankPenalty / 10000).toFixed(1) + "만"}</span></td>
-                <td><span id="money_stroke_${g}" class="money-result-badge" style="background:${pureStrokeDiff > 0 ? "rgba(22,163,74,0.08)" : (pureStrokeDiff < 0 ? "rgba(220,38,38,0.08)" : "rgba(0,0,0,0.02)")}; color:${pureStrokeDiff > 0 ? "#16a34a" : (pureStrokeDiff < 0 ? "#dc2626" : "#64748b")}; font-weight:800;">${pureStrokeDiff === 0 ? "0원" : (pureStrokeDiff > 0 ? "+" : "") + (pureStrokeDiff / 10000).toFixed(1) + "만"}</span></td>
+                <td><span id="money_rank_${g}" class="money-result-badge ${moneyResultTone(rankPenalty)}">${moneyResultText(rankPenalty)}</span></td>
+                <td><span id="money_stroke_${g}" class="money-result-badge ${moneyResultTone(pureStrokeDiff)}">${moneyResultText(pureStrokeDiff)}</span></td>
             </tr>`;
     });
 }
