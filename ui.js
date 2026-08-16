@@ -17,7 +17,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
             if (!appData.fundLogs) appData.fundLogs = [];
-            if (!appData.guestRounds) appData.guestRounds = {};
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
             applyHoleScores();
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
@@ -609,57 +608,23 @@ function syncScoresFromHoles() {
     return changed;
 }
 
-// 변경 이력을 없애면서 payload에 남은 배열을 한 번 걷어낸다. 공금 기록은 fundLogs에 따로 있다.
-function dropChangeLogs() {
-    if (!appData.changeLogs) return false;
-    delete appData.changeLogs;
-    return true;
+// 없앤 기능이 payload에 남긴 필드를 한 번 걷어낸다.
+//   changeLogs  — 변경 이력(공금 기록은 fundLogs에 따로 있다)
+//   guestRounds — 게스트 라운드 표시
+function dropRetiredFields() {
+    let dropped = false;
+    ['changeLogs', 'guestRounds'].forEach(key => {
+        if (key in appData) { delete appData[key]; dropped = true; }
+    });
+    return dropped;
 }
 
 // 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
 function applyHoleScores() {
     const changed = syncScoresFromHoles();
-    const dropped = dropChangeLogs();
+    const dropped = dropRetiredFields();
     if (changed || dropped) syncToSupabase(appData);
 }
-
-// ─── 게스트 라운드 ───
-// 게스트가 껴서 5인으로 친 차수. 게스트 본인은 앱에 넣지 않는다 —
-// 4분의 시작/남은 금액에 게스트와 주고받은 돈이 이미 들어 있어 정산은 그대로 맞는다.
-// 표시된 차수는 계급 벌금만 0원이 되고, 손익 전액이 타수정산으로 잡힌다.
-
-function guestRoundsLabel() {
-    const list = Object.keys(appData.guestRounds || {})
-        .map(Number).filter(r => r < appData.totalRounds).sort((a, b) => a - b);
-    return list.length ? list.map(r => `${r + 1}차`).join(' · ') : '없음';
-}
-
-function renderGuestRoundChips() {
-    const box = document.getElementById('guestRoundChips');
-    if (!box) return;
-    let html = '';
-    for (let r = 0; r < appData.totalRounds; r++) {
-        html += `<button type="button" class="notify-day-chip${isGuestRound(r) ? ' on' : ''}" onclick="toggleGuestRound(${r})">${r + 1}차</button>`;
-    }
-    box.innerHTML = html;
-}
-
-function toggleGuestRound(r) {
-    saveState();
-    if (!appData.guestRounds) appData.guestRounds = {};
-    const wasGuest = isGuestRound(r);
-    if (wasGuest) delete appData.guestRounds[String(r)];
-    else appData.guestRounds[String(r)] = true;
-    syncToSupabase(appData);
-    renderGuestRoundChips(); renderAll(); renderAdminModal();
-    showToast(wasGuest ? `${r + 1}차 게스트 표시를 해제했습니다.` : `🙋 ${r + 1}차를 게스트 라운드로 표시했습니다.`);
-}
-
-function openGuestRoundModal() {
-    renderGuestRoundChips();
-    document.getElementById('guestRoundModal').classList.add('active');
-}
-function closeGuestRoundModal() { document.getElementById('guestRoundModal').classList.remove('active'); }
 
 function toggleScoreEdit() {
     isScoreUnlocked = !isScoreUnlocked;
@@ -774,8 +739,6 @@ function removeRound() {
     if (appData.roundPhotos && appData.roundPhotos.length > 0) appData.roundPhotos.pop();
     golfers.forEach(name => { if (appData.scores[name]) appData.scores[name].pop(); });
     if (appData.roundMoney && appData.roundMoney.length > 0) appData.roundMoney.pop();
-    // 게스트 표시는 차수 인덱스를 키로 쓰는 객체라 pop()이 없다. 지워진 차수만 뺀다.
-    if (appData.guestRounds) delete appData.guestRounds[String(appData.totalRounds)];
     if (selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
     syncToSupabase(appData); renderAll(); showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
 }
@@ -1165,7 +1128,6 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
-        <button type="button" class="admin-btn" onclick="openGuestRoundModal()">🙋 게스트 라운드 <span class="admin-btn-sub">${guestRoundsLabel()}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {

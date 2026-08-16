@@ -356,21 +356,16 @@ function processAllRoundSettlements() {
             return matchResults[b].totalDiff - matchResults[a].totalDiff;
         });
 
-        // 게스트가 낀 차수는 계급은 그대로 매기되 벌금을 걷지 않는다.
-        // 벌금이 0이면 그 차수의 손익이 통째로 타수정산으로 잡힌다
-        // (타수정산 = 손익 − 계급정산이라, 1·2차전이 이미 같은 방식으로 동작한다).
-        const isGuest = isGuestRound(r);
-
         let roundHistoryHtml = `
             <div class="history-item">
-                <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과${isGuest ? ` <span class="history-guest-tag">🙋 게스트 라운드 · 벌금 없음</span>` : ''}</div>
+                <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
                 <div class="history-grid">
         `;
 
         sortedGolfers.forEach((golferName, index) => {
             const rankInfo = RANK_CONFIG[index];
-            const profit = isGuest ? 0 : rankInfo.penalty;
-
+            const profit = rankInfo.penalty;
+            
             totalRankProfit[golferName] += profit;
             roundRankProfit[golferName][r] = profit;
             golferRankHistory[golferName].push(index);

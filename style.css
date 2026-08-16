@@ -373,9 +373,7 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 .notify-preview-body { font-size: 0.74rem; font-weight: 600; color: #e2e8f0; margin-top: 2px; word-break: keep-all; }
 
 /* 관리자 메뉴 위에 겹쳐 여는 모달 — 같은 z-index면 DOM 순서상 관리자 메뉴에 가린다 */
-/* 관리자 메뉴에서 여는 모달들. 관리자 메뉴가 DOM 뒤쪽에 있어 그냥 두면 뒤에 깔린다.
-   메뉴는 일부러 열어둔 채 위에 띄운다 — 닫고 나면 메뉴로 돌아온다. */
-#notifySettingsModal, #guestRoundModal { z-index: 1001; }
+#notifySettingsModal { z-index: 1001; }
 
 /* 앱 설치 안내 배너 */
 #installBanner { position: fixed; left: 10px; right: 10px; bottom: 12px; z-index: 900; padding: 12px 14px; border-radius: 16px; background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid var(--primary-gold); box-shadow: 0 10px 30px rgba(0,0,0,0.35); color: #fff; max-width: 460px; margin: 0 auto; opacity: 0; transform: translateY(16px); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
@@ -411,6 +409,3 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 .summary-item .rank-crane,
 .summary-item .rank-sparrow { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
 .admin-btn.danger-strong { color: #dc2626; background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.3); }
-
-/* 게스트가 낀 차수 표시 — 계급 정산 이력에서 벌금이 왜 0원인지 알려준다 */
-.history-guest-tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: rgba(251, 146, 60, 0.9); color: #1e293b; font-size: 0.58rem; font-weight: 900; letter-spacing: -0.2px; white-space: nowrap; vertical-align: 1px; }

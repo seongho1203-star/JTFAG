@@ -135,20 +135,7 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   Storage 헬퍼(`uploadPhotoBlob` / `deletePhotoFromStorage` / `storagePathFromUrl`)는 api.js에 있다.
 - payload는 매 저장마다 행 전체가 전송되므로 용량 증가에 민감하다 (`renderStorageUsage()`가 현재 사용량을 표시한다).
 - **변경 이력은 없앴다. 남은 로그는 공금뿐이다** (`fundLogs` · 관리자 메뉴의 `📜 공금 수정 로그`).
-  타수·골프장·정산 금액·게스트 표시는 일부러 기록하지 않는다 — 화면을 보면 알 수 있고
-  payload만 불린다. 예전 `changeLogs` 배열은 접속 시 `dropChangeLogs()`가 걷어낸다.
+  타수·골프장·정산 금액은 일부러 기록하지 않는다 — 화면을 보면 알 수 있고 payload만 불린다.
+  없앤 기능이 payload에 남긴 필드(`changeLogs`, `guestRounds`)는 접속 시
+  `dropRetiredFields()`(ui.js)가 걷어낸다. 기능을 지울 때 이 목록에 필드를 추가할 것.
 - UI 문구, 골퍼 이름, 등급명이 모두 한국어다. 문자열을 다룰 때 영어로 바꾸지 말 것.
-
-### 게스트 라운드
-
-게스트가 껴서 5인으로 친 차수는 관리자 메뉴 → `🙋 게스트 라운드`에서 표시한다
-(`payload.guestRounds`, 차수 인덱스 0부터를 키로 쓰는 객체).
-
-- **게스트 본인은 앱에 넣지 않는다.** 4인의 시작/남은 금액에 게스트와 주고받은 돈이 이미
-  들어 있어 정산이 그대로 맞는다. `golfers`(4인 고정), 4칸 요약 그리드, `RANK_CONFIG`(4계급),
-  핸디캡 표가 전부 4인 전제라 5번째 사람을 넣으면 그 전제가 깨진다.
-- 표시한 차수는 `processAllRoundSettlements()`에서 **계급 벌금만 0원**이 된다.
-  계급 자체는 4인끼리 그대로 매겨지고 `golferRankHistory`에도 남으므로 독수리 연속 뱃지는 이어진다.
-- 타수정산 = 손익 − 계급정산이므로, 벌금이 0이면 **손익 전액이 타수정산으로 넘어간다.**
-  1·2차전이 (핸디캡 산출용 앞 차수가 없어) 이미 같은 방식으로 동작한다 — 새 규칙이 아니다.
-- 그 차수 스코어는 평소처럼 핸디캡 산출에 쓰인다.

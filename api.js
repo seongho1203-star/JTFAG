@@ -162,15 +162,8 @@ function getDefaultData() {
             { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
             { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
         ],
-        roundPhotos: [[], [], [], []],
-        // 게스트가 껴서 5인으로 친 차수. 차수 인덱스(0부터)를 키로 쓰고, 표시한 차수만 들어간다.
-        // 계급은 4분끼리 그대로 매기되 벌금만 0원이 되어 전액이 타수정산으로 잡힌다.
-        guestRounds: {}
+        roundPhotos: [[], [], [], []]
     };
-}
-
-function isGuestRound(r) {
-    return !!(appData.guestRounds && appData.guestRounds[String(r)]);
 }
 
 let appData = getDefaultData();
@@ -214,7 +207,6 @@ async function fetchFromSupabase() {
             appData = data.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
-            if (!appData.guestRounds) appData.guestRounds = {};
         }
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
