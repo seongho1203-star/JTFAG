@@ -154,7 +154,6 @@
                     <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none;">
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
-                <button type="button" class="open-history-btn" style="margin-top:6px; padding:8px; font-size:0.78rem;" onclick="sendNotification()">📤 일정 미리보기 · 공유</button>
             </div>
         </div>
     </div>
@@ -252,14 +251,6 @@
             <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:bold;" onclick="closeImageViewModal()">✕</button>
         </div>
         <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
-    </div>
-</div>
-
-<div id="pushNotification" class="push-notification" onclick="shareSchedule()">
-    <div class="push-icon">⛳</div>
-    <div class="push-content">
-        <div class="push-title">JTFAG 리그 알림 <span style="font-size:0.6rem; color:#94a3b8; font-weight:normal;">방금</span></div>
-        <div class="push-body" id="pushBody"></div>
     </div>
 </div>
 

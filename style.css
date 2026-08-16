@@ -244,12 +244,6 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 .bell-btn { background: transparent; border: none; font-size: 1.1rem; padding: 0 4px; margin-left: auto; animation: ring 4s infinite ease-in-out; transform-origin: top center; }
 @keyframes ring { 0%, 100% { transform: rotate(0deg); } 5% { transform: rotate(15deg); } 10% { transform: rotate(-10deg); } 15% { transform: rotate(5deg); } 20% { transform: rotate(-5deg); } 25% { transform: rotate(0deg); } }
 
-.push-notification { position: fixed; top: -120px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 10000; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: white; border: 1px solid rgba(212, 175, 55, 0.4); cursor: pointer; }
-.push-notification.show { top: 20px; }
-.push-icon { font-size: 1.8rem; background: rgba(255,255,255,0.1); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; flex-shrink: 0; }
-.push-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.push-title { font-size: 0.8rem; font-weight: 800; color: #fef08a; display: flex; align-items: center; gap: 6px; }
-.push-body { font-size: 0.75rem; color: #e2e8f0; line-height: 1.4; word-break: keep-all; font-weight: 600; }
 
 /* 명예의 전당 (회전하는 골드 네온 흐름 테두리) */
 #personalReportModal .modal-content {

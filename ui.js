@@ -1251,24 +1251,6 @@ async function resetAllData() {
     renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
 }
 
-let pushTimeout;
-
-function fallbackCopy(text) {
-    const ta = document.createElement('textarea'); ta.value = text;
-    ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.left = '-9999px';
-    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, 99999); 
-    
-    try {
-        document.execCommand('copy');
-        showToast("📋 일정이 복사되었습니다! 단톡방에 붙여넣기 하세요.");
-        
-        const isAndroid = /android/i.test(navigator.userAgent);
-        if (isAndroid) { window.location.href = 'intent://#Intent;scheme=kakaotalk;package=com.kakao.talk;end'; } 
-        else { window.location.href = 'kakaotalk://'; }
-    } catch (err) { showToast("⚠️ 복사에 실패했습니다. 일정을 수동으로 공유해주세요."); }
-    document.body.removeChild(ta);
-}
-
 // ─── 앱 설치 안내 ───
 // 안드로이드는 크롬이 실제 설치를 지원해 버튼 한 번으로 끝나지만,
 // iOS는 애플이 프로그램적 설치를 막아뒀다. 그래서 방법을 안내만 한다.
@@ -1382,26 +1364,6 @@ async function toggleRoundAlarm() {
     updateAlarmUI();
 }
 
-function sendNotification() {
-    if (!appData.nextRoundDate || appData.nextRoundDate === "") { showToast("⚠️ 등록된 일정이 없습니다. 먼저 일정을 등록해주세요!"); return; }
-    const weatherInfo = document.getElementById('weatherText').innerText; let weatherStr = "날씨 정보 없음";
-    if (weatherInfo && !weatherInfo.includes("확인중") && !weatherInfo.includes("못했습니다")) { const parts = weatherInfo.split(': '); if (parts.length > 1) weatherStr = parts[1].trim(); }
-
-    document.getElementById('pushBody').innerHTML = `📅 <b>${appData.nextRoundDate}</b><br>⛅ ${weatherStr}<br><span style="color:#60a5fa; font-size:0.7rem; margin-top:4px; display:block;">👉 터치해서 일정 복사하기</span>`;
-    const pushEl = document.getElementById('pushNotification'); pushEl.classList.add('show');
-    if (navigator.vibrate) navigator.vibrate(200);
-
-    clearTimeout(pushTimeout);
-    pushTimeout = setTimeout(() => { pushEl.classList.remove('show'); }, 5000);
-}
-
-function shareSchedule() {
-    document.getElementById('pushNotification').classList.remove('show');
-    const weatherInfo = document.getElementById('weatherText').innerText; let weatherStr = "날씨 정보 없음";
-    if (weatherInfo && !weatherInfo.includes("확인중") && !weatherInfo.includes("못했습니다")) { const parts = weatherInfo.split(': '); if (parts.length > 1) weatherStr = parts[1].trim(); }
-    const shareMsg = `[⛳ JTFAG 리그 일정 알림]\n\n📅 일정: ${appData.nextRoundDate}\n⛅ 날씨: ${weatherStr}\n\n결전의 날이 다가옵니다! 멘탈 꽉 잡고 준비하세요! 🔥`;
-    fallbackCopy(shareMsg);
-}
 
 let hasGreeted = false;
 
