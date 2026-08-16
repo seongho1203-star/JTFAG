@@ -159,6 +159,23 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="guestRoundModal" onclick="if(event.target === this) closeGuestRoundModal()">
+    <div class="modal-content" style="max-width: 360px;">
+        <div class="modal-header">
+            <h3>🙋 게스트 라운드</h3>
+            <button type="button" class="close-btn" onclick="closeGuestRoundModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="analysis-note" style="text-align:left; margin-bottom:10px;">
+                게스트가 껴서 친 차수를 눌러 표시하세요.<br>
+                표시한 차수는 <b>계급 벌금이 0원</b>이 되고, 그 차수 손익은 <b>전액 타수정산</b>으로 잡힙니다.<br>
+                계급(독수리·매·학·참새)은 4분끼리 그대로 매겨집니다.
+            </div>
+            <div class="notify-day-chips" id="guestRoundChips"></div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="notifySettingsModal" onclick="if(event.target === this) closeNotifySettings()">
     <div class="modal-content" style="max-width: 380px;">
         <div class="modal-header">
