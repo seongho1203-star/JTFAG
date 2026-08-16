@@ -112,6 +112,10 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .badge-birdie { background: linear-gradient(135deg, #10b981 0%, #047857 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #064e3b; }
 .badge-par { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #1e3a8a; }
 .badge-bomb { background: linear-gradient(135deg, #3f3f46 0%, #0f172a 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #000000; }
+/* 파 종류별 강자 — 홀 단위 기록에서 나온다. 짧은 홀 → 긴 홀 순으로 색을 옮겼다. */
+.badge-par3 { background: linear-gradient(135deg, #22d3ee 0%, #0e7490 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #155e75; }
+.badge-par4 { background: linear-gradient(135deg, #a78bfa 0%, #6d28d9 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #5b21b6; }
+.badge-par5 { background: linear-gradient(135deg, #fb923c 0%, #c2410c 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #9a3412; }
 
 .money-card { background: var(--card-bg); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 14px; padding: 10px 8px; margin-bottom: 10px; }
 .money-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px 4px; width: 100%; }

@@ -183,6 +183,10 @@ let golferRivalMap = {};
 let golferMaxBirdie = [];
 let golferMaxPar = [];
 let golferMaxDoublePar = [];
+// 파 종류별 강자. { 3: ["이관교"], 4: [...], 5: [...] } — 동률이면 함께 들어간다.
+let golferParSpecialists = { 3: [], 4: [], 5: [] };
+// 표본이 이보다 적은 파 종류는 우연에 휘둘려 판정하지 않는다 (차수 2개쯤이면 넘는다).
+const MIN_PAR_TYPE_HOLES = 6;
 let golferFinalNetProfitMap = {}; 
 let isLoaded = false;
 let golferAvgScores = {};

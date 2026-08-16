@@ -1,5 +1,38 @@
 // calc.js - 정산, 핸디캡, 통계 및 뱃지 생성 전체 로직
 
+// 파3·파4·파5 각각에서 파 대비 평균이 가장 좋은 사람을 가린다.
+// ROUND_HOLES(stats.js)의 홀 단위 기록이 있어야 하고, 없으면 아무도 뽑지 않는다.
+function computeParSpecialists() {
+    golferParSpecialists = { 3: [], 4: [], 5: [] };
+    if (typeof ROUND_HOLES === 'undefined') return;
+
+    const sums = {};   // sums[파][이름] = { 합, 홀수 }
+    [3, 4, 5].forEach(p => { sums[p] = {}; golfers.forEach(g => sums[p][g] = { total: 0, holes: 0 }); });
+
+    Object.keys(ROUND_HOLES).forEach(round => {
+        const par = ROUND_HOLES[round].par, rel = ROUND_HOLES[round].rel;
+        if (!par || !rel) return;
+        golfers.forEach(g => {
+            if (!Array.isArray(rel[g])) return;
+            rel[g].forEach((x, i) => {
+                const p = par[i];
+                if (!sums[p] || typeof x !== 'number') return;
+                sums[p][g].total += x;
+                sums[p][g].holes++;
+            });
+        });
+    });
+
+    [3, 4, 5].forEach(p => {
+        // 표본이 모자란 사람은 비교에서 뺀다. 아무도 안 남으면 그 파 종류는 수상자가 없다.
+        const eligible = golfers.filter(g => sums[p][g].holes >= MIN_PAR_TYPE_HOLES);
+        if (eligible.length < 2) return;
+        const avgOf = g => sums[p][g].total / sums[p][g].holes;
+        const best = Math.min(...eligible.map(avgOf));
+        golferParSpecialists[p] = eligible.filter(g => avgOf(g) === best);
+    });
+}
+
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -65,6 +98,16 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     }
     if (golferMaxDoublePar.includes(g)) {
         badges.push({ html: `<div class="season-badge badge-bomb">💣 폭탄 처리반</div>`, desc: "리그 내 누적 양파 횟수 1위" });
+    }
+
+    if (golferParSpecialists[3].includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-par3">🎯 숏홀 스나이퍼</div>`, desc: "파3 홀 파 대비 평균 1위" });
+    }
+    if (golferParSpecialists[4].includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-par4">🎪 파4 지배자</div>`, desc: "파4 홀 파 대비 평균 1위" });
+    }
+    if (golferParSpecialists[5].includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-par5">💪 롱홀 헌터</div>`, desc: "파5 홀 파 대비 평균 1위" });
     }
 
     if (badges.length === 0) {
@@ -177,6 +220,8 @@ function processAllRoundSettlements() {
     golferMaxBirdie = golfers.filter(g => myStats[g].birdie === maxBirdie && maxBirdie > 0);
     golferMaxPar = golfers.filter(g => myStats[g].par === maxPar && maxPar > 0);
     golferMaxDoublePar = golfers.filter(g => myStats[g].doublePar === maxDPar && maxDPar > 0);
+
+    computeParSpecialists();
 
     golfers.forEach(g => {
         if (appData.scores && appData.scores[g]) {
