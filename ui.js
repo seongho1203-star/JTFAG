@@ -1182,10 +1182,13 @@ function buildAnalysisHtml(name) {
         let comment = "전반과 후반이 고릅니다.";
         if (diff >= 5) comment = `후반에 ${diff}타를 더 잃습니다.`;
         else if (diff <= -5) comment = `후반에 ${Math.abs(diff)}타를 더 줄입니다.`;
+        // 두 칸이 같은 함수를 쓴다. 예전에는 전반만 등호(<=)가 붙어 있어,
+        // 전후반이 같은 값일 때 전반은 초록·후반은 빨강으로 갈렸다.
+        const halfColor = (mine, other) => mine === other ? '#475569' : (mine < other ? '#059669' : '#dc2626');
         html += `<div class="report-section"><div class="report-title">🌗 전반 / 후반</div>
             <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="stat-box"><div class="stat-label">전반 9홀</div><div class="analysis-val" style="color:${a.front <= a.back ? '#059669' : '#dc2626'};">+${a.front}</div></div>
-                <div class="stat-box"><div class="stat-label">후반 9홀</div><div class="analysis-val" style="color:${a.back < a.front ? '#059669' : '#dc2626'};">+${a.back}</div></div>
+                <div class="stat-box"><div class="stat-label">전반 9홀</div><div class="analysis-val" style="color:${halfColor(a.front, a.back)};">+${a.front}</div></div>
+                <div class="stat-box"><div class="stat-label">후반 9홀</div><div class="analysis-val" style="color:${halfColor(a.back, a.front)};">+${a.back}</div></div>
             </div>
             <div class="analysis-note">${comment}</div></div>`;
     }
