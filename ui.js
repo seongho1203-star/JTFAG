@@ -314,6 +314,7 @@ async function editClubFund() {
         before: before, after: after
     });
     while (appData.fundLogs.length > 50) appData.fundLogs.shift();
+    pushChangeLog("남은 공금 잔액", before, after, 'money');
 
     appData.clubFund = after;
     syncToSupabase(appData); renderNoticeArea(); renderAll();
@@ -573,8 +574,6 @@ function updateMoney(name, type, value) {
     if (!appData.roundMoney[selectedMoneyRoundIdx]) appData.roundMoney[selectedMoneyRoundIdx] = {};
     if (!appData.roundMoney[selectedMoneyRoundIdx][name]) appData.roundMoney[selectedMoneyRoundIdx][name] = { start: 0, end: 0 };
     const after = parseNumber(value);
-    pushChangeLog(`${name} ${selectedMoneyRoundIdx + 1}차 ${type === 'start' ? '시작' : '남은'} 금액`,
-                  appData.roundMoney[selectedMoneyRoundIdx][name][type], after, 'money');
     appData.roundMoney[selectedMoneyRoundIdx][name][type] = after;
     syncToSupabase(appData); renderAll();
 }
@@ -611,9 +610,21 @@ function syncScoresFromHoles() {
     return changed;
 }
 
+// 예전에 쌓인 타수·골프장·정산 금액 기록을 한 번 걷어낸다.
+// 공금만 남기기로 한 뒤로는 새로 쌓이지 않으므로, 이 정리는 사실상 한 번만 돈다.
+function pruneNonFundLogs() {
+    if (!Array.isArray(appData.changeLogs)) return false;
+    const kept = appData.changeLogs.filter(log => String(log.target || '').includes('공금'));
+    if (kept.length === appData.changeLogs.length) return false;
+    appData.changeLogs = kept;
+    return true;
+}
+
 // 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
 function applyHoleScores() {
-    if (syncScoresFromHoles()) syncToSupabase(appData);
+    const changed = syncScoresFromHoles();
+    const pruned = pruneNonFundLogs();
+    if (changed || pruned) syncToSupabase(appData);
 }
 
 // ─── 게스트 라운드 ───
@@ -643,7 +654,6 @@ function toggleGuestRound(r) {
     const wasGuest = isGuestRound(r);
     if (wasGuest) delete appData.guestRounds[String(r)];
     else appData.guestRounds[String(r)] = true;
-    pushChangeLog(`${r + 1}차 게스트 라운드`, wasGuest ? '표시' : '해제', wasGuest ? '해제' : '표시', 'text');
     syncToSupabase(appData);
     renderGuestRoundChips(); renderAll(); renderAdminModal();
     showToast(wasGuest ? `${r + 1}차 게스트 표시를 해제했습니다.` : `🙋 ${r + 1}차를 게스트 라운드로 표시했습니다.`);
@@ -732,8 +742,9 @@ function renderHandicapMatchCard(r1, r2) {
     }
 }
 
-// 누가 무엇을 어떻게 바꿨는지 남긴다. 값이 실제로 달라졌을 때만 기록한다.
-// (공금은 별도로 fundLogs에 쌓인다)
+// 변경 이력은 공금만 남긴다. 스코어는 스코어카드에서 자동으로 채워지고,
+// 골프장·정산 금액·게스트 표시는 화면을 보면 바로 알 수 있어 굳이 남기지 않는다.
+// 값이 실제로 달라졌을 때만 기록한다.
 const MAX_CHANGE_LOGS = 100;
 function pushChangeLog(target, before, after, kind) {
     if (String(before === undefined || before === null ? "" : before) === String(after === undefined || after === null ? "" : after)) return;
@@ -749,7 +760,6 @@ function pushChangeLog(target, before, after, kind) {
 
 function updateCourse(r, val) {
     saveState(); if (!appData.courses) appData.courses = [];
-    pushChangeLog(`${r + 1}차 골프장`, appData.courses[r], val, 'text');
     appData.courses[r] = val; syncToSupabase(appData);
 }
 function updateScore(name, r, val) {
@@ -762,7 +772,6 @@ function updateScore(name, r, val) {
     }
     saveState(); if (!appData.scores) appData.scores = {}; if (!appData.scores[name]) appData.scores[name] = [];
     const after = val === "" ? "" : parseNumber(val);
-    pushChangeLog(`${name} ${r + 1}차 스코어`, appData.scores[name][r], after, 'score');
     appData.scores[name][r] = after; syncToSupabase(appData); renderAll();
 }
 
