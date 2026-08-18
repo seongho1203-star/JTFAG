@@ -149,11 +149,9 @@
                     </div>
                 </div>
                 <div class="sch-row" style="flex-direction: column; align-items: flex-start;">
-                    <label style="margin-bottom:6px;">⛳ 골프장 선택 <span id="courseLoadStatus" style="font-size:0.6rem; color:#10b981; font-weight:normal;"></span></label>
-                    <select id="schCourseSelect" style="width:100%; margin-bottom:6px;" onchange="handleCourseSelectChange(this.value)">
-                        <option value="">데이터 불러오는 중...</option>
-                    </select>
-                    <input type="text" id="schCourseCustom" placeholder="골프장 이름 직접 입력" style="display:none;">
+                    <label style="margin-bottom:6px;">⛳ 골프장 <span id="courseLoadStatus" style="font-size:0.6rem; color:#10b981; font-weight:normal;"></span></label>
+                    <input type="text" id="schCourseSearch" class="course-search" placeholder="골프장 이름 검색 (예: 무등산)" autocomplete="off" oninput="renderCourseResults()" onfocus="this.select(); renderCourseResults(true);">
+                    <div id="courseResults" class="course-results"></div>
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
@@ -322,6 +320,9 @@
 <script>
     const v = Math.random();
     document.write('<script src="stats.js?ver=' + v + '"><\/script>');
+    // 골프장 목록만 ?ver를 안 붙인다. 40KB인데 워크플로를 돌릴 때나 바뀌는 파일이라
+    // 접속할 때마다 새로 받을 이유가 없다 (Pages 캐시가 10분이라 갱신도 금방 따라온다).
+    document.write('<script src="courses.js"><\/script>');
     document.write('<script src="api.js?ver=' + v + '"><\/script>');
     document.write('<script src="calc.js?ver=' + v + '"><\/script>');
     document.write('<script src="ui.js?ver=' + v + '"><\/script>');

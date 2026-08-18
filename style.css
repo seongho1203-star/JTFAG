@@ -70,13 +70,22 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .sch-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .sch-row label { font-size: 0.75rem; font-weight: 800; color: #475569; }
 .sch-inputs { display: flex; align-items: center; gap: 4px; }
-.sch-inputs select, #schCourseSelect, #schCourseCustom { padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 700; background-color: #ffffff; background-image: none !important; color: var(--text-main); outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; text-align: center; height: 28px; }
+.sch-inputs select { padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 700; background-color: #ffffff; background-image: none !important; color: var(--text-main); outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; text-align: center; height: 28px; }
 .sch-inputs span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
 
-/* 골프장 선택 행: 세로 전체폭 배치라 날짜/시간 셀렉트보다 여유 있는 크기 사용 */
-#schCourseSelect, #schCourseCustom { width: 100%; box-sizing: border-box; height: 36px; padding: 8px 10px; text-align: center; text-align-last: center; }
-#schCourseCustom::placeholder { color: #94a3b8; font-weight: 600; }
-#schCourseCustom:focus { border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18); }
+/* 골프장 검색: 전국 574곳이라 드롭다운으로는 못 고른다. 쳐서 좁히고 눌러 고른다.
+   검색창은 그대로 입력칸이기도 하다 — 목록에 없는 곳은 쳐 넣으면 그게 이름이 된다. */
+.course-search { width: 100%; box-sizing: border-box; height: 36px; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; font-size: 0.85rem; font-weight: 700; color: var(--text-main); outline: none; -webkit-appearance: none; appearance: none; }
+.course-search::placeholder { color: #94a3b8; font-weight: 600; }
+.course-search:focus { border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18); }
+
+.course-results { width: 100%; box-sizing: border-box; max-height: 190px; overflow-y: auto; -webkit-overflow-scrolling: touch; margin-top: 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; }
+.course-group { position: sticky; top: 0; background: #f1f5f9; color: #64748b; font-size: 0.62rem; font-weight: 800; padding: 4px 10px; border-bottom: 1px solid #e2e8f0; }
+.course-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; box-sizing: border-box; padding: 8px 10px; border: none; border-bottom: 1px solid #f1f5f9; background: transparent; font-size: 0.8rem; font-weight: 700; color: var(--text-main); text-align: left; cursor: pointer; }
+.course-item:last-child { border-bottom: none; }
+.course-item:active { background: #fefce8; }
+.course-mark { font-size: 0.72rem; flex-shrink: 0; }
+.course-empty { padding: 10px; font-size: 0.72rem; font-weight: 600; color: #94a3b8; text-align: center; }
 
 .total-summary-card { background: linear-gradient(145deg, #ffffff, #fefce8); border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 4px 10px 4px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); }
 .total-summary-card h2 { font-size: clamp(0.75rem, 3vw, 0.88rem); margin: 0 0 5px 0; text-align: center; color: var(--primary-gold); font-weight: 800; }

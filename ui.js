@@ -456,19 +456,18 @@ function initScheduleOptions() {
     if(minSelect) { minSelect.innerHTML = ""; for(let i=0; i<60; i++) { const minStr = i < 10 ? "0" + i : String(i); minSelect.add(new Option(minStr, minStr)); } }
 }
 
-// 처음부터 들어 있는 골프장. 여기 없는 곳은 '직접 입력'으로 치면 그 뒤로 목록에 남는다
-// (payload.customCourses). 그래서 같은 곳을 두 번 칠 일이 없다.
-const BASE_COURSES = ["함평엘리체", "어등산", "해피니스", "골드레이크", "무등산", "빛고을",
-    "푸른솔(장성)", "나주힐스", "화순", "보성", "순천", "아크로", "다산베아채", "JNJ",
-    "파인비치", "사우스링스 영암", "광주CC"];
+// 우리가 자주 가는 곳. 검색창이 비어 있을 때 이것부터 보여 준다.
+// 이름은 전국 목록(courses.js)에 있는 것과 똑같이 맞춰 놓았다 — 그래야 좌표가 바로 붙어
+// 날씨가 뜬다. 여기 없는 곳은 검색해서 고르거나 그냥 쳐 넣으면 되고,
+// 쳐 넣은 곳은 payload.customCourses에 남아 다음부터 위에 뜬다.
+const BASE_COURSES = ["함평엘리체CC", "어등산CC", "해피니스CC", "골드레이크CC", "무등산CC",
+    "빛고을CC", "푸른솔GC 장성", "나주힐스컨트리클럽", "화순CC", "보성CC", "순천CC",
+    "아크로 컨트리클럽", "다산베아채CC", "JNJ골프리조트", "파인비치골프링크스",
+    "사우스링스 영암", "광주CC"];
 
-// 기본 목록 + 직접 입력해 둔 곳. 최근에 친 곳이 위로 오게 직접 입력분을 앞에 놓는다.
-function golfCourseOptions() {
-    const custom = (appData.customCourses || []).filter(c => c && !BASE_COURSES.includes(c));
-    return [...custom.slice().reverse(), ...BASE_COURSES, "직접 입력"];
-}
+const COURSE_RESULT_LIMIT = 40;
 
-// 직접 입력한 골프장을 목록에 남긴다. 이미 있으면 맨 뒤로 올려 다음에 위에 뜨게 한다.
+// 직접 친 골프장을 목록에 남긴다. 이미 있으면 맨 뒤로 올려 다음에 위에 뜨게 한다.
 function rememberCourse(name) {
     const clean = String(name || '').trim();
     if (!clean || BASE_COURSES.includes(clean)) return;
@@ -479,28 +478,75 @@ function rememberCourse(name) {
     while (appData.customCourses.length > MAX_CUSTOM_COURSES) appData.customCourses.shift();
 }
 
+// 검색어에 맞는 골프장을 고른다. 앞부터 맞는 것을 먼저 올린다.
+// 띄어쓰기를 지우고 비교하므로 '사우스링스영암'으로도 '사우스링스 영암'이 걸린다.
+function searchCourses(query) {
+    const q = String(query || '').replace(/\s+/g, '').toLowerCase();
+    const recent = (appData.customCourses || []).slice().reverse();
+    const mine = [...recent, ...BASE_COURSES.filter(c => !recent.includes(c))];
+
+    if (!q) return { group: '자주 가는 곳', list: mine.slice(0, COURSE_RESULT_LIMIT) };
+
+    const names = [...mine, ...allCourses().map(c => c.name)];
+    const seen = new Set();
+    const head = [], tail = [];
+    names.forEach(name => {
+        const key = name.replace(/\s+/g, '').toLowerCase();
+        if (seen.has(key)) return;
+        const at = key.indexOf(q);
+        if (at === 0) { seen.add(key); head.push(name); }
+        else if (at > 0) { seen.add(key); tail.push(name); }
+    });
+    return { group: '검색 결과', list: [...head, ...tail].slice(0, COURSE_RESULT_LIMIT) };
+}
+
+// browse가 참이면 검색창에 뭐가 적혀 있든 '자주 가는 곳'을 펼친다.
+// 모달을 열면 지난번 골프장이 적혀 있는데, 그대로 걸러 버리면 그 한 줄만 남아
+// 다른 곳을 고를 수가 없기 때문이다.
+function renderCourseResults(browse) {
+    const box = document.getElementById('courseResults');
+    if (!box) return;
+    const typed = browse ? '' : document.getElementById('schCourseSearch').value;
+    const { group, list } = searchCourses(typed);
+
+    let html = `<div class="course-group">${group}</div>`;
+    if (!list.length) {
+        html += `<div class="course-empty">찾는 곳이 없으면 이름을 그대로 쓰면 됩니다.</div>`;
+    } else {
+        html += list.map(name => {
+            const geo = courseGeo(name);
+            return `<button type="button" class="course-item" onclick="pickCourse(${JSON.stringify(name).replace(/"/g, '&quot;')})">` +
+                `<span>${escapeHtml(name)}</span>` +
+                `<span class="course-mark">${geo ? '🌤️' : ''}</span></button>`;
+        }).join('');
+    }
+    box.innerHTML = html;
+}
+
+function pickCourse(name) {
+    document.getElementById('schCourseSearch').value = name;
+    renderCourseResults();
+    document.getElementById('courseResults').scrollTop = 0;
+}
+
 function openScheduleModal() {
     document.getElementById('scheduleModal').classList.add('active');
     const now = new Date(); document.getElementById('schMonth').value = now.getMonth() + 1; document.getElementById('schDay').value = now.getDate();
 
-    // 목록은 열 때마다 새로 만든다 — 방금 직접 입력한 곳이 바로 보여야 한다.
-    const courseSelect = document.getElementById('schCourseSelect');
-    const keep = courseSelect.value;
-    courseSelect.innerHTML = "";
-    golfCourseOptions().forEach(c => courseSelect.add(new Option(c, c)));
-    if (keep && golfCourseOptions().includes(keep)) courseSelect.value = keep;
+    // 지난번에 고른 곳을 미리 넣어 둔다 — 같은 곳을 다시 잡는 일이 흔하다.
+    const search = document.getElementById('schCourseSearch');
+    search.value = lastScheduledCourse();
 
     const statusText = document.getElementById('courseLoadStatus');
-    if (statusText) {
-        const extra = (appData.customCourses || []).length;
-        statusText.textContent = extra ? `(직접 추가 ${extra}곳 포함)` : "";
-    }
-    handleCourseSelectChange(courseSelect.value);
+    if (statusText) statusText.textContent = `전국 ${allCourses().length}곳에서 검색`;
+    renderCourseResults(true);
 }
 
-function handleCourseSelectChange(val) {
-    const customInput = document.getElementById('schCourseCustom');
-    if (val === "직접 입력") { customInput.style.display = "block"; customInput.focus(); } else { customInput.style.display = "none"; customInput.value = ""; }
+// 저장돼 있는 일정 문구("8월 20일 오전 7:30 무등산CC")의 끝에 골프장 이름이 붙어 있다.
+function lastScheduledCourse() {
+    const text = String(appData.nextRoundDate || '');
+    const m = text.match(/\d{1,2}:\d{2}\s+(.+)$/);
+    return m ? m[1].trim() : '';
 }
 
 function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('active'); }
@@ -518,11 +564,12 @@ function resolveRoundDate(month, day) {
 }
 
 function saveSchedule() {
-    const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
-    if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { showToast("⚠️ 골프장 이름을 입력해주세요!"); document.getElementById('schCourseCustom').focus(); return; }
+    const search = document.getElementById('schCourseSearch');
+    const course = search.value.trim();
+    if (!course) { showToast("⚠️ 골프장을 고르거나 이름을 입력해주세요!"); search.focus(); return; }
     saveState();
-    // 직접 친 곳은 목록에 남겨 둔다. 다음부터는 고르기만 하면 된다.
-    if (document.getElementById('schCourseSelect').value === "직접 입력") rememberCourse(course);
+    // 목록에 없어 직접 친 곳은 남겨 둔다. 다음부터는 검색창을 열면 맨 위에 뜬다.
+    if (!courseGeo(course)) rememberCourse(course);
     const m = parseInt(document.getElementById('schMonth').value, 10);
     const d = parseInt(document.getElementById('schDay').value, 10);
     const ampm = document.getElementById('schAmpm').value;

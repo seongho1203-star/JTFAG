@@ -32,7 +32,7 @@ python3 -m http.server 8000        # http://localhost:8000
 모듈 시스템이 없다. 모든 함수와 상태가 전역(window)에 올라가고, `index.html` 하단에서 고정된 순서로 로드된다:
 
 ```
-stats.js → api.js → calc.js → ui.js
+stats.js → courses.js → api.js → calc.js → ui.js
 ```
 
 - **`stats.js`** — 홀 단위 스코어 기록. DB에 없는 유일한 데이터로, 스코어카드 사진을 판독해 갱신한다.
@@ -46,7 +46,8 @@ stats.js → api.js → calc.js → ui.js
   홀 기록이 있는 차수는 관리자 메뉴로도 못 고친다 — 고쳐 봐야 다음 접속 때 되돌아가기 때문이다.
   홀 기록이 아직 없는 차수만 관리자 메뉴 → `✏️ 타수 직접 수정`으로 잠시 열 수 있다.
   핸디캡·정산·평균은 예전처럼 `appData.scores`를 읽으므로 계산 쪽은 손댈 필요가 없다.
-- **`api.js`** — Supabase 클라이언트, 전역 상태(`appData`), 상수(`golfers`, `RANK_CONFIG`, `COURSE_GEO`), Open-Meteo 날씨 조회.
+- **`courses.js`** — 전국 골프장 이름·좌표. 워크플로가 만드는 파일이라 직접 고치지 말 것 (아래 참고).
+- **`api.js`** — Supabase 클라이언트, 전역 상태(`appData`), 상수(`golfers`, `RANK_CONFIG`, `COURSE_GEO`), 골프장 좌표 조회(`courseGeo` / `courseFromText`), Open-Meteo 날씨 조회.
 - **`calc.js`** — 순수 계산 계층. 정산/등급/핸디캡을 산출해 `golfer*Map` 전역 변수들에 채운다.
 - **`ui.js`** — DOM 렌더링, 모달, 이벤트 핸들러. 진입점(`DOMContentLoaded` → `fetchFromSupabase()`)이 여기 있다.
 
@@ -148,6 +149,35 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
 - `sw.js`의 `fetch` 핸들러는 **크롬이 '설치 가능'으로 판정하는 조건**이라 있는 것이다.
   일부러 캐시를 두지 않았다 — 캐시하면 코드를 고쳐도 예전 화면이 남는다. 지우거나 캐시를 넣지 말 것.
 
+### 골프장 목록과 날씨
+
+전국 골프장 574곳의 이름과 좌표가 `courses.js`(`GOLF_COURSES`)에 있다. 일정에서 고르는 곳이자
+날씨를 볼 좌표다. **`courses.js`는 직접 고치지 말 것** — 워크플로가 만드는 파일이다.
+
+```
+OpenStreetMap (Overpass API)
+      ↓ Actions → '골프장 목록 갱신' (수동)
+scripts/fetch-courses.js  →  courses.js를 커밋
+      ↓ 앱이 읽어서
+일정 모달의 검색 목록  ·  courseGeo() → Open-Meteo 날씨
+```
+
+- **거르는 규칙이 이 스크립트의 핵심이다.** OSM의 `leisure=golf_course`에는 스크린골프방·실내
+  연습장·파크골프장(다른 종목)·게이트볼장이 잔뜩 섞여 있다. 763곳 중 189곳이 그런 것이었다.
+  `NOT_A_COURSE` 정규식으로 이름을 보고 걸러내되, **`골프존카운티`는 진짜 골프장 체인이라 남긴다**
+  (`STILL_A_COURSE`). 걸러낸 뒤 500곳 아래로 떨어지면 파일을 아예 만들지 않는다.
+- 띄어쓰기만 다른 중복(`사우스링스 영암` / `사우스링스영암`)은 공백을 지운 이름으로 합친다.
+  같은 이유로 `courseGeo()`·검색도 **공백을 무시하고** 비교한다.
+- **`BASE_COURSES`(ui.js)의 이름은 `courses.js`에 있는 것과 글자까지 같아야 한다.** 우리가 자주
+  가는 곳을 위에 띄우려고 둔 목록인데, 이름이 어긋나면 좌표가 안 붙어 날씨가 사라진다.
+- 목록에 없는 곳은 검색창에 그냥 쳐 넣으면 그게 이름이 된다. 좌표가 없는 이름만
+  `payload.customCourses`에 쌓여 다음부터 목록 맨 위에 뜬다(최근 것이 위, `MAX_CUSTOM_COURSES`개까지).
+- **날씨는 `courseFromText()`(api.js)가 일정 문구에서 골프장을 찾아 띄운다.** 문구 끝(`7:30 무등산CC`)을
+  먼저 보고, 안 되면 문구 안에 이름이 들어 있는 곳 중 **가장 긴 것**을 쓴다(`화순`과 `화순CC`가
+  같이 걸릴 때 뒤엣것). `COURSE_GEO`(api.js)에 남은 짧은 이름 다섯은 **옛 일정 문구용**이다 —
+  `푸른솔`처럼 예전 표기로 저장된 payload에도 날씨가 뜨게 하려고 지우지 않았다.
+- 좌표를 못 찾으면 날씨칸이 숨겨질 뿐 나머지는 멀쩡하다.
+
 ### 데이터 흐름
 
 전체 앱 상태가 Supabase 테이블 `jtfag_league`의 **단일 행(`id = 1`)** 의 `payload` JSON 컬럼 하나에 통째로 들어 있다.
@@ -195,15 +225,10 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   왼쪽 끝에서 브라우저 '뒤로 가기'가 먹는 걸 막았고, 잠긴 타수 칸에 `pointer-events: none`을 줘
   숫자 위에서 끌 때 글자 선택이 시작되지 않게 했다. `forceTableReflow()`는 표를 만지는 동안
   건너뛴다 — 미는 도중에 `overflow-x`를 껐다 켜면 그 자리에서 스크롤이 죽는다.
-- **일정의 골프장 목록은 스스로 늘어난다.** `BASE_COURSES`(ui.js)가 기본이고, `직접 입력`으로
-  친 곳은 `payload.customCourses`에 남아 다음부터 목록 맨 위에 뜬다(최근 것이 위). 같은 곳을
-  다시 쳐도 중복되지 않고, 기본 목록에 있는 이름은 아예 안 쌓인다.
-  예전엔 `fetchExternalGolfCourses()`가 0.5초 기다렸다가 고정 배열을 돌려주며
-  '외부 데이터 연동 중'이라고 표시했다 — 실제로 가져오는 데는 없었고, 지금은 그 시늉을 걷어냈다.
-  **날씨 위젯은 `COURSE_GEO`(api.js)에 좌표가 있는 골프장만 뜬다.** 새로 추가된 곳은
-  좌표가 없어 날씨가 안 나오는데, 위젯이 숨겨질 뿐 다른 동작은 멀쩡하다.
+- CSS/JS는 `document.write`로 `?ver=` 랜덤 쿼리를 붙여 캐시를 우회한다. **`courses.js`만 예외다** —
+  40KB인데 목록 갱신 워크플로를 돌릴 때나 바뀌므로 접속마다 새로 받을 이유가 없다.
+  로컬에서 안 바뀌어 보이면 강력 새로고침(`Ctrl+Shift+R`)을 시도한다.
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
-- CSS/JS는 `document.write`로 `?ver=` 랜덤 쿼리를 붙여 캐시를 우회한다. 로컬에서 안 바뀌어 보이면 강력 새로고침(`Ctrl+Shift+R`)을 시도한다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.
 - 사진은 Supabase Storage의 `round-photos` 버킷(공개)에 올리고 `appData.roundPhotos`에는 **공개 URL만** 저장한다.
   예전에 등록된 사진은 아직 base64(`data:`로 시작)로 남아 있을 수 있어, 사진을 다루는 코드는 **두 형태를 모두** 처리해야 한다

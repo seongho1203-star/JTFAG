@@ -22,6 +22,8 @@ const RANK_CONFIG = {
     3: { name: "참새", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
 };
 
+// 전국 골프장 좌표는 courses.js(GOLF_COURSES)에 있다 — OSM에서 받아 워크플로가 만든다.
+// 아래는 예전부터 쓰던 짧은 이름들이다. 옛 일정 문구("… 푸른솔")에도 날씨가 뜨도록 남겨 둔다.
 const COURSE_GEO = {
     "함평엘리체": { lat: 35.109, lon: 126.545 },
     "어등산": { lat: 35.158, lon: 126.757 },
@@ -29,6 +31,47 @@ const COURSE_GEO = {
     "골드레이크": { lat: 35.025, lon: 126.772 },
     "푸른솔": { lat: 35.275, lon: 126.652 }
 };
+
+// 전국 목록은 courses.js가 없어도 앱이 죽지 않게 방어해 둔다.
+function allCourses() {
+    return (typeof GOLF_COURSES !== 'undefined' && Array.isArray(GOLF_COURSES)) ? GOLF_COURSES : [];
+}
+
+// 이름으로 좌표를 찾는다. 띄어쓰기는 무시한다 (OSM 표기가 들쭉날쭉하다).
+function courseGeo(name) {
+    const key = String(name || '').replace(/\s+/g, '');
+    if (!key) return null;
+    const hit = allCourses().find(c => c.name.replace(/\s+/g, '') === key);
+    return hit ? { lat: hit.lat, lon: hit.lon } : null;
+}
+
+// 일정 문구에서 날씨를 볼 곳을 찾는다.
+// 문구 끝에 골프장 이름이 붙으므로 그것부터 보고, 안 되면 문구 안에 이름이 들어 있는 곳을
+// 전부 뒤져 가장 긴 것을 고른다 ('화순'과 '화순CC'가 같이 걸릴 때 뒤엣것을 쓴다).
+function courseFromText(text) {
+    const str = String(text || '');
+    if (!str) return null;
+
+    const tail = str.match(/\d{1,2}:\d{2}\s+(.+)$/);
+    if (tail) {
+        const name = tail[1].trim();
+        const geo = courseGeo(name);
+        if (geo) return { name, geo };
+    }
+
+    let best = null;
+    allCourses().forEach(c => {
+        if (str.includes(c.name) && (!best || c.name.length > best.name.length)) {
+            best = { name: c.name, geo: { lat: c.lat, lon: c.lon } };
+        }
+    });
+    Object.keys(COURSE_GEO).forEach(name => {
+        if (str.includes(name) && (!best || name.length > best.name.length)) {
+            best = { name, geo: COURSE_GEO[name] };
+        }
+    });
+    return best;
+}
 
 // ─── 푸시 알림 ───
 // 발송은 GitHub Actions가 매일 한 번 돌면서 처리한다 (.github/workflows/round-reminder.yml).
@@ -271,13 +314,13 @@ async function syncToSupabase(dataToSave) {
 async function checkWeather(text) {
     const widget = document.getElementById('weatherWidget');
     const weatherText = document.getElementById('weatherText');
-    let targetCourse = null;
-    for (let course in COURSE_GEO) { if (text && text.includes(course)) { targetCourse = course; break; } }
+    const found = courseFromText(text);
+    const targetCourse = found && found.name;
 
     if (targetCourse) {
         widget.style.display = 'flex'; weatherText.textContent = `${targetCourse} 날씨 확인중...`;
         try {
-            const geo = COURSE_GEO[targetCourse];
+            const geo = found.geo;
             const dateMatch = text.match(/(\d{1,2})[월/]\s*(\d{1,2})[일]?/);
             let targetDateStr = null;
             if (dateMatch) {
