@@ -13,6 +13,7 @@
 // 하나라도 어긋나면 그 요청은 '실패'로 남기고 stats.js는 그대로 둔다.
 
 const fs = require('fs');
+const vm = require('vm');
 const { execFileSync } = require('child_process');
 const Anthropic = require('@anthropic-ai/sdk');
 const { sendPush } = require('./push');
@@ -350,6 +351,51 @@ function formatRoundBlock(round, data, names) {
         `    }`;
 }
 
+// 방금 쓴 stats.js를 그대로 실행해 집계를 꺼내 온다. 파일이 원본이므로
+// 여기서 나온 값은 앱이 보게 될 값과 정확히 같다.
+function loadStats(source) {
+    const ctx = {};
+    vm.createContext(ctx);
+    vm.runInContext(source + '\n;this.__out = { ROUND_HOLES, ROUND_STATS, grossFromHoles };', ctx);
+    return ctx.__out;
+}
+
+// 이번 라운드에서 깨진 기록을 찾는다. 이전 차수가 없으면(첫 차수) 아무것도 안 나온다.
+// 축하할 만한 것만 골라 두 줄 안쪽으로 돌려준다.
+function findRecords(source, round, names) {
+    let S;
+    try { S = loadStats(source); } catch (err) {
+        console.error('  기록 확인 실패(알림에서만 빠집니다):', err.message);
+        return [];
+    }
+    const key = String(round);
+    const past = Object.keys(S.ROUND_HOLES).filter(r => r !== key);
+    const lines = [];
+
+    names.forEach(name => {
+        const stat = S.ROUND_STATS[key] && S.ROUND_STATS[key][name];
+        if (!stat) return;
+
+        // 홀인원·이글은 기록 경신과 상관없이 그 자체로 알린다.
+        if (stat.holeInOne > 0) lines.push(`🕳️ ${name} 홀인원!`);
+        else if (stat.eagle > 0) lines.push(`🦅 ${name} 이글!`);
+
+        const gross = S.grossFromHoles(round, name);
+        const pastGross = past.map(r => S.grossFromHoles(r, name)).filter(g => g !== null);
+        if (gross !== null && pastGross.length > 0 && gross < Math.min(...pastGross)) {
+            lines.push(`🎉 ${name} 개인 최저타 경신! ${Math.min(...pastGross)} → ${gross}타`);
+        }
+
+        const pastBirdies = past.map(r => (S.ROUND_STATS[r] && S.ROUND_STATS[r][name] || {}).birdie)
+            .filter(b => Number.isInteger(b));
+        if (stat.birdie > 0 && pastBirdies.length > 0 && stat.birdie > Math.max(...pastBirdies)) {
+            lines.push(`🐦 ${name} 버디 ${stat.birdie}개, 한 라운드 최다!`);
+        }
+    });
+
+    return lines.slice(0, 3);   // 알림이 길어지지 않게 세 줄까지만
+}
+
 // { 로 시작하는 위치를 받아 짝이 맞는 } 의 위치를 돌려준다.
 // ROUND_HOLES 안에는 중괄호가 든 문자열이 없어 단순 세기로 충분하다.
 function matchBrace(src, open) {
@@ -409,10 +455,15 @@ async function processOne(req, names) {
     console.log(`  판독: ${data.course || '코스 미상'} / ${totals}`);
     if (data.skipped.length) console.log(`  게스트 제외: ${data.skipped.join(', ')}`);
 
-    if (DRY_RUN) { console.log('  [DRY RUN] stats.js는 건드리지 않습니다.'); return { totals, skipped: data.skipped, written: false }; }
-
     const before = fs.readFileSync(STATS_FILE, 'utf8');
     const after = upsertRound(before, req.round, formatRoundBlock(req.round, data, names));
+
+    // 기록 경신은 새 파일 기준으로 찾는다 (파일을 쓰기 전에도 확인할 수 있어 DRY RUN에서도 나온다).
+    const records = findRecords(after, req.round, names);
+    records.forEach(line => console.log(`  ${line}`));
+
+    if (DRY_RUN) { console.log('  [DRY RUN] stats.js는 건드리지 않습니다.'); return { totals, skipped: data.skipped, records, written: false }; }
+
     fs.writeFileSync(STATS_FILE, after);
 
     // 형식이 깨졌으면 여기서 걸린다. 깨졌으면 원래대로 되돌린다.
@@ -423,7 +474,7 @@ async function processOne(req, names) {
         throw new Error('stats.js를 쓰다가 형식이 깨져 되돌렸습니다.');
     }
 
-    return { totals, skipped: data.skipped, written: true };
+    return { totals, skipped: data.skipped, records, written: true };
 }
 
 async function main() {
@@ -446,7 +497,8 @@ async function main() {
         try {
             const out = await processOne(req, names);
             const guest = out.skipped.length ? ` (게스트 ${out.skipped.join(', ')} 제외)` : '';
-            results.set(req.id, { status: '완료', note: `${out.totals}${guest}` });
+            const records = out.records.length ? `\n${out.records.join('\n')}` : '';
+            results.set(req.id, { status: '완료', note: `${out.totals}${guest}${records}` });
             if (out.written) done.push(`${req.round}차`);
         } catch (err) {
             console.error(`  실패: ${err.message}`);

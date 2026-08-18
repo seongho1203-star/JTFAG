@@ -188,7 +188,8 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .scorecard-log-empty { text-align: center; padding: 14px; color: #94a3b8; font-size: 0.78rem; }
 .scorecard-log-row { padding: 8px 0; border-top: 1px solid #f1f5f9; }
 .scorecard-log-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: clamp(0.68rem, 2.6vw, 0.75rem); color: var(--text-sub); }
-.scorecard-log-note { margin-top: 4px; font-size: 0.72rem; color: var(--text-sub); background: #f8fafc; border-left: 2px solid #cbd5e1; border-radius: 0 4px 4px 0; padding: 4px 7px; word-break: keep-all; line-height: 1.45; }
+/* 기록 경신은 줄을 나눠 적으므로 pre-line으로 줄바꿈을 살린다. */
+.scorecard-log-note { margin-top: 4px; font-size: 0.72rem; color: var(--text-sub); background: #f8fafc; border-left: 2px solid #cbd5e1; border-radius: 0 4px 4px 0; padding: 4px 7px; word-break: keep-all; line-height: 1.45; white-space: pre-line; }
 .scorecard-status { padding: 2px 8px; border-radius: 999px; font-weight: 900; font-size: 0.68rem; white-space: nowrap; }
 .scorecard-status.wait { background: #fef3c7; color: #92400e; }
 .scorecard-status.ok { background: #dcfce7; color: #166534; }
