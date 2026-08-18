@@ -58,7 +58,10 @@ const SYSTEM = `당신은 골프 스코어카드 사진을 판독하는 도구�
   파 대비 타수(+1, -1 같은 값)가 아니라 실제로 친 타수다.
 - players[].total: 스코어카드에 인쇄되어 있는 그 사람의 합계를 그대로 옮긴다.
   직접 더한 값이 아니라 카드에 적힌 값이어야 한다. 합계가 안 보일 때만 18홀을 더해 적는다.
-- 사진에 있는 사람은 모두 players에 넣는다. 게스트도 빼지 않는다.
+- playerCount: 스코어카드에 이름이 올라 있는 사람 수를 먼저 센다. 보통 4명이지만
+  게스트가 끼면 5명일 수도 있다. players를 채우기 전에 세어라.
+- 사진에 있는 사람은 **한 명도 빼지 말고** 모두 players에 넣는다. 게스트도 넣는다.
+  players의 개수는 playerCount와 반드시 같아야 한다.
 - 이름은 사진에 적힌 그대로 적는다. 스코어카드는 본인 말고는 이름을 가려서
   보여주는 일이 많은데("박**", "이관*", "김○○"), 가림표까지 그대로 옮긴다.
   누구인지 추측해서 이름을 채워 넣지 마라. 누구인지 가리는 일은 뒤에서 한다.
@@ -68,6 +71,7 @@ const SCHEMA = {
     type: 'object',
     properties: {
         course: { type: 'string', description: '골프장과 코스 이름. 안 보이면 빈 문자열.' },
+        playerCount: { type: 'integer', description: '스코어카드에 이름이 올라 있는 사람 수. players의 개수와 같아야 한다.' },
         par: { type: 'array', items: { type: 'integer' }, description: '1~18번홀의 파, 18개.' },
         players: {
             type: 'array',
@@ -83,7 +87,7 @@ const SCHEMA = {
             }
         }
     },
-    required: ['course', 'par', 'players'],
+    required: ['course', 'playerCount', 'par', 'players'],
     additionalProperties: false
 };
 
@@ -222,6 +226,14 @@ function validate(read, names) {
 
     const players = Array.isArray(read.players) ? read.players : [];
     const readNames = players.map(p => String(p.name || '').trim()).filter(Boolean);
+
+    // 사진에 5명이 있는데 4명만 돌려주면, 빠진 한 명 자리에 게스트가 들어앉는다.
+    // 그러면 각 줄의 합계는 다 맞아 앞의 검산을 통과해 버린다 —
+    // 실제로 게스트(100타)가 박승수로 기록된 적이 있어 넣은 검사다.
+    if (read.playerCount !== players.length) {
+        throw new Error(`사진에는 ${read.playerCount}명이 있는데 ${players.length}명이 읽혔습니다. `
+            + `읽은 이름: ${readNames.join(', ') || '없음'}`);
+    }
 
     // 게스트는 여기서 걸러진다. 우리 4명에게 배정된 사람만 남는다.
     const { assigned, skipped } = resolveNames(players, names);
