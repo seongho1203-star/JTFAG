@@ -127,6 +127,16 @@ function ddayLabel(days) {
 const PHOTO_BUCKET = 'round-photos';
 const MAX_PHOTOS_PER_ROUND = 30;
 
+// 스코어카드 판독 요청 (📋 스코어 등록)
+// 이 이름으로 접속한 기기에서만 버튼이 보인다. 로그인이 없어 보안 경계는 아니고,
+// 다른 사람이 실수로 누르는 걸 막는 장치다 (관리자 비밀번호도 함께 물어본다).
+const SCORE_OWNER = "신성호";
+// payload에 남겨 두는 요청 개수. 오래된 것부터 지운다.
+const MAX_SCORE_REQUESTS = 10;
+// 판독용 사진은 갤러리 사진(800px/0.6)보다 크고 선명해야 숫자가 읽힌다.
+const SCORECARD_MAX_PX = 1600;
+const SCORECARD_QUALITY = 0.85;
+
 function storagePathFromUrl(src) {
     const marker = '/object/public/' + PHOTO_BUCKET + '/';
     const idx = String(src).indexOf(marker);
@@ -162,7 +172,8 @@ function getDefaultData() {
             { "이관교": { start: 0, end: 0 }, "김지명": { start: 0, end: 0 }, "신성호": { start: 0, end: 0 }, "박승수": { start: 0, end: 0 } },
             { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
         ],
-        roundPhotos: [[], [], [], []]
+        roundPhotos: [[], [], [], []],
+        scoreRequests: []
     };
 }
 

@@ -21,6 +21,8 @@ window.addEventListener('DOMContentLoaded', () => {
             applyHoleScores();
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
+            // 판독 결과(status)는 워크플로가 payload에 써 넣으므로 실시간으로 들어온다.
+            if (document.getElementById('scoreRequestModal').classList.contains('active')) renderScoreRequestModal();
         }
     }).subscribe();
 
@@ -475,13 +477,14 @@ function saveSchedule() {
     syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
 }
 
-function renderAll() { 
-    renderTable(); 
-    calculateAndRender(); 
-    renderMoneyTable(); 
-    forceTableReflow(); 
-    renderStorageUsage(); 
-    checkAndGreetUser(); 
+function renderAll() {
+    renderTable();
+    calculateAndRender();
+    renderMoneyTable();
+    forceTableReflow();
+    renderStorageUsage();
+    updateScoreRequestBtn();
+    checkAndGreetUser();
 }
 
 function renderStorageUsage() {
@@ -782,6 +785,110 @@ let selectedPhotoRoundIdx = -1;
 function openRoundPhotoModal(r) { selectedPhotoRoundIdx = r; document.getElementById('roundPhotoTitle').textContent = `📸 ${r + 1}차전 갤러리`; renderRoundPhotos(); document.getElementById('roundPhotoModal').classList.add('active'); }
 function closeRoundPhotoModal() { document.getElementById('roundPhotoModal').classList.remove('active'); }
 
+/* ── 스코어카드 등록 ──────────────────────────────────────────────
+   여기서는 사진만 올리고 요청을 남긴다. 실제 판독은 GitHub Actions가
+   맡는다(scripts/read-scorecard.js). 판독이 끝나면 stats.js에 그 차수가
+   커밋되고, 배포된 뒤 접속하면 표의 타수가 저절로 채워진다.
+   payload.scoreRequests 한 건 = {id, round, url, time, by, status, note}
+   round는 차수(1부터), status는 대기 / 완료 / 실패. */
+
+let selectedScorecardRound = -1;
+
+// 본인 기기에서만 버튼을 보여 준다. 이름은 언제든 바뀔 수 있어 렌더마다 다시 판단한다.
+function updateScoreRequestBtn() {
+    const btn = document.getElementById('scoreRequestBtn');
+    if (!btn) return;
+    const isOwner = localStorage.getItem('jtfag_my_name') === SCORE_OWNER;
+    btn.style.display = isOwner ? '' : 'none';
+}
+
+async function openScoreRequestModal() {
+    if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
+    if (!(await authenticateAdmin())) return;
+    selectedScorecardRound = -1;
+    renderScoreRequestModal();
+    document.getElementById('scoreRequestModal').classList.add('active');
+}
+
+function closeScoreRequestModal() { document.getElementById('scoreRequestModal').classList.remove('active'); }
+
+function selectScorecardRound(r) { selectedScorecardRound = r; renderScoreRequestModal(); }
+
+function renderScoreRequestModal() {
+    const chips = document.getElementById('scoreRequestRounds');
+    const log = document.getElementById('scoreRequestLog');
+    const pickBtn = document.getElementById('scorecardPickBtn');
+    if (!chips || !log || !pickBtn) return;
+
+    let chipHtml = "";
+    for (let r = 0; r < appData.totalRounds; r++) {
+        const done = hasHoleRecord(r);
+        const on = selectedScorecardRound === r;
+        chipHtml += `<button type="button" class="scorecard-round-chip${on ? ' on' : ''}${done ? ' done' : ''}" onclick="selectScorecardRound(${r})">${r + 1}차${done ? ' ✓' : ''}</button>`;
+    }
+    chips.innerHTML = chipHtml;
+
+    pickBtn.disabled = selectedScorecardRound === -1;
+    pickBtn.textContent = selectedScorecardRound === -1
+        ? "먼저 차수를 선택하세요"
+        : (hasHoleRecord(selectedScorecardRound)
+            ? `📷 ${selectedScorecardRound + 1}차 스코어카드 다시 올리기`
+            : `📷 ${selectedScorecardRound + 1}차 스코어카드 사진 올리기`);
+
+    const list = (appData.scoreRequests || []).slice().reverse();
+    if (list.length === 0) {
+        log.innerHTML = `<div class="scorecard-log-empty">아직 등록한 스코어카드가 없습니다.</div>`;
+        return;
+    }
+    log.innerHTML = list.map(req => {
+        const tone = req.status === '완료' ? 'ok' : (req.status === '실패' ? 'bad' : 'wait');
+        const note = req.note ? `<div class="scorecard-log-note">${escapeHtml(req.note)}</div>` : "";
+        return `<div class="scorecard-log-row">
+            <div class="scorecard-log-head">
+                <span>${req.time} · <b>${req.round}차</b></span>
+                <span class="scorecard-status ${tone}">${req.status}</span>
+            </div>${note}
+        </div>`;
+    }).join('');
+}
+
+async function handleScorecardUpload(event) {
+    const input = event.target;
+    const file = (input.files || [])[0];
+    input.value = '';
+    if (!file) return;
+    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해주세요."); return; }
+    const round = selectedScorecardRound;
+
+    showToast("⏳ 스코어카드를 올리는 중입니다...");
+    let url;
+    try {
+        url = await uploadPhotoBlob(await compressImageToBlob(file, SCORECARD_MAX_PX, SCORECARD_QUALITY), round);
+    } catch (err) {
+        console.error("스코어카드 업로드 실패:", err);
+        showToast("⚠️ 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        return;
+    }
+
+    const now = new Date();
+    saveState();
+    if (!appData.scoreRequests) appData.scoreRequests = [];
+    appData.scoreRequests.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        round: round + 1,
+        url: url,
+        time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        by: localStorage.getItem('jtfag_my_name') || SCORE_OWNER,
+        status: '대기',
+        note: ''
+    });
+    while (appData.scoreRequests.length > MAX_SCORE_REQUESTS) appData.scoreRequests.shift();
+
+    syncToSupabase(appData);
+    renderScoreRequestModal();
+    showToast(`✅ ${round + 1}차 스코어카드 등록! 판독이 끝나면 타수가 자동으로 채워집니다.`);
+}
+
 // payload에 base64로 남아 있는 예전 사진 수. 0이면 이전 버튼을 숨긴다.
 function countLegacyPhotos() {
     return (appData.roundPhotos || []).reduce((n, list) =>
@@ -799,7 +906,8 @@ function renderRoundPhotos() {
 }
 
 // 원본을 그대로 올리면 용량이 커서, 긴 변 기준 800px JPEG으로 줄여 올린다.
-function compressImageToBlob(file, maxSize) {
+// 판독용 스코어카드만 예외로 더 크고 선명하게(1600px/0.85) 올린다 — 숫자가 뭉개지면 못 읽는다.
+function compressImageToBlob(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = () => reject(new Error("파일을 읽지 못했습니다."));
@@ -813,7 +921,7 @@ function compressImageToBlob(file, maxSize) {
                 const canvas = document.createElement('canvas');
                 canvas.width = w; canvas.height = h;
                 canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                canvas.toBlob(b => b ? resolve(b) : reject(new Error("압축에 실패했습니다.")), 'image/jpeg', 0.6);
+                canvas.toBlob(b => b ? resolve(b) : reject(new Error("압축에 실패했습니다.")), 'image/jpeg', quality || 0.6);
             };
             img.src = e.target.result;
         };
@@ -1393,6 +1501,7 @@ async function checkAndGreetUser() {
             myName = await showNameSelectionPrompt("👋 환영합니다!<br>본인의 이름을 선택해주세요.");
             if (myName && golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
+                updateScoreRequestBtn();
                 showGreeting(myName);
             } else {
                 hasGreeted = false; 
@@ -1417,6 +1526,7 @@ async function deleteMyName() {
     
     if (isConfirmed) {
         localStorage.removeItem('jtfag_my_name');
+        updateScoreRequestBtn();
         showToast("🗑️ 이름이 삭제되었습니다.");
         hasGreeted = false; 
         

@@ -39,6 +39,7 @@ stats.js → api.js → calc.js → ui.js
   `ROUND_HOLES`(원본, 차수별 18홀 파+파대비타수) → `ROUND_STATS`(차수별 집계) → `CUMULATIVE_STATS`(누적 총합)로
   **자동 계산**된다. 뒤 두 개는 직접 고치지 말 것. 새 차수는 `ROUND_HOLES`에만 추가하면 된다.
   판독 검산법: `par + rel`의 18홀 합계가 그 차수의 그로스가 되어야 한다.
+  앱의 `📋 스코어 등록` 버튼을 쓰면 이 파일을 **워크플로가 대신 고친다** (아래 참고).
 - **타수는 사람이 입력하지 않는다.** 화면의 타수 칸은 전부 잠겨 있고(`readonly`),
   `syncScoresFromHoles()`(ui.js)가 `grossFromHoles()`로 계산한 값을 `appData.scores`에 채운다.
   즉 **`ROUND_HOLES`에 차수를 추가하고 푸시하면 표의 타수가 저절로 채워진다.**
@@ -50,6 +51,36 @@ stats.js → api.js → calc.js → ui.js
 - **`ui.js`** — DOM 렌더링, 모달, 이벤트 핸들러. 진입점(`DOMContentLoaded` → `fetchFromSupabase()`)이 여기 있다.
 
 새 파일을 추가하면 `index.html`의 `document.write` 블록에도 등록해야 한다.
+
+### 스코어카드 판독 (📋 스코어 등록)
+
+사진을 올리면 18홀 타수가 `stats.js`에 자동으로 들어간다. 앱은 요청만 남기고, 판독은 GitHub Actions가 한다.
+
+```
+앱: openScoreRequestModal() → 차수 선택 → 사진 업로드
+      ↓ Storage(round-photos) 업로드 후 공개 URL만 저장
+   payload.scoreRequests = [{id, round, url, time, by, status, note}]
+      ↓ 15분마다
+GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
+      ↓ 사진을 Claude에게 보여 par/strokes를 받음 → 검산 → rel 계산
+   stats.js의 ROUND_HOLES에 그 차수를 써 넣고 커밋·푸시
+      ↓ Pages 배포 후 접속하면
+   syncScoresFromHoles()가 표의 타수를 채운다
+```
+
+- **버튼은 `SCORE_OWNER`(api.js) 기기에서만 보이고, 누르면 관리자 비밀번호를 또 묻는다.**
+  `jtfag_my_name`은 누구나 바꿀 수 있어 보안 경계가 아니다 — 실수 방지 장치다.
+- **판독 결과를 그대로 믿지 않는다.** `validate()`가 18홀·파 합계(68~74)·타수 범위와 함께
+  **사진에 적힌 합계와 18홀 타수의 합이 같은지**를 본다. 이 검산이 오독을 잡는 핵심이라 빼지 말 것.
+  하나라도 어긋나면 `stats.js`를 건드리지 않고 요청을 `실패`로 남긴다 (사유가 앱에 그대로 보인다).
+- **게스트는 여기서 걸러진다.** 모델에게는 사진 속 사람을 전부 내놓게 하고,
+  `payload.scores`의 이름 4개에 없는 사람은 스크립트가 버린다. 5인 플레이도 그냥 올리면 된다.
+- 같은 차수를 다시 올리면 그 블록만 갈아 끼운다(`upsertRound`). 차수가 늘지 않는다.
+- **모델에게 파 대비 타수(±)를 시키지 않는다.** 실제 타수를 받아 `rel`은 스크립트가 뺀다 —
+  모델이 뺄셈까지 하면 틀릴 자리가 늘어난다.
+- 필요한 Secret은 `ANTHROPIC_API_KEY` · `SUPABASE_URL` · `SUPABASE_SERVICE_KEY`.
+  워크플로가 `stats.js`를 커밋하므로 `permissions: contents: write`가 있어야 한다.
+- 급하면 Actions 탭 → workflow_dispatch로 바로 돌린다 (`dry_run`을 켜면 판독만 하고 파일은 안 고친다).
 
 ### 라운드 알림 (푸시)
 

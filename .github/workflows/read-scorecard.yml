@@ -1,0 +1,42 @@
+name: 스코어카드 판독
+
+on:
+  schedule:
+    # 15분마다. 대기 중인 요청이 없으면 몇 초 만에 그냥 끝난다.
+    # Actions 특성상 예정보다 늦게 돌 수 있다 — 급하면 아래 workflow_dispatch로 직접 실행한다.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '판독만 해 보고 stats.js는 건드리지 않기'
+        type: boolean
+        default: false
+
+# stats.js를 커밋해야 해서 쓰기 권한이 필요하다.
+permissions:
+  contents: write
+
+# 동시에 두 번 돌면 같은 요청을 두 번 판독하게 된다.
+concurrency:
+  group: read-scorecard
+  cancel-in-progress: false
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - run: npm install @anthropic-ai/sdk
+
+      - name: 스코어카드 판독
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: node scripts/read-scorecard.js

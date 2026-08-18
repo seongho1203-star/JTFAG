@@ -88,6 +88,8 @@
             <button type="button" class="action-btn remove-btn" onclick="removeRound()">- 최근 삭제</button>
         </div>
         <div class="right-btns">
+            <!-- 본인(SCORE_OWNER) 기기에서만 보인다. updateScoreRequestBtn()이 켜고 끈다. -->
+            <button type="button" class="action-btn scorecard-btn" id="scoreRequestBtn" onclick="openScoreRequestModal()" style="display:none;">📋 스코어 등록</button>
             <button type="button" class="action-btn undo-btn" onclick="undoLastAction()">↩️ 되돌리기</button>
         </div>
     </div>
@@ -236,6 +238,22 @@
             <input type="file" accept="image/*" id="roundPhotoUpload" style="display:none;" onchange="handleRoundPhotoUpload(event)" multiple>
             <button type="button" class="open-history-btn" onclick="document.getElementById('roundPhotoUpload').click()">+ 새로운 사진 업로드</button>
             <div class="photo-grid" id="photoGrid"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="scoreRequestModal" onclick="if(event.target === this) closeScoreRequestModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📋 스코어카드 등록</h3>
+            <button type="button" class="close-btn" onclick="closeScoreRequestModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="scorecard-hint">차수를 고르고 스코어카드 사진을 올리면, 잠시 뒤 18홀 타수가 판독되어 표에 자동으로 채워집니다.</div>
+            <div class="scorecard-round-chips" id="scoreRequestRounds"></div>
+            <input type="file" accept="image/*" id="scorecardUpload" style="display:none;" onchange="handleScorecardUpload(event)">
+            <button type="button" class="open-history-btn" id="scorecardPickBtn" onclick="document.getElementById('scorecardUpload').click()">📷 스코어카드 사진 올리기</button>
+            <div class="scorecard-log" id="scoreRequestLog"></div>
         </div>
     </div>
 </div>
