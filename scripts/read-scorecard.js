@@ -135,6 +135,20 @@ async function readScorecard(image, names) {
     return JSON.parse(text.text);
 }
 
+// 사진 속 이름을 우리 4명 중 하나에 붙인다. 못 붙이면 null(게스트로 친다).
+// 스코어카드에는 별명이나 띄어쓰기가 섞여 나오는 일이 잦아 아래까지 받아 준다:
+//   "신 성 호" → 공백 무시 · "이관교님"/"P이관교" → 이름이 통째로 들어 있으면 인정.
+// 다만 '이관교'와 '이관수'처럼 다른 사람이 섞이면 안 되므로 부분 글자로는 안 붙인다.
+function matchGolfer(raw, names) {
+    const squeeze = s => String(s == null ? '' : s).replace(/\s+/g, '');
+    const name = squeeze(raw);
+    if (!name) return null;
+    const exact = names.find(n => squeeze(n) === name);
+    if (exact) return exact;
+    const contained = names.filter(n => name.includes(squeeze(n)));
+    return contained.length === 1 ? contained[0] : null;   // 둘 이상 걸리면 애매하니 포기
+}
+
 // 판독 결과 검산. 통과하면 {course, par, rel}, 아니면 Error를 던진다.
 function validate(read, names) {
     const par = read.par;
@@ -147,10 +161,15 @@ function validate(read, names) {
     const rel = {};
     const skipped = [];
 
+    const readNames = [];
+
     players.forEach(p => {
-        const name = String(p.name || '').trim();
+        const raw = String(p.name || '').trim();
+        if (raw) readNames.push(raw);
         // 게스트는 기록하지 않는다. 4명만 남긴다.
-        if (!names.includes(name)) { if (name) skipped.push(name); return; }
+        const name = matchGolfer(raw, names);
+        if (!name) { if (raw) skipped.push(raw); return; }
+        if (rel[name]) throw new Error(`${name}이(가) 사진에 두 번 나옵니다. 이름을 못 가리겠습니다.`);
         const strokes = p.strokes;
         if (!Array.isArray(strokes) || strokes.length !== HOLES) throw new Error(`${name}: ${Array.isArray(strokes) ? strokes.length : 0}홀만 읽혔습니다.`);
         if (strokes.some(s => !Number.isInteger(s) || s < 1 || s > 15)) throw new Error(`${name}: 타수에 이상한 값이 있습니다.`);
@@ -160,10 +179,14 @@ function validate(read, names) {
         rel[name] = strokes.map((s, i) => s - par[i]);
     });
 
+    // 못 찾았을 땐 사진에서 뭐라고 읽혔는지 같이 알려 준다. 이게 없으면 원인을 못 찾는다.
     const missing = names.filter(n => !rel[n]);
-    if (missing.length) throw new Error(`${missing.join(', ')}의 기록을 못 찾았습니다.`);
+    if (missing.length) {
+        throw new Error(`${missing.join(', ')}의 기록을 못 찾았습니다. `
+            + `사진에서 읽은 이름: ${readNames.length ? readNames.join(', ') : '없음'}`);
+    }
 
-    return { course: String(read.course || '').trim(), par, rel, skipped };
+    return { course: String(read.course || '').trim(), par, rel, skipped, readNames };
 }
 
 // ── stats.js 쓰기 ────────────────────────────────────────────────
@@ -228,6 +251,7 @@ async function processOne(req, names) {
     const data = validate(read, names);
 
     const totals = names.map(n => `${n} ${data.par.reduce((a, p, i) => a + p + data.rel[n][i], 0)}타`).join(' · ');
+    console.log(`  사진 속 이름: ${data.readNames.join(', ')}`);
     console.log(`  판독: ${data.course || '코스 미상'} / ${totals}`);
     if (data.skipped.length) console.log(`  게스트 제외: ${data.skipped.join(', ')}`);
 
