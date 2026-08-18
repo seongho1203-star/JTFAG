@@ -86,9 +86,9 @@ GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
 - 같은 차수를 다시 올리면 그 블록만 갈아 끼운다(`upsertRound`). 차수가 늘지 않는다.
 - **모델에게 파 대비 타수(±)를 시키지 않는다.** 실제 타수를 받아 `rel`은 스크립트가 뺀다 —
   모델이 뺄셈까지 하면 틀릴 자리가 늘어난다.
-- **차수 선택은 한 줄로 유지한다.** 칩을 옆으로 넘기고(`overflow-x`), 열 때
-  `defaultScorecardRound()`(홀 기록이 없는 마지막 차수)를 미리 골라 화면 안으로 밀어 준다.
-  차수가 스무 개가 되어도 창 높이가 그대로다 — 줄바꿈(`flex-wrap`)으로 되돌리지 말 것.
+- **차수는 드롭다운으로 고른다.** 열 때 `defaultScorecardRound()`(홀 기록이 없는 마지막 차수)를
+  미리 골라 두므로 대개 사진만 올리면 된다. 차수가 스무 개가 되어도 창 크기가 그대로다 —
+  칩을 늘어놓는 방식으로 되돌리지 말 것.
 - **판독이 끝나면 알림이 간다.** 성공은 네 명 모두에게, 실패는 사진을 올린 사람(`req.by`)에게만.
   상태를 payload에 확정한 **뒤에** 보낸다 — 그래야 '완료'라고 알려 놓고 실제로는
   푸시가 실패한 경우가 안 생긴다. 알림이 실패해도 판독 결과는 뒤집지 않는다.
@@ -174,6 +174,13 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 
 ## 주의사항
 
+- **타수 표의 좌우 스크롤은 건드릴 때 조심할 것.** 손가락으로 미는 게 가끔 먹통이 된다는
+  제보가 있어 짚이는 곳을 모두 손봤다 (실기기 증상이라 헤드리스로는 재현이 안 됐다):
+  `.table-wrapper`에서 `scroll-behavior: smooth`를 뺐고(차수 추가 때의 이동은
+  `scrollTo({behavior:'smooth'})`가 직접 하니 문제없다), `overscroll-behavior-x: contain`으로
+  왼쪽 끝에서 브라우저 '뒤로 가기'가 먹는 걸 막았고, 잠긴 타수 칸에 `pointer-events: none`을 줘
+  숫자 위에서 끌 때 글자 선택이 시작되지 않게 했다. `forceTableReflow()`는 표를 만지는 동안
+  건너뛴다 — 미는 도중에 `overflow-x`를 껐다 켜면 그 자리에서 스크롤이 죽는다.
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
 - CSS/JS는 `document.write`로 `?ver=` 랜덤 쿼리를 붙여 캐시를 우회한다. 로컬에서 안 바뀌어 보이면 강력 새로고침(`Ctrl+Shift+R`)을 시도한다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.

@@ -250,7 +250,8 @@
         </div>
         <div class="modal-body">
             <div class="scorecard-hint">차수를 고르고 스코어카드 사진을 올리면, 잠시 뒤 18홀 타수가 판독되어 표에 자동으로 채워집니다.</div>
-            <div class="scorecard-round-chips" id="scoreRequestRounds"></div>
+            <label class="scorecard-round-label" for="scoreRequestRound">차수</label>
+            <select class="scorecard-round-select" id="scoreRequestRound" onchange="selectScorecardRound(parseInt(this.value, 10))"></select>
             <input type="file" accept="image/*" id="scorecardUpload" style="display:none;" onchange="handleScorecardUpload(event)">
             <button type="button" class="open-history-btn" id="scorecardPickBtn" onclick="document.getElementById('scorecardUpload').click()">📷 스코어카드 사진 올리기</button>
             <div class="scorecard-log" id="scoreRequestLog"></div>

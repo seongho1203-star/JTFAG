@@ -26,6 +26,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }).subscribe();
 
+    watchTableTouch();
     initScheduleOptions();
     registerServiceWorker().then(() => updateAlarmUI());
     setTimeout(renderInstallBanner, 2500);   // iOS는 이벤트가 없으므로 직접 띄운다
@@ -417,9 +418,34 @@ document.addEventListener('visibilitychange', function () {
     if (!document.hidden && isLoaded) renderNoticeArea();
 });
 
-function forceTableReflow() {
+// 표가 가끔 안 그려지는 걸 막으려고 overflow를 잠깐 껐다 켜서 다시 그리게 한다.
+// 그런데 손가락으로 밀고 있는 중에 이게 돌면 스크롤이 그 자리에서 죽는다.
+// (다른 사람이 값을 고쳐 실시간 갱신이 들어오면 renderAll이 도는 탓에 종종 겹쳤다)
+// 그래서 표를 만지고 있는 동안에는 건너뛴다.
+let isTableTouched = false;
+
+function watchTableTouch() {
     const wrapper = document.getElementById('tableWrapper');
-    if(wrapper) { const currentScroll = wrapper.scrollLeft; wrapper.style.overflowX = 'hidden'; void wrapper.offsetHeight; wrapper.style.overflowX = 'auto'; wrapper.scrollLeft = currentScroll; }
+    if (!wrapper) return;
+    const on = () => { isTableTouched = true; };
+    const off = () => { isTableTouched = false; };
+    wrapper.addEventListener('touchstart', on, { passive: true });
+    wrapper.addEventListener('touchend', off, { passive: true });
+    wrapper.addEventListener('touchcancel', off, { passive: true });
+    wrapper.addEventListener('pointerdown', on, { passive: true });
+    wrapper.addEventListener('pointerup', off, { passive: true });
+    wrapper.addEventListener('pointercancel', off, { passive: true });
+}
+
+function forceTableReflow() {
+    if (isTableTouched) return;
+    const wrapper = document.getElementById('tableWrapper');
+    if (!wrapper) return;
+    const currentScroll = wrapper.scrollLeft;
+    wrapper.style.overflowX = 'hidden';
+    void wrapper.offsetHeight;
+    wrapper.style.overflowX = 'auto';
+    wrapper.scrollLeft = currentScroll;
 }
 
 function initScheduleOptions() {
@@ -817,13 +843,6 @@ async function openScoreRequestModal() {
     selectedScorecardRound = defaultScorecardRound();
     renderScoreRequestModal();
     document.getElementById('scoreRequestModal').classList.add('active');
-    scrollSelectedRoundIntoView();
-}
-
-// 차수가 늘면 칩 줄이 옆으로 길어진다. 고른 칩이 안 보이면 그리로 밀어 준다.
-function scrollSelectedRoundIntoView() {
-    const on = document.querySelector('.scorecard-round-chip.on');
-    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
 function closeScoreRequestModal() { document.getElementById('scoreRequestModal').classList.remove('active'); }
@@ -831,18 +850,19 @@ function closeScoreRequestModal() { document.getElementById('scoreRequestModal')
 function selectScorecardRound(r) { selectedScorecardRound = r; renderScoreRequestModal(); }
 
 function renderScoreRequestModal() {
-    const chips = document.getElementById('scoreRequestRounds');
+    const select = document.getElementById('scoreRequestRound');
     const log = document.getElementById('scoreRequestLog');
     const pickBtn = document.getElementById('scorecardPickBtn');
-    if (!chips || !log || !pickBtn) return;
+    if (!select || !log || !pickBtn) return;
 
-    let chipHtml = "";
+    // 차수가 몇 개가 되든 창 크기가 그대로인 드롭다운으로 고른다.
+    // 홀 기록이 이미 있는 차수는 ✓로 표시해, 다시 올리는 건지 알 수 있게 한다.
+    let optionHtml = "";
     for (let r = 0; r < appData.totalRounds; r++) {
-        const done = hasHoleRecord(r);
-        const on = selectedScorecardRound === r;
-        chipHtml += `<button type="button" class="scorecard-round-chip${on ? ' on' : ''}${done ? ' done' : ''}" onclick="selectScorecardRound(${r})">${r + 1}차${done ? ' ✓' : ''}</button>`;
+        optionHtml += `<option value="${r}"${selectedScorecardRound === r ? ' selected' : ''}>${r + 1}차${hasHoleRecord(r) ? ' ✓ 기록 있음' : ''}</option>`;
     }
-    chips.innerHTML = chipHtml;
+    select.innerHTML = optionHtml;
+    select.value = String(selectedScorecardRound);
 
     pickBtn.disabled = selectedScorecardRound === -1;
     pickBtn.textContent = selectedScorecardRound === -1

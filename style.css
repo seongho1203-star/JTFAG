@@ -159,13 +159,9 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 
 /* 스코어카드 등록 모달 */
 .scorecard-hint { font-size: clamp(0.68rem, 2.6vw, 0.75rem); color: var(--text-sub); line-height: 1.5; word-break: keep-all; margin-bottom: 10px; }
-/* 차수가 늘어도 한 줄로 유지한다. 줄바꿈 대신 옆으로 넘긴다. */
-.scorecard-round-chips { display: flex; flex-wrap: nowrap; gap: 6px; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: thin; }
-.scorecard-round-chips::-webkit-scrollbar { height: 4px; }
-.scorecard-round-chips::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
-.scorecard-round-chip { flex: 0 0 auto; padding: 7px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #ffffff; color: var(--text-sub); font-weight: 800; font-size: clamp(0.68rem, 2.6vw, 0.76rem); white-space: nowrap; }
-.scorecard-round-chip.done { border-color: rgba(184, 134, 11, 0.45); color: var(--primary-gold); background: var(--gold-light); }
-.scorecard-round-chip.on { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
+/* 차수는 드롭다운으로 고른다. 차수가 스무 개가 되어도 창 높이가 그대로다. */
+.scorecard-round-label { display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-sub); margin-bottom: 4px; }
+.scorecard-round-select { width: 100%; padding: 10px 12px; margin-bottom: 12px; border: 1px solid rgba(184, 134, 11, 0.45); border-radius: 8px; background: var(--gold-light); color: var(--text-main); font-weight: 800; font-size: clamp(0.78rem, 3vw, 0.88rem); }
 #scorecardPickBtn:disabled { opacity: 0.45; }
 .scorecard-log { margin-top: 12px; }
 .scorecard-log-empty { text-align: center; padding: 14px; color: #94a3b8; font-size: 0.78rem; }
@@ -177,7 +173,12 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .scorecard-status.ok { background: #dcfce7; color: #166534; }
 .scorecard-status.bad { background: #fee2e2; color: #991b1b; }
 
-.table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); margin-bottom: 10px; background: var(--card-bg); width: 100%; scroll-behavior: smooth; }
+/* 좌우 스크롤이 가끔 안 먹던 이유가 여기 몰려 있었다.
+   · scroll-behavior:smooth — 코드가 scrollLeft를 되돌릴 때 애니메이션이 걸려 손가락을 씹었다.
+     차수 추가 때의 부드러운 이동은 scrollTo({behavior:'smooth'})가 직접 하니 없어도 된다.
+   · overscroll-behavior-x — 왼쪽 끝에서 끌면 브라우저 '뒤로 가기'가 먼저 먹었다.
+   · touch-action — 가로/세로 끌기만 스크롤로 받고 나머지 제스처는 넘기지 않는다. */
+.table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; touch-action: pan-x pan-y; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); margin-bottom: 10px; background: var(--card-bg); width: 100%; }
 .table-wrapper table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: center; }
 th, td { padding: 6px 3px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; min-width: 50px; }
 th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-size: clamp(0.65rem, 2.4vw, 0.72rem); }
@@ -193,7 +194,9 @@ th { background-color: #f8fafc; color: var(--text-sub); font-weight: 700; font-s
 input.score-input { width: 42px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: clamp(0.75rem, 2.8vw, 0.85rem); font-weight: 800; background-color: var(--input-bg); margin: 0 auto; display: block; }
 /* 잠긴 타수 칸 — 입력칸 테두리를 지워 '누를 수 있는 곳'으로 안 보이게 한다.
    값은 스코어카드 판독 결과(stats.js)에서 자동으로 들어온다. */
-input.score-input.locked { border-color: transparent; background-color: transparent; color: var(--text-main, #1e293b); cursor: default; }
+/* 잠긴 칸은 손댈 일이 없으니 터치를 아예 안 받는다. 받아 버리면 숫자에서 손가락을
+   끌 때 글자 선택이 시작돼 표가 안 밀린다 — 좌우 스크롤이 먹통되던 주된 이유다. */
+input.score-input.locked { border-color: transparent; background-color: transparent; color: var(--text-main, #1e293b); cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
 input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7; margin: 0 auto; display: block; }
 .photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
 .photo-btn:hover { background: #fef9e7; }
