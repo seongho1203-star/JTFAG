@@ -817,6 +817,9 @@ function closeRoundPhotoModal() { document.getElementById('roundPhotoModal').cla
    기기를 바꾸거나 앱을 지워도 예전 구독이 남아 있을 수 있는데, 그런 건
    발송할 때 만료(404/410)로 확인되면 scripts/push.js가 알아서 지운다. */
 
+let pushSubsCache = [];
+let pushSubsMine = null;
+
 function closePushSubsModal() { document.getElementById('pushSubsModal').classList.remove('active'); }
 
 async function openPushSubsModal() {
@@ -825,44 +828,84 @@ async function openPushSubsModal() {
     content.innerHTML = `<div class="subs-empty">불러오는 중…</div>`;
     document.getElementById('pushSubsModal').classList.add('active');
 
-    let subs, mine = null;
     try {
-        subs = await listPushSubscriptions();
+        pushSubsCache = await listPushSubscriptions();
     } catch (err) {
         content.innerHTML = `<div class="subs-empty">⚠️ ${escapeHtml(err.message)}</div>`;
         return;
     }
     // 이 기기가 목록의 어느 줄인지 표시해 준다.
+    pushSubsMine = null;
     try {
         const sub = await getPushSubscription();
-        if (sub) mine = sub.endpoint;
+        if (sub) pushSubsMine = sub.endpoint;
     } catch (e) { /* 이 기기 표시는 못 해도 목록은 보여 준다 */ }
 
-    if (subs.length === 0) {
+    renderPushSubs();
+}
+
+function renderPushSubs() {
+    const content = document.getElementById('pushSubsContent');
+    if (!content) return;
+
+    if (pushSubsCache.length === 0) {
         content.innerHTML = `<div class="subs-empty">알림을 받는 기기가 없습니다.<br>공지 카드의 🔔 버튼으로 켤 수 있습니다.</div>`;
         return;
     }
 
     // 사람별로 묶어 보여 준다. 이름을 안 남긴 구독은 맨 뒤로.
     const byName = {};
-    subs.forEach(s => {
+    pushSubsCache.forEach((s, i) => {
         const key = s.name || '이름 없음';
-        (byName[key] = byName[key] || []).push(s);
+        (byName[key] = byName[key] || []).push({ sub: s, idx: i });
     });
     const order = golfers.filter(n => byName[n]).concat(Object.keys(byName).filter(n => !golfers.includes(n)));
 
     content.innerHTML =
-        `<div class="subs-total">전체 <b>${subs.length}</b>대 · ${order.length}명</div>` +
+        `<div class="subs-total">전체 <b>${pushSubsCache.length}</b>대 · ${order.length}명</div>` +
         order.map(name => `
             <div class="subs-person">
                 <div class="subs-name">${escapeHtml(name)} <span class="subs-count">${byName[name].length}대</span></div>
-                ${byName[name].map(s => `
-                    <div class="subs-device${s.endpoint === mine ? ' me' : ''}">
-                        ${escapeHtml(pushEndpointLabel(s.endpoint))}
-                        ${s.endpoint === mine ? '<span class="subs-me-tag">이 기기</span>' : ''}
-                    </div>`).join('')}
+                ${byName[name].map(({ sub, idx }) => {
+                    const me = sub.endpoint === pushSubsMine;
+                    return `<div class="subs-device${me ? ' me' : ''}">
+                        <span class="subs-device-name">${escapeHtml(pushEndpointLabel(sub.endpoint))}</span>
+                        ${me ? '<span class="subs-me-tag">이 기기</span>' : ''}
+                        <button type="button" class="subs-del" onclick="removePushSub(${idx})" title="이 기기 알림 끄기">✕</button>
+                    </div>`;
+                }).join('')}
             </div>`).join('') +
-        `<div class="subs-note">기기를 바꾸거나 앱을 지워 못 쓰게 된 구독은, 다음 알림을 보낼 때 확인되면 저절로 정리됩니다.</div>`;
+        `<div class="subs-note">✕를 누르면 그 기기는 알림을 더 받지 않습니다. 본인이 다시 켜면 되살아납니다.<br>
+         기기를 바꾸거나 앱을 지워 못 쓰게 된 구독은, 다음 알림을 보낼 때 확인되면 저절로 정리됩니다.</div>`;
+}
+
+// 남의 기기를 지우면 그 사람은 이유도 모른 채 알림이 끊긴다. 그래서 한 번 더 묻는다.
+async function removePushSub(idx) {
+    const sub = pushSubsCache[idx];
+    if (!sub) return;
+    const me = sub.endpoint === pushSubsMine;
+    const who = sub.name || '이름 없음';
+
+    const ok = await showConfirmPrompt(
+        `${escapeHtml(who)}님의 <b>${escapeHtml(pushEndpointLabel(sub.endpoint))}</b>에 알림을 끊을까요?` +
+        `<br><span style="font-size:0.8rem; font-weight:400; color:#94a3b8;">` +
+        (me ? '이 기기입니다. 🔔 버튼으로 다시 켤 수 있습니다.'
+            : '본인이 그 기기에서 🔔 버튼을 누르면 다시 켜집니다.') + '</span>', '알림 끄기');
+    if (!ok) return;
+
+    try {
+        // 이 기기면 브라우저 구독까지 끊는다. 안 그러면 버튼만 켜진 채로 남는다.
+        if (me) { await unsubscribeFromPush(); pushSubsMine = null; }
+        else await deletePushSubscription(sub.endpoint);
+    } catch (err) {
+        showToast(`⚠️ ${err.message}`);
+        return;
+    }
+
+    pushSubsCache.splice(idx, 1);
+    renderPushSubs();
+    if (me) updateAlarmUI();
+    showToast("🔕 알림을 껐습니다.");
 }
 
 /* ── 스코어카드 등록 ──────────────────────────────────────────────

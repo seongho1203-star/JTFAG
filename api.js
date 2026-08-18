@@ -92,6 +92,13 @@ async function listPushSubscriptions() {
     return data || [];
 }
 
+// 목록에서 기기 하나를 지운다. 이 기기를 지울 때는 unsubscribeFromPush를 쓴다 —
+// 브라우저 구독까지 함께 끊어야 알림 버튼이 켜진 채로 남지 않는다.
+async function deletePushSubscription(endpoint) {
+    const { error } = await window._supabase.from(PUSH_TABLE).delete().eq('endpoint', endpoint);
+    if (error) throw new Error(error.message || '삭제하지 못했습니다.');
+}
+
 // endpoint 주소로 어느 브라우저인지 짐작한다. 정확한 기기명은 알 수 없다.
 function pushEndpointLabel(endpoint) {
     const url = String(endpoint || '');

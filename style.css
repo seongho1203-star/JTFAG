@@ -163,6 +163,9 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .subs-name { font-size: clamp(0.75rem, 2.9vw, 0.83rem); font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
 .subs-count { font-weight: 700; color: var(--text-sub); font-size: 0.72rem; margin-left: 4px; }
 .subs-device { display: flex; align-items: center; gap: 6px; font-size: clamp(0.7rem, 2.7vw, 0.76rem); color: var(--text-sub); background: #f8fafc; border-left: 2px solid #cbd5e1; border-radius: 0 4px 4px 0; padding: 5px 8px; margin-top: 4px; word-break: keep-all; }
+.subs-device-name { flex: 1 1 auto; }
+.subs-del { flex: 0 0 auto; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 0.7rem; font-weight: 900; line-height: 1; }
+.subs-del:active { background: #fecaca; color: #991b1b; }
 .subs-device.me { border-left-color: var(--primary-gold); background: var(--gold-light); color: var(--text-main); font-weight: 700; }
 .subs-me-tag { flex: 0 0 auto; background: var(--primary-gold); color: #fff; font-size: 0.62rem; font-weight: 900; padding: 1px 6px; border-radius: 999px; }
 .subs-empty { text-align: center; padding: 20px; color: #94a3b8; font-size: 0.8rem; line-height: 1.6; }
