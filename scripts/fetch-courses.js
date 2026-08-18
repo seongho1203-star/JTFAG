@@ -26,21 +26,32 @@ area["ISO3166-1"="KR"][admin_level=2]->.kr;
 out center tags;
 `;
 
+// Overpass는 누가 부르는지 밝히지 않으면 거절한다(429 / 406). 반드시 보낼 것.
+const HEADERS = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Accept': 'application/json',
+    'User-Agent': 'JTFAG-golf-app/1.0 (https://github.com/seongho1203-star/JTFAG)'
+};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 async function overpass() {
     let lastErr;
     for (const url of ENDPOINTS) {
-        try {
-            console.log(`요청: ${url}`);
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'data=' + encodeURIComponent(QUERY)
-            });
-            if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 200)}`);
-            return await res.json();
-        } catch (err) {
-            console.error(`  실패: ${err.message}`);
-            lastErr = err;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                console.log(`요청: ${url}${attempt > 1 ? ` (${attempt}번째)` : ''}`);
+                const res = await fetch(url, {
+                    method: 'POST', headers: HEADERS,
+                    body: 'data=' + encodeURIComponent(QUERY)
+                });
+                if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160).replace(/\s+/g, ' ')}`);
+                return await res.json();
+            } catch (err) {
+                console.error(`  실패: ${err.message}`);
+                lastErr = err;
+                if (attempt === 1) await sleep(5000);   // 잠깐 쉬었다 한 번 더
+            }
         }
     }
     throw lastErr;
