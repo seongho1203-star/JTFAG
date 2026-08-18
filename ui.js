@@ -456,15 +456,44 @@ function initScheduleOptions() {
     if(minSelect) { minSelect.innerHTML = ""; for(let i=0; i<60; i++) { const minStr = i < 10 ? "0" + i : String(i); minSelect.add(new Option(minStr, minStr)); } }
 }
 
-async function fetchExternalGolfCourses() { return new Promise(resolve => { setTimeout(() => { resolve(["함평엘리체", "어등산", "해피니스", "골드레이크", "무등산", "빛고을", "푸른솔(장성)", "나주힐스", "화순", "보성", "순천", "아크로", "다산베아채", "JNJ", "파인비치", "사우스링스 영암", "직접 입력"]); }, 500); }); }
+// 처음부터 들어 있는 골프장. 여기 없는 곳은 '직접 입력'으로 치면 그 뒤로 목록에 남는다
+// (payload.customCourses). 그래서 같은 곳을 두 번 칠 일이 없다.
+const BASE_COURSES = ["함평엘리체", "어등산", "해피니스", "골드레이크", "무등산", "빛고을",
+    "푸른솔(장성)", "나주힐스", "화순", "보성", "순천", "아크로", "다산베아채", "JNJ",
+    "파인비치", "사우스링스 영암", "광주CC"];
 
-async function openScheduleModal() {
+// 기본 목록 + 직접 입력해 둔 곳. 최근에 친 곳이 위로 오게 직접 입력분을 앞에 놓는다.
+function golfCourseOptions() {
+    const custom = (appData.customCourses || []).filter(c => c && !BASE_COURSES.includes(c));
+    return [...custom.slice().reverse(), ...BASE_COURSES, "직접 입력"];
+}
+
+// 직접 입력한 골프장을 목록에 남긴다. 이미 있으면 맨 뒤로 올려 다음에 위에 뜨게 한다.
+function rememberCourse(name) {
+    const clean = String(name || '').trim();
+    if (!clean || BASE_COURSES.includes(clean)) return;
+    if (!appData.customCourses) appData.customCourses = [];
+    const at = appData.customCourses.indexOf(clean);
+    if (at !== -1) appData.customCourses.splice(at, 1);
+    appData.customCourses.push(clean);
+    while (appData.customCourses.length > MAX_CUSTOM_COURSES) appData.customCourses.shift();
+}
+
+function openScheduleModal() {
     document.getElementById('scheduleModal').classList.add('active');
     const now = new Date(); document.getElementById('schMonth').value = now.getMonth() + 1; document.getElementById('schDay').value = now.getDate();
-    const courseSelect = document.getElementById('schCourseSelect'); const statusText = document.getElementById('courseLoadStatus');
-    if (courseSelect.options.length <= 1) {
-        statusText.textContent = "(외부 데이터 연동 중 ⏳)"; const courses = await fetchExternalGolfCourses(); courseSelect.innerHTML = "";
-        courses.forEach(c => { courseSelect.add(new Option(c, c)); }); statusText.textContent = "(외부 데이터 로드 완료 ✅)";
+
+    // 목록은 열 때마다 새로 만든다 — 방금 직접 입력한 곳이 바로 보여야 한다.
+    const courseSelect = document.getElementById('schCourseSelect');
+    const keep = courseSelect.value;
+    courseSelect.innerHTML = "";
+    golfCourseOptions().forEach(c => courseSelect.add(new Option(c, c)));
+    if (keep && golfCourseOptions().includes(keep)) courseSelect.value = keep;
+
+    const statusText = document.getElementById('courseLoadStatus');
+    if (statusText) {
+        const extra = (appData.customCourses || []).length;
+        statusText.textContent = extra ? `(직접 추가 ${extra}곳 포함)` : "";
     }
     handleCourseSelectChange(courseSelect.value);
 }
@@ -492,6 +521,8 @@ function saveSchedule() {
     const course = document.getElementById('schCourseSelect').value === "직접 입력" ? document.getElementById('schCourseCustom').value : document.getElementById('schCourseSelect').value;
     if (document.getElementById('schCourseSelect').value === "직접 입력" && course.trim() === "") { showToast("⚠️ 골프장 이름을 입력해주세요!"); document.getElementById('schCourseCustom').focus(); return; }
     saveState();
+    // 직접 친 곳은 목록에 남겨 둔다. 다음부터는 고르기만 하면 된다.
+    if (document.getElementById('schCourseSelect').value === "직접 입력") rememberCourse(course);
     const m = parseInt(document.getElementById('schMonth').value, 10);
     const d = parseInt(document.getElementById('schDay').value, 10);
     const ampm = document.getElementById('schAmpm').value;

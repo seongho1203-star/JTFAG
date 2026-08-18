@@ -152,6 +152,9 @@ function ddayLabel(days) {
 const PHOTO_BUCKET = 'round-photos';
 const MAX_PHOTOS_PER_ROUND = 30;
 
+// 일정에서 '직접 입력'으로 친 골프장을 payload.customCourses에 몇 개까지 남길지.
+const MAX_CUSTOM_COURSES = 20;
+
 // 스코어카드 판독 요청 (📋 스코어 등록)
 // 이 이름으로 접속한 기기에서만 버튼이 보인다. 로그인이 없어 보안 경계는 아니고,
 // 다른 사람이 실수로 누르는 걸 막는 장치다 (관리자 비밀번호도 함께 물어본다).

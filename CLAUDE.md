@@ -195,6 +195,13 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   왼쪽 끝에서 브라우저 '뒤로 가기'가 먹는 걸 막았고, 잠긴 타수 칸에 `pointer-events: none`을 줘
   숫자 위에서 끌 때 글자 선택이 시작되지 않게 했다. `forceTableReflow()`는 표를 만지는 동안
   건너뛴다 — 미는 도중에 `overflow-x`를 껐다 켜면 그 자리에서 스크롤이 죽는다.
+- **일정의 골프장 목록은 스스로 늘어난다.** `BASE_COURSES`(ui.js)가 기본이고, `직접 입력`으로
+  친 곳은 `payload.customCourses`에 남아 다음부터 목록 맨 위에 뜬다(최근 것이 위). 같은 곳을
+  다시 쳐도 중복되지 않고, 기본 목록에 있는 이름은 아예 안 쌓인다.
+  예전엔 `fetchExternalGolfCourses()`가 0.5초 기다렸다가 고정 배열을 돌려주며
+  '외부 데이터 연동 중'이라고 표시했다 — 실제로 가져오는 데는 없었고, 지금은 그 시늉을 걷어냈다.
+  **날씨 위젯은 `COURSE_GEO`(api.js)에 좌표가 있는 골프장만 뜬다.** 새로 추가된 곳은
+  좌표가 없어 날씨가 안 나오는데, 위젯이 숨겨질 뿐 다른 동작은 멀쩡하다.
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
 - CSS/JS는 `document.write`로 `?ver=` 랜덤 쿼리를 붙여 캐시를 우회한다. 로컬에서 안 바뀌어 보이면 강력 새로고침(`Ctrl+Shift+R`)을 시도한다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.
