@@ -8,7 +8,7 @@
 // 예전 payload에는 숫자 하나로 들어 있어 normalizeDaysBefore가 둘 다 받는다.
 // 이 기본값과 정규화 규칙은 api.js와 같아야 한다 — 한쪽만 고치지 말 것.
 
-const webpush = require('web-push');
+const { sendPush } = require('./push');
 
 const {
     SUPABASE_URL,
@@ -25,7 +25,6 @@ for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_KEY, VAPID_
 }
 
 const TABLE = 'jtfag_league';
-const PUSH_TABLE = 'push_subscriptions';
 
 function normalizeDaysBefore(value) {
     const list = Array.isArray(value) ? value : String(value == null ? '' : value).split(',');
@@ -93,41 +92,14 @@ async function main() {
         .replace(/\{디데이\}/g, ddayLabel(remaining))
         .replace(/\{일정\}/g, label || roundDate);
 
-    const subRes = await fetch(`${SUPABASE_URL}/rest/v1/${PUSH_TABLE}?select=*`, { headers });
-    if (!subRes.ok) throw new Error(`구독 조회 실패: ${subRes.status} ${await subRes.text()}`);
-    const subs = await subRes.json();
-    if (subs.length === 0) { console.log('구독자가 없습니다. 종료.'); return; }
-
-    const body = JSON.stringify({
+    await sendPush({
+        supabaseUrl: SUPABASE_URL, headers,
+        env: { VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY },
         title: fill(titleTemplate),
         body: fill(bodyTemplate),
-        tag: `round-${roundDate}`
+        tag: `round-${roundDate}`,
+        dryRun: !!DRY_RUN
     });
-
-    if (DRY_RUN) { console.log(`[DRY RUN] 구독자 ${subs.length}명에게 보낼 내용:`, body); return; }
-
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-
-    let sent = 0;
-    const expired = [];
-    for (const s of subs) {
-        try {
-            await webpush.sendNotification(
-                { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, body);
-            sent++;
-        } catch (err) {
-            // 404/410이면 구독이 만료된 것이라 정리한다
-            if (err.statusCode === 404 || err.statusCode === 410) expired.push(s.endpoint);
-            else console.error(`발송 실패 (${s.name || '이름없음'}):`, err.statusCode, err.body || err.message);
-        }
-    }
-    console.log(`발송 완료: ${sent}/${subs.length}명`);
-
-    for (const endpoint of expired) {
-        await fetch(`${SUPABASE_URL}/rest/v1/${PUSH_TABLE}?endpoint=eq.${encodeURIComponent(endpoint)}`,
-            { method: 'DELETE', headers });
-    }
-    if (expired.length) console.log(`만료된 구독 ${expired.length}건을 정리했습니다.`);
 }
 
 main().catch(err => { console.error(err); process.exit(1); });

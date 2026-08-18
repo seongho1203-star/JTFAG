@@ -802,12 +802,28 @@ function updateScoreRequestBtn() {
     btn.style.display = isOwner ? '' : 'none';
 }
 
+// 올릴 차수는 거의 항상 '방금 친 차수'다. 홀 기록이 아직 없는 마지막 차수를
+// 미리 골라 둬, 차수가 몇 개든 열자마자 사진만 올리면 되게 한다.
+function defaultScorecardRound() {
+    for (let r = appData.totalRounds - 1; r >= 0; r--) {
+        if (!hasHoleRecord(r)) return r;
+    }
+    return appData.totalRounds - 1;
+}
+
 async function openScoreRequestModal() {
     if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
     if (!(await authenticateAdmin())) return;
-    selectedScorecardRound = -1;
+    selectedScorecardRound = defaultScorecardRound();
     renderScoreRequestModal();
     document.getElementById('scoreRequestModal').classList.add('active');
+    scrollSelectedRoundIntoView();
+}
+
+// 차수가 늘면 칩 줄이 옆으로 길어진다. 고른 칩이 안 보이면 그리로 밀어 준다.
+function scrollSelectedRoundIntoView() {
+    const on = document.querySelector('.scorecard-round-chip.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
 function closeScoreRequestModal() { document.getElementById('scoreRequestModal').classList.remove('active'); }

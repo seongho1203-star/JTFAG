@@ -31,12 +31,15 @@ jobs:
         with:
           node-version: '24'
 
-      - run: npm install @anthropic-ai/sdk
+      - run: npm install @anthropic-ai/sdk web-push@3
 
       - name: 스코어카드 판독
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # 판독이 끝나면 알림을 보낸다 (성공은 전원, 실패는 올린 사람에게만).
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: node scripts/read-scorecard.js

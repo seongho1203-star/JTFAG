@@ -159,8 +159,11 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 
 /* 스코어카드 등록 모달 */
 .scorecard-hint { font-size: clamp(0.68rem, 2.6vw, 0.75rem); color: var(--text-sub); line-height: 1.5; word-break: keep-all; margin-bottom: 10px; }
-.scorecard-round-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.scorecard-round-chip { padding: 7px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #ffffff; color: var(--text-sub); font-weight: 800; font-size: clamp(0.68rem, 2.6vw, 0.76rem); }
+/* 차수가 늘어도 한 줄로 유지한다. 줄바꿈 대신 옆으로 넘긴다. */
+.scorecard-round-chips { display: flex; flex-wrap: nowrap; gap: 6px; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: thin; }
+.scorecard-round-chips::-webkit-scrollbar { height: 4px; }
+.scorecard-round-chips::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+.scorecard-round-chip { flex: 0 0 auto; padding: 7px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #ffffff; color: var(--text-sub); font-weight: 800; font-size: clamp(0.68rem, 2.6vw, 0.76rem); white-space: nowrap; }
 .scorecard-round-chip.done { border-color: rgba(184, 134, 11, 0.45); color: var(--primary-gold); background: var(--gold-light); }
 .scorecard-round-chip.on { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
 #scorecardPickBtn:disabled { opacity: 0.45; }

@@ -15,13 +15,20 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const Anthropic = require('@anthropic-ai/sdk');
+const { sendPush } = require('./push');
 
 const {
     ANTHROPIC_API_KEY,
     SUPABASE_URL,
     SUPABASE_SERVICE_KEY,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT = 'mailto:seongho1203@gmail.com',
     DRY_RUN = ''
 } = process.env;
+
+// 요청에 올린 사람이 안 적혀 있을 때만 쓰는 예비값 (api.js의 SCORE_OWNER와 같다).
+const SCORE_OWNER_FALLBACK = '신성호';
 
 for (const [k, v] of Object.entries({ ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY })) {
     if (!v) { console.error(`환경변수 ${k}가 없습니다.`); process.exit(1); }
@@ -356,8 +363,7 @@ async function main() {
     // 판독은 됐는데 푸시가 안 되면 앱에는 반영되지 않는다. 그래서 '완료'가 아니라 '실패'로 남긴다.
     if (done.length) {
         try {
-            commitAndPush(done);
-            console.log(`\n${done.join(', ')} 기록을 stats.js에 커밋했습니다.`);
+            if (commitAndPush(done)) console.log(`\n${done.join(', ')} 기록을 stats.js에 커밋했습니다.`);
         } catch (err) {
             console.error('푸시 실패:', err.message);
             targets.forEach(req => {
@@ -368,7 +374,38 @@ async function main() {
     }
 
     if (!DRY_RUN) await writeStatuses(results);
+    await notify(targets, results);
     console.log('끝.');
+}
+
+// 판독이 끝났다고 알린다. 상태가 확정된 뒤에 보내야 '완료'라고 알려 놓고
+// 사실은 푸시가 실패한 경우가 안 생긴다.
+// 성공은 네 명 모두에게, 실패는 사진을 올린 사람에게만 보낸다.
+async function notify(targets, results) {
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+        console.log('VAPID 키가 없어 알림을 건너뜁니다.');
+        return;
+    }
+    const env = { VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY };
+
+    for (const req of targets) {
+        const r = results.get(req.id);
+        if (!r) continue;
+        const ok = r.status === '완료';
+        try {
+            await sendPush({
+                supabaseUrl: SUPABASE_URL, headers, env,
+                title: ok ? `⛳ ${req.round}차 스코어가 등록됐습니다` : `⚠️ ${req.round}차 스코어 판독 실패`,
+                body: r.note,
+                tag: `score-${req.round}`,
+                onlyName: ok ? null : (req.by || SCORE_OWNER_FALLBACK),
+                dryRun: !!DRY_RUN
+            });
+        } catch (err) {
+            // 알림이 안 갔다고 판독 결과까지 뒤집지는 않는다.
+            console.error('알림 발송 실패:', err.message);
+        }
+    }
 }
 
 function commitAndPush(done) {
@@ -378,7 +415,7 @@ function commitAndPush(done) {
 
     // 같은 사진을 다시 올려 내용이 그대로면 커밋할 게 없다. 그건 실패가 아니다.
     const staged = execFileSync('git', ['diff', '--cached', '--name-only']).toString().trim();
-    if (!staged) { console.log('\n판독 결과가 기존 기록과 같아 커밋할 것이 없습니다.'); return; }
+    if (!staged) { console.log('\n판독 결과가 기존 기록과 같아 커밋할 것이 없습니다.'); return false; }
 
     execFileSync('git', ['commit', '-m', `스코어카드 판독: ${done.join(', ')}`], { stdio: 'inherit' });
 
@@ -390,6 +427,7 @@ function commitAndPush(done) {
         execFileSync('git', ['pull', '--rebase', 'origin', 'main'], { stdio: 'inherit' });
         execFileSync('git', ['push'], { stdio: 'inherit' });
     }
+    return true;
 }
 
 main().catch(err => { console.error(err); process.exit(1); });

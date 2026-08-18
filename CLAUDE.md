@@ -82,7 +82,14 @@ GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
 - 같은 차수를 다시 올리면 그 블록만 갈아 끼운다(`upsertRound`). 차수가 늘지 않는다.
 - **모델에게 파 대비 타수(±)를 시키지 않는다.** 실제 타수를 받아 `rel`은 스크립트가 뺀다 —
   모델이 뺄셈까지 하면 틀릴 자리가 늘어난다.
-- 필요한 Secret은 `ANTHROPIC_API_KEY` · `SUPABASE_URL` · `SUPABASE_SERVICE_KEY`.
+- **차수 선택은 한 줄로 유지한다.** 칩을 옆으로 넘기고(`overflow-x`), 열 때
+  `defaultScorecardRound()`(홀 기록이 없는 마지막 차수)를 미리 골라 화면 안으로 밀어 준다.
+  차수가 스무 개가 되어도 창 높이가 그대로다 — 줄바꿈(`flex-wrap`)으로 되돌리지 말 것.
+- **판독이 끝나면 알림이 간다.** 성공은 네 명 모두에게, 실패는 사진을 올린 사람(`req.by`)에게만.
+  상태를 payload에 확정한 **뒤에** 보낸다 — 그래야 '완료'라고 알려 놓고 실제로는
+  푸시가 실패한 경우가 안 생긴다. 알림이 실패해도 판독 결과는 뒤집지 않는다.
+- 필요한 Secret은 `ANTHROPIC_API_KEY` · `SUPABASE_URL` · `SUPABASE_SERVICE_KEY`
+  그리고 알림용 `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`.
   워크플로가 `stats.js`를 커밋하므로 `permissions: contents: write`가 있어야 한다.
 - 급하면 Actions 탭 → workflow_dispatch로 바로 돌린다 (`dry_run`을 켜면 판독만 하고 파일은 안 고친다).
 
@@ -115,6 +122,8 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
   D-day 뱃지(`daysUntilNextRound()` in ui.js). 둘 다 기기 시간대와 무관하게 한국 날짜로 비교한다.
   D-day는 자정을 넘겨도 갱신되도록 `visibilitychange`에서 `renderNoticeArea()`를 다시 부른다
   (홈 화면 앱은 백그라운드에 계속 떠 있어서 필요하다).
+- **실제 발송은 `scripts/push.js`가 한다** (VAPID 등록 · 구독 조회 · 만료 구독 정리).
+  라운드 알림과 스코어 판독 알림이 이 한 곳을 같이 쓰므로, 발송 규칙을 고칠 땐 여기만 고친다.
 - 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`. 공개키는 `api.js`의 `VAPID_PUBLIC_KEY`와 같아야 한다.
 - 수동 확인은 Actions 탭에서 workflow_dispatch로 실행한다 (기본이 dry run이라 실제로 안 보낸다).
