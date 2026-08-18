@@ -52,7 +52,9 @@ const SYSTEM = `당신은 골프 스코어카드 사진을 판독하는 도구�
 - players[].total: 스코어카드에 인쇄되어 있는 그 사람의 합계를 그대로 옮긴다.
   직접 더한 값이 아니라 카드에 적힌 값이어야 한다. 합계가 안 보일 때만 18홀을 더해 적는다.
 - 사진에 있는 사람은 모두 players에 넣는다. 게스트도 빼지 않는다.
-- 이름은 사진에 적힌 그대로 적는다.
+- 이름은 사진에 적힌 그대로 적는다. 스코어카드는 본인 말고는 이름을 가려서
+  보여주는 일이 많은데("박**", "이관*", "김○○"), 가림표까지 그대로 옮긴다.
+  누구인지 추측해서 이름을 채워 넣지 마라. 누구인지 가리는 일은 뒤에서 한다.
 - 숫자가 가려졌거나 확실하지 않으면 지어내지 말고 그 사람을 players에서 통째로 뺀다.`;
 
 const SCHEMA = {
@@ -135,18 +137,72 @@ async function readScorecard(image, names) {
     return JSON.parse(text.text);
 }
 
+const squeeze = s => String(s == null ? '' : s).replace(/\s+/g, '');
+
+// 스코어카드는 본인 말고는 이름을 가려서 보여준다 ("박**", "이관*", "김○○").
+// 가림표를 떼어 앞에 남은 글자만 돌려준다. "박**" → "박"
+const MASK_TAIL = /[*＊○◯ㅇoOxX·ㆍ.\-_]+$/;
+function visibleNamePart(raw) {
+    return squeeze(raw).replace(MASK_TAIL, '');
+}
+
 // 사진 속 이름을 우리 4명 중 하나에 붙인다. 못 붙이면 null(게스트로 친다).
-// 스코어카드에는 별명이나 띄어쓰기가 섞여 나오는 일이 잦아 아래까지 받아 준다:
-//   "신 성 호" → 공백 무시 · "이관교님"/"P이관교" → 이름이 통째로 들어 있으면 인정.
+// 띄어쓰기는 무시하고, 이름이 통째로 들어 있으면("이관교님") 같은 사람으로 본다.
 // 다만 '이관교'와 '이관수'처럼 다른 사람이 섞이면 안 되므로 부분 글자로는 안 붙인다.
+// 가려진 이름은 여기서 처리하지 않는다 — 아래 resolveNames가 따로 맡는다.
 function matchGolfer(raw, names) {
-    const squeeze = s => String(s == null ? '' : s).replace(/\s+/g, '');
     const name = squeeze(raw);
     if (!name) return null;
     const exact = names.find(n => squeeze(n) === name);
     if (exact) return exact;
     const contained = names.filter(n => name.includes(squeeze(n)));
     return contained.length === 1 ? contained[0] : null;   // 둘 이상 걸리면 애매하니 포기
+}
+
+// 사진 속 사람들을 우리 4명에게 배정한다. {player → 골퍼} Map을 돌려준다.
+//
+// ① 실명이 그대로 보이는 사람부터 붙인다.
+// ② 남은 사람은 가려진 이름의 앞글자로 붙인다. 우리 넷은 성이 다 달라
+//    "박**"이면 박승수 하나로 정해진다.
+// 단 앞글자로 후보가 둘 이상이거나, 두 사람이 같은 골퍼를 가리키면
+// (예: 성이 김씨인 게스트가 껴서 "김**"이 두 번) 찍지 않고 실패시킨다.
+function resolveNames(players, names) {
+    const assigned = new Map();          // player → 골퍼 이름
+    const taken = new Set();
+    const skipped = [];
+
+    players.forEach(p => {
+        const hit = matchGolfer(p.name, names);
+        if (!hit) return;
+        if (taken.has(hit)) throw new Error(`${hit}이(가) 사진에 두 번 나옵니다. 이름을 못 가리겠습니다.`);
+        assigned.set(p, hit); taken.add(hit);
+    });
+
+    // 남은 사람들의 후보를 한꺼번에 구한다 (순서에 따라 결과가 달라지지 않도록).
+    const rest = players.filter(p => !assigned.has(p));
+    const cands = new Map();
+    rest.forEach(p => {
+        const part = visibleNamePart(p.name);
+        cands.set(p, part ? names.filter(n => !taken.has(n) && n.startsWith(part)) : []);
+    });
+
+    const ambiguous = rest.filter(p => cands.get(p).length > 1);
+    if (ambiguous.length) {
+        throw new Error(`"${ambiguous.map(p => p.name).join('", "')}"이(가) 누구인지 가릴 수 없습니다.`);
+    }
+
+    rest.forEach(p => {
+        const list = cands.get(p);
+        if (list.length === 0) { if (squeeze(p.name)) skipped.push(String(p.name).trim()); return; }
+        const golfer = list[0];
+        if (taken.has(golfer)) {
+            throw new Error(`"${p.name}"이(가) ${golfer}인지 아닌지 가릴 수 없습니다. `
+                + `성이 같은 사람이 둘 있으면 이름이 다 보이는 화면으로 다시 올려주세요.`);
+        }
+        assigned.set(p, golfer); taken.add(golfer);
+    });
+
+    return { assigned, skipped };
 }
 
 // 판독 결과 검산. 통과하면 {course, par, rel}, 아니면 Error를 던진다.
@@ -158,18 +214,15 @@ function validate(read, names) {
     if (parSum < 68 || parSum > 74) throw new Error(`파 합계가 ${parSum}입니다. 판독이 어긋난 것 같습니다.`);
 
     const players = Array.isArray(read.players) ? read.players : [];
-    const rel = {};
-    const skipped = [];
+    const readNames = players.map(p => String(p.name || '').trim()).filter(Boolean);
 
-    const readNames = [];
+    // 게스트는 여기서 걸러진다. 우리 4명에게 배정된 사람만 남는다.
+    const { assigned, skipped } = resolveNames(players, names);
+    const rel = {};
 
     players.forEach(p => {
-        const raw = String(p.name || '').trim();
-        if (raw) readNames.push(raw);
-        // 게스트는 기록하지 않는다. 4명만 남긴다.
-        const name = matchGolfer(raw, names);
-        if (!name) { if (raw) skipped.push(raw); return; }
-        if (rel[name]) throw new Error(`${name}이(가) 사진에 두 번 나옵니다. 이름을 못 가리겠습니다.`);
+        const name = assigned.get(p);
+        if (!name) return;
         const strokes = p.strokes;
         if (!Array.isArray(strokes) || strokes.length !== HOLES) throw new Error(`${name}: ${Array.isArray(strokes) ? strokes.length : 0}홀만 읽혔습니다.`);
         if (strokes.some(s => !Number.isInteger(s) || s < 1 || s > 15)) throw new Error(`${name}: 타수에 이상한 값이 있습니다.`);
