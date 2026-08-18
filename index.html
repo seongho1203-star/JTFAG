@@ -258,9 +258,22 @@
                 <span>게스트 참여 (5인 플레이)</span>
             </label>
             <div id="scorecardGuestBox" style="display:none;">
-                <label class="scorecard-round-label" for="scorecardGuestTotal">게스트 타수</label>
-                <input type="text" inputmode="numeric" id="scorecardGuestTotal" class="scorecard-guest-input" placeholder="예) 100">
-                <div class="scorecard-hint">이 타수인 사람을 게스트로 보고 빼둔 뒤, 나머지 네 명만 등록합니다.</div>
+                <div class="scorecard-guest-grid">
+                    <div>
+                        <label class="scorecard-round-label" for="scorecardGuestTotal">타수</label>
+                        <input type="text" inputmode="numeric" id="scorecardGuestTotal" class="scorecard-guest-input" placeholder="100">
+                    </div>
+                    <div>
+                        <label class="scorecard-round-label" for="scorecardGuestBirdie">버디</label>
+                        <input type="text" inputmode="numeric" id="scorecardGuestBirdie" class="scorecard-guest-input" placeholder="-">
+                    </div>
+                    <div>
+                        <label class="scorecard-round-label" for="scorecardGuestPar">파</label>
+                        <input type="text" inputmode="numeric" id="scorecardGuestPar" class="scorecard-guest-input" placeholder="-">
+                    </div>
+                </div>
+                <div class="scorecard-hint">이 타수인 사람을 빼고 나머지 네 명만 등록합니다.<br>
+                    버디·파는 <b>동타일 때만</b> 씁니다 — 게스트와 타수가 같은 사람이 또 있을 때 누가 게스트인지 가리는 용도라, 평소엔 비워두면 됩니다.</div>
             </div>
             <input type="file" accept="image/*" id="scorecardUpload" style="display:none;" onchange="handleScorecardUpload(event)">
             <button type="button" class="open-history-btn" id="scorecardPickBtn" onclick="document.getElementById('scorecardUpload').click()">📷 스코어카드 사진 올리기</button>

@@ -166,7 +166,9 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 /* 게스트는 이름이 아니라 타수로 지목한다 (이름이 가려져도 정확히 한 줄만 빠진다) */
 .scorecard-guest-check { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; font-size: clamp(0.72rem, 2.8vw, 0.8rem); font-weight: 700; color: var(--text-main); word-break: keep-all; }
 .scorecard-guest-check input { width: 17px; height: 17px; accent-color: var(--primary-gold); flex: 0 0 auto; }
-.scorecard-guest-input { width: 100%; padding: 10px 12px; margin-bottom: 6px; border: 1px solid #cbd5e1; border-radius: 8px; background: var(--input-bg); color: var(--text-main); font-weight: 800; font-size: clamp(0.78rem, 3vw, 0.88rem); text-align: center; box-sizing: border-box; }
+/* 타수 · 버디 · 파를 한 줄에 셋. 버디/파는 동타일 때만 쓰는 보조값이라 비워둘 수 있다. */
+.scorecard-guest-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.scorecard-guest-input { width: 100%; padding: 10px 6px; border: 1px solid #cbd5e1; border-radius: 8px; background: var(--input-bg); color: var(--text-main); font-weight: 800; font-size: clamp(0.78rem, 3vw, 0.88rem); text-align: center; box-sizing: border-box; }
 #scorecardPickBtn:disabled { opacity: 0.45; }
 .scorecard-log { margin-top: 12px; }
 .scorecard-log-empty { text-align: center; padding: 14px; color: #94a3b8; font-size: 0.78rem; }

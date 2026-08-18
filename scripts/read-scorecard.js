@@ -216,23 +216,69 @@ function resolveNames(players, names) {
     return { assigned, skipped };
 }
 
+// 한 사람의 18홀에서 버디(파-1)와 파 개수를 센다. 홀 수가 안 맞으면 null.
+function holeCounts(player, par) {
+    const strokes = player.strokes;
+    if (!Array.isArray(strokes) || strokes.length !== HOLES) return null;
+    let birdies = 0, pars = 0;
+    strokes.forEach((s, i) => {
+        const rel = s - par[i];
+        if (rel === -1) birdies++;
+        else if (rel === 0) pars++;
+    });
+    return { birdies, pars };
+}
+
 // 게스트를 이름이 아니라 '타수'로 지목해 빼낸다.
 // 스코어카드가 이름을 가려 보여줘도, 게스트 성이 우리와 겹쳐도 이 한 줄만 정확히 빠진다.
 // 앱에서 게스트 타수를 적어 보냈을 때만 돈다.
-function pullOutGuest(players, guestTotal) {
-    const hits = players.filter(p => p.total === guestTotal);
+//
+// 같은 타수인 사람이 둘이면(동타) 타수만으로는 못 가린다. 그때만 앱에서 함께 받은
+// 버디·파 개수를 열쇠로 쓴다. 그래도 하나로 안 좁혀지면 찍지 않고 실패시킨다.
+function pullOutGuest(players, par, guest) {
+    const { total, birdies, pars } = guest;
+    let hits = players.filter(p => p.total === total);
+
     if (hits.length === 0) {
-        throw new Error(`게스트 타수로 적은 ${guestTotal}타인 사람이 사진에 없습니다. `
+        throw new Error(`게스트 타수로 적은 ${total}타인 사람이 사진에 없습니다. `
             + `읽힌 합계: ${players.map(p => p.total).join(', ')}`);
     }
+
     if (hits.length > 1) {
-        throw new Error(`${guestTotal}타가 ${hits.length}명이라 누가 게스트인지 가릴 수 없습니다.`);
+        const keys = [];
+        if (birdies !== null && birdies !== undefined) keys.push('버디');
+        if (pars !== null && pars !== undefined) keys.push('파');
+        if (keys.length === 0) {
+            throw new Error(`${total}타가 ${hits.length}명이라 누가 게스트인지 가릴 수 없습니다. `
+                + `게스트의 버디·파 개수도 함께 적어 다시 올려주세요.`);
+        }
+
+        const narrowed = hits.filter(p => {
+            const c = holeCounts(p, par);
+            if (!c) return false;
+            if (birdies !== null && birdies !== undefined && c.birdies !== birdies) return false;
+            if (pars !== null && pars !== undefined && c.pars !== pars) return false;
+            return true;
+        });
+
+        if (narrowed.length !== 1) {
+            const seen = hits.map(p => {
+                const c = holeCounts(p, par);
+                return c ? `버디 ${c.birdies}·파 ${c.pars}` : '판독 불가';
+            }).join(' / ');
+            throw new Error(`${total}타가 ${hits.length}명인데 ${keys.join('·')} 개수로도 `
+                + `${narrowed.length === 0 ? '맞는 사람이 없습니다' : '하나로 좁혀지지 않습니다'}. `
+                + `사진 속 ${total}타: ${seen}`);
+        }
+        hits = narrowed;
     }
+
     return { guest: hits[0], rest: players.filter(p => p !== hits[0]) };
 }
 
 // 판독 결과 검산. 통과하면 {course, par, rel}, 아니면 Error를 던진다.
-function validate(read, names, guestTotal) {
+// guest는 앱에서 게스트 참여를 체크했을 때만 온다: {total, birdies, pars}
+function validate(read, names, guest) {
     const par = read.par;
     if (!Array.isArray(par) || par.length !== HOLES) throw new Error(`파가 ${Array.isArray(par) ? par.length : 0}홀만 읽혔습니다.`);
     if (par.some(p => !Number.isInteger(p) || p < 3 || p > 6)) throw new Error('파에 이상한 값이 있습니다.');
@@ -254,10 +300,10 @@ function validate(read, names, guestTotal) {
     // 성이 겹치는 게스트도 안전하게 걸러진다.
     let candidates = players;
     const skipped = [];
-    if (guestTotal !== null && guestTotal !== undefined) {
-        const out = pullOutGuest(players, guestTotal);
+    if (guest) {
+        const out = pullOutGuest(players, par, guest);
         candidates = out.rest;
-        skipped.push(`${guestTotal}타`);
+        skipped.push(`${guest.total}타`);
     }
 
     // 남은 사람을 우리 4명에게 붙인다. (게스트 타수를 안 적었으면 이름으로 걸러진다)
@@ -344,11 +390,19 @@ async function processOne(req, names) {
     console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
     if (!Number.isInteger(req.round) || req.round < 1 || req.round > 99) throw new Error(`차수(${req.round})가 이상합니다.`);
     if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 이상합니다.');
-    const guestTotal = Number.isInteger(req.guestTotal) ? req.guestTotal : null;
-    if (guestTotal !== null) console.log(`  게스트 타수 ${guestTotal}타 — 이 줄은 빼고 기록합니다.`);
+    // 게스트 참여를 체크했을 때만 온다. 버디·파는 동타일 때 쓰는 보조값이라 없을 수 있다.
+    const num = (v) => Number.isInteger(v) ? v : null;
+    const guest = Number.isInteger(req.guestTotal)
+        ? { total: req.guestTotal, birdies: num(req.guestBirdies), pars: num(req.guestPars) }
+        : null;
+    if (guest) {
+        const extra = [guest.birdies !== null ? `버디 ${guest.birdies}` : null,
+                       guest.pars !== null ? `파 ${guest.pars}` : null].filter(Boolean).join('·');
+        console.log(`  게스트 ${guest.total}타${extra ? ` (${extra})` : ''} — 이 줄은 빼고 기록합니다.`);
+    }
     const image = await fetchImage(req.url);
     const read = await readScorecard(image, names);
-    const data = validate(read, names, guestTotal);
+    const data = validate(read, names, guest);
 
     const totals = names.map(n => `${n} ${data.par.reduce((a, p, i) => a + p + data.rel[n][i], 0)}타`).join(' · ');
     console.log(`  사진 속 이름: ${data.readNames.join(', ')}`);

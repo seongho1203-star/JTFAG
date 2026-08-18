@@ -843,9 +843,11 @@ async function openScoreRequestModal() {
     selectedScorecardRound = defaultScorecardRound();
     // 게스트 표시는 매번 새로 정한다. 지난번 값이 남아 있으면 엉뚱한 사람이 빠진다.
     const check = document.getElementById('scorecardHasGuest');
-    const total = document.getElementById('scorecardGuestTotal');
     if (check) check.checked = false;
-    if (total) total.value = '';
+    ['scorecardGuestTotal', 'scorecardGuestBirdie', 'scorecardGuestPar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
     toggleGuestInput();
     renderScoreRequestModal();
     document.getElementById('scoreRequestModal').classList.add('active');
@@ -911,13 +913,25 @@ async function handleScorecardUpload(event) {
 
     // 게스트는 이름이 아니라 타수로 지목한다. 스코어카드가 이름을 가려 보여줘도,
     // 성이 우리와 겹쳐도 이 타수 한 줄만 정확히 빠진다.
-    let guestTotal = null;
+    // 버디·파는 그 타수인 사람이 둘일 때만 쓰는 보조 열쇠라 비워둘 수 있다.
+    let guestTotal = null, guestBirdies = null, guestPars = null;
     if (document.getElementById('scorecardHasGuest').checked) {
         guestTotal = parseNumber(document.getElementById('scorecardGuestTotal').value);
         if (!Number.isInteger(guestTotal) || guestTotal < 50 || guestTotal > 200) {
             showToast("⚠️ 게스트 타수를 정확히 입력해주세요. (예: 100)");
             return;
         }
+        const optional = (id, label) => {
+            const raw = document.getElementById(id).value.trim();
+            if (raw === '') return null;
+            const n = parseNumber(raw);
+            if (!Number.isInteger(n) || n < 0 || n > 18) { showToast(`⚠️ 게스트 ${label} 개수가 이상합니다. (0~18)`); return false; }
+            return n;
+        };
+        guestBirdies = optional('scorecardGuestBirdie', '버디');
+        if (guestBirdies === false) return;
+        guestPars = optional('scorecardGuestPar', '파');
+        if (guestPars === false) return;
     }
 
     showToast("⏳ 스코어카드를 올리는 중입니다...");
@@ -940,6 +954,8 @@ async function handleScorecardUpload(event) {
         time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
         by: localStorage.getItem('jtfag_my_name') || SCORE_OWNER,
         guestTotal: guestTotal,
+        guestBirdies: guestBirdies,
+        guestPars: guestPars,
         status: '대기',
         note: ''
     });
