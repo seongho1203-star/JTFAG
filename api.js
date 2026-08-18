@@ -84,6 +84,24 @@ async function subscribeToPush(userName) {
     return sub;
 }
 
+// 지금 알림을 받고 있는 기기 목록. 한 사람이 폰·PC를 따로 구독했을 수 있어
+// 사람 수가 아니라 기기 수로 나온다.
+async function listPushSubscriptions() {
+    const { data, error } = await window._supabase.from(PUSH_TABLE).select('*');
+    if (error) throw new Error(error.message || '구독 목록을 불러오지 못했습니다.');
+    return data || [];
+}
+
+// endpoint 주소로 어느 브라우저인지 짐작한다. 정확한 기기명은 알 수 없다.
+function pushEndpointLabel(endpoint) {
+    const url = String(endpoint || '');
+    if (url.includes('push.apple.com')) return '아이폰 · 아이패드 (홈 화면 앱)';
+    if (url.includes('fcm.googleapis.com') || url.includes('android')) return '크롬 · 안드로이드';
+    if (url.includes('mozilla')) return '파이어폭스';
+    if (url.includes('windows.com') || url.includes('notify.windows')) return '윈도우 · 엣지';
+    return '기타 브라우저';
+}
+
 async function unsubscribeFromPush() {
     const sub = await getPushSubscription();
     if (!sub) return;

@@ -133,6 +133,10 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
   D-day 뱃지(`daysUntilNextRound()` in ui.js). 둘 다 기기 시간대와 무관하게 한국 날짜로 비교한다.
   D-day는 자정을 넘겨도 갱신되도록 `visibilitychange`에서 `renderNoticeArea()`를 다시 부른다
   (홈 화면 앱은 백그라운드에 계속 떠 있어서 필요하다).
+- **지금 누가 받고 있는지는 관리자 메뉴 → `🔔 알림 받는 기기`에서 본다.**
+  `push_subscriptions`를 그대로 읽어 사람별로 묶어 보여 준다 (사람 수가 아니라 **기기 수**다 —
+  한 사람이 폰과 PC로 따로 구독하면 두 줄). endpoint 주소로 브라우저 종류를 짐작해 적고,
+  접속한 기기에는 `이 기기`를 붙인다. 못 쓰게 된 구독은 발송할 때 만료로 확인되면 정리된다.
 - **실제 발송은 `scripts/push.js`가 한다** (VAPID 등록 · 구독 조회 · 만료 구독 정리).
   라운드 알림과 스코어 판독 알림이 이 한 곳을 같이 쓰므로, 발송 규칙을 고칠 땐 여기만 고친다.
 - 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,

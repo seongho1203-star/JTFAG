@@ -242,6 +242,18 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="pushSubsModal" onclick="if(event.target === this) closePushSubsModal()">
+    <div class="modal-content" style="max-width: 360px;">
+        <div class="modal-header">
+            <h3>🔔 알림 받는 기기</h3>
+            <button type="button" class="close-btn" onclick="closePushSubsModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="pushSubsContent"></div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="scoreRequestModal" onclick="if(event.target === this) closeScoreRequestModal()">
     <div class="modal-content">
         <div class="modal-header">

@@ -811,6 +811,60 @@ let selectedPhotoRoundIdx = -1;
 function openRoundPhotoModal(r) { selectedPhotoRoundIdx = r; document.getElementById('roundPhotoTitle').textContent = `📸 ${r + 1}차전 갤러리`; renderRoundPhotos(); document.getElementById('roundPhotoModal').classList.add('active'); }
 function closeRoundPhotoModal() { document.getElementById('roundPhotoModal').classList.remove('active'); }
 
+/* ── 알림 받는 기기 ───────────────────────────────────────────────
+   push_subscriptions에 남아 있는 구독을 그대로 보여 준다. 사람 수가 아니라
+   기기 수다 — 한 사람이 폰과 PC로 따로 구독하면 두 줄이 된다.
+   기기를 바꾸거나 앱을 지워도 예전 구독이 남아 있을 수 있는데, 그런 건
+   발송할 때 만료(404/410)로 확인되면 scripts/push.js가 알아서 지운다. */
+
+function closePushSubsModal() { document.getElementById('pushSubsModal').classList.remove('active'); }
+
+async function openPushSubsModal() {
+    const content = document.getElementById('pushSubsContent');
+    if (!content) return;
+    content.innerHTML = `<div class="subs-empty">불러오는 중…</div>`;
+    document.getElementById('pushSubsModal').classList.add('active');
+
+    let subs, mine = null;
+    try {
+        subs = await listPushSubscriptions();
+    } catch (err) {
+        content.innerHTML = `<div class="subs-empty">⚠️ ${escapeHtml(err.message)}</div>`;
+        return;
+    }
+    // 이 기기가 목록의 어느 줄인지 표시해 준다.
+    try {
+        const sub = await getPushSubscription();
+        if (sub) mine = sub.endpoint;
+    } catch (e) { /* 이 기기 표시는 못 해도 목록은 보여 준다 */ }
+
+    if (subs.length === 0) {
+        content.innerHTML = `<div class="subs-empty">알림을 받는 기기가 없습니다.<br>공지 카드의 🔔 버튼으로 켤 수 있습니다.</div>`;
+        return;
+    }
+
+    // 사람별로 묶어 보여 준다. 이름을 안 남긴 구독은 맨 뒤로.
+    const byName = {};
+    subs.forEach(s => {
+        const key = s.name || '이름 없음';
+        (byName[key] = byName[key] || []).push(s);
+    });
+    const order = golfers.filter(n => byName[n]).concat(Object.keys(byName).filter(n => !golfers.includes(n)));
+
+    content.innerHTML =
+        `<div class="subs-total">전체 <b>${subs.length}</b>대 · ${order.length}명</div>` +
+        order.map(name => `
+            <div class="subs-person">
+                <div class="subs-name">${escapeHtml(name)} <span class="subs-count">${byName[name].length}대</span></div>
+                ${byName[name].map(s => `
+                    <div class="subs-device${s.endpoint === mine ? ' me' : ''}">
+                        ${escapeHtml(pushEndpointLabel(s.endpoint))}
+                        ${s.endpoint === mine ? '<span class="subs-me-tag">이 기기</span>' : ''}
+                    </div>`).join('')}
+            </div>`).join('') +
+        `<div class="subs-note">기기를 바꾸거나 앱을 지워 못 쓰게 된 구독은, 다음 알림을 보낼 때 확인되면 저절로 정리됩니다.</div>`;
+}
+
 /* ── 스코어카드 등록 ──────────────────────────────────────────────
    여기서는 사진만 올리고 요청을 남긴다. 실제 판독은 GitHub Actions가
    맡는다(scripts/read-scorecard.js). 판독이 끝나면 stats.js에 그 차수가
@@ -1349,6 +1403,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
+        <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
