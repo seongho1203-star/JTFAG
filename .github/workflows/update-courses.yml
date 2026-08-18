@@ -1,0 +1,42 @@
+name: 골프장 목록 갱신
+
+# 전국 골프장 목록(courses.js)을 OpenStreetMap에서 다시 받아 커밋한다.
+# 자주 바뀌는 자료가 아니라 예약 실행은 두지 않았다 — 필요할 때 직접 돌린다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '받아만 보고 파일은 안 고치기'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: 목록 받아오기
+        run: node scripts/fetch-courses.js
+
+      - name: 커밋
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add courses.js
+          if git diff --cached --quiet; then
+            echo "달라진 게 없습니다."
+            exit 0
+          fi
+          COUNT=$(grep -c '^    { name:' courses.js)
+          git commit -m "골프장 목록 갱신: ${COUNT}곳"
+          git push
