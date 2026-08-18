@@ -57,6 +57,21 @@ async function overpass() {
     throw lastErr;
 }
 
+// OSM의 leisure=golf_course에는 골프장이 아닌 것이 많이 섞여 있다 —
+// 스크린골프방, 실내 연습장, 파크골프장(다른 종목), 게이트볼장 따위다.
+// 이름으로 걸러낸다. 763곳 중 180곳쯤이 이렇게 빠진다.
+const NOT_A_COURSE = /연습장|드라이빙|타석|스크린|실내|파크\s?골프|골프\s?파크|게이트볼|그라운드골프|퍼팅|아카데미|레슨|골프랜드|GDR|골프클리닉|골프존/i;
+// '골프존'이 들어가면 대개 스크린골프방이지만, '골프존카운티'는 진짜 골프장 체인이다.
+const STILL_A_COURSE = /골프존카운티/;
+
+function isRealCourse(name) {
+    if (STILL_A_COURSE.test(name)) return true;
+    if (NOT_A_COURSE.test(name)) return false;
+    // "골프장", "골프 연습장"처럼 고유명이 없는 것도 쓸모가 없다.
+    if (/^골프\s*(장|클럽|연습)?$/.test(name)) return false;
+    return true;
+}
+
 // "○○컨트리클럽", "○○ Country Club" 같은 꼬리를 떼어 부르는 이름으로 만든다.
 // 완전히 지우지는 않는다 — "CC"는 남겨 두는 편이 눈에 익다.
 function tidyName(raw) {
@@ -75,7 +90,8 @@ function pickName(tags) {
 }
 
 function region(tags) {
-    return tags['addr:province'] || tags['addr:city'] || tags['addr:county'] || '';
+    return tags['addr:province'] || tags['addr:city'] || tags['addr:county']
+        || tags['addr:district'] || tags['addr:borough'] || '';
 }
 
 async function main() {
@@ -84,7 +100,7 @@ async function main() {
     console.log(`\nOSM에서 받은 항목: ${elements.length}개`);
 
     const seen = new Map();
-    let noName = 0, noGeo = 0, english = 0;
+    let noName = 0, noGeo = 0, english = 0, notCourse = 0;
 
     elements.forEach(el => {
         const tags = el.tags || {};
@@ -96,10 +112,12 @@ async function main() {
         if (!raw) { noName++; return; }
         const name = pickName(tags);
         if (!name) { english++; return; }
+        if (!isRealCourse(name)) { notCourse++; return; }
 
-        // 같은 이름이 여러 번 나오면(코스별로 쪼개진 경우) 처음 것만 쓴다.
-        if (seen.has(name)) return;
-        seen.set(name, {
+        // 같은 이름이 여러 번 나오면(코스별로 쪼개졌거나 띄어쓰기만 다른 경우) 처음 것만 쓴다.
+        const key = name.replace(/\s+/g, '');
+        if (seen.has(key)) return;
+        seen.set(key, {
             name,
             lat: Math.round(lat * 10000) / 10000,
             lon: Math.round(lon * 10000) / 10000,
@@ -108,12 +126,13 @@ async function main() {
     });
 
     const list = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    console.log(`이름 없음 ${noName}개 · 좌표 없음 ${noGeo}개 · 영문뿐 ${english}개 제외`);
+    console.log(`이름 없음 ${noName}개 · 좌표 없음 ${noGeo}개 · 영문뿐 ${english}개 · 골프장 아님 ${notCourse}개 제외`);
     console.log(`최종: ${list.length}곳`);
     console.log(`\n앞 15곳: ${list.slice(0, 15).map(c => c.name).join(', ')}`);
     console.log(`주소 정보가 있는 곳: ${list.filter(c => c.region).length}곳`);
 
-    if (list.length < 100) throw new Error(`${list.length}곳뿐이라 뭔가 잘못됐습니다. 파일을 만들지 않습니다.`);
+    // 걸러내고도 500곳 아래로 떨어지면 받아온 자료나 거르는 규칙이 잘못된 것이다.
+    if (list.length < 500) throw new Error(`${list.length}곳뿐이라 뭔가 잘못됐습니다. 파일을 만들지 않습니다.`);
 
     const body = list.map(c =>
         `    { name: ${JSON.stringify(c.name)}, lat: ${c.lat}, lon: ${c.lon}` +
