@@ -135,6 +135,9 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   Storage 헬퍼(`uploadPhotoBlob` / `deletePhotoFromStorage` / `storagePathFromUrl`)는 api.js에 있다.
 - payload는 매 저장마다 행 전체가 전송되므로 용량 증가에 민감하다 (`renderStorageUsage()`가 현재 사용량을 표시한다).
 - **변경 이력은 없앴다. 남은 로그는 공금뿐이다** (`fundLogs` · 관리자 메뉴의 `📜 공금 수정 로그`).
+  한 건은 `{time, name, before, after, memo}`다. `memo`(사용내역)는 선택 입력이라 비어 있을 수 있고,
+  **이 기능 이전에 쌓인 기록에는 아예 없다** — 렌더 코드는 `memo`가 없는 항목을 그대로 넘길 수 있어야 한다.
+  사용자가 적은 글이므로 화면에 넣을 땐 `escapeHtml()`(ui.js)을 거친다.
   타수·골프장·정산 금액은 일부러 기록하지 않는다 — 화면을 보면 알 수 있고 payload만 불린다.
   없앤 기능이 payload에 남긴 필드(`changeLogs`, `guestRounds`)는 접속 시
   `dropRetiredFields()`(ui.js)가 걷어낸다. 기능을 지울 때 이 목록에 필드를 추가할 것.

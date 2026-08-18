@@ -177,7 +177,13 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
 .photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
 .photo-btn:hover { background: #fef9e7; }
 
-.avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--text-main); }
+/* 평균 칸 — 타수 칸이 테두리 없는 맨글씨가 되면서 색이 같아 섞여 보였다.
+   금색 알약 배경과 왼쪽 구분선으로 '계산된 값'임을 드러낸다. */
+.avg-cell, th#avgHeaderTitle { border-left: 2px solid rgba(184, 134, 11, 0.35) !important; background-color: var(--gold-light) !important; }
+th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !important; }
+.avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--primary-gold); }
+.avg-cell .avg-pill { display: inline-block; min-width: 34px; padding: 3px 6px; border-radius: 999px; background: linear-gradient(135deg, #fde68a 0%, #f0c14b 100%); border: 1px solid rgba(184, 134, 11, 0.55); color: #4a3308; font-weight: 900; line-height: 1.1; }
+.avg-cell .avg-pill.empty { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; }
 .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
 .rank-hawk { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; border: 1px solid #0ea5e9; }
 .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }

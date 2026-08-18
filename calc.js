@@ -159,11 +159,16 @@ function calculateAndRender() {
         const s2 = parseFloat(appData.scores[name] ? appData.scores[name][targetR2] : NaN);
 
         const avgCell = row.querySelector('.avg-cell');
-        if (!isNaN(s1) && !isNaN(s2)) {
-            const avg = Math.floor((s1 + s2) / 2);
-            if (avgCell) avgCell.textContent = `${avg}`;
-        } else {
-            if (avgCell) avgCell.textContent = `-`;
+        // 값은 알약(.avg-pill) 안에만 넣는다. 칸을 통째로 덮어쓰면 배경 스타일이 날아간다.
+        const pill = avgCell ? avgCell.querySelector('.avg-pill') : null;
+        if (pill) {
+            if (!isNaN(s1) && !isNaN(s2)) {
+                pill.textContent = `${Math.floor((s1 + s2) / 2)}`;
+                pill.classList.remove('empty');
+            } else {
+                pill.textContent = `-`;
+                pill.classList.add('empty');
+            }
         }
     });
 

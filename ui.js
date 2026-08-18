@@ -46,12 +46,19 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!appData.fundLogs || appData.fundLogs.length === 0) {
             content.innerHTML = "<div style='text-align:center; padding:20px;'>기록된 수정 내역이 없습니다.</div>";
         } else {
-            content.innerHTML = appData.fundLogs.slice().reverse().map(log => 
-                `<div style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+            content.innerHTML = appData.fundLogs.slice().reverse().map(log => {
+                const diff = (log.after || 0) - (log.before || 0);
+                const diffText = `${diff > 0 ? '+' : ''}${formatNumber(diff)}원`;
+                // 예전 기록에는 memo가 없다. 있을 때만 줄을 만든다.
+                const memoHtml = log.memo
+                    ? `<div style="margin-top:5px; color:#cbd5e1; font-size:0.78rem; background:rgba(212,175,55,0.1); border-left:2px solid #d4af37; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
+                    : "";
+                return `<div style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
                     <div style="font-size:0.75rem; color:#64748b; margin-bottom:4px;">${log.time} - <span style="color:#fef08a; font-weight:700;">${log.name}</span> 변경</div>
-                    <div style="color:#e2e8f0; font-size:0.85rem;">${formatNumber(log.before)}원 ➔ <b style="color:#16a34a;">${formatNumber(log.after)}원</b></div>
-                 </div>`
-            ).join('');
+                    <div style="color:#e2e8f0; font-size:0.85rem;">${formatNumber(log.before)}원 ➔ <b style="color:#16a34a;">${formatNumber(log.after)}원</b> <span style="color:${diff < 0 ? '#f87171' : '#4ade80'}; font-size:0.75rem; font-weight:700;">(${diffText})</span></div>
+                    ${memoHtml}
+                 </div>`;
+            }).join('');
         }
         fundLogModal.style.opacity = "1";
         fundLogModal.style.pointerEvents = "auto";
@@ -65,6 +72,13 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
 });
+
+// 사용자가 적은 글(공금 사용내역 등)을 innerHTML에 넣기 전에 태그를 무력화한다.
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
 function showPasswordPrompt(message) {
     return new Promise((resolve) => {
@@ -260,19 +274,33 @@ async function changeAdminPassword() {
 }
 
 
-// 숫자 입력을 받는 공용 창. 취소하면 null을 반환한다.
-function showInputPrompt(message, initial) {
+// 공금 수정 창. 잔액과 사용내역을 함께 받는다. 취소하면 null을 반환한다.
+function showFundPrompt(initial) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
         const box = document.createElement('div');
         box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
         const msgEl = document.createElement('div');
-        msgEl.innerHTML = message;
+        msgEl.innerHTML = "💰 공금 수정";
         msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:12px; font-weight:800; word-break:keep-all;";
-        const input = document.createElement('input');
-        input.type = "text"; input.inputMode = "numeric"; input.value = (initial === undefined || initial === null) ? "" : initial;
-        input.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
+
+        const amountLabel = document.createElement('div');
+        amountLabel.textContent = "남은 잔액";
+        amountLabel.style.cssText = "color:#94a3b8; font-size:0.72rem; font-weight:700; text-align:left; margin-bottom:4px;";
+        const amountInput = document.createElement('input');
+        amountInput.type = "text"; amountInput.inputMode = "numeric";
+        amountInput.value = (initial === undefined || initial === null) ? "" : initial;
+        amountInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none; margin-bottom:10px; font-family:inherit;";
+
+        const memoLabel = document.createElement('div');
+        memoLabel.textContent = "사용내역 (선택)";
+        memoLabel.style.cssText = "color:#94a3b8; font-size:0.72rem; font-weight:700; text-align:left; margin-bottom:4px;";
+        const memoInput = document.createElement('input');
+        memoInput.type = "text"; memoInput.maxLength = 40;
+        memoInput.placeholder = "예) 5차 그늘집 결제";
+        memoInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
+
         const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
@@ -281,17 +309,23 @@ function showInputPrompt(message, initial) {
         okBtn.textContent = "저장";
         okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#1e293b; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
         row.appendChild(cancelBtn); row.appendChild(okBtn);
-        box.appendChild(msgEl); box.appendChild(input); box.appendChild(row);
+
+        box.appendChild(msgEl);
+        box.appendChild(amountLabel); box.appendChild(amountInput);
+        box.appendChild(memoLabel); box.appendChild(memoInput);
+        box.appendChild(row);
         overlay.appendChild(box); document.body.appendChild(overlay);
-        setTimeout(() => { overlay.style.opacity = "1"; box.style.transform = "scale(1)"; input.focus(); input.select(); }, 10);
+        setTimeout(() => { overlay.style.opacity = "1"; box.style.transform = "scale(1)"; amountInput.focus(); amountInput.select(); }, 10);
 
         function cleanup(value) {
             overlay.style.opacity = "0"; box.style.transform = "scale(0.9)";
             setTimeout(() => { overlay.remove(); resolve(value); }, 200);
         }
+        function save() { cleanup({ amount: amountInput.value, memo: memoInput.value.trim() }); }
         cancelBtn.onclick = () => cleanup(null);
-        okBtn.onclick = () => cleanup(input.value);
-        input.onkeydown = (e) => { if (e.key === 'Enter') cleanup(input.value); };
+        okBtn.onclick = save;
+        amountInput.onkeydown = (e) => { if (e.key === 'Enter') memoInput.focus(); };
+        memoInput.onkeydown = (e) => { if (e.key === 'Enter') save(); };
         overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
     });
 }
@@ -299,9 +333,11 @@ function showInputPrompt(message, initial) {
 // 공금 수정. 화면의 표시칸은 손댈 수 없고 이 경로로만 바뀐다.
 async function editClubFund() {
     const before = appData.clubFund || 0;
-    const entered = await showInputPrompt("💰 남은 공금 잔액", before);
+    const entered = await showFundPrompt(before);
     if (entered === null) return;
-    const after = parseNumber(entered);
+    const after = parseNumber(entered.amount);
+    const memo = entered.memo || "";
+    // 금액이 그대로면 사용내역만 남길 이유가 없다.
     if (after === before) { showToast("변경 사항이 없습니다."); return; }
 
     saveState();
@@ -310,7 +346,7 @@ async function editClubFund() {
     appData.fundLogs.push({
         time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
         name: localStorage.getItem('jtfag_my_name') || "알 수 없음",
-        before: before, after: after
+        before: before, after: after, memo: memo
     });
     while (appData.fundLogs.length > 50) appData.fundLogs.shift();
 
@@ -675,7 +711,7 @@ function renderTable() {
             const locked = isScoreCellLocked(r);
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input${locked ? ' locked' : ''}"${locked ? ' readonly' : ''} value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
-        rowHtml += `<td class="avg-cell">-</td>`;
+        rowHtml += `<td class="avg-cell"><span class="avg-pill empty">-</span></td>`;
         tr.innerHTML = rowHtml; tbody.appendChild(tr);
     });
 }
