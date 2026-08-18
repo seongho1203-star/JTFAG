@@ -841,8 +841,21 @@ async function openScoreRequestModal() {
     if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
     if (!(await authenticateAdmin())) return;
     selectedScorecardRound = defaultScorecardRound();
+    // 게스트 표시는 매번 새로 정한다. 지난번 값이 남아 있으면 엉뚱한 사람이 빠진다.
+    const check = document.getElementById('scorecardHasGuest');
+    const total = document.getElementById('scorecardGuestTotal');
+    if (check) check.checked = false;
+    if (total) total.value = '';
+    toggleGuestInput();
     renderScoreRequestModal();
     document.getElementById('scoreRequestModal').classList.add('active');
+}
+
+function toggleGuestInput() {
+    const check = document.getElementById('scorecardHasGuest');
+    const box = document.getElementById('scorecardGuestBox');
+    if (!check || !box) return;
+    box.style.display = check.checked ? '' : 'none';
 }
 
 function closeScoreRequestModal() { document.getElementById('scoreRequestModal').classList.remove('active'); }
@@ -896,6 +909,17 @@ async function handleScorecardUpload(event) {
     if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해주세요."); return; }
     const round = selectedScorecardRound;
 
+    // 게스트는 이름이 아니라 타수로 지목한다. 스코어카드가 이름을 가려 보여줘도,
+    // 성이 우리와 겹쳐도 이 타수 한 줄만 정확히 빠진다.
+    let guestTotal = null;
+    if (document.getElementById('scorecardHasGuest').checked) {
+        guestTotal = parseNumber(document.getElementById('scorecardGuestTotal').value);
+        if (!Number.isInteger(guestTotal) || guestTotal < 50 || guestTotal > 200) {
+            showToast("⚠️ 게스트 타수를 정확히 입력해주세요. (예: 100)");
+            return;
+        }
+    }
+
     showToast("⏳ 스코어카드를 올리는 중입니다...");
     let url;
     try {
@@ -915,6 +939,7 @@ async function handleScorecardUpload(event) {
         url: url,
         time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
         by: localStorage.getItem('jtfag_my_name') || SCORE_OWNER,
+        guestTotal: guestTotal,
         status: '대기',
         note: ''
     });
@@ -922,7 +947,9 @@ async function handleScorecardUpload(event) {
 
     syncToSupabase(appData);
     renderScoreRequestModal();
-    showToast(`✅ ${round + 1}차 스코어카드 등록! 판독이 끝나면 타수가 자동으로 채워집니다.`);
+    showToast(guestTotal === null
+        ? `✅ ${round + 1}차 스코어카드 등록! 판독이 끝나면 타수가 자동으로 채워집니다.`
+        : `✅ ${round + 1}차 등록! ${guestTotal}타(게스트)는 빼고 기록됩니다.`);
 }
 
 // payload에 base64로 남아 있는 예전 사진 수. 0이면 이전 버튼을 숨긴다.

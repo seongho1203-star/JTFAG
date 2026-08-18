@@ -252,6 +252,16 @@
             <div class="scorecard-hint">차수를 고르고 스코어카드 사진을 올리면, 잠시 뒤 18홀 타수가 판독되어 표에 자동으로 채워집니다.</div>
             <label class="scorecard-round-label" for="scoreRequestRound">차수</label>
             <select class="scorecard-round-select" id="scoreRequestRound" onchange="selectScorecardRound(parseInt(this.value, 10))"></select>
+
+            <label class="scorecard-guest-check">
+                <input type="checkbox" id="scorecardHasGuest" onchange="toggleGuestInput()">
+                <span>게스트가 함께 쳤어요 (5인 플레이)</span>
+            </label>
+            <div id="scorecardGuestBox" style="display:none;">
+                <label class="scorecard-round-label" for="scorecardGuestTotal">게스트 타수</label>
+                <input type="text" inputmode="numeric" id="scorecardGuestTotal" class="scorecard-guest-input" placeholder="예) 100">
+                <div class="scorecard-hint">이 타수인 사람을 게스트로 보고 빼둔 뒤, 나머지 네 명만 등록합니다.</div>
+            </div>
             <input type="file" accept="image/*" id="scorecardUpload" style="display:none;" onchange="handleScorecardUpload(event)">
             <button type="button" class="open-history-btn" id="scorecardPickBtn" onclick="document.getElementById('scorecardUpload').click()">📷 스코어카드 사진 올리기</button>
             <div class="scorecard-log" id="scoreRequestLog"></div>

@@ -216,8 +216,23 @@ function resolveNames(players, names) {
     return { assigned, skipped };
 }
 
+// 게스트를 이름이 아니라 '타수'로 지목해 빼낸다.
+// 스코어카드가 이름을 가려 보여줘도, 게스트 성이 우리와 겹쳐도 이 한 줄만 정확히 빠진다.
+// 앱에서 게스트 타수를 적어 보냈을 때만 돈다.
+function pullOutGuest(players, guestTotal) {
+    const hits = players.filter(p => p.total === guestTotal);
+    if (hits.length === 0) {
+        throw new Error(`게스트 타수로 적은 ${guestTotal}타인 사람이 사진에 없습니다. `
+            + `읽힌 합계: ${players.map(p => p.total).join(', ')}`);
+    }
+    if (hits.length > 1) {
+        throw new Error(`${guestTotal}타가 ${hits.length}명이라 누가 게스트인지 가릴 수 없습니다.`);
+    }
+    return { guest: hits[0], rest: players.filter(p => p !== hits[0]) };
+}
+
 // 판독 결과 검산. 통과하면 {course, par, rel}, 아니면 Error를 던진다.
-function validate(read, names) {
+function validate(read, names, guestTotal) {
     const par = read.par;
     if (!Array.isArray(par) || par.length !== HOLES) throw new Error(`파가 ${Array.isArray(par) ? par.length : 0}홀만 읽혔습니다.`);
     if (par.some(p => !Number.isInteger(p) || p < 3 || p > 6)) throw new Error('파에 이상한 값이 있습니다.');
@@ -235,11 +250,22 @@ function validate(read, names) {
             + `읽은 이름: ${readNames.join(', ') || '없음'}`);
     }
 
-    // 게스트는 여기서 걸러진다. 우리 4명에게 배정된 사람만 남는다.
-    const { assigned, skipped } = resolveNames(players, names);
+    // 게스트 타수를 적어 보냈으면 그 줄부터 빼낸다. 이름을 보기 전에 빼야
+    // 성이 겹치는 게스트도 안전하게 걸러진다.
+    let candidates = players;
+    const skipped = [];
+    if (guestTotal !== null && guestTotal !== undefined) {
+        const out = pullOutGuest(players, guestTotal);
+        candidates = out.rest;
+        skipped.push(`${guestTotal}타`);
+    }
+
+    // 남은 사람을 우리 4명에게 붙인다. (게스트 타수를 안 적었으면 이름으로 걸러진다)
+    const { assigned, skipped: byName } = resolveNames(candidates, names);
+    skipped.push(...byName);
     const rel = {};
 
-    players.forEach(p => {
+    candidates.forEach(p => {
         const name = assigned.get(p);
         if (!name) return;
         const strokes = p.strokes;
@@ -318,9 +344,11 @@ async function processOne(req, names) {
     console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
     if (!Number.isInteger(req.round) || req.round < 1 || req.round > 99) throw new Error(`차수(${req.round})가 이상합니다.`);
     if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 이상합니다.');
+    const guestTotal = Number.isInteger(req.guestTotal) ? req.guestTotal : null;
+    if (guestTotal !== null) console.log(`  게스트 타수 ${guestTotal}타 — 이 줄은 빼고 기록합니다.`);
     const image = await fetchImage(req.url);
     const read = await readScorecard(image, names);
-    const data = validate(read, names);
+    const data = validate(read, names, guestTotal);
 
     const totals = names.map(n => `${n} ${data.par.reduce((a, p, i) => a + p + data.rel[n][i], 0)}타`).join(' · ');
     console.log(`  사진 속 이름: ${data.readNames.join(', ')}`);
