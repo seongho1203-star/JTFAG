@@ -7,7 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **한국어로 응답할 것.** 저장소 소유자는 한국어로 소통한다.
 - **수정사항은 `main` 브랜치에 직접 커밋 & 푸시한다.** 별도 작업 브랜치나 PR을 만들지 않는다.
   단, 사용자가 특정 건에 대해 "브랜치로 해줘"라고 명시하면 그때만 브랜치를 사용한다.
-- 이 저장소는 GitHub Pages로 배포되므로 `main` 푸시는 곧 실서비스 반영이다. 푸시 전에 변경 결과를 확인할 것.
+- **푸시는 사용자 승인을 받고 한다.** 이 저장소는 GitHub Pages로 배포되므로 `main` 푸시는 곧
+  실서비스 반영이다. 커밋까지 해 두고 **무엇이 바뀌는지 알린 뒤 승인을 기다린다.**
+  `.claude/settings.json`의 PreToolUse 훅이 `git push`가 든 명령을 잡아 확인창을 띄우지만,
+  훅이 안 걸리는 환경도 있으니 **먼저 물어보는 습관으로 지킬 것.**
 
 ## 프로젝트 개요
 
