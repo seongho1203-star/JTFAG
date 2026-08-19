@@ -852,24 +852,25 @@ function renderStorageUsage() {
         <div class="storage-bar"><span style="width:${Math.max(percent, 1)}%; background:${statusColor};"></span></div>`;
 }
 
-function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); closeRoundPickerModal(); renderMoneyTable(); }
+function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
 
-function openRoundPickerModal() { renderRoundPicker(); document.getElementById('roundPickerModal').classList.add('active'); }
-function closeRoundPickerModal() { const m = document.getElementById('roundPickerModal'); if (m) m.classList.remove('active'); }
-
-function renderRoundPicker() {
-    const grid = document.getElementById('roundPickerGrid');
-    if (!grid) return;
-    let html = "";
+// 차수 목록을 드롭다운에 채운다. 차수가 늘어도 화면이 커지지 않는다 —
+// 예전엔 칩을 격자로 늘어놓는 창이었는데, 스무 개가 되면 감당이 안 된다.
+function renderMoneyRoundOptions(select) {
+    const want = [];
     for (let r = 0; r < appData.totalRounds; r++) {
-        const course = (appData.courses && appData.courses[r]) ? appData.courses[r] : "미정";
-        const isSel = (r === selectedMoneyRoundIdx);
-        html += `<button type="button" class="round-picker-item${isSel ? ' selected' : ''}" onclick="changeMoneyRound(${r})">
-            <span class="rp-title">${isSel ? '✓ ' : ''}${r + 1}차전</span>
-            <span class="rp-course">${course}</span>
-        </button>`;
+        const course = (appData.courses && appData.courses[r]) ? appData.courses[r].trim() : "";
+        want.push(`${r + 1}차전${course ? ` · ${course}` : ""}`);
     }
-    grid.innerHTML = html;
+    // 내용이 그대로면 다시 만들지 않는다 (실시간 갱신 때마다 목록이 껌뻑인다).
+    if (select.getAttribute('data-labels') === want.join('|')) {
+        select.value = String(selectedMoneyRoundIdx);
+        return;
+    }
+    select.innerHTML = "";
+    want.forEach((label, r) => select.add(new Option(label, r)));
+    select.setAttribute('data-labels', want.join('|'));
+    select.value = String(selectedMoneyRoundIdx);
 }
 
 // 정산 금액 뱃지. 계급정산·타수정산이 같은 함수를 쓰므로 두 칸이 어긋날 수 없다.
@@ -883,13 +884,11 @@ function paintMoneyResult(el, v) {
 
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody');
-    const roundBtn = document.getElementById('moneyRoundBtn');
+    const roundSelect = document.getElementById('moneyRoundSelect');
 
-    if (!tbody || !roundBtn) return;
+    if (!tbody || !roundSelect) return;
 
-    // 카드 제목이 이미 '차수별 정산'이라 버튼은 차수만 밝힌다.
-    const btnLabel = `${selectedMoneyRoundIdx + 1}차전 ▾`;
-    if (roundBtn.textContent !== btnLabel) roundBtn.textContent = btnLabel;
+    renderMoneyRoundOptions(roundSelect);
 
     if (!appData.roundMoney) appData.roundMoney = [];
     if (!appData.roundMoney[selectedMoneyRoundIdx]) {
