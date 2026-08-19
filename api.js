@@ -168,7 +168,7 @@ async function unsubscribeFromPush() {
 const DEFAULT_NOTIFY_SETTINGS = {
     daysBefore: [2],
     title: '⛳ {디데이} 라운드입니다',
-    body: '{일정}'
+    body: '{호칭} {일정} 라운딩입니다'
 };
 
 const NOTIFY_DAY_CHOICES = [0, 1, 2, 3, 5, 7];

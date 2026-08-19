@@ -17,6 +17,10 @@ function setVapid(env) {
     vapidReady = true;
 }
 
+// title·body는 문자열이거나, 구독 한 건을 받아 문자열을 돌려주는 함수다.
+// 함수를 주면 사람마다 다른 문구를 보낼 수 있다 ("학등급 신성호님 …").
+function textFor(v, sub) { return typeof v === 'function' ? v(sub) : v; }
+
 // onlyName을 주면 그 사람 기기에만 보낸다.
 // 한 사람이 폰과 PC를 따로 구독했을 수 있어 이름이 같은 구독은 모두 받는다.
 // 만료된 구독(404/410)은 보내면서 정리한다.
@@ -31,9 +35,9 @@ async function sendPush({ supabaseUrl, headers, env, title, body, tag, onlyName,
         return { sent: 0, total: 0 };
     }
 
-    const payload = JSON.stringify({ title, body, tag });
     if (dryRun) {
-        console.log(`[DRY RUN] 구독자 ${subs.length}명에게 보낼 내용:`, payload);
+        subs.forEach(s => console.log(`[DRY RUN] ${s.name || '이름없음'}:`,
+            JSON.stringify({ title: textFor(title, s), body: textFor(body, s), tag })));
         return { sent: 0, total: subs.length };
     }
 
@@ -44,7 +48,8 @@ async function sendPush({ supabaseUrl, headers, env, title, body, tag, onlyName,
     for (const s of subs) {
         try {
             await webpush.sendNotification(
-                { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
+                { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+                JSON.stringify({ title: textFor(title, s), body: textFor(body, s), tag }));
             sent++;
         } catch (err) {
             if (err.statusCode === 404 || err.statusCode === 410) expired.push(s.endpoint);

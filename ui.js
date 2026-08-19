@@ -1721,10 +1721,19 @@ function toggleNotifyDay(d) {
 function renderNotifyPreview() {
     const box = document.getElementById('notifyPreview');
     if (!box) return;
+    // 사람마다 달라지는 자리표시자는 '이 기기의 나'로 미리 보여 준다.
+    // 실제로는 받는 사람 각자의 이름·계급으로 바뀐다 (scripts/send-reminder.js).
+    const me = localStorage.getItem('jtfag_my_name') || '';
+    const myRank = (appData.currentRanks && appData.currentRanks[me]) ? `${appData.currentRanks[me]}등급` : '';
+    const myTitle = me ? (myRank ? `${myRank} ${me}님` : `${me}님`) : '';
     const fill = (s, days) => String(s)
         .replace(/\{남은일수\}/g, String(days))
         .replace(/\{디데이\}/g, ddayLabel(days))
-        .replace(/\{일정\}/g, appData.nextRoundDate || '(등록된 일정 없음)');
+        .replace(/\{일정\}/g, appData.nextRoundDate || '(등록된 일정 없음)')
+        .replace(/\{이름\}/g, me)
+        .replace(/\{등급\}/g, myRank)
+        .replace(/\{호칭\}/g, myTitle)
+        .replace(/\s{2,}/g, ' ').trim();
     const title = document.getElementById('notifyTitle').value;
     const body = document.getElementById('notifyBody').value;
 

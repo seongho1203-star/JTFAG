@@ -558,7 +558,27 @@ function processAllRoundSettlements() {
                 </div>
             `;
         });
+
+        rememberCurrentRanks();
     }
+}
+
+// 지금 계급을 payload에 남긴다. 알림 발송기(scripts/send-reminder.js)가 읽어
+// "학등급 신성호님"처럼 사람마다 다른 문구를 만든다.
+// 계급 계산은 여기(calc.js) 한 곳에만 두려고, 결과만 저장하고 발송기는 읽기만 한다.
+// 값이 달라졌을 때만 저장한다 — 매 렌더마다 쓰면 4명이 서로 덮어쓴다.
+function rememberCurrentRanks() {
+    const now = {};
+    golfers.forEach(g => {
+        const ranks = golferRankHistory[g] || [];
+        if (ranks.length === 0) return;
+        const info = RANK_CONFIG[ranks[ranks.length - 1]];
+        if (info) now[g] = info.name;
+    });
+    if (Object.keys(now).length === 0) return;
+    if (JSON.stringify(appData.currentRanks || {}) === JSON.stringify(now)) return;
+    appData.currentRanks = now;
+    syncToSupabase(appData);
 }
 
 // ROUND_HOLES(stats.js)를 이용한 홀별 분석. 개인 리포트의 '분석' 탭이 사용한다.

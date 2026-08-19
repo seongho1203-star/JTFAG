@@ -81,22 +81,37 @@ async function main() {
     const configured = normalizeDaysBefore(settings.daysBefore);
     const daysBefore = configured.length > 0 ? configured : envDaysBefore;
     const titleTemplate = settings.title || '⛳ {디데이} 라운드입니다';
-    const bodyTemplate = settings.body || '{일정}';
+    const bodyTemplate = settings.body || '{호칭} {일정} 라운딩입니다';
 
     const remaining = daysUntil(roundDate, today);
     console.log(`오늘(KST) ${today} · 라운드 ${roundDate} · D-${remaining} · 알림 기준 ${daysBefore.map(d => 'D-' + d).join(', ')}`);
     if (!daysBefore.includes(remaining)) { console.log('알림 보낼 날이 아닙니다. 종료.'); return; }
 
-    const fill = (s) => String(s)
-        .replace(/\{남은일수\}/g, String(remaining))
-        .replace(/\{디데이\}/g, ddayLabel(remaining))
-        .replace(/\{일정\}/g, label || roundDate);
+    // 계급은 앱이 계산해 payload.currentRanks에 남겨 둔 값을 읽기만 한다.
+    // 여기서 다시 계산하면 계급 규칙이 두 군데가 되어 언젠가 어긋난다.
+    const ranks = payload.currentRanks || {};
+
+    // 받는 사람에 따라 달라지는 자리표시자. 구독에 이름이 없으면 조용히 빈칸이 된다.
+    const fill = (s, sub) => {
+        const name = (sub && sub.name) || '';
+        const rank = name && ranks[name] ? `${ranks[name]}등급` : '';
+        const 호칭 = name ? (rank ? `${rank} ${name}님` : `${name}님`) : '';
+        return String(s)
+            .replace(/\{남은일수\}/g, String(remaining))
+            .replace(/\{디데이\}/g, ddayLabel(remaining))
+            .replace(/\{일정\}/g, label || roundDate)
+            .replace(/\{이름\}/g, name)
+            .replace(/\{등급\}/g, rank)
+            .replace(/\{호칭\}/g, 호칭)
+            // 이름을 모르는 구독에서 자리표시자가 빠지면 공백이 겹친다. 정리해서 보낸다.
+            .replace(/\s{2,}/g, ' ').trim();
+    };
 
     await sendPush({
         supabaseUrl: SUPABASE_URL, headers,
         env: { VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY },
-        title: fill(titleTemplate),
-        body: fill(bodyTemplate),
+        title: (sub) => fill(titleTemplate, sub),
+        body: (sub) => fill(bodyTemplate, sub),
         tag: `round-${roundDate}`,
         dryRun: !!DRY_RUN
     });
