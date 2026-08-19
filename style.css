@@ -236,7 +236,8 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
    금색 알약 배경과 왼쪽 구분선으로 '계산된 값'임을 드러낸다. */
 .avg-cell, th#avgHeaderTitle { border-left: 2px solid rgba(184, 134, 11, 0.35) !important; background-color: var(--gold-light) !important; }
 th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !important; }
-.avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--primary-gold); }
+/* 글자 크기는 타수 칸(input.score-input)과 같은 값을 쓴다 — 한쪽을 바꾸면 같이 바꿀 것. */
+.avg-cell { font-weight: 900 !important; font-size: clamp(0.75rem, 2.8vw, 0.85rem) !important; color: var(--primary-gold); }
 .avg-cell .avg-pill { display: inline-block; min-width: 34px; padding: 3px 6px; border-radius: 999px; background: linear-gradient(135deg, #fde68a 0%, #f0c14b 100%); border: 1px solid rgba(184, 134, 11, 0.55); color: #4a3308; font-weight: 900; line-height: 1.1; }
 .avg-cell .avg-pill.empty { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; }
 .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
