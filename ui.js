@@ -711,18 +711,25 @@ function renderScheduleRoundOptions(select, pick) {
     select.value = String(pick);
 }
 
-function openScheduleModal() {
+// 표의 골프장 칸을 눌렀을 때. 그 차수를 미리 골라 둔 채로 일정 창을 연다.
+function openScheduleForRound(r) {
+    openScheduleModal(r + 1);
+}
+
+function openScheduleModal(pickRound) {
     document.getElementById('scheduleModal').classList.add('active');
     const now = new Date(); document.getElementById('schMonth').value = now.getMonth() + 1; document.getElementById('schDay').value = now.getDate();
 
-    // 지난번에 잡아 둔 차수를 다시 고른다. 없으면 아직 안 친 다음 차수를 미리 고른다.
-    const saved = parseInt(appData.nextRoundNo, 10);
+    // 표에서 눌러 들어왔으면 그 차수, 아니면 지난번에 잡아 둔 차수,
+    // 그것도 없으면 아직 안 친 다음 차수를 미리 고른다.
+    const saved = parseInt(pickRound || appData.nextRoundNo, 10);
     const pick = (saved >= 1 && saved <= appData.totalRounds + 1) ? saved : appData.totalRounds + 1;
     renderScheduleRoundOptions(document.getElementById('schRound'), pick);
 
-    // 지난번에 고른 곳을 미리 넣어 둔다 — 같은 곳을 다시 잡는 일이 흔하다.
+    // 고른 차수에 이미 정해진 곳이 있으면 그걸, 없으면 지난번에 고른 곳을 넣어 둔다.
+    // (표에서 골프장 칸을 눌러 들어온 경우 그 차수의 이름이 그대로 떠야 한다.)
     const search = document.getElementById('schCourseSearch');
-    search.value = roundCourseMap()[pick] || lastScheduledCourse();
+    search.value = roundCourseMap()[pick] || (appData.courses && appData.courses[pick - 1]) || lastScheduledCourse();
 
     const statusText = document.getElementById('courseLoadStatus');
     if (statusText) statusText.textContent = `전국 ${allCourses().length}곳에서 검색`;
@@ -1083,7 +1090,9 @@ function renderTable() {
 
     let headerHtml = `<th class="sticky-col-1">이름</th>`;
     for (let r = 0; r < appData.totalRounds; r++) {
-        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
+        // 골프장은 사람이 여기서 치지 않는다 — 일정에서 차수를 고르면 저절로 채워진다.
+        // 칸을 눌렀을 때 그 차수 일정이 열리게 해 둔다(고칠 길이 있어야 한다).
+        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot" onclick="openScheduleForRound(${r})"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
@@ -1123,14 +1132,6 @@ function renderHandicapMatchCard(r1, r2) {
     }
 }
 
-function updateCourse(r, val) {
-    saveState(); if (!appData.courses) appData.courses = [];
-    appData.courses[r] = val;
-    // 표에서 직접 고친 이름도 차수에 기억시킨다 — 일정 쪽과 어긋나지 않게.
-    const clean = String(val || '').trim();
-    if (clean) roundCourseMap()[r + 1] = clean; else delete roundCourseMap()[r + 1];
-    syncToSupabase(appData);
-}
 function updateScore(name, r, val) {
     // readonly 칸은 onchange가 안 뜨지만, 잠금 상태가 바뀌는 순간을 대비해 한 번 더 막는다.
     // renderTable()은 커서가 놓인 칸을 건너뛰므로, 여기서 그 칸을 직접 되돌린다.

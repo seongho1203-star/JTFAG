@@ -266,6 +266,12 @@ input.score-input { width: 42px; height: 28px; border: 1px solid #cbd5e1; border
    끌 때 글자 선택이 시작돼 표가 안 밀린다 — 좌우 스크롤이 먹통되던 주된 이유다. */
 input.score-input.locked { border-color: transparent; background-color: transparent; color: var(--text-main, #1e293b); cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
 input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; background-color: #fef9e7; margin: 0 auto; display: block; }
+/* 골프장은 일정에서 정해지므로 여기서는 못 친다. 잠긴 타수 칸과 같은 이유로
+   pointer-events를 꺼서, 글자 위에서 표를 밀 때 선택이 시작되지 않게 한다.
+   누르는 건 감싼 .course-slot이 받아 그 차수 일정을 연다. */
+input.course-input.locked { cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
+.course-slot { cursor: pointer; }
+.course-slot:active input.course-input.locked { background-color: #fde68a; }
 .photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
 .photo-btn:hover { background: #fef9e7; }
 
