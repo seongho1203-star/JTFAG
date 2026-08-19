@@ -277,31 +277,54 @@ async function changeAdminPassword() {
 }
 
 
-// 공금 수정 창. 잔액과 사용내역을 함께 받는다. 취소하면 null을 반환한다.
-function showFundPrompt(initial) {
+// 공금 수정 창. 적립/사용을 고르고 그 금액만 적으면 잔액은 저절로 계산된다.
+// 잔액을 잘못 적어 둔 걸 바로잡을 때가 있어 '직접'(잔액을 그대로 씀)도 남겨 뒀다.
+// 취소하면 null, 저장하면 {after, memo}를 돌려준다 — after는 이미 계산된 잔액이다.
+const FUND_MODES = {
+    add:    { tab: "➕ 적립", label: "적립할 금액", memo: "예) 6월 회비 4명", sign: 1 },
+    use:    { tab: "➖ 사용", label: "사용한 금액", memo: "예) 5차 그늘집 결제", sign: -1 },
+    direct: { tab: "✏️ 직접", label: "고쳐 쓸 잔액", memo: "예) 잔액 정정", sign: 0 }
+};
+
+function showFundPrompt(before) {
     return new Promise((resolve) => {
+        let mode = 'use';   // 대개는 쓴 돈을 적는다
+
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
         const box = document.createElement('div');
         box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
         const msgEl = document.createElement('div');
-        msgEl.innerHTML = "💰 공금 수정";
+        msgEl.innerHTML = `💰 공금 수정<div style="color:#94a3b8; font-size:0.72rem; font-weight:700; margin-top:3px;">현재 ${formatFundString(before)}</div>`;
         msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:12px; font-weight:800; word-break:keep-all;";
 
+        const tabRow = document.createElement('div');
+        tabRow.style.cssText = "display:flex; gap:5px; margin-bottom:12px;";
+        const tabs = {};
+        Object.keys(FUND_MODES).forEach(key => {
+            const btn = document.createElement('button');
+            btn.type = "button"; btn.textContent = FUND_MODES[key].tab;
+            btn.style.cssText = "flex:1; padding:7px 0; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#94a3b8; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:inherit;";
+            btn.onclick = () => setMode(key);
+            tabs[key] = btn; tabRow.appendChild(btn);
+        });
+
         const amountLabel = document.createElement('div');
-        amountLabel.textContent = "남은 잔액";
         amountLabel.style.cssText = "color:#94a3b8; font-size:0.72rem; font-weight:700; text-align:left; margin-bottom:4px;";
         const amountInput = document.createElement('input');
         amountInput.type = "text"; amountInput.inputMode = "numeric";
-        amountInput.value = (initial === undefined || initial === null) ? "" : initial;
-        amountInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none; margin-bottom:10px; font-family:inherit;";
+        amountInput.placeholder = "0";
+        amountInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none; font-family:inherit;";
+
+        // 저장하면 잔액이 얼마가 되는지 치는 대로 보여 준다.
+        const preview = document.createElement('div');
+        preview.style.cssText = "font-size:0.78rem; font-weight:800; margin:7px 0 10px 0; min-height:16px;";
 
         const memoLabel = document.createElement('div');
-        memoLabel.textContent = "사용내역 (선택)";
+        memoLabel.textContent = "내역 (선택)";
         memoLabel.style.cssText = "color:#94a3b8; font-size:0.72rem; font-weight:700; text-align:left; margin-bottom:4px;";
         const memoInput = document.createElement('input');
         memoInput.type = "text"; memoInput.maxLength = 40;
-        memoInput.placeholder = "예) 5차 그늘집 결제";
         memoInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
 
         const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
@@ -313,20 +336,65 @@ function showFundPrompt(initial) {
         okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#1e293b; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
         row.appendChild(cancelBtn); row.appendChild(okBtn);
 
-        box.appendChild(msgEl);
-        box.appendChild(amountLabel); box.appendChild(amountInput);
+        box.appendChild(msgEl); box.appendChild(tabRow);
+        box.appendChild(amountLabel); box.appendChild(amountInput); box.appendChild(preview);
         box.appendChild(memoLabel); box.appendChild(memoInput);
         box.appendChild(row);
         overlay.appendChild(box); document.body.appendChild(overlay);
-        setTimeout(() => { overlay.style.opacity = "1"; box.style.transform = "scale(1)"; amountInput.focus(); amountInput.select(); }, 10);
+
+        // 적은 금액으로 잔액이 얼마가 되는지 — 저장할 값도 여기서 나온다.
+        function resultOf() {
+            const amount = parseNumber(amountInput.value);
+            const sign = FUND_MODES[mode].sign;
+            return sign === 0 ? amount : before + sign * amount;
+        }
+
+        function refresh() {
+            const amount = parseNumber(amountInput.value);
+            const after = resultOf();
+            if (!amount) { preview.textContent = ""; return; }
+            const sign = FUND_MODES[mode].sign;
+            const arrow = sign === 0 ? "➔"
+                : `${sign > 0 ? '+' : '−'} ${formatNumber(amount)}원 =`;
+            preview.innerHTML = `<span style="color:#64748b;">${formatNumber(before)}원 ${arrow}</span> ` +
+                `<span style="color:${after < 0 ? '#f87171' : '#4ade80'};">${formatFundString(after)}</span>` +
+                (after < 0 ? `<div style="color:#f87171; font-size:0.68rem; font-weight:700; margin-top:2px;">잔액이 마이너스가 됩니다</div>` : "");
+        }
+
+        function setMode(key) {
+            mode = key;
+            Object.keys(tabs).forEach(k => {
+                const on = k === key;
+                tabs[k].style.background = on ? "#d4af37" : "#0f172a";
+                tabs[k].style.color = on ? "#1e293b" : "#94a3b8";
+                tabs[k].style.borderColor = on ? "#d4af37" : "#475569";
+            });
+            amountLabel.textContent = FUND_MODES[key].label;
+            memoInput.placeholder = FUND_MODES[key].memo;
+            // '직접'으로 바꾸면 지금 잔액을 넣어 준다 — 고칠 값이 대개 그 근처다.
+            if (key === 'direct' && !parseNumber(amountInput.value)) amountInput.value = formatNumber(before);
+            refresh(); amountInput.focus();
+        }
+
+        setMode(mode);
+        setTimeout(() => { overlay.style.opacity = "1"; box.style.transform = "scale(1)"; amountInput.focus(); }, 10);
 
         function cleanup(value) {
             overlay.style.opacity = "0"; box.style.transform = "scale(0.9)";
             setTimeout(() => { overlay.remove(); resolve(value); }, 200);
         }
-        function save() { cleanup({ amount: amountInput.value, memo: memoInput.value.trim() }); }
+        function save() {
+            if (!parseNumber(amountInput.value)) { amountInput.focus(); return; }
+            cleanup({ after: resultOf(), memo: memoInput.value.trim() });
+        }
         cancelBtn.onclick = () => cleanup(null);
         okBtn.onclick = save;
+        // 치는 동안 천 단위 쉼표를 넣어 준다. 숫자가 아닌 글자는 버린다.
+        amountInput.oninput = () => {
+            const digits = amountInput.value.replace(/[^0-9]/g, '');
+            amountInput.value = digits ? Number(digits).toLocaleString('ko-KR') : "";
+            refresh();
+        };
         amountInput.onkeydown = (e) => { if (e.key === 'Enter') memoInput.focus(); };
         memoInput.onkeydown = (e) => { if (e.key === 'Enter') save(); };
         overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
@@ -338,7 +406,7 @@ async function editClubFund() {
     const before = appData.clubFund || 0;
     const entered = await showFundPrompt(before);
     if (entered === null) return;
-    const after = parseNumber(entered.amount);
+    const after = entered.after;
     const memo = entered.memo || "";
     // 금액이 그대로면 사용내역만 남길 이유가 없다.
     if (after === before) { showToast("변경 사항이 없습니다."); return; }
@@ -355,7 +423,8 @@ async function editClubFund() {
 
     appData.clubFund = after;
     syncToSupabase(appData); renderNoticeArea(); renderAll();
-    showToast(`💰 공금이 ${formatFundString(after)}으로 변경되었습니다.`);
+    const diff = after - before;
+    showToast(`💰 ${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}원 → 공금 ${formatFundString(after)}`);
 }
 
 // 공금은 화면에서 직접 고칠 수 없다. 관리자 메뉴의 '공금 수정'으로만 바뀐다.

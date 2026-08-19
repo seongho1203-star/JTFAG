@@ -235,8 +235,14 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   (`downloadCurrentPhoto()` 참고). 사진 갤러리의 관리자 버튼이 `migratePhotosToStorage()`로 남은 base64를 옮긴다.
   Storage 헬퍼(`uploadPhotoBlob` / `deletePhotoFromStorage` / `storagePathFromUrl`)는 api.js에 있다.
 - payload는 매 저장마다 행 전체가 전송되므로 용량 증가에 민감하다 (`renderStorageUsage()`가 현재 사용량을 표시한다).
+- **공금은 잔액이 아니라 오간 금액으로 고친다.** `showFundPrompt()`에서 `적립`/`사용`을 고르고
+  그 금액만 적으면 잔액은 `resultOf()`가 계산한다 (`FUND_MODES`의 `sign`을 곱해 더한다).
+  잔액을 잘못 적어 둔 걸 바로잡으려고 `직접`(적은 값이 곧 잔액)도 남겨 뒀다 — 지우지 말 것.
+  `editClubFund()`는 계산이 끝난 `after`만 받는다. 저장되는 건 예나 지금이나 잔액 하나뿐이라
+  payload 구조는 그대로다.
 - **변경 이력은 없앴다. 남은 로그는 공금뿐이다** (`fundLogs` · 관리자 메뉴의 `📜 공금 수정 로그`).
-  한 건은 `{time, name, before, after, memo}`다. `memo`(사용내역)는 선택 입력이라 비어 있을 수 있고,
+  한 건은 `{time, name, before, after, memo}`다. 적립인지 사용인지는 `after - before`로 알 수 있어
+  따로 넣지 않았다. `memo`(내역)는 선택 입력이라 비어 있을 수 있고,
   **이 기능 이전에 쌓인 기록에는 아예 없다** — 렌더 코드는 `memo`가 없는 항목을 그대로 넘길 수 있어야 한다.
   사용자가 적은 글이므로 화면에 넣을 땐 `escapeHtml()`(ui.js)을 거친다.
   타수·골프장·정산 금액은 일부러 기록하지 않는다 — 화면을 보면 알 수 있고 payload만 불린다.
