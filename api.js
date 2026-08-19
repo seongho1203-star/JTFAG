@@ -314,42 +314,79 @@ async function syncToSupabase(dataToSave) {
     } catch (err) { console.error("Sync Exception:", err); }
 }
 
+function weatherIcon(code) {
+    if (code >= 1 && code <= 3) return { i: "⛅", d: "구름조금" };
+    if (code >= 45 && code <= 48) return { i: "🌫️", d: "안개" };
+    if (code >= 51 && code <= 67) return { i: "🌧️", d: "비" };
+    if (code >= 71 && code <= 77) return { i: "❄️", d: "눈" };
+    if (code >= 95) return { i: "⛈️", d: "뇌우" };
+    return { i: "☀️", d: "맑음" };
+}
+
+// 같은 곳·같은 날 날씨는 10분간 재사용한다.
+// renderNoticeArea()는 남이 값을 고칠 때마다 도는데, 그때마다 부르면 요청이 금방 쌓인다.
+// (실제로 저장이 무한 반복되던 동안 Open-Meteo 한도를 넘겨 날씨가 아예 안 떴다.)
+const WEATHER_TTL = 10 * 60 * 1000;
+const WEATHER_COOLDOWN = 60 * 1000;   // 한도 초과(429)를 만나면 이만큼 쉬었다 다시 시도
+let weatherCache = { key: '', html: '' , at: 0 };
+let weatherBlockedUntil = 0;
+
 async function checkWeather(text) {
     const widget = document.getElementById('weatherWidget');
     const weatherText = document.getElementById('weatherText');
     const found = courseFromText(text);
     const targetCourse = found && found.name;
 
-    if (targetCourse) {
-        widget.style.display = 'flex'; weatherText.textContent = `${targetCourse} 날씨 확인중...`;
-        try {
-            const geo = found.geo;
-            const dateMatch = text.match(/(\d{1,2})[월/]\s*(\d{1,2})[일]?/);
-            let targetDateStr = null;
-            if (dateMatch) {
-                const year = new Date().getFullYear();
-                targetDateStr = `${year}-${dateMatch[1].padStart(2, '0')}-${dateMatch[2].padStart(2, '0')}`;
-            }
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=16`;
-            const res = await fetch(url); const data = await res.json();
-            
-            function getWeatherInfo(code) {
-                if (code >= 1 && code <= 3) return { i: "⛅", d: "구름조금" };
-                if (code >= 45 && code <= 48) return { i: "🌫️", d: "안개" };
-                if (code >= 51 && code <= 67) return { i: "🌧️", d: "비" };
-                if (code >= 71 && code <= 77) return { i: "❄️", d: "눈" };
-                if (code >= 95) return { i: "⛈️", d: "뇌우" };
-                return { i: "☀️", d: "맑음" };
-            }
+    if (!targetCourse) { widget.style.display = 'none'; return; }
+    widget.style.display = 'flex';
 
-            if (targetDateStr && data.daily && data.daily.time.includes(targetDateStr)) {
-                const idx = data.daily.time.indexOf(targetDateStr);
-                const info = getWeatherInfo(data.daily.weathercode[idx]);
-                weatherText.innerHTML = `<b>${targetCourse} (${dateMatch[1]}/${dateMatch[2]})</b> 일일예보: ${info.i} ${info.d}, ${data.daily.temperature_2m_min[idx]}°~${data.daily.temperature_2m_max[idx]}°`;
-            } else if (data.current_weather) {
-                const info = getWeatherInfo(data.current_weather.weathercode);
-                weatherText.innerHTML = `<b>${targetCourse}</b> 실시간: ${info.i} ${info.d}, ${data.current_weather.temperature}°C`;
-            }
-        } catch(e) { weatherText.textContent = "날씨 정보를 불러오지 못했습니다."; }
-    } else { widget.style.display = 'none'; }
+    const geo = found.geo;
+    const dateMatch = text.match(/(\d{1,2})[월/]\s*(\d{1,2})[일]?/);
+    let targetDateStr = null;
+    if (dateMatch) {
+        const year = new Date().getFullYear();
+        targetDateStr = `${year}-${dateMatch[1].padStart(2, '0')}-${dateMatch[2].padStart(2, '0')}`;
+    }
+
+    const key = `${geo.lat},${geo.lon}|${targetDateStr || 'now'}|${targetCourse}`;
+    const now = Date.now();
+    if (weatherCache.key === key && now - weatherCache.at < WEATHER_TTL) {
+        weatherText.innerHTML = weatherCache.html;
+        return;
+    }
+    if (now < weatherBlockedUntil) {
+        weatherText.textContent = "날씨 요청이 많아 잠시 후 다시 시도합니다.";
+        return;
+    }
+
+    weatherText.textContent = `${targetCourse} 날씨 확인중...`;
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=16`;
+        const res = await fetch(url);
+        // 한도를 넘기면 429가 오는데, 본문이 JSON이라 그냥 두면 조용히 '확인중'에 멈춰 있었다.
+        if (!res.ok) {
+            if (res.status === 429) weatherBlockedUntil = Date.now() + WEATHER_COOLDOWN;
+            weatherText.textContent = res.status === 429
+                ? "날씨 요청이 많아 잠시 후 다시 시도합니다."
+                : `날씨 정보를 불러오지 못했습니다. (${res.status})`;
+            return;
+        }
+        const data = await res.json();
+
+        let html = "";
+        if (targetDateStr && data.daily && data.daily.time.includes(targetDateStr)) {
+            const idx = data.daily.time.indexOf(targetDateStr);
+            const info = weatherIcon(data.daily.weathercode[idx]);
+            html = `<b>${targetCourse} (${dateMatch[1]}/${dateMatch[2]})</b> 일일예보: ${info.i} ${info.d}, ${data.daily.temperature_2m_min[idx]}°~${data.daily.temperature_2m_max[idx]}°`;
+        } else if (data.current_weather) {
+            const info = weatherIcon(data.current_weather.weathercode);
+            html = `<b>${targetCourse}</b> 실시간: ${info.i} ${info.d}, ${data.current_weather.temperature}°C`;
+        }
+
+        if (!html) { weatherText.textContent = "날씨 정보를 불러오지 못했습니다."; return; }
+        weatherCache = { key, html, at: Date.now() };
+        weatherText.innerHTML = html;
+    } catch (e) {
+        weatherText.textContent = "날씨 정보를 불러오지 못했습니다.";
+    }
 }
