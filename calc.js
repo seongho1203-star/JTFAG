@@ -576,7 +576,17 @@ function rememberCurrentRanks() {
         if (info) now[g] = info.name;
     });
     if (Object.keys(now).length === 0) return;
-    if (JSON.stringify(appData.currentRanks || {}) === JSON.stringify(now)) return;
+
+    // 값을 키마다 비교한다. JSON.stringify로 견주면 안 된다 —
+    // payload는 Postgres의 jsonb라 키 순서가 보존되지 않는다(길이 → 바이트순으로 다시 정렬된다).
+    // 내용이 같아도 문자열이 달라져서 매번 '바뀌었다'로 보고 저장하고,
+    // 그 저장이 실시간 이벤트로 되돌아와 다시 렌더 → 다시 저장으로 끝없이 돈다.
+    // (그 여파로 renderNoticeArea가 계속 돌아 날씨칸이 '확인중'과 예보를 오갔다.)
+    const saved = appData.currentRanks || {};
+    const same = Object.keys(now).length === Object.keys(saved).length
+        && Object.keys(now).every(g => saved[g] === now[g]);
+    if (same) return;
+
     appData.currentRanks = now;
     syncToSupabase(appData);
 }

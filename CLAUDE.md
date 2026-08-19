@@ -213,6 +213,16 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 ```
 
 - 부분 업데이트가 없다. 값 하나만 바꿔도 `appData` 전체를 upsert한다.
+- **저장한 내용은 실시간 이벤트로 나에게도 되돌아온다.** 그래서 "달라졌을 때만 저장"하는 코드
+  (`rememberCurrentRanks`, `syncScoresFromHoles`, `applyRoundCourses`)의 비교가 틀리면
+  저장 → 이벤트 → 렌더 → 저장으로 **끝없이 돈다.**
+  **`JSON.stringify`로 payload 값을 견주지 말 것.** payload는 Postgres의 `jsonb`라
+  키 순서가 보존되지 않는다(길이 → 바이트순으로 다시 정렬된다). 내용이 같아도 문자열이 달라져
+  매번 '바뀌었다'가 된다. 실제로 `currentRanks`를 이렇게 비교했다가 초당 20회씩 저장이 나갔고,
+  그 여파로 `renderNoticeArea`가 계속 돌아 **날씨칸이 '확인중'과 예보를 오갔다.**
+  키마다 값을 비교할 것.
+  헤드리스로 확인할 땐 **스텁이 upsert를 되돌려 주고 키 순서까지 섞어야** 이 버그가 재현된다
+  (스크래치패드의 `stub-echo.txt`).
 - 상태를 변경하는 함수는 **반드시** `saveState()` (실행취소 스택, 최대 10개) → 값 수정 → `syncToSupabase(appData)` 순서를 지킨다.
 - `renderAll()`이 렌더 파이프라인 전체를 돌린다: `renderTable` → `calculateAndRender` → `renderMoneyTable` → `forceTableReflow` → `renderStorageUsage` → `checkAndGreetUser`.
 - 데이터 구조 기본형은 `getDefaultData()` (api.js) 참조. 배열들(`courses`, `scores[name]`, `roundMoney`, `roundPhotos`)은 모두 **차수(round) 인덱스로 정렬**되어 있어 길이가 `totalRounds`와 일치해야 한다. 차수를 추가/삭제하는 `addRound()` / `removeRound()`가 이 배열들을 함께 관리한다.
