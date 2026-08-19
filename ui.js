@@ -655,9 +655,30 @@ function renderAll() {
     calculateAndRender();
     renderMoneyTable();
     forceTableReflow();
+    jumpToLatestRound();
     renderStorageUsage();
     updateScoreRequestBtn();
     checkAndGreetUser();
+}
+
+// 접속하면 표를 맨 오른쪽으로 밀어 둔다 — 궁금한 건 방금 친 차수라서다.
+// 딱 한 번만 한다. 남이 값을 고쳐 실시간 갱신이 들어올 때마다 밀어 버리면
+// 앞 차수를 보고 있던 사람의 화면이 튄다.
+let jumpedToLatestRound = false;
+
+function jumpToLatestRound() {
+    if (jumpedToLatestRound) return;
+    const wrapper = document.getElementById('tableWrapper');
+    // 아직 표가 안 그려졌으면(뼈대만 있을 때) 다음 렌더에 다시 해 본다.
+    if (!wrapper || wrapper.scrollWidth <= wrapper.clientWidth) return;
+    jumpedToLatestRound = true;
+
+    // 부드럽게 밀지 않는다. 처음 보이는 화면은 이미 오른쪽이어야 한다.
+    const toEnd = () => { if (!isTableTouched) wrapper.scrollLeft = wrapper.scrollWidth; };
+    toEnd();
+    // 글꼴이 늦게 붙으면 표 폭이 달라진다. 자리를 두 번 더 맞춘다.
+    requestAnimationFrame(toEnd);
+    setTimeout(toEnd, 400);
 }
 
 function renderStorageUsage() {
