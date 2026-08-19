@@ -242,6 +242,17 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 - CSS/JS는 `document.write`로 `?ver=` 랜덤 쿼리를 붙여 캐시를 우회한다. **`courses.js`만 예외다** —
   40KB인데 목록 갱신 워크플로를 돌릴 때나 바뀌므로 접속마다 새로 받을 이유가 없다.
   로컬에서 안 바뀌어 보이면 강력 새로고침(`Ctrl+Shift+R`)을 시도한다.
+- **창이 떠 있는 동안 뒷배경은 `watchOverlays()`(ui.js)가 잠근다.** 창을 여는 곳이 스무 군데가
+  넘어(모달 10개 + 직접 만들어 붙이는 창 6개) 한 곳씩 고치면 반드시 하나를 빠뜨린다 —
+  그러면 화면이 잠긴 채 안 풀려서 원래보다 나쁘다. 그래서 여는 코드는 손대지 않고,
+  **MutationObserver가 '화면을 덮는 게 생겼는지'를 보고** body를 `position:fixed`로 붙든다.
+  덮는 창의 조건은 `body 바로 아래 · position:fixed · pointer-events가 none이 아님 · 화면의 90% 이상`.
+  이 조건이 곧 필터다 — 닫힌 모달·토스트·설치 배너·인사말은 저절로 빠진다.
+  **`opacity`는 보지 말 것.** 열릴 때 0에서 서서히 오르는데 관찰자는 첫 프레임에 돌아 0을 읽고,
+  그 뒤로 바뀌는 게 없어 영영 다시 안 본다 (관리자 메뉴·일정 모달만 안 잠기는 걸로 실제로 나타났다).
+  `pointer-events`는 전환 없이 즉시 바뀌고 '입력을 가로채고 있는가'라는 뜻이라 더 정확하다.
+  풀 때 `window.scrollTo`로 보던 자리에 되돌려 놓는다 — 안 그러면 창을 닫을 때마다 맨 위로 튄다.
+  새로 만드는 전체화면 창은 **누를 일이 없으면 `pointer-events:none`을 줄 것** (인사말이 그렇다).
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.
 - 사진은 Supabase Storage의 `round-photos` 버킷(공개)에 올리고 `appData.roundPhotos`에는 **공개 URL만** 저장한다.

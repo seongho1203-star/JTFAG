@@ -27,6 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }).subscribe();
 
     watchTableTouch();
+    watchOverlays();
     initScheduleOptions();
     registerServiceWorker().then(() => updateAlarmUI());
     setTimeout(renderInstallBanner, 2500);   // iOS는 이벤트가 없으므로 직접 띄운다
@@ -504,6 +505,82 @@ function watchTableTouch() {
     wrapper.addEventListener('pointerdown', on, { passive: true });
     wrapper.addEventListener('pointerup', off, { passive: true });
     wrapper.addEventListener('pointercancel', off, { passive: true });
+}
+
+// ─── 창이 떠 있는 동안 뒷배경 잠그기 ───
+// 창을 여는 곳이 스무 군데가 넘고(모달 10개 + 직접 만들어 붙이는 창 6개), 한 곳씩 고치면
+// 반드시 하나를 빠뜨린다 — 그러면 화면이 잠긴 채로 안 풀려서 원래 문제보다 나쁘다.
+// 그래서 '화면을 덮는 게 생겼는지'를 지켜보다가 body를 잠근다. 여는 코드는 손대지 않는다.
+//
+// 덮는 창의 조건: body 바로 아래 · position:fixed · 누를 수 있고(pointer-events) · 화면을 거의 다 덮음.
+// 이 조건이 곧 필터다 — 닫힌 모달(pointer-events:none)·토스트(작음)·인사말은 저절로 빠진다.
+// opacity는 보지 않는다. 창이 열릴 때 0에서 1로 서서히 오르는데, 관찰자는 그 첫 프레임에
+// 돌아서 아직 0을 읽는다 — 그러면 안 잠기고, 그 뒤로 바뀌는 게 없어 영영 다시 안 본다.
+// (실제로 관리자 메뉴와 일정 모달만 안 잠기는 걸로 나타났다.)
+// pointer-events는 전환 없이 즉시 바뀌고, '입력을 가로채고 있는가'라는 뜻이라 더 정확하다.
+function isCoveringOverlay(el) {
+    const s = getComputedStyle(el);
+    if (s.position !== 'fixed' || s.display === 'none' || s.pointerEvents === 'none') return false;
+    if (s.visibility === 'hidden') return false;
+    const r = el.getBoundingClientRect();
+    return r.width >= window.innerWidth * 0.9 && r.height >= window.innerHeight * 0.9;
+}
+
+function anyOverlayOpen() {
+    for (const el of document.body.children) {
+        if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') continue;
+        if (isCoveringOverlay(el)) return true;
+    }
+    return false;
+}
+
+// iOS 사파리는 overflow:hidden만으로는 뒤가 계속 밀린다. position:fixed로 붙잡고
+// 풀 때 보던 자리로 되돌려 놔야 한다 — 안 그러면 창을 닫을 때마다 맨 위로 튄다.
+let scrollLocked = false;
+let lockedScrollY = 0;
+
+function applyScrollLock() {
+    const want = anyOverlayOpen();
+    if (want === scrollLocked) return;   // 안 바뀌었으면 건드리지 않는다 (body를 고치면 관찰자가 또 돈다)
+    scrollLocked = want;
+    const body = document.body;
+    if (want) {
+        lockedScrollY = window.scrollY || window.pageYOffset || 0;
+        body.style.position = 'fixed';
+        body.style.top = `-${lockedScrollY}px`;
+        body.style.left = '0';
+        body.style.right = '0';
+        body.style.width = '100%';
+        body.style.overflow = 'hidden';
+    } else {
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        body.style.overflow = '';
+        window.scrollTo(0, lockedScrollY);
+    }
+}
+
+let overlayObserver = null;
+
+function watchOverlays() {
+    let queued = false;
+    const check = () => {
+        if (queued) return;
+        queued = true;
+        // 한 번 열 때 여러 번 바뀌므로(class → style → 자식 추가) 한 프레임에 한 번만 본다.
+        requestAnimationFrame(() => { queued = false; applyScrollLock(); });
+    };
+    // 관찰자를 전역에 붙들어 둔다 — 참조를 안 남기면 수거될 여지가 있다.
+    overlayObserver = new MutationObserver(check);
+    overlayObserver.observe(document.body, {
+        childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style']
+    });
+    // 여는 순간 opacity가 0에서 시작하는 창이 있어, 화면 회전·리사이즈 때도 다시 본다.
+    window.addEventListener('resize', check);
+    check();
 }
 
 function forceTableReflow() {
@@ -1954,7 +2031,9 @@ function showGreeting(myName) {
     else greetMsg = `💦 앗!<br><span style="color:#94a3b8;">참새등급 ${myName}님</span>이 입장하였습니다.`;
 
     const overlay = document.createElement('div');
-    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
+    // 저절로 사라지는 인사라 누를 일이 없다. pointer-events를 꺼 두면
+    // 뒷배경 잠금(watchOverlays)도 이 창은 건너뛴다 — 2초 동안 화면이 굳으면 답답하다.
+    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; pointer-events:none; transition:opacity 0.4s ease;";
     
     const toast = document.createElement('div');
     toast.innerHTML = `<div style="font-size: 2.5rem; margin-bottom: 12px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.95rem; line-height:1.5; word-break:keep-all;">${greetMsg}</div>`;
