@@ -239,12 +239,6 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .avg-cell { font-weight: 900 !important; font-size: clamp(0.8rem, 3vw, 0.9rem) !important; color: var(--primary-gold); }
 .avg-cell .avg-pill { display: inline-block; min-width: 34px; padding: 3px 6px; border-radius: 999px; background: linear-gradient(135deg, #fde68a 0%, #f0c14b 100%); border: 1px solid rgba(184, 134, 11, 0.55); color: #4a3308; font-weight: 900; line-height: 1.1; }
 .avg-cell .avg-pill.empty { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; }
-
-/* 평균 열은 오른쪽 끝에 붙여 둔다 — 어느 차수를 보고 있든 기준이 되는 값이라
-   밀 때마다 사라지면 비교가 안 된다. 이름 열(sticky-col-1)의 오른쪽 짝이다.
-   배경이 비치면 밑에 깔린 타수가 겹쳐 보이므로 불투명한 색을 반드시 준다.
-   z-index는 이름 열(3)보다 낮게 둬, 화면이 아주 좁아 둘이 만나면 이름이 위로 온다. */
-.sticky-col-right { position: sticky !important; right: 0 !important; z-index: 2 !important; min-width: 62px !important; box-sizing: border-box; padding-left: 3px !important; padding-right: 3px !important; box-shadow: -3px 0 5px -2px rgba(0, 0, 0, 0.08); }
 .rank-eagle { background: linear-gradient(135deg, #ffe066 0%, #f59e0b 100%); color: #451a03; border: 1px solid #fbbf24; }
 .rank-hawk { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; border: 1px solid #0ea5e9; }
 .rank-crane { background: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%); color: #ffffff; border: 1px solid #a855f7; }
