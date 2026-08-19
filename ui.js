@@ -2031,9 +2031,9 @@ function showGreeting(myName) {
     else greetMsg = `💦 앗!<br><span style="color:#94a3b8;">참새등급 ${myName}님</span>이 입장하였습니다.`;
 
     const overlay = document.createElement('div');
-    // 저절로 사라지는 인사라 누를 일이 없다. pointer-events를 꺼 두면
-    // 뒷배경 잠금(watchOverlays)도 이 창은 건너뛴다 — 2초 동안 화면이 굳으면 답답하다.
-    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; pointer-events:none; transition:opacity 0.4s ease;";
+    // 다른 창과 똑같이 입력을 받는다 — 그래야 watchOverlays()가 뒷배경을 잠근다.
+    // 대신 3초를 억지로 기다리지 않도록 눌러서 넘길 수 있게 해 뒀다(아래 dismiss).
+    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
     
     const toast = document.createElement('div');
     toast.innerHTML = `<div style="font-size: 2.5rem; margin-bottom: 12px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.95rem; line-height:1.5; word-break:keep-all;">${greetMsg}</div>`;
@@ -2048,10 +2048,18 @@ function showGreeting(myName) {
         toast.style.opacity = "1";
     }, 50);
     
-    setTimeout(() => { 
+    // 3초를 채우든 눌러서 넘기든 한 번만 사라지게 한다.
+    let gone = false;
+    const dismiss = () => {
+        if (gone) return;
+        gone = true;
+        clearTimeout(timer);
         toast.style.transform = "translate(-50%, -50%) scale(0.8)";
-        toast.style.opacity = "0"; 
-        overlay.style.opacity = "0"; 
+        toast.style.opacity = "0";
+        overlay.style.opacity = "0";
         setTimeout(() => { toast.remove(); overlay.remove(); }, 500);
-    }, 3000);
+    };
+    const timer = setTimeout(dismiss, 3000);
+    overlay.onclick = dismiss;
+    toast.onclick = dismiss;
 }
