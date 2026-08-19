@@ -102,7 +102,46 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .report-badges-area .season-badge { font-size: clamp(0.7rem, 3vw, 0.85rem) !important; padding: 4px 8px !important; margin: 2px !important; border-radius: 8px !important; }
 @keyframes premium-glow { 0% { filter: brightness(1) contrast(1) drop-shadow(0 1px 2px rgba(0,0,0,0.1)); } 100% { filter: brightness(1.1) contrast(1.05) drop-shadow(0 3px 6px rgba(0,0,0,0.25)); } }
 
-.badge-eagle-3 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #b45309; }
+/* 독수리 3연속 — 모임에서 크게 축하하기로 한 기록이라 다른 뱃지와 급을 다르게 뒀다.
+   금색이 흐르고, 그 위로 광택이 지나가고, 테두리가 맥박처럼 뛴다.
+   ::after의 광택은 칸 밖으로 나가면 안 되므로 overflow:hidden이 반드시 필요하다. */
+.badge-eagle-3 {
+    position: relative; overflow: hidden;
+    background: linear-gradient(110deg, #b45309 0%, #f59e0b 25%, #fde68a 45%, #f59e0b 65%, #b45309 100%);
+    background-size: 250% 100%;
+    /* 금색이 흐르면서 밝은 띠가 글자 밑을 지나간다. 그때도 읽히게 그림자를 두 겹으로 준다. */
+    color: #ffffff; text-shadow: 0 1px 2px rgba(120, 53, 15, 0.95), 0 0 3px rgba(120, 53, 15, 0.75);
+    border-color: #fcd34d;
+    animation: eagle3-flow 3s linear infinite, eagle3-pulse 1.6s ease-in-out infinite;
+}
+.badge-eagle-3::after {
+    content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.85), transparent);
+    transform: skewX(-20deg);
+    animation: eagle3-shine 3s ease-in-out infinite;
+}
+@keyframes eagle3-flow { 0% { background-position: 0% 50%; } 100% { background-position: 250% 50%; } }
+@keyframes eagle3-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.65), inset 0 1px 1px rgba(255,255,255,0.5); }
+    50%      { box-shadow: 0 0 9px 3px rgba(251, 191, 36, 0.15), inset 0 1px 1px rgba(255,255,255,0.5); }
+}
+@keyframes eagle3-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+
+/* 독수리 연속 기록이 늘어난 걸 처음 본 순간의 축포.
+   색종이는 오버레이 안에서만 떨어져야 해서 overflow:hidden을 준다. */
+.celebrate-overlay { position: fixed; inset: 0; z-index: 12000; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.82); overflow: hidden; opacity: 0; transition: opacity 0.25s ease; }
+.celebrate-overlay.on { opacity: 1; }
+.celebrate-card { position: relative; z-index: 2; width: min(86vw, 310px); padding: 24px 20px 20px 20px; border-radius: 18px; text-align: center; background: linear-gradient(150deg, #fffbeb 0%, #fde68a 55%, #f0b429 100%); border: 2px solid #fcd34d; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55); transform: scale(0.7); transition: transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.celebrate-overlay.on .celebrate-card { transform: scale(1); }
+.celebrate-eagle { font-size: 3.2rem; line-height: 1; animation: celebrate-bob 1.4s ease-in-out infinite; }
+.celebrate-streak { font-size: 2.6rem; font-weight: 900; line-height: 1.1; margin-top: 6px; color: #7c2d12; text-shadow: 0 2px 0 rgba(255, 255, 255, 0.6); letter-spacing: -1px; }
+.celebrate-name { font-size: 1.15rem; font-weight: 900; color: #78350f; margin-top: 2px; }
+.celebrate-sub { font-size: 0.78rem; font-weight: 800; color: #92400e; margin-top: 8px; word-break: keep-all; }
+.celebrate-close { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 10px; background: #7c2d12; color: #fef3c7; font-size: 0.88rem; font-weight: 900; font-family: inherit; cursor: pointer; }
+@keyframes celebrate-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-9px) rotate(4deg); } }
+
+.confetti { position: absolute; top: -20px; width: 9px; height: 14px; z-index: 1; animation: confetti-fall linear forwards; }
+@keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(102vh) rotate(720deg); opacity: 0.9; } }
 .badge-eagle-2 { background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%); color: #78350f; border-color: #eab308; }
 .badge-avg-1 { background: linear-gradient(135deg, #60a5fa 0%, #2563eb 50%, #1d4ed8 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border-color: #1e3a8a; }
 .badge-best-score { background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%); color: #451a03; border-color: #d97706; }

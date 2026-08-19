@@ -659,6 +659,62 @@ function renderAll() {
     renderStorageUsage();
     updateScoreRequestBtn();
     checkAndGreetUser();
+    checkEagleStreakCelebration();
+}
+
+// ─── 독수리 연속 달성 축포 ───
+// 모임에서 크게 축하하기로 한 기록이라 뱃지만으로는 모자라 화면 전체로 터뜨린다.
+// 기기마다 사람·연속수 조합당 딱 한 번만 뜬다 — 접속할 때마다 뜨면 축하가 아니라 방해다.
+// (4연속이 되면 키가 달라지므로 그때 또 한 번 뜬다.)
+const CONFETTI_COLORS = ['#fbbf24', '#f59e0b', '#fde68a', '#ffffff', '#34d399', '#60a5fa', '#f472b6'];
+
+function checkEagleStreakCelebration() {
+    if (typeof eagleStreak !== 'function' || typeof golferRankHistory === 'undefined') return;
+    if (document.querySelector('.celebrate-overlay')) return;
+    for (const name of golfers) {
+        const streak = eagleStreak(golferRankHistory[name] || []);
+        if (streak < 3) continue;
+        const key = `jtfag_eagle_${name}_${streak}`;
+        if (localStorage.getItem(key)) continue;
+        localStorage.setItem(key, '1');
+        celebrateEagleStreak(name, streak);
+        return;   // 한 번에 하나만. 둘이 동시에 달성했으면 나머지는 다음 접속 때 뜬다
+    }
+}
+
+function celebrateEagleStreak(name, streak) {
+    const existing = document.querySelector('.celebrate-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'celebrate-overlay';
+    overlay.innerHTML = `
+        <div class="celebrate-card">
+            <div class="celebrate-eagle">${RANK_CONFIG[0].icon}</div>
+            <div class="celebrate-streak">${streak}연속</div>
+            <div class="celebrate-name">${escapeHtml(name)}</div>
+            <div class="celebrate-sub">독수리 ${streak}경기 연속 달성!<br>모두 축하해 주세요 🎉</div>
+            <button type="button" class="celebrate-close">축하합니다 👏</button>
+        </div>`;
+
+    for (let i = 0; i < 80; i++) {
+        const bit = document.createElement('div');
+        bit.className = 'confetti';
+        bit.style.left = (Math.random() * 100) + 'vw';
+        bit.style.backgroundColor = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        bit.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
+        bit.style.animationDelay = (Math.random() * 1.4) + 's';
+        if (Math.random() < 0.35) bit.style.borderRadius = '50%';
+        overlay.appendChild(bit);
+    }
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('on'));
+
+    let timer = null;
+    const close = () => { clearTimeout(timer); overlay.classList.remove('on'); setTimeout(() => overlay.remove(), 300); };
+    overlay.onclick = close;
+    timer = setTimeout(close, 7000);
 }
 
 // 접속하면 표를 맨 오른쪽으로 밀어 둔다 — 궁금한 건 방금 친 차수라서다.

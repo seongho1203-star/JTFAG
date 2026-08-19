@@ -33,6 +33,14 @@ function computeParSpecialists() {
     });
 }
 
+// 뒤에서부터 독수리(계급 0)가 몇 번 연속인지 센다.
+// 3연속에서 멈추지 않는다 — 4연속, 5연속이면 뱃지 숫자가 그대로 따라 올라간다.
+function eagleStreak(ranks) {
+    let n = 0;
+    for (let i = ranks.length - 1; i >= 0 && ranks[i] === 0; i--) n++;
+    return n;
+}
+
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -46,9 +54,11 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }
     };
 
-    if (ranks.length >= 3 && ranks.slice(-3).every(r => r === 0)) {
-        badges.push({ html: `<div class="season-badge badge-eagle-3">${imgE} 독수리 3연속!</div>`, desc: "최근 3경기 연속 독수리 계급 달성" });
-    } else if (ranks.length >= 2 && ranks.slice(-2).every(r => r === 0)) {
+    const streak = eagleStreak(ranks);
+    if (streak >= 3) {
+        // 눌러서 축포를 다시 볼 수 있게 해 둔다. 축하는 여러 번 받을수록 좋다.
+        badges.push({ html: `<div class="season-badge badge-eagle-3" style="cursor:pointer;" onclick="event.stopPropagation(); celebrateEagleStreak('${g}', ${streak})">${imgE} 독수리 ${streak}연속!</div>`, desc: `${streak}경기 연속 독수리 계급 달성` });
+    } else if (streak === 2) {
         badges.push({ html: `<div class="season-badge badge-eagle-2">${imgE} 독수리 2연속!</div>`, desc: "최근 2경기 연속 독수리 계급 달성" });
     }
 
