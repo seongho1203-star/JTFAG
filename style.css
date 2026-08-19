@@ -72,6 +72,9 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .sch-inputs { display: flex; align-items: center; gap: 4px; }
 .sch-inputs select { padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 700; background-color: #ffffff; background-image: none !important; color: var(--text-main); outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; text-align: center; height: 28px; }
 .sch-inputs span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
+/* 차수 칸. 골프장 이름까지 들어가 길어지므로 폭을 묶고 말줄임으로 자른다 —
+   안 그러면 날짜 칸을 밀어내 한 줄에 안 들어간다. */
+.sch-round { max-width: 92px; background-color: var(--gold-light) !important; color: var(--primary-gold); border-color: rgba(184, 134, 11, 0.45) !important; font-weight: 800; text-align: left; text-overflow: ellipsis; padding-right: 4px !important; }
 
 /* 골프장 검색: 전국 574곳이라 드롭다운으로는 못 고른다. 쳐서 좁히고 눌러 고른다.
    검색창은 그대로 입력칸이기도 하다 — 목록에 없는 곳은 쳐 넣으면 그게 이름이 된다. */

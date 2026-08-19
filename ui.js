@@ -675,13 +675,54 @@ function pickCourse(name) {
     document.getElementById('courseResults').scrollTop = 0;
 }
 
+// 차수별 골프장 기억(payload.roundCourses). 키는 차수 번호(1부터), 값은 골프장 이름.
+// 표의 `courses[]`와 따로 두는 이유: 차수를 지웠다 다시 만들어도 이름이 돌아와야 한다.
+function roundCourseMap() {
+    if (!appData.roundCourses || typeof appData.roundCourses !== 'object') appData.roundCourses = {};
+    return appData.roundCourses;
+}
+
+// 기억해 둔 이름을 표의 빈 골프장 칸에 채운다. 이미 적혀 있으면 건드리지 않는다.
+// 접속할 때와 차수를 추가한 뒤에 부른다.
+function applyRoundCourses() {
+    const map = roundCourseMap();
+    if (!appData.courses) appData.courses = [];
+    let changed = false;
+    for (let r = 0; r < appData.totalRounds; r++) {
+        const remembered = map[r + 1];
+        if (remembered && !String(appData.courses[r] || '').trim()) {
+            appData.courses[r] = remembered;
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+// 일정 모달의 차수 목록. 아직 없는 '다음 차수'까지 하나 더 보여 준다 —
+// 5차까지 쳤으면 6차 일정을 미리 잡을 수 있어야 한다.
+function renderScheduleRoundOptions(select, pick) {
+    const map = roundCourseMap();
+    select.innerHTML = "";
+    for (let n = 1; n <= appData.totalRounds + 1; n++) {
+        const isNew = n > appData.totalRounds;
+        const course = map[n] || (appData.courses && appData.courses[n - 1]) || "";
+        select.add(new Option(`${n}차${isNew ? ' (예정)' : ''}${course ? ` · ${course}` : ''}`, n));
+    }
+    select.value = String(pick);
+}
+
 function openScheduleModal() {
     document.getElementById('scheduleModal').classList.add('active');
     const now = new Date(); document.getElementById('schMonth').value = now.getMonth() + 1; document.getElementById('schDay').value = now.getDate();
 
+    // 지난번에 잡아 둔 차수를 다시 고른다. 없으면 아직 안 친 다음 차수를 미리 고른다.
+    const saved = parseInt(appData.nextRoundNo, 10);
+    const pick = (saved >= 1 && saved <= appData.totalRounds + 1) ? saved : appData.totalRounds + 1;
+    renderScheduleRoundOptions(document.getElementById('schRound'), pick);
+
     // 지난번에 고른 곳을 미리 넣어 둔다 — 같은 곳을 다시 잡는 일이 흔하다.
     const search = document.getElementById('schCourseSearch');
-    search.value = lastScheduledCourse();
+    search.value = roundCourseMap()[pick] || lastScheduledCourse();
 
     const statusText = document.getElementById('courseLoadStatus');
     if (statusText) statusText.textContent = `전국 ${allCourses().length}곳에서 검색`;
@@ -724,7 +765,21 @@ function saveSchedule() {
     appData.nextRoundDate = `${m}월 ${d}일 ${ampm} ${hh}:${mm} ${course}`;
     // 표시용 문구에는 연도가 없어 알림이 연도를 알 수 없다. 별도로 남긴다.
     appData.nextRoundISO = resolveRoundDate(m, d);
-    syncToSupabase(appData); renderNoticeArea(); closeScheduleModal(); showToast("✅ 일정이 성공적으로 저장되었습니다!");
+
+    // 고른 차수에 골프장을 붙여 둔다 — 표의 골프장 칸을 따로 칠 필요가 없어진다.
+    // 차수를 지웠다 다시 만들어도 roundCourses에 남아 있어 이름이 돌아온다.
+    const roundNo = parseInt(document.getElementById('schRound').value, 10) || (appData.totalRounds + 1);
+    appData.nextRoundNo = roundNo;
+    roundCourseMap()[roundNo] = course;
+    if (roundNo <= appData.totalRounds) {
+        if (!appData.courses) appData.courses = [];
+        appData.courses[roundNo - 1] = course;
+    }
+
+    syncToSupabase(appData); renderNoticeArea(); renderAll(); closeScheduleModal();
+    showToast(roundNo <= appData.totalRounds
+        ? `✅ ${roundNo}차 일정 저장 · 표의 골프장도 채웠습니다.`
+        : `✅ ${roundNo}차 일정을 저장했습니다. 차수를 만들면 골프장이 자동으로 들어갑니다.`);
 }
 
 function renderAll() {
@@ -986,8 +1041,9 @@ function dropRetiredFields() {
 // 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
 function applyHoleScores() {
     const changed = syncScoresFromHoles();
+    const filled = applyRoundCourses();
     const dropped = dropRetiredFields();
-    if (changed || dropped) syncToSupabase(appData);
+    if (changed || filled || dropped) syncToSupabase(appData);
 }
 
 function toggleScoreEdit() {
@@ -1069,7 +1125,11 @@ function renderHandicapMatchCard(r1, r2) {
 
 function updateCourse(r, val) {
     saveState(); if (!appData.courses) appData.courses = [];
-    appData.courses[r] = val; syncToSupabase(appData);
+    appData.courses[r] = val;
+    // 표에서 직접 고친 이름도 차수에 기억시킨다 — 일정 쪽과 어긋나지 않게.
+    const clean = String(val || '').trim();
+    if (clean) roundCourseMap()[r + 1] = clean; else delete roundCourseMap()[r + 1];
+    syncToSupabase(appData);
 }
 function updateScore(name, r, val) {
     // readonly 칸은 onchange가 안 뜨지만, 잠금 상태가 바뀌는 순간을 대비해 한 번 더 막는다.
@@ -1086,7 +1146,8 @@ function updateScore(name, r, val) {
 
 function addRound() {
     saveState(); appData.totalRounds++;
-    if (!appData.courses) appData.courses = []; appData.courses.push("");
+    // 일정에서 이 차수 골프장을 미리 잡아 뒀으면 그걸 넣는다.
+    if (!appData.courses) appData.courses = []; appData.courses.push(roundCourseMap()[appData.totalRounds] || "");
     if (!appData.roundPhotos) appData.roundPhotos = []; appData.roundPhotos.push([]);
     golfers.forEach(g => { if (!appData.scores[g]) appData.scores[g] = []; appData.scores[g].push(""); });
     const newRoundMoney = {}; golfers.forEach(g => newRoundMoney[g] = { start: 0, end: 0 });

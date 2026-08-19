@@ -244,7 +244,10 @@ function getDefaultData() {
             { "이관교": { start: 530000, end: 450000 }, "김지명": { start: 100000, end: 135000 }, "신성호": { start: 230000, end: 92000 }, "박승수": { start: 356000, end: 340000 } }
         ],
         roundPhotos: [[], [], [], []],
-        scoreRequests: []
+        scoreRequests: [],
+        // 차수별 골프장 기억. 표의 courses[]와 달리 차수를 지워도 남는다 —
+        // 6차를 지웠다 다시 만들어도 골프장 이름이 그대로 돌아온다.
+        roundCourses: {}
     };
 }
 
