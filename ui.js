@@ -897,7 +897,7 @@ function renderTable() {
     for (let r = 0; r < appData.totalRounds; r++) {
         headerHtml += `<th><div class="header-round-title">${r + 1}차</div><input type="text" id="course_input_${r}" class="course-input" value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장" onchange="updateCourse(${r}, this.value)"><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
-    headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
+    headerHtml += `<th id="avgHeaderTitle" class="sticky-col-right" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
 
     tbody.innerHTML = "";
@@ -908,7 +908,7 @@ function renderTable() {
             const locked = isScoreCellLocked(r);
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input${locked ? ' locked' : ''}"${locked ? ' readonly' : ''} value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
         }
-        rowHtml += `<td class="avg-cell"><span class="avg-pill empty">-</span></td>`;
+        rowHtml += `<td class="avg-cell sticky-col-right"><span class="avg-pill empty">-</span></td>`;
         tr.innerHTML = rowHtml; tbody.appendChild(tr);
     });
 }
