@@ -36,34 +36,52 @@ window.addEventListener('DOMContentLoaded', () => {
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
     fundLogModal.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s;";
+    // 카드는 세로 3단이다 — 머리말·목록·버튼. 가운데만 스크롤되므로
+    // 기록이 아무리 쌓여도 '닫기'가 화면 밖으로 밀려나지 않는다.
     fundLogModal.innerHTML = `
-        <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; width:85%; max-width:320px; max-height:70vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.3s;">
-            <h3 style="margin-top:0; margin-bottom:15px; color:#d4af37; font-size:1rem; text-align:center;">📜 공금 수정 로그</h3>
-            <div id="fundLogContent" style="font-size:0.8rem; color:#94a3b8; text-align:left; margin-bottom:20px;"></div>
-            <button type="button" onclick="closeFundLogModal()" style="width:100%; padding:10px; background:#334155; border:none; border-radius:6px; color:#fff; font-weight:700; cursor:pointer;">닫기</button>
+        <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; width:85%; max-width:320px; max-height:70vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.3s;">
+            <h3 style="margin:0 0 12px 0; color:#d4af37; font-size:1rem; text-align:center; flex-shrink:0;">📜 공금 수정 로그</h3>
+            <div id="fundLogContent" style="font-size:0.8rem; color:#94a3b8; text-align:left; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-bottom:12px;"></div>
+            <div style="display:flex; gap:8px; flex-shrink:0;">
+                <button type="button" id="fundLogClearBtn" onclick="clearFundLogs()" style="flex:0 0 auto; padding:10px 12px; background:#7f1d1d; border:none; border-radius:6px; color:#fecaca; font-weight:700; cursor:pointer; font-family:inherit; font-size:0.8rem;">전체 삭제</button>
+                <button type="button" onclick="closeFundLogModal()" style="flex:1; padding:10px; background:#334155; border:none; border-radius:6px; color:#fff; font-weight:700; cursor:pointer; font-family:inherit;">닫기</button>
+            </div>
         </div>
     `;
     document.body.appendChild(fundLogModal);
-    
-    window.openFundLogModal = () => {
+
+    window.renderFundLogs = () => {
         const content = document.getElementById('fundLogContent');
-        if (!appData.fundLogs || appData.fundLogs.length === 0) {
+        const clearBtn = document.getElementById('fundLogClearBtn');
+        const logs = appData.fundLogs || [];
+        if (clearBtn) clearBtn.style.display = logs.length ? 'block' : 'none';
+
+        if (logs.length === 0) {
             content.innerHTML = "<div style='text-align:center; padding:20px;'>기록된 수정 내역이 없습니다.</div>";
-        } else {
-            content.innerHTML = appData.fundLogs.slice().reverse().map(log => {
-                const diff = (log.after || 0) - (log.before || 0);
-                const diffText = `${diff > 0 ? '+' : ''}${formatNumber(diff)}원`;
-                // 예전 기록에는 memo가 없다. 있을 때만 줄을 만든다.
-                const memoHtml = log.memo
-                    ? `<div style="margin-top:5px; color:#cbd5e1; font-size:0.78rem; background:rgba(212,175,55,0.1); border-left:2px solid #d4af37; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
-                    : "";
-                return `<div style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                    <div style="font-size:0.75rem; color:#64748b; margin-bottom:4px;">${log.time} - <span style="color:#fef08a; font-weight:700;">${log.name}</span> 변경</div>
-                    <div style="color:#e2e8f0; font-size:0.85rem;">${formatNumber(log.before)}원 ➔ <b style="color:#16a34a;">${formatNumber(log.after)}원</b> <span style="color:${diff < 0 ? '#f87171' : '#4ade80'}; font-size:0.75rem; font-weight:700;">(${diffText})</span></div>
-                    ${memoHtml}
-                 </div>`;
-            }).join('');
+            return;
         }
+        // 최근 것이 위로. 지울 때는 원래 배열의 위치가 필요해서 인덱스를 같이 넘긴다.
+        content.innerHTML = logs.map((log, i) => ({ log, i })).reverse().map(({ log, i }) => {
+            const diff = (log.after || 0) - (log.before || 0);
+            const diffText = `${diff > 0 ? '+' : ''}${formatNumber(diff)}원`;
+            // 예전 기록에는 memo가 없다. 있을 때만 줄을 만든다.
+            const memoHtml = log.memo
+                ? `<div style="margin-top:5px; color:#cbd5e1; font-size:0.78rem; background:rgba(212,175,55,0.1); border-left:2px solid #d4af37; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
+                : "";
+            return `<div style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <span style="font-size:0.72rem; font-weight:800; color:#e2e8f0; background:rgba(255,255,255,0.08); border-radius:5px; padding:2px 6px; white-space:nowrap;">${log.time}</span>
+                    <span style="font-size:0.75rem; color:#fef08a; font-weight:700;">${escapeHtml(log.name || '')}</span>
+                    <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
+                </div>
+                <div style="color:#e2e8f0; font-size:0.85rem;">${formatNumber(log.before)}원 ➔ <b style="color:#16a34a;">${formatNumber(log.after)}원</b> <span style="color:${diff < 0 ? '#f87171' : '#4ade80'}; font-size:0.75rem; font-weight:700;">(${diffText})</span></div>
+                ${memoHtml}
+             </div>`;
+        }).join('');
+    };
+
+    window.openFundLogModal = () => {
+        renderFundLogs();
         fundLogModal.style.opacity = "1";
         fundLogModal.style.pointerEvents = "auto";
         fundLogModal.querySelector('div').style.transform = "scale(1)";
@@ -73,6 +91,36 @@ window.addEventListener('DOMContentLoaded', () => {
         fundLogModal.style.opacity = "0";
         fundLogModal.style.pointerEvents = "none";
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
+    };
+
+    // 기록 지우기. 공금 잔액은 건드리지 않는다 — 로그만 없앤다.
+    // 테스트로 남긴 줄을 걷어내려고 만든 것이라, 되돌릴 수 있게 saveState()를 먼저 부른다.
+    window.removeFundLog = async (idx) => {
+        const log = (appData.fundLogs || [])[idx];
+        if (!log) return;
+        const ok = await showConfirmPrompt(
+            `이 기록을 지울까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">${log.time} · ${escapeHtml(log.name || '')}</span>`,
+            '지우기');
+        if (!ok) return;
+        saveState();
+        appData.fundLogs.splice(idx, 1);
+        syncToSupabase(appData);
+        renderFundLogs();
+        showToast("🗑️ 기록 1건을 지웠습니다.");
+    };
+
+    window.clearFundLogs = async () => {
+        const n = (appData.fundLogs || []).length;
+        if (n === 0) return;
+        const ok = await showConfirmPrompt(
+            `기록 ${n}건을 모두 지울까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">공금 잔액은 그대로입니다.</span>`,
+            '모두 지우기');
+        if (!ok) return;
+        saveState();
+        appData.fundLogs = [];
+        syncToSupabase(appData);
+        renderFundLogs();
+        showToast(`🗑️ 기록 ${n}건을 모두 지웠습니다.`);
     };
 
 });
