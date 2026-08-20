@@ -295,6 +295,15 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   `pointer-events`는 전환 없이 즉시 바뀌고 '입력을 가로채고 있는가'라는 뜻이라 더 정확하다.
   풀 때 `window.scrollTo`로 보던 자리에 되돌려 놓는다 — 안 그러면 창을 닫을 때마다 맨 위로 튄다.
   새로 만드는 전체화면 창은 **누를 일이 없으면 `pointer-events:none`을 줄 것** (인사말이 그렇다).
+  **잠그는 방법이 기기마다 다르다.** iOS는 `overflow:hidden`만으로는 뒤가 밀려 body를
+  `position:fixed`로 붙잡아야 하는데, **안드로이드에서 그렇게 하면 키보드가 올라올 때 화면이
+  어긋난다**(비밀번호 창이 반쯤 밀려 나왔다). 그래서 `IS_IOS`일 때만 `position:fixed`를 쓰고
+  나머지는 `html`+`body`의 `overflow:hidden`만 준다. 후자는 스크롤 위치가 저절로 남아
+  되돌리는 `scrollTo`도 필요 없다.
+  **관찰 범위를 subtree로 넓히지 말 것.** 덮는 창은 언제나 body 바로 아래에 있다.
+  예전에 subtree까지 봤다가 표·요약 카드를 다시 그릴 때마다 관찰자가 깨어나 매번 화면 크기를
+  재느라 **느린 안드로이드에서 눈에 띄게 끊겼다.** 지금은 body의 `childList`와
+  직계 자식의 `class`/`style`만 본다 (`renderAll` 10번에 검사 0회).
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.
 - 사진은 Supabase Storage의 `round-photos` 버킷(공개)에 올리고 `appData.roundPhotos`에는 **공개 URL만** 저장한다.

@@ -582,36 +582,52 @@ function anyOverlayOpen() {
     return false;
 }
 
-// iOS 사파리는 overflow:hidden만으로는 뒤가 계속 밀린다. position:fixed로 붙잡고
-// 풀 때 보던 자리로 되돌려 놔야 한다 — 안 그러면 창을 닫을 때마다 맨 위로 튄다.
+// **iOS와 나머지의 잠그는 방법이 다르다.**
+// iOS 사파리는 overflow:hidden만으로는 뒤가 계속 밀려서 body를 position:fixed로 붙잡아야 한다.
+// 그런데 안드로이드에서 그렇게 하면 **키보드가 올라올 때 화면이 어긋난다** — 소프트 키보드가
+// 뷰포트 높이를 줄이는데, 붙잡아 둔 body가 그걸 따라가지 못해 창이 밀려 보인다.
+// (관리자 비밀번호 창이 반쯤 밀려 나온 제보가 실제로 이것이었다.)
+// 안드로이드·PC는 html+body의 overflow:hidden만으로 충분하고, 스크롤 위치도 알아서 남는다.
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 let scrollLocked = false;
 let lockedScrollY = 0;
 
 function applyScrollLock() {
     const want = anyOverlayOpen();
-    if (want === scrollLocked) return;   // 안 바뀌었으면 건드리지 않는다 (body를 고치면 관찰자가 또 돈다)
+    if (want === scrollLocked) return;   // 안 바뀌었으면 건드리지 않는다
     scrollLocked = want;
-    const body = document.body;
+    const body = document.body, html = document.documentElement;
+
     if (want) {
         lockedScrollY = window.scrollY || window.pageYOffset || 0;
-        body.style.position = 'fixed';
-        body.style.top = `-${lockedScrollY}px`;
-        body.style.left = '0';
-        body.style.right = '0';
-        body.style.width = '100%';
+        if (IS_IOS) {
+            body.style.position = 'fixed';
+            body.style.top = `-${lockedScrollY}px`;
+            body.style.left = '0';
+            body.style.right = '0';
+            body.style.width = '100%';
+        }
+        html.style.overflow = 'hidden';
         body.style.overflow = 'hidden';
     } else {
-        body.style.position = '';
-        body.style.top = '';
-        body.style.left = '';
-        body.style.right = '';
-        body.style.width = '';
+        if (IS_IOS) {
+            body.style.position = '';
+            body.style.top = '';
+            body.style.left = '';
+            body.style.right = '';
+            body.style.width = '';
+        }
+        html.style.overflow = '';
         body.style.overflow = '';
-        window.scrollTo(0, lockedScrollY);
+        // 붙잡아 둔 동안 스크롤이 0으로 밀린 건 iOS뿐이다. 나머지는 그대로 남아 있다.
+        if (IS_IOS) window.scrollTo(0, lockedScrollY);
     }
 }
 
 let overlayObserver = null;
+let overlayChildObserver = null;
 
 function watchOverlays() {
     let queued = false;
@@ -621,11 +637,25 @@ function watchOverlays() {
         // 한 번 열 때 여러 번 바뀌므로(class → style → 자식 추가) 한 프레임에 한 번만 본다.
         requestAnimationFrame(() => { queued = false; applyScrollLock(); });
     };
-    // 관찰자를 전역에 붙들어 둔다 — 참조를 안 남기면 수거될 여지가 있다.
-    overlayObserver = new MutationObserver(check);
-    overlayObserver.observe(document.body, {
-        childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style']
-    });
+
+    // **body 바로 아래 것들만 본다.** 예전엔 subtree까지 통째로 봤는데, 표와 요약 카드를
+    // 다시 그릴 때마다 관찰자가 수백 번 깨어나 매번 화면 크기를 재느라 폰이 버벅였다
+    // (느린 안드로이드에서 눈에 띄게 끊겼다). 덮는 창은 언제나 body 바로 아래에 있으므로
+    // .container 안쪽 변화는 볼 이유가 없다.
+    overlayChildObserver = new MutationObserver(check);
+    const watchChildren = () => {
+        overlayChildObserver.disconnect();
+        for (const el of document.body.children) {
+            if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') continue;
+            overlayChildObserver.observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+        }
+        check();
+    };
+
+    // 창이 새로 붙거나 떨어지면 관찰 대상을 다시 맞춘다.
+    overlayObserver = new MutationObserver(watchChildren);
+    overlayObserver.observe(document.body, { childList: true });
+    watchChildren();
     // 여는 순간 opacity가 0에서 시작하는 창이 있어, 화면 회전·리사이즈 때도 다시 본다.
     window.addEventListener('resize', check);
     check();
