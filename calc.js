@@ -1,5 +1,15 @@
 // calc.js - 정산, 핸디캡, 통계 및 뱃지 생성 전체 로직
 
+// 계급이 매겨진 마지막 차수(0부터). 결과 발표 연출이 읽는다. -1이면 아직 없다.
+let lastRankedRound = -1;
+
+// 합산 금액 문구. 카운트업 연출(ui.js)이 중간 숫자를 만들 때도 같은 규칙을 써야
+// 끝났을 때 값이 어긋나지 않는다.
+function formatFinalBalance(v) {
+    if (v === 0) return "0원";
+    return (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만";
+}
+
 // 파3·파4·파5 각각에서 파 대비 평균이 가장 좋은 사람을 가린다.
 // ROUND_HOLES(stats.js)의 홀 단위 기록이 있어야 하고, 없으면 아무도 뽑지 않는다.
 function computeParSpecialists() {
@@ -384,6 +394,9 @@ function processAllRoundSettlements() {
             totalRankProfit[golferName] += profit;
             roundRankProfit[golferName][r] = profit;
             golferRankHistory[golferName].push(index);
+            // 계급이 매겨진 마지막 차수. 결과 발표 연출(ui.js)이 이 차수를 보여 준다.
+            // 타수가 덜 채워진 차수는 건너뛰므로 totalRounds - 1과 다를 수 있다.
+            lastRankedRound = r;
 
             const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
 
@@ -521,7 +534,7 @@ function processAllRoundSettlements() {
             const strokeProfitText = totalPureStrokeProfit === 0 ? "0원" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
             
             let finalColor = "#64748b";
-            let finalText = finalBalance === 0 ? "0원" : (finalBalance > 0 ? "+" : "") + (finalBalance / 10000).toFixed(1) + "만";
+            let finalText = formatFinalBalance(finalBalance);
             if (finalBalance > 0) finalColor = "#16a34a";
             if (finalBalance < 0) finalColor = "#dc2626";
 
@@ -554,7 +567,7 @@ function processAllRoundSettlements() {
                     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; margin-top: 4px;">
                         ${summaryBadgesHtml}
                     </div>
-                    <div class="final-total" style="color: ${finalColor}; margin-top: auto;">합산: ${finalText}</div>
+                    <div class="final-total" data-final="${finalBalance}" style="color: ${finalColor}; margin-top: auto;">합산: ${finalText}</div>
                 </div>
             `;
         });

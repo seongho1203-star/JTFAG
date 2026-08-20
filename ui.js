@@ -876,7 +876,139 @@ function renderAll() {
     renderStorageUsage();
     updateScoreRequestBtn();
     checkAndGreetUser();
+    animateFinalTotals();
+    checkRankChange();
+    checkRoundResultReveal();
     checkEagleStreakCelebration();
+}
+
+// ─── 연출 세 가지 ───
+// 공통 규칙: **한 번만 돌고 끝나야 하고, transform과 opacity만 움직여야 한다.**
+// 계속 도는 애니메이션이나 filter·blur을 쓰면 안드로이드에서 화면이 끊기고 일부가 안 그려진다
+// (실제로 그래서 뱃지의 무한 glow와 닫힌 모달의 blur을 걷어냈다).
+
+// 1) 합산 금액이 0에서 실제 값까지 굴러 올라간다. 접속당 한 번.
+//    글자만 바꾸므로 그리기 비용이 사실상 없다.
+// 저장할 때마다 실시간 이벤트가 되돌아와 요약 카드를 통째로 다시 그린다.
+// 그래서 연출은 **다시 그려져도 살아남게** 만들어야 한다 —
+// 붙여 둔 DOM을 들고 있지 말고, 매번 다시 찾아서 적용한다.
+let countUpStarted = 0;   // 0이면 아직 시작 안 함
+
+function animateFinalTotals() {
+    if (countUpStarted) return;
+    if (document.querySelectorAll('.final-total[data-final]').length === 0) return;
+    countUpStarted = performance.now();
+
+    const DURATION = 700;
+    const step = (now) => {
+        const t = Math.min(1, (now - countUpStarted) / DURATION);
+        const eased = 1 - Math.pow(1 - t, 3);   // 끝에서 부드럽게 멎는다
+        // 다시 그려지면 예전 칸은 사라지므로 매 프레임 새로 찾는다.
+        document.querySelectorAll('.final-total[data-final]').forEach(el => {
+            const target = parseFloat(el.getAttribute('data-final')) || 0;
+            // 만 원 단위로 끊어 올린다 — 1원 단위로 굴리면 글자가 정신없다.
+            const v = Math.round(target * eased / 10000) * 10000;
+            el.textContent = `합산: ${formatFinalBalance(t < 1 ? v : target)}`;
+        });
+        if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+}
+
+// 2) 계급이 바뀐 사람의 뱃지가 튀어오른다. 기기마다 그 변화당 한 번.
+//    올라갔으면 위로 솟고, 떨어졌으면 아래로 툭 떨어진다.
+// 무엇이 바뀌었는지는 한 번만 판정해 pendingRankBump에 담아 두고,
+// 실제로 붙이는 건 다시 그릴 때마다 한다 (안 그러면 실시간 갱신에 지워진다).
+let pendingRankBump = {};
+let rankBumpChecked = false;
+
+function checkRankChange() {
+    if (typeof golferRankHistory === 'undefined') return;
+
+    if (!rankBumpChecked) {
+        let ready = false;
+        golfers.forEach(name => {
+            const ranks = golferRankHistory[name] || [];
+            if (ranks.length === 0) return;
+            ready = true;
+            const now = ranks[ranks.length - 1];
+            const key = `jtfag_rank_${name}`;
+            const seen = localStorage.getItem(key);
+            localStorage.setItem(key, `${ranks.length}:${now}`);
+            if (!seen) return;                   // 처음 보는 기기면 조용히 넘어간다
+            const [seenCount, seenRank] = seen.split(':').map(Number);
+            if (seenCount === ranks.length || seenRank === now) return;
+            // 숫자가 작을수록 높은 계급이다 (0 = 독수리).
+            pendingRankBump[name] = now < seenRank ? 'rank-up' : 'rank-down';
+        });
+        if (ready) rankBumpChecked = true;
+        // 연출은 잠깐이면 충분하다. 지나면 더 붙이지 않는다.
+        if (Object.keys(pendingRankBump).length) setTimeout(() => { pendingRankBump = {}; }, 4000);
+    }
+
+    Object.keys(pendingRankBump).forEach(name => {
+        const card = [...document.querySelectorAll('.summary-item')]
+            .find(el => (el.querySelector('.name') || {}).textContent === name);
+        const badge = card && card.querySelector('.rank-badge');
+        if (badge && !badge.classList.contains(pendingRankBump[name])) {
+            badge.classList.add(pendingRankBump[name]);
+        }
+    });
+}
+
+// 3) 새 차수 결과가 처음 보이면 4위부터 1위까지 차례로 공개한다.
+//    기기마다 그 차수당 한 번. 이미 아는 결과라도 순서대로 까 보는 맛이 있다.
+function checkRoundResultReveal() {
+    if (typeof lastRankedRound === 'undefined' || lastRankedRound < 0) return;
+    if (document.querySelector('.reveal-overlay, .celebrate-overlay')) return;
+
+    const key = 'jtfag_result_seen';
+    const seen = parseInt(localStorage.getItem(key), 10);
+    if (seen === lastRankedRound) return;
+    localStorage.setItem(key, String(lastRankedRound));
+    if (!Number.isFinite(seen)) return;          // 처음 보는 기기면 예전 차수까지 들출 이유가 없다
+
+    const order = golfers.slice().sort((a, b) => {
+        const ra = (golferRankHistory[a] || []).slice(-1)[0];
+        const rb = (golferRankHistory[b] || []).slice(-1)[0];
+        return ra - rb;
+    });
+    revealRoundResult(lastRankedRound, order);
+}
+
+function revealRoundResult(roundIdx, order) {
+    const rows = order.map((name, i) => {
+        const info = RANK_CONFIG[i] || RANK_CONFIG[3];
+        const gross = (appData.scores[name] && appData.scores[name][roundIdx]) || '';
+        return `<div class="reveal-row" style="animation-delay:${0.35 + (order.length - 1 - i) * 0.5}s">
+            <span class="reveal-place">${i + 1}위</span>
+            <span class="reveal-name">${escapeHtml(name)}</span>
+            <span class="rank-badge ${info.class} reveal-rank">${info.icon} ${info.name}</span>
+            <span class="reveal-gross">${gross !== '' ? gross + '타' : ''}</span>
+        </div>`;
+    }).reverse();   // 4위가 먼저 그려지고, 1위가 맨 위에 마지막으로 뜬다
+
+    const overlay = document.createElement('div');
+    overlay.className = 'reveal-overlay';
+    overlay.innerHTML = `
+        <div class="reveal-card">
+            <div class="reveal-title">🥁 ${roundIdx + 1}차전 결과</div>
+            <div class="reveal-rows">${rows.join('')}</div>
+            <button type="button" class="reveal-close">확인</button>
+        </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('on'));
+
+    // 1위가 뜨는 순간 색종이를 뿌린다. 마지막 줄의 등장 시각에 맞춘다.
+    const finale = 350 + (order.length - 1) * 500 + 400;
+    const timers = [setTimeout(() => dropConfetti(overlay, 60), finale)];
+
+    const close = () => {
+        timers.forEach(clearTimeout);
+        overlay.classList.remove('on');
+        setTimeout(() => overlay.remove(), 300);
+    };
+    overlay.onclick = close;
 }
 
 // ─── 독수리 연속 달성 축포 ───
@@ -885,9 +1017,24 @@ function renderAll() {
 // (4연속이 되면 키가 달라지므로 그때 또 한 번 뜬다.)
 const CONFETTI_COLORS = ['#fbbf24', '#f59e0b', '#fde68a', '#ffffff', '#34d399', '#60a5fa', '#f472b6'];
 
+// 색종이는 결과 발표와 독수리 축포가 함께 쓴다.
+// transform만 움직이므로 80장을 뿌려도 안드로이드에서 안 끊긴다.
+function dropConfetti(host, count) {
+    for (let i = 0; i < count; i++) {
+        const bit = document.createElement('div');
+        bit.className = 'confetti';
+        bit.style.left = (Math.random() * 100) + 'vw';
+        bit.style.backgroundColor = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        bit.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
+        bit.style.animationDelay = (Math.random() * 1.4) + 's';
+        if (Math.random() < 0.35) bit.style.borderRadius = '50%';
+        host.appendChild(bit);
+    }
+}
+
 function checkEagleStreakCelebration() {
     if (typeof eagleStreak !== 'function' || typeof golferRankHistory === 'undefined') return;
-    if (document.querySelector('.celebrate-overlay')) return;
+    if (document.querySelector('.celebrate-overlay, .reveal-overlay')) return;
     for (const name of golfers) {
         const streak = eagleStreak(golferRankHistory[name] || []);
         if (streak < 3) continue;
@@ -914,16 +1061,7 @@ function celebrateEagleStreak(name, streak) {
             <button type="button" class="celebrate-close">축하합니다 👏</button>
         </div>`;
 
-    for (let i = 0; i < 80; i++) {
-        const bit = document.createElement('div');
-        bit.className = 'confetti';
-        bit.style.left = (Math.random() * 100) + 'vw';
-        bit.style.backgroundColor = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
-        bit.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
-        bit.style.animationDelay = (Math.random() * 1.4) + 's';
-        if (Math.random() < 0.35) bit.style.borderRadius = '50%';
-        overlay.appendChild(bit);
-    }
+    dropConfetti(overlay, 80);
 
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('on'));

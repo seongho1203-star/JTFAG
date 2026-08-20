@@ -146,6 +146,41 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .celebrate-close { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 10px; background: #7c2d12; color: #fef3c7; font-size: 0.88rem; font-weight: 900; font-family: inherit; cursor: pointer; }
 @keyframes celebrate-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-9px) rotate(4deg); } }
 
+/* ─── 라운드 결과 발표 ───
+   4위부터 한 줄씩 아래에서 솟아오르고, 1위가 뜰 때 색종이가 터진다.
+   transform·opacity만 움직인다 — 안드로이드에서 다시 그릴 일이 없어야 한다. */
+.reveal-overlay { position: fixed; inset: 0; z-index: 11500; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.88); overflow: hidden; opacity: 0; transition: opacity 0.25s ease; }
+.reveal-overlay.on { opacity: 1; }
+.reveal-card { position: relative; z-index: 2; width: min(90vw, 340px); padding: 20px 16px 16px 16px; border-radius: 18px; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); border: 2px solid var(--primary-gold); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+.reveal-title { text-align: center; font-size: 1.05rem; font-weight: 900; color: #fef08a; margin-bottom: 14px; }
+.reveal-rows { display: flex; flex-direction: column-reverse; gap: 7px; }
+.reveal-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); opacity: 0; transform: translateY(18px); animation: reveal-pop 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) forwards; }
+.reveal-place { font-size: 0.72rem; font-weight: 900; color: #94a3b8; width: 26px; flex-shrink: 0; }
+.reveal-name { font-size: 0.88rem; font-weight: 900; color: #f8fafc; flex-shrink: 0; }
+.rank-badge.reveal-rank { margin-left: auto; padding: 2px 7px; font-size: 0.68rem; }
+.reveal-gross { font-size: 0.82rem; font-weight: 900; color: #fef08a; width: 44px; text-align: right; flex-shrink: 0; }
+.reveal-row:last-child { background: rgba(212, 175, 55, 0.2); box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.5); }
+.reveal-close { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--primary-gold); color: #1e293b; font-size: 0.88rem; font-weight: 900; font-family: inherit; cursor: pointer; }
+@keyframes reveal-pop { to { opacity: 1; transform: translateY(0); } }
+
+/* ─── 계급이 바뀐 뱃지 ───
+   올라가면 솟고 떨어지면 툭 떨어진다. 한 번만 돌고 끝난다. */
+.rank-badge.rank-up { animation: rank-up 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) 1; }
+.rank-badge.rank-down { animation: rank-down 0.9s ease-out 1; }
+@keyframes rank-up {
+    0% { transform: translateY(0) scale(1); }
+    30% { transform: translateY(-10px) scale(1.14); }
+    55% { transform: translateY(0) scale(1); }
+    70% { transform: translateY(-4px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); }
+}
+@keyframes rank-down {
+    0% { transform: translateY(-8px) scale(1.06); }
+    45% { transform: translateY(3px) scale(0.96); }
+    70% { transform: translateY(-2px) scale(1.01); }
+    100% { transform: translateY(0) scale(1); }
+}
+
 .confetti { position: absolute; top: -20px; width: 9px; height: 14px; z-index: 1; animation: confetti-fall linear forwards; }
 @keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(102vh) rotate(720deg); opacity: 0.9; } }
 .badge-eagle-2 { background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%); color: #78350f; border-color: #eab308; }
