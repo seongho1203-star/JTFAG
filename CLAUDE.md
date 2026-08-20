@@ -115,7 +115,7 @@ GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
 정적 사이트에는 "정해진 시각에 도는 것"이 없어, 발송을 GitHub Actions가 맡는다.
 
 ```
-sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
+sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 08:30)
       ↑구독                        ↓ 읽기
   api.js: subscribeToPush()   Supabase: jtfag_league.payload.nextRoundISO
       ↓                                 push_subscriptions 테이블
@@ -159,6 +159,9 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 09시)
 - 워크플로에 필요한 값은 저장소 Secrets에 있다: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`. 공개키는 `api.js`의 `VAPID_PUBLIC_KEY`와 같아야 한다.
 - 수동 확인은 Actions 탭에서 workflow_dispatch로 실행한다 (기본이 dry run이라 실제로 안 보낸다).
+- **예약 시각은 '가장 이른 시각'일 뿐이다.** GitHub이 붐비면 뒤로 민다 — UTC 정각(`0 0 * * *`)일 때
+  매일 3시간쯤 밀려 낮 12시에 왔다. 지금은 `30 23 * * *`(KST 08:30)이다. 정각을 피하면 덜 밀린다.
+  발송 여부는 스크립트가 한국 날짜로 판단하므로 UTC 날짜가 하루 밀려도 상관없다.
 - `sw.js`의 `fetch` 핸들러는 **크롬이 '설치 가능'으로 판정하는 조건**이라 있는 것이다.
   일부러 캐시를 두지 않았다 — 캐시하면 코드를 고쳐도 예전 화면이 남는다. 지우거나 캐시를 넣지 말 것.
 
