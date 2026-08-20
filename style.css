@@ -101,9 +101,12 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .summary-item .detail-line .val { color: #1e293b; font-weight: 800; }
 .summary-item .final-total { font-size: clamp(0.68rem, 2.7vw, 0.78rem); font-weight: 900; margin-top: 5px; padding-top: 3px; border-top: 1px dashed #cbd5e1; white-space: nowrap; }
 
-.season-badge { display: inline-block; margin-top: 3px; padding: 3px 6px; border-radius: 6px; font-size: clamp(0.48rem, 1.8vw, 0.58rem); font-weight: 900; white-space: nowrap; letter-spacing: -0.3px; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.1); animation: premium-glow 0.8s infinite alternate ease-in-out; }
+/* 뱃지에 무한 애니메이션(premium-glow)을 걸었었는데, filter의 drop-shadow를 0.8초마다
+   오가게 하는 것이라 뱃지 여덟 개가 쉬지 않고 다시 그려졌다. 느린 안드로이드에서
+   스크롤할 때 화면 일부가 비어 보이던 원인 중 하나다. 정지된 광택으로 바꿨다.
+   **눈에 띄어야 하는 건 독수리 연속 뱃지 하나뿐이고, 그건 아래에 따로 살아 있다.** */
+.season-badge { display: inline-block; margin-top: 3px; padding: 3px 6px; border-radius: 6px; font-size: clamp(0.48rem, 1.8vw, 0.58rem); font-weight: 900; white-space: nowrap; letter-spacing: -0.3px; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 1px 1px rgba(255,255,255,0.45), 0 1px 3px rgba(0,0,0,0.16); }
 .report-badges-area .season-badge { font-size: clamp(0.7rem, 3vw, 0.85rem) !important; padding: 4px 8px !important; margin: 2px !important; border-radius: 8px !important; }
-@keyframes premium-glow { 0% { filter: brightness(1) contrast(1) drop-shadow(0 1px 2px rgba(0,0,0,0.1)); } 100% { filter: brightness(1.1) contrast(1.05) drop-shadow(0 3px 6px rgba(0,0,0,0.25)); } }
 
 /* 독수리 3연속 — 모임에서 크게 축하하기로 한 기록이라 다른 뱃지와 급을 다르게 뒀다.
    금색이 흐르고, 그 위로 광택이 지나가고, 테두리가 맥박처럼 뛴다.
@@ -295,8 +298,14 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .history-btn-container { margin-top: 10px; text-align: center; }
 .open-history-btn { width: 100%; padding: 10px; background: linear-gradient(135deg, #1e293b, #334155); color: #fef08a; border: 1px solid var(--primary-gold); border-radius: 10px; font-weight: 800; font-size: clamp(0.75rem, 3vw, 0.85rem); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
-.modal-overlay.active { opacity: 1; pointer-events: auto; }
+/* 닫힌 모달에는 blur도, 그릴 것도 남기지 않는다.
+   모달이 10개나 항상 DOM에 있는데 backdrop-filter가 붙어 있으면, 닫혀 있어도(opacity:0)
+   브라우저는 뒤 배경을 흐리게 만들 준비를 계속 한다 — 전체화면 blur 레이어 10장이다.
+   **안드로이드에서 화면 일부가 안 그려지고 스크롤이 끊기던 원인이 이것이다.**
+   visibility로 아예 그리기에서 빼고, blur은 열렸을 때만 건다.
+   visibility는 0초 전환이라 열 때는 즉시 보이고, 닫을 때만 페이드가 끝난 뒤 숨는다. */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.25s ease, visibility 0s linear 0.25s; }
+.modal-overlay.active { opacity: 1; pointer-events: auto; visibility: visible; backdrop-filter: blur(4px); transition: opacity 0.25s ease, visibility 0s; }
 .modal-content { background: #ffffff; width: 100%; max-width: 460px; max-height: 85vh; border-radius: 16px; border: 1px solid var(--primary-gold); box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; transform: translateY(20px); transition: transform 0.25s ease; }
 .modal-overlay.active .modal-content { transform: translateY(0); }
 .modal-header { padding: 12px 16px; background: #1e293b; color: #ffffff; display: flex; justify-content: space-between; align-items: center; }

@@ -2181,7 +2181,8 @@ function showGreeting(myName) {
     const overlay = document.createElement('div');
     // 다른 창과 똑같이 입력을 받는다 — 그래야 watchOverlays()가 뒷배경을 잠근다.
     // 대신 3초를 억지로 기다리지 않도록 눌러서 넘길 수 있게 해 뒀다(아래 dismiss).
-    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
+    // 전체화면 blur은 안드로이드에서 값이 비싸다(화면이 끊긴다). 어두운 막만으로 충분하다.
+    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.62); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
     
     const toast = document.createElement('div');
     toast.innerHTML = `<div style="font-size: 2.5rem; margin-bottom: 12px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.95rem; line-height:1.5; word-break:keep-all;">${greetMsg}</div>`;

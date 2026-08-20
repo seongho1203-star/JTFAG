@@ -304,6 +304,15 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   예전에 subtree까지 봤다가 표·요약 카드를 다시 그릴 때마다 관찰자가 깨어나 매번 화면 크기를
   재느라 **느린 안드로이드에서 눈에 띄게 끊겼다.** 지금은 body의 `childList`와
   직계 자식의 `class`/`style`만 본다 (`renderAll` 10번에 검사 0회).
+- **안드로이드에서 화면 일부가 안 그려지면 '항상 켜져 있는 그리기 비용'부터 의심할 것.**
+  두 가지가 실제로 그랬다:
+  1. `.modal-overlay`의 `backdrop-filter: blur()` — 모달 10개가 늘 DOM에 있어서, 닫혀 있어도
+     전체화면 blur 레이어가 10장 유지됐다. 이제 **닫히면 `visibility: hidden`**이고
+     blur은 `.active`일 때만 건다 (전환은 `visibility 0s`라 열 때는 즉시 보인다).
+  2. `.season-badge`의 무한 `filter` 애니메이션 — 뱃지 여덟 개가 0.8초마다 `drop-shadow`를
+     오가며 쉬지 않고 다시 그려졌다. 정지된 광택으로 바꿨다.
+  아이폰은 힘으로 버텨서 증상이 안 났다 — **안드로이드에서만 난다고 코드가 멀쩡한 게 아니다.**
+  새로 무한 애니메이션이나 blur을 넣을 땐 화면에 몇 개가 동시에 살아 있게 되는지 셀 것.
 - **`.money-input` 클래스를 재사용하지 말 것.** 상금 테이블 셀 전용이라 `max-width: 68px !important; height: 26px !important`가 걸려 있어, 다른 곳에 붙이면 입력칸이 찌그러진다.
 - HTML 태그에 `style` 속성을 두 번 쓰면 브라우저가 두 번째를 통째로 무시한다. 인라인 스타일을 추가할 때 기존 `style` 속성이 이미 있는지 확인할 것.
 - 사진은 Supabase Storage의 `round-photos` 버킷(공개)에 올리고 `appData.roundPhotos`에는 **공개 URL만** 저장한다.
