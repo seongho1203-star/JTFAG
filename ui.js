@@ -886,6 +886,41 @@ function renderAll() {
 // 공통 규칙: **한 번만 돌고 끝나야 하고, transform과 opacity만 움직여야 한다.**
 // 계속 도는 애니메이션이나 filter·blur을 쓰면 안드로이드에서 화면이 끊기고 일부가 안 그려진다
 // (실제로 그래서 뱃지의 무한 glow와 닫힌 모달의 blur을 걷어냈다).
+//
+// **입장 인사말이 걷힌 뒤에 시작한다.** 인사말이 3초 넘게 화면을 덮고 있어서,
+// 그 뒤에서 카운트업(0.7초)이 혼자 끝나 버려 아무도 못 봤다.
+//
+// '인사말이 화면에 있는가'로 막으면 안 된다 — 표가 먼저 그려지고 인사말이 조금 뒤에
+// 뜨는 순간이 있어서, 그 틈에 카운트업이 시작해 버린다(실제로 그랬다).
+// 그래서 **인사말이 지나갔는가**를 한 번만 뒤집는 문으로 둔다.
+let entranceReady = false;
+let entranceFallback = null;
+
+function entranceBlocked() {
+    // 결과 발표가 떠 있는 동안에도 막는다 — 그 창이 화면을 덮고 있어서
+    // 뒤에서 카운트업이 돌면 또 아무도 못 본다. 발표를 닫으면 그때 이어서 돈다.
+    if (document.querySelector('.reveal-overlay')) return true;
+    if (entranceReady) return false;
+    // 인사말이 아예 안 뜨는 경우(이미 인사한 세션, 이름 미등록 등)에도 연출은 나와야 한다.
+    if (!entranceFallback) entranceFallback = setTimeout(runEntranceEffects, 6000);
+    return true;
+}
+
+// 인사말이 사라지는 순간 showGreeting()이 불러 준다.
+function runEntranceEffects() {
+    if (entranceReady) return;
+    entranceReady = true;
+    clearTimeout(entranceFallback);
+    // 발표가 열리면 아래 셋은 entranceBlocked()에 막히고, 발표를 닫을 때 이어서 돈다.
+    checkRoundResultReveal();
+    afterRevealEffects();
+}
+
+function afterRevealEffects() {
+    animateFinalTotals();
+    checkRankChange();
+    checkEagleStreakCelebration();
+}
 
 // 1) 합산 금액이 0에서 실제 값까지 굴러 올라간다. 접속당 한 번.
 //    글자만 바꾸므로 그리기 비용이 사실상 없다.
@@ -895,7 +930,7 @@ function renderAll() {
 let countUpStarted = 0;   // 0이면 아직 시작 안 함
 
 function animateFinalTotals() {
-    if (countUpStarted) return;
+    if (countUpStarted || entranceBlocked()) return;
     if (document.querySelectorAll('.final-total[data-final]').length === 0) return;
     countUpStarted = performance.now();
 
@@ -923,7 +958,7 @@ let pendingRankBump = {};
 let rankBumpChecked = false;
 
 function checkRankChange() {
-    if (typeof golferRankHistory === 'undefined') return;
+    if (typeof golferRankHistory === 'undefined' || entranceBlocked()) return;
 
     if (!rankBumpChecked) {
         let ready = false;
@@ -960,6 +995,7 @@ function checkRankChange() {
 //    기기마다 그 차수당 한 번. 이미 아는 결과라도 순서대로 까 보는 맛이 있다.
 function checkRoundResultReveal() {
     if (typeof lastRankedRound === 'undefined' || lastRankedRound < 0) return;
+    if (entranceBlocked()) return;
     if (document.querySelector('.reveal-overlay, .celebrate-overlay')) return;
 
     const key = 'jtfag_result_seen';
@@ -1006,7 +1042,8 @@ function revealRoundResult(roundIdx, order) {
     const close = () => {
         timers.forEach(clearTimeout);
         overlay.classList.remove('on');
-        setTimeout(() => overlay.remove(), 300);
+        // 창이 완전히 걷힌 뒤에 카운트업·계급 변동을 이어서 보여 준다.
+        setTimeout(() => { overlay.remove(); afterRevealEffects(); }, 300);
     };
     overlay.onclick = close;
 }
@@ -1034,6 +1071,7 @@ function dropConfetti(host, count) {
 
 function checkEagleStreakCelebration() {
     if (typeof eagleStreak !== 'function' || typeof golferRankHistory === 'undefined') return;
+    if (entranceBlocked()) return;
     if (document.querySelector('.celebrate-overlay, .reveal-overlay')) return;
     for (const name of golfers) {
         const streak = eagleStreak(golferRankHistory[name] || []);
@@ -2320,6 +2358,8 @@ function showGreeting(myName) {
     // 다른 창과 똑같이 입력을 받는다 — 그래야 watchOverlays()가 뒷배경을 잠근다.
     // 대신 3초를 억지로 기다리지 않도록 눌러서 넘길 수 있게 해 뒀다(아래 dismiss).
     // 전체화면 blur은 안드로이드에서 값이 비싸다(화면이 끊긴다). 어두운 막만으로 충분하다.
+    // greet-overlay 표식은 연출(카운트업·결과 발표)이 이게 사라질 때까지 기다리게 하는 데 쓴다.
+    overlay.className = 'greet-overlay';
     overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.62); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
     
     const toast = document.createElement('div');
@@ -2344,7 +2384,8 @@ function showGreeting(myName) {
         toast.style.transform = "translate(-50%, -50%) scale(0.8)";
         toast.style.opacity = "0";
         overlay.style.opacity = "0";
-        setTimeout(() => { toast.remove(); overlay.remove(); }, 500);
+        // 인사말이 완전히 걷힌 뒤에 연출을 시작한다 — 안 그러면 뒤에서 혼자 끝나 버린다.
+        setTimeout(() => { toast.remove(); overlay.remove(); runEntranceEffects(); }, 500);
     };
     const timer = setTimeout(dismiss, 3000);
     overlay.onclick = dismiss;
