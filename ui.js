@@ -450,8 +450,12 @@ function showFundPrompt(before) {
     });
 }
 
-// 공금 수정. 화면의 표시칸은 손댈 수 없고 이 경로로만 바뀐다.
+// 공금 수정. 공지 카드의 `💰 남은 공금 잔액` 칸을 누르면 열린다.
+// 예전에는 관리자 메뉴 안에 있어서 그 문(비밀번호)을 이미 지난 뒤였다.
+// 이제 바로 부를 수 있게 됐으니 **여기서 비밀번호를 직접 묻는다** — 돈이라 그대로 열어 둘 수 없다.
+// (한 번 풀면 isFundUnlocked가 남아, 잠그기 전까지는 다시 묻지 않는다.)
 async function editClubFund() {
+    if (!(await authenticateAdmin())) return;
     const before = appData.clubFund || 0;
     const entered = await showFundPrompt(before);
     if (entered === null) return;
@@ -476,7 +480,7 @@ async function editClubFund() {
     showToast(`💰 ${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}원 → 공금 ${formatFundString(after)}`);
 }
 
-// 공금은 화면에서 직접 고칠 수 없다. 관리자 메뉴의 '공금 수정'으로만 바뀐다.
+// 공금은 표시만 한다. 고치는 건 그 칸을 눌러 여는 editClubFund()뿐이다.
 function updateLockUI() {
     const fundDisplay = document.getElementById('clubFundInput');
     if (fundDisplay) fundDisplay.textContent = formatFundString(appData.clubFund);
@@ -2069,7 +2073,6 @@ function renderAdminModal() {
     const legacy = countLegacyPhotos();
     let btns = `
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
-        <button type="button" class="admin-btn" onclick="adminRunAction(editClubFund)">💰 공금 수정 <span class="admin-btn-sub">${formatFundString(appData.clubFund)}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>

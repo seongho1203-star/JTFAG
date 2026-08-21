@@ -341,6 +341,10 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   (`downloadCurrentPhoto()` 참고). 사진 갤러리의 관리자 버튼이 `migratePhotosToStorage()`로 남은 base64를 옮긴다.
   Storage 헬퍼(`uploadPhotoBlob` / `deletePhotoFromStorage` / `storagePathFromUrl`)는 api.js에 있다.
 - payload는 매 저장마다 행 전체가 전송되므로 용량 증가에 민감하다 (`renderStorageUsage()`가 현재 사용량을 표시한다).
+- **공금 수정은 공지 카드의 `💰 남은 공금 잔액` 칸을 눌러 연다.** 관리자 메뉴에는 없다
+  (로그만 남아 있다). 예전엔 메뉴 안에 있어 비밀번호 문을 이미 지난 뒤였으므로,
+  옮기면서 `editClubFund()`가 **직접 `authenticateAdmin()`을 부르게 했다** — 돈이라 그냥 열 수 없다.
+  한 번 풀면 `isFundUnlocked`가 남아 잠그기 전까지 다시 묻지 않는다.
 - **공금은 잔액이 아니라 오간 금액으로 고친다.** `showFundPrompt()`에서 `적립`/`사용`을 고르고
   그 금액만 적으면 잔액은 `resultOf()`가 계산한다 (`FUND_MODES`의 `sign`을 곱해 더한다).
   잔액을 잘못 적어 둔 걸 바로잡으려고 `직접`(적은 값이 곧 잔액)도 남겨 뒀다 — 지우지 말 것.
