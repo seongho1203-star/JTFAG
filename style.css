@@ -383,6 +383,11 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .stat-box { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; }
 .stat-label { font-size: 0.65rem; color: var(--text-sub); font-weight: 700; }
 .stat-val { font-size: 0.9rem; font-weight: 900; color: var(--text-main); margin-top: 2px; }
+/* 계급별 달성 횟수는 4열이라 칸이 3열(99px)보다 좁다(73px).
+   같은 0.9rem을 쓰면 '1회'가 칸을 거의 채워 유난히 커 보인다. 한 단계 줄인다. */
+.stat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.stat-grid.cols-4 .stat-val { font-size: 0.8rem; }
+.stat-grid.cols-4 .stat-label { font-size: 0.62rem; }
 .winrate-list { font-size: 0.75rem; color: var(--text-main); line-height: 1.6; }
 .winrate-list div { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding: 2px 0; }
 .report-badges-area { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; } 
