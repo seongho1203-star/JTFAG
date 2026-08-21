@@ -1416,8 +1416,33 @@ function addRound() {
     setTimeout(() => { const wrapper = document.getElementById('tableWrapper'); if(wrapper) wrapper.scrollTo({ left: wrapper.scrollWidth + 1000, behavior: 'smooth' }); }, 150);
 }
 
-function removeRound() {
+// 마지막 차수를 지운다. 무엇이 사라지는지 먼저 보여 주고 한 번 더 묻는다 —
+// 사진이 붙은 차수를 무심코 지웠다가 되돌리기가 실시간 갱신에 밀려
+// 사진이 통째로 안 보이게 된 적이 있다.
+async function removeRound() {
     if (appData.totalRounds <= 2) { showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다."); return; }
+
+    const r = appData.totalRounds - 1;
+    const course = (appData.courses && appData.courses[r] || '').trim();
+    const photos = (appData.roundPhotos && appData.roundPhotos[r] || []).length;
+    const scored = golfers.filter(g => {
+        const v = appData.scores[g] && appData.scores[g][r];
+        return v !== "" && v !== undefined && !isNaN(parseFloat(v));
+    }).length;
+
+    const parts = [];
+    if (course) parts.push(escapeHtml(course));
+    if (scored) parts.push(`타수 ${scored}명`);
+    if (photos) parts.push(`<b style="color:#fca5a5;">사진 ${photos}장</b>`);
+    const detail = parts.length ? parts.join(' · ') : '아직 아무것도 없음';
+
+    const ok = await showConfirmPrompt(
+        `${r + 1}차전을 지울까요?<br>` +
+        `<span style="font-size:0.78rem; font-weight:600; color:#cbd5e1;">${detail}</span>` +
+        (photos ? `<br><span style="font-size:0.72rem; font-weight:600; color:#94a3b8;">되돌리기가 실시간 갱신에 밀리면 목록이 사라질 수 있습니다.</span>` : ''),
+        "지우기");
+    if (!ok) return;
+
     saveState(); appData.totalRounds--;
     if (appData.courses) appData.courses.pop();
     if (appData.roundPhotos && appData.roundPhotos.length > 0) appData.roundPhotos.pop();

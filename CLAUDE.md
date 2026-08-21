@@ -235,6 +235,11 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 - 상태를 변경하는 함수는 **반드시** `saveState()` (실행취소 스택, 최대 10개) → 값 수정 → `syncToSupabase(appData)` 순서를 지킨다.
 - `renderAll()`이 렌더 파이프라인 전체를 돌린다: `renderTable` → `calculateAndRender` → `renderMoneyTable` → `forceTableReflow` → `renderStorageUsage` → `checkAndGreetUser`.
 - 데이터 구조 기본형은 `getDefaultData()` (api.js) 참조. 배열들(`courses`, `scores[name]`, `roundMoney`, `roundPhotos`)은 모두 **차수(round) 인덱스로 정렬**되어 있어 길이가 `totalRounds`와 일치해야 한다. 차수를 추가/삭제하는 `addRound()` / `removeRound()`가 이 배열들을 함께 관리한다.
+- **`removeRound()`는 무엇이 사라지는지 보여 주고 한 번 더 묻는다.** 골프장·타수 인원·**사진 장수**를
+  세어 확인창에 적고, 사진이 있으면 되돌리기가 실시간 갱신에 밀릴 수 있다는 줄을 덧붙인다.
+  계급 효과를 보려고 5차를 지웠다 되돌렸는데 **되돌리기가 실시간 이벤트에 덮여 사진 27장이
+  목록에서 통째로 사라진 적이 있다** (파일은 Storage에 남아 있어 `scripts/restore-photos.js`로
+  되살렸다). 이 확인창을 빼지 말 것. 골프장 이름은 사용자가 적은 글이라 `escapeHtml()`을 거친다.
 
 ### 정산 · 등급 규칙
 
