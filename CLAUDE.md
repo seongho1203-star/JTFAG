@@ -109,6 +109,22 @@ GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
   그리고 알림용 `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`.
   워크플로가 `stats.js`를 커밋하므로 `permissions: contents: write`가 있어야 한다.
 - 급하면 Actions 탭 → workflow_dispatch로 바로 돌린다 (`dry_run`을 켜면 판독만 하고 파일은 안 고친다).
+- **예약 실행(cron)에 기대지 말 것.** `*/5`로 적어 두었지만 GitHub은 지키지 않는다 —
+  33시간을 재 보니 396회 중 **28회(7%)**만 돌았고 중앙값 59분, 최대 210분이었다.
+  사진을 올리고 38분을 기다리다 수동으로 돌린 일이 실제로 있었다.
+  **주기를 더 줄이는 건 답이 아니다** (무료 공개 저장소의 정책이다).
+  그래서 사진을 올리면 앱이 `kickScorecardWorkflow()`(api.js)로 **직접 깨운다** —
+  Supabase 함수 `kick-scorecard`가 GitHub의 workflow_dispatch API를 부른다.
+  cron은 그게 실패했을 때를 위한 그물로만 남겨 두었다.
+  - **토큰은 앱에 두지 않는다.** 저장소가 공개라 클라이언트 JS에 넣으면 그대로 새어 나간다.
+    `GH_DISPATCH_TOKEN`은 **Supabase의 Edge Function Secret**에만 있다.
+  - 권한은 **Actions 쓰기 하나만** 준다. `repository_dispatch` 대신 `workflow_dispatch` API를
+    쓰는 이유가 이것이다 — 앞엣것은 저장소 '내용 쓰기'를 요구한다. 넓히지 말 것.
+  - 함수는 **payload에 '대기' 요청이 있을 때만** 깨운다. 이게 유일한 문지기다 (아무나 부를 수 있다).
+    장난으로 불러도 몇 초 만에 끝나는 워크플로가 한 번 도는 게 전부다.
+  - **깨우기가 실패해도 등록을 뒤집지 않고 오류창도 안 띄운다.** 설정 전이든 함수가 죽었든
+    앱은 그대로 돌아가고 cron이 언젠가 처리한다. 여기서 겁주면 안 된다.
+  - 설정 방법은 `docs/즉시판독.md`에 있다.
 
 ### 라운드 알림 (푸시)
 

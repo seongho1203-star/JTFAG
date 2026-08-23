@@ -231,6 +231,39 @@ async function deletePhotoFromStorage(src) {
     if (error) console.error("Storage 삭제 실패:", error);
 }
 
+/* ── 판독 워크플로 깨우기 ─────────────────────────────────────────
+   사진을 올린 뒤 이걸 부르면 GitHub이 바로 판독을 시작한다.
+
+   예약 실행(cron)에 기대면 안 된다 — 5분마다로 적어도 GitHub은 지키지 않는다.
+   실제로 재 보니 33시간에 396회 중 28회(7%)만 돌았고 중앙값 59분, 최대 210분이었다.
+   사진 올리고 한 시간 넘게 기다린 적이 있어 이 길을 냈다.
+
+   토큰은 여기 없다. 저장소가 공개라 클라이언트에 GitHub 토큰을 두면 그대로 새어 나간다.
+   토큰은 Supabase 함수 쪽에만 있고, 앱은 그 함수를 부르기만 한다.
+
+   실패해도 조용히 넘어간다. 예약 실행이 그물로 남아 있어 언젠가는 처리되고,
+   등록 자체는 이미 끝났기 때문이다 — 여기서 오류창을 띄우면 겁만 준다. */
+async function kickScorecardWorkflow() {
+    try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/kick-scorecard`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+            },
+            body: '{}'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { console.warn("판독 깨우기 실패:", res.status, data); return false; }
+        if (!data.kicked) console.info("판독 깨우기 건너뜀:", data.reason);
+        return !!data.kicked;
+    } catch (err) {
+        console.warn("판독 깨우기 실패:", err);
+        return false;
+    }
+}
+
 function getDefaultData() {
     return {
         nextRoundDate: "", clubFund: 0, noticeMemo: "", totalRounds: 4,

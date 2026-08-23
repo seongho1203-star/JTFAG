@@ -1703,11 +1703,19 @@ async function handleScorecardUpload(event) {
     });
     while (appData.scoreRequests.length > MAX_SCORE_REQUESTS) appData.scoreRequests.shift();
 
-    syncToSupabase(appData);
+    // 깨우기 전에 저장이 끝나야 한다. 판독 함수는 DB에 '대기' 요청이 있는지 보고
+    // 움직이므로, 저장이 아직 안 닿았으면 "대기 중인 요청이 없다"며 그냥 돌아간다.
+    await syncToSupabase(appData);
     renderScoreRequestModal();
     showToast(guestTotal === null
         ? `✅ ${round + 1}차 스코어카드 등록! 판독이 끝나면 타수가 자동으로 채워집니다.`
         : `✅ ${round + 1}차 등록! ${guestTotal}타(게스트)는 빼고 기록됩니다.`);
+
+    // 예약 실행을 기다리지 않고 지금 판독을 시작시킨다.
+    // 실패해도 등록은 이미 끝났고 예약 실행이 그물로 남아 있으므로 조용히 넘어간다.
+    if (await kickScorecardWorkflow()) {
+        showToast("🚀 판독을 시작했습니다. 1~2분 뒤 새로고침하면 타수가 채워집니다.");
+    }
 }
 
 // payload에 base64로 남아 있는 예전 사진 수. 0이면 이전 버튼을 숨긴다.
