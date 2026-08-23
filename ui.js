@@ -35,7 +35,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const fundLogModal = document.createElement('div');
     fundLogModal.id = 'fundLogModal';
     fundLogModal.className = 'modal-overlay';
-    fundLogModal.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s;";
+    // 여닫는 건 .active 클래스가 한다. 여기서는 색과 층만 다르게 준다 —
+    // opacity·pointer-events·visibility·transition을 인라인으로 덮어쓰면 안 된다.
+    // (.modal-overlay는 닫혀 있을 때 visibility:hidden이라, 인라인 opacity만 1로
+    //  올리면 '보이지 않는데 열려 있는' 상태가 된다. 실제로 그래서 안 열렸다.)
+    fundLogModal.style.cssText = "background:rgba(0,0,0,0.7); z-index:9999;";
     // 카드는 세로 3단이다 — 머리말·목록·버튼. 가운데만 스크롤되므로
     // 기록이 아무리 쌓여도 '닫기'가 화면 밖으로 밀려나지 않는다.
     fundLogModal.innerHTML = `
@@ -82,14 +86,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.openFundLogModal = () => {
         renderFundLogs();
-        fundLogModal.style.opacity = "1";
-        fundLogModal.style.pointerEvents = "auto";
+        fundLogModal.classList.add('active');
         fundLogModal.querySelector('div').style.transform = "scale(1)";
     };
-    
+
     window.closeFundLogModal = () => {
-        fundLogModal.style.opacity = "0";
-        fundLogModal.style.pointerEvents = "none";
+        fundLogModal.classList.remove('active');
         fundLogModal.querySelector('div').style.transform = "scale(0.9)";
     };
 
