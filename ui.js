@@ -1090,6 +1090,73 @@ function checkEagleStreakCelebration() {
     }
 }
 
+/* 독수리 연속 달성 축포.
+   모임에서 크게 축하하기로 한 기록이라 화면을 통째로 쓴다 —
+   독수리가 하늘에서 날아 내려오고 울음소리가 함께 난다.
+
+   **여기서도 transform과 opacity만 움직인다.** 화면을 꽉 채우는 연출이라
+   filter나 blur을 쓰면 안드로이드가 그대로 주저앉는다. 날갯짓도 회전(transform)이고
+   반복 횟수가 정해져 있어 6.5초 뒤 창과 함께 사라진다 — 무한 반복이 남지 않는다.
+
+   소리는 막힐 수 있다(브라우저가 사용자 동작 없는 자동 재생을 막는다).
+   막혀도 그림은 그대로 나오고 오류창도 안 띄운다. 뱃지를 눌러서 볼 때는
+   누른 동작이 있으니 반드시 난다. */
+function playEagleCry() {
+    if (!SOUND_CONFIG[0]) return;
+    try {
+        const audio = new Audio(SOUND_CONFIG[0]);
+        audio.volume = 0.7;
+        audio.play().catch(e => console.log("독수리 소리 재생 실패:", e));
+    } catch (e) { /* 소리가 안 나도 축하는 계속된다 */ }
+}
+
+/* 앞에서 본 흰머리수리. 날개는 따로 묶어 두어 몸통과 별개로 회전시킨다(날갯짓).
+   독수리로 보이게 하는 건 세 가지다 — **흰 머리 · 갈고리 부리 · 갈라진 날개 끝**.
+   눈 위의 눈썹이 없으면 순한 새가 되므로 빼지 말 것. */
+function eagleSvg() {
+    // 어깨에서 뻗어 나가 끝이 네 갈래로 갈라지는 날개 (왼쪽 기준, 오른쪽은 뒤집어 쓴다)
+    const wing = `M 108 50
+        C 92 36, 58 24, 26 28
+        L 2 32 L 26 42
+        L 6 50 L 32 56
+        L 16 66 L 42 66
+        L 30 80 L 60 70
+        C 78 66, 100 58, 108 54 Z`;
+    return `
+    <svg class="eg-bird" viewBox="0 0 240 150" aria-hidden="true">
+      <defs>
+        <linearGradient id="egBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a16207"/><stop offset="45%" stop-color="#78350f"/><stop offset="100%" stop-color="#431407"/>
+        </linearGradient>
+        <linearGradient id="egWing" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fde68a"/><stop offset="45%" stop-color="#d69e2e"/><stop offset="100%" stop-color="#7c2d12"/>
+        </linearGradient>
+        <linearGradient id="egHead" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e2e8f0"/>
+        </linearGradient>
+      </defs>
+
+      <g class="eg-wing eg-wl"><path d="${wing}" fill="url(#egWing)"/></g>
+      <g class="eg-wing eg-wr"><path d="${wing}" fill="url(#egWing)" transform="translate(240,0) scale(-1,1)"/></g>
+
+      <!-- 부챗살처럼 펼친 꼬리 -->
+      <path d="M 107 94 L 133 94 L 141 132 L 130 123 L 126 137 L 120 126 L 114 137 L 110 123 L 99 132 Z" fill="url(#egWing)"/>
+
+      <!-- 가슴이 넓은 몸통 -->
+      <path d="M 120 36 C 134 36, 141 45, 140 56 L 136 82 L 129 100 L 120 108 L 111 100 L 104 82 L 100 56 C 99 45, 106 36, 120 36 Z" fill="url(#egBody)"/>
+
+      <!-- 흰 머리 -->
+      <path d="M 120 6 C 133 6, 141 16, 141 27 C 141 36, 132 42, 120 42 C 108 42, 99 36, 99 27 C 99 16, 107 6, 120 6 Z" fill="url(#egHead)"/>
+      <!-- 사나운 눈매. 이 눈썹이 없으면 순한 새가 된다 -->
+      <path d="M 104 18 L 117 24 L 117 28 L 104 23 Z" fill="#78350f"/>
+      <path d="M 136 18 L 123 24 L 123 28 L 136 23 Z" fill="#78350f"/>
+      <circle cx="110" cy="27" r="3" fill="#f59e0b"/><circle cx="130" cy="27" r="3" fill="#f59e0b"/>
+      <circle cx="110" cy="27" r="1.6" fill="#111827"/><circle cx="130" cy="27" r="1.6" fill="#111827"/>
+      <!-- 끝이 아래로 굽은 갈고리 부리 -->
+      <path d="M 112 33 L 128 33 L 126 44 C 125 51, 122 55, 117 56 C 121 51, 122 46, 119 42 L 113 40 Z" fill="#facc15"/>
+    </svg>`;
+}
+
 function celebrateEagleStreak(name, streak) {
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();
@@ -1097,23 +1164,27 @@ function celebrateEagleStreak(name, streak) {
     const overlay = document.createElement('div');
     overlay.className = 'celebrate-overlay';
     overlay.innerHTML = `
-        <div class="celebrate-card">
-            <div class="celebrate-eagle">${RANK_CONFIG[0].icon}</div>
-            <div class="celebrate-streak">${streak}연속</div>
-            <div class="celebrate-name">${escapeHtml(name)}</div>
-            <div class="celebrate-sub">독수리 ${streak}경기 연속 달성!<br>모두 축하해 주세요 🎉</div>
-            <button type="button" class="celebrate-close">축하합니다 👏</button>
-        </div>`;
+        <div class="eg-ring"></div>
+        <div class="eg-ring eg-ring2"></div>
+        <div class="eg-stage">
+            ${eagleSvg()}
+            <div class="eg-count">${streak}<span>연속</span></div>
+            <div class="eg-title">독 수 리</div>
+            <div class="eg-name">${escapeHtml(name)}</div>
+            <div class="eg-sub">독수리 ${streak}경기 연속 달성!<br>모두 축하해 주세요 🎉</div>
+        </div>
+        <div class="eg-skip">화면을 누르면 닫힙니다</div>`;
 
-    dropConfetti(overlay, 80);
+    dropConfetti(overlay, 90);
 
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('on'));
+    playEagleCry();
 
     let timer = null;
     const close = () => { clearTimeout(timer); overlay.classList.remove('on'); setTimeout(() => overlay.remove(), 300); };
     overlay.onclick = close;
-    timer = setTimeout(close, 7000);
+    timer = setTimeout(close, 6500);
 }
 
 // 접속하면 표를 맨 오른쪽으로 밀어 둔다 — 궁금한 건 방금 친 차수라서다.

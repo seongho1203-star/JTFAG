@@ -133,18 +133,56 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 }
 @keyframes eagle3-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
 
-/* 독수리 연속 기록이 늘어난 걸 처음 본 순간의 축포.
-   색종이는 오버레이 안에서만 떨어져야 해서 overflow:hidden을 준다. */
-.celebrate-overlay { position: fixed; inset: 0; z-index: 12000; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.82); overflow: hidden; opacity: 0; transition: opacity 0.25s ease; }
+/* 독수리 연속 달성 축포 — 화면을 통째로 쓰는 연출.
+   모임에서 크게 축하하기로 한 기록이라 여기만 이렇게 크게 간다.
+
+   **transform과 opacity만 움직인다.** 화면을 꽉 채우는 연출이라 filter나 blur을 쓰면
+   안드로이드가 그대로 주저앉는다(뱃지 glow와 모달 blur을 걷어낸 것과 같은 이유다).
+   반복도 횟수를 정해 두었다 — 창이 6.5초 뒤 사라지므로 무한 애니메이션이 남지 않는다. */
+.celebrate-overlay { position: fixed; inset: 0; z-index: 12000; display: flex; align-items: center; justify-content: center; overflow: hidden; opacity: 0; transition: opacity 0.3s ease;
+    background: radial-gradient(circle at 50% 38%, #1e293b 0%, #0b1220 55%, #04070d 100%); }
 .celebrate-overlay.on { opacity: 1; }
-.celebrate-card { position: relative; z-index: 2; width: min(86vw, 310px); padding: 24px 20px 20px 20px; border-radius: 18px; text-align: center; background: linear-gradient(150deg, #fffbeb 0%, #fde68a 55%, #f0b429 100%); border: 2px solid #fcd34d; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55); transform: scale(0.7); transition: transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1); }
-.celebrate-overlay.on .celebrate-card { transform: scale(1); }
-.celebrate-eagle { font-size: 3.2rem; line-height: 1; animation: celebrate-bob 1.4s ease-in-out infinite; }
-.celebrate-streak { font-size: 2.6rem; font-weight: 900; line-height: 1.1; margin-top: 6px; color: #7c2d12; text-shadow: 0 2px 0 rgba(255, 255, 255, 0.6); letter-spacing: -1px; }
-.celebrate-name { font-size: 1.15rem; font-weight: 900; color: #78350f; margin-top: 2px; }
-.celebrate-sub { font-size: 0.78rem; font-weight: 800; color: #92400e; margin-top: 8px; word-break: keep-all; }
-.celebrate-close { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 10px; background: #7c2d12; color: #fef3c7; font-size: 0.88rem; font-weight: 900; font-family: inherit; cursor: pointer; }
-@keyframes celebrate-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-9px) rotate(4deg); } }
+
+/* 독수리가 내려앉을 때 퍼지는 금빛 파문. 테두리만 그리므로 값이 싸다. */
+.eg-ring { position: absolute; top: 38%; left: 50%; width: 46vmin; height: 46vmin; margin: -23vmin 0 0 -23vmin; border-radius: 50%; border: 3px solid rgba(250, 204, 21, 0.75); opacity: 0; transform: scale(0.15); }
+.celebrate-overlay.on .eg-ring { animation: eg-ring 1.5s ease-out 0.45s 1 both; }
+.celebrate-overlay.on .eg-ring2 { animation: eg-ring 1.5s ease-out 0.95s 1 both; border-color: rgba(255, 255, 255, 0.4); }
+@keyframes eg-ring { 0% { transform: scale(0.15); opacity: 0.95; } 100% { transform: scale(2.6); opacity: 0; } }
+
+.eg-stage { position: relative; z-index: 2; width: 100%; text-align: center; padding: 0 18px; }
+
+/* 하늘 저편에서 정면으로 날아 내려온다. */
+.eg-bird { display: block; width: min(78vw, 340px); height: auto; margin: 0 auto; opacity: 0; }
+.celebrate-overlay.on .eg-bird { animation: eg-swoop 1.05s cubic-bezier(0.16, 0.9, 0.3, 1) 0.1s 1 both; }
+@keyframes eg-swoop {
+    0%   { opacity: 0; transform: translateY(-42vh) scale(0.12) rotate(-10deg); }
+    55%  { opacity: 1; }
+    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+/* 날갯짓. 두 날개가 몸통 중심을 축으로 반대로 돌아 같이 위아래로 움직인다. */
+.eg-wing { transform-box: view-box; transform-origin: 120px 52px; }
+.celebrate-overlay.on .eg-wl { animation: eg-flap-l 0.5s ease-in-out 0.1s 3 both; }
+.celebrate-overlay.on .eg-wr { animation: eg-flap-r 0.5s ease-in-out 0.1s 3 both; }
+@keyframes eg-flap-l { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(17deg); } }
+@keyframes eg-flap-r { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-17deg); } }
+
+/* 글자는 뒤이어 하나씩 들어온다. 숫자만 크게 내리꽂힌다. */
+.eg-count { margin-top: 6px; font-size: clamp(3.4rem, 17vw, 5.6rem); font-weight: 900; line-height: 1; letter-spacing: -3px; opacity: 0;
+    background: linear-gradient(180deg, #fffbeb 0%, #fbbf24 55%, #b45309 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.eg-count span { font-size: 0.36em; letter-spacing: 0; margin-left: 4px; }
+.celebrate-overlay.on .eg-count { animation: eg-slam 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) 1.05s 1 both; }
+@keyframes eg-slam { 0% { opacity: 0; transform: scale(2.6); } 100% { opacity: 1; transform: scale(1); } }
+
+.eg-title { font-size: clamp(1.3rem, 6.5vw, 2rem); font-weight: 900; letter-spacing: 6px; color: #fde68a; opacity: 0; }
+.eg-name { margin-top: 10px; font-size: clamp(1.1rem, 5.5vw, 1.7rem); font-weight: 900; color: #ffffff; opacity: 0; }
+.eg-sub { margin-top: 10px; font-size: clamp(0.78rem, 3.4vw, 0.92rem); font-weight: 800; color: #cbd5e1; line-height: 1.6; word-break: keep-all; opacity: 0; }
+.celebrate-overlay.on .eg-title { animation: eg-rise 0.45s ease-out 1.3s 1 both; }
+.celebrate-overlay.on .eg-name  { animation: eg-rise 0.45s ease-out 1.5s 1 both; }
+.celebrate-overlay.on .eg-sub   { animation: eg-rise 0.45s ease-out 1.7s 1 both; }
+@keyframes eg-rise { 0% { opacity: 0; transform: translateY(18px); } 100% { opacity: 1; transform: translateY(0); } }
+
+.eg-skip { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; opacity: 0; }
+.celebrate-overlay.on .eg-skip { animation: eg-rise 0.5s ease-out 2.4s 1 both; }
 
 /* ─── 라운드 결과 발표 ───
    4위부터 한 줄씩 아래에서 솟아오르고, 1위가 뜰 때 색종이가 터진다.
