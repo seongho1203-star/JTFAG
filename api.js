@@ -35,7 +35,7 @@ const RANK_CONFIG = {
 
    너무 큰 파일은 피할 것. 화면을 꽉 채운 채 매 프레임 그려지므로,
    가로 600px 안쪽 · 1~2MB 안쪽이면 안드로이드에서도 무리가 없다. */
-const EAGLE_HERO_URL = "";
+const EAGLE_HERO_URL = "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8606.gif";
 
 // 전국 골프장 좌표는 courses.js(GOLF_COURSES)에 있다 — OSM에서 받아 워크플로가 만든다.
 // 아래는 예전부터 쓰던 짧은 이름들이다. 옛 일정 문구("… 푸른솔")에도 날씨가 뜨도록 남겨 둔다.

@@ -159,9 +159,35 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
     55%  { opacity: 1; }
     100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
 }
-/* GIF·APNG 등을 EAGLE_HERO_URL로 끼워 넣었을 때. 날아드는 연출은 그대로 받고
-   날갯짓만 그림 자신이 한다(아래 eg-wing은 SVG에만 걸린다). */
-.eg-hero { object-fit: contain; max-height: 42vh; }
+/* ── 사진(EAGLE_HERO_URL)을 쓸 때: 가로를 꽉 채우는 시네마 밴드 ──
+   받은 그림이 가로형(498x389)이라 화면 전체를 cover로 덮으면 양옆이 잘려
+   독수리 머리가 반토막 난다. 가로만 맞춰 깔면 잘리지도 않고, 원본보다
+   작게 그려져 선명하기까지 하다. 밴드 높이를 원본 비율(78vw)로 맞춘 이유다.
+
+   밴드는 `.eg-stage` 안에 흐름대로 들어간다 — 창이 세로 가운데 정렬이라
+   사진과 글자가 한 덩어리로 균형이 잡힌다. 밴드만 따로 띄우면 아래가 휑해진다. */
+.eg-band { position: relative; width: 100vw; margin-left: calc(50% - 50vw); margin-bottom: 3vh; height: 78vw; max-height: 46vh; overflow: hidden; background: #0b1220; }
+/* 확대 기준점을 독수리 눈에 둔다. 가운데를 기준으로 키우면 왼쪽 부리 끝이 잘리고,
+   무엇보다 '눈을 향해 다가가는' 맛이 안 난다. */
+.eg-photo { width: 100%; height: 100%; object-fit: cover; transform-origin: 30% 46%; opacity: 0; transform: scale(1.14); }
+/* 8초에 걸쳐 아주 천천히 밀고 들어온다. 이 느린 밀기가 웅장함을 만든다. */
+.celebrate-overlay.on .eg-photo { animation: eg-push 8s cubic-bezier(0.2, 0.5, 0.25, 1) 1 both; }
+@keyframes eg-push { 0% { opacity: 0; transform: scale(1.14); } 14% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+
+/* 밴드 위아래를 배경색으로 녹인다. 잘린 티가 안 나게 하는 게 핵심이다.
+   `mask`를 쓰면 GIF가 바뀔 때마다 다시 합성되므로 그라데이션 조각을 덮는 쪽이 싸다. */
+.eg-band-fade { position: absolute; left: 0; right: 0; pointer-events: none; }
+.eg-band-top { top: 0; height: 22%; background: linear-gradient(180deg, #0b1220 0%, rgba(11, 18, 32, 0) 100%); }
+.eg-band-bot { bottom: 0; height: 30%; background: linear-gradient(0deg, #0b1220 0%, rgba(11, 18, 32, 0) 100%); }
+/* 금빛 가는 선 두 줄 — 액자처럼 잡아 준다. */
+.eg-band-line { position: absolute; left: 6%; right: 6%; height: 1px; background: linear-gradient(90deg, rgba(250,204,21,0) 0%, rgba(250,204,21,0.8) 50%, rgba(250,204,21,0) 100%); opacity: 0; }
+.eg-band-line-t { top: 3%; } .eg-band-line-b { bottom: 4%; }
+.celebrate-overlay.on .eg-band-line { animation: eg-fade 0.9s ease-out 0.9s 1 both; }
+@keyframes eg-fade { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+/* 파문 고리는 사진에 가려 보이지 않으므로 사진 모드에선 안 쓴다. */
+.eg-photo-mode .eg-ring { display: none; }
+.eg-photo-mode .eg-count { font-size: clamp(3.8rem, 19vw, 6.2rem); }
 
 /* 날갯짓. 두 날개가 몸통 중심을 축으로 반대로 돌아 같이 위아래로 움직인다. */
 .eg-wing { transform-box: view-box; transform-origin: 150px 60px; }

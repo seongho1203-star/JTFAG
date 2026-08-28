@@ -1169,15 +1169,29 @@ function celebrateEagleStreak(name, streak) {
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();
 
+    // 사진(EAGLE_HERO_URL)이 있으면 가로를 꽉 채우는 시네마 밴드로 깐다.
+    //
+    // **화면 전체를 덮지 않는 이유가 있다.** 받은 그림이 가로형(498x389)이라
+    // 세로 화면에 cover로 깔면 양옆이 잘려 독수리 머리가 반토막 난다.
+    // 가로만 맞추면 원본보다 작게 그려져 선명하기까지 하다.
+    //
+    // 밴드 위아래는 그라데이션으로 어둠에 녹인다 — `mask`를 쓰면 매 프레임
+    // 다시 합성되므로(GIF는 계속 바뀐다) 그냥 그라데이션 조각을 덮는다.
+    const photo = EAGLE_HERO_URL;
     const overlay = document.createElement('div');
-    overlay.className = 'celebrate-overlay';
+    overlay.className = 'celebrate-overlay' + (photo ? ' eg-photo-mode' : '');
     overlay.innerHTML = `
         <div class="eg-ring"></div>
         <div class="eg-ring eg-ring2"></div>
         <div class="eg-stage">
-            ${EAGLE_HERO_URL
-                ? `<img class="eg-bird eg-hero" src="${EAGLE_HERO_URL}" alt="">`
-                : eagleSvg()}
+            ${photo ? `
+            <div class="eg-band">
+                <img class="eg-photo" src="${photo}" alt="">
+                <div class="eg-band-fade eg-band-top"></div>
+                <div class="eg-band-fade eg-band-bot"></div>
+                <div class="eg-band-line eg-band-line-t"></div>
+                <div class="eg-band-line eg-band-line-b"></div>
+            </div>` : eagleSvg()}
             <div class="eg-count">${streak}<span>연속</span></div>
             <div class="eg-title">독 수 리</div>
             <div class="eg-name">${escapeHtml(name)}</div>
@@ -1185,16 +1199,26 @@ function celebrateEagleStreak(name, streak) {
         </div>
         <div class="eg-skip">화면을 누르면 닫힙니다</div>`;
 
+    // 사진을 못 받아오면(주소가 바뀌었거나 오프라인) 앱이 그린 독수리로 되돌아간다.
+    const img = overlay.querySelector('.eg-photo');
+    if (img) img.onerror = () => {
+        overlay.classList.remove('eg-photo-mode');
+        const band = overlay.querySelector('.eg-band');
+        if (band) band.remove();
+        overlay.querySelector('.eg-stage').insertAdjacentHTML('afterbegin', eagleSvg());
+    };
+
     dropConfetti(overlay, 90);
 
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('on'));
     playEagleCry();
 
+    // 사진은 천천히 밀고 들어오는 맛이 있어 조금 더 오래 둔다.
     let timer = null;
     const close = () => { clearTimeout(timer); overlay.classList.remove('on'); setTimeout(() => overlay.remove(), 300); };
     overlay.onclick = close;
-    timer = setTimeout(close, 6500);
+    timer = setTimeout(close, photo ? 8000 : 6500);
 }
 
 // 접속하면 표를 맨 오른쪽으로 밀어 둔다 — 궁금한 건 방금 친 차수라서다.
