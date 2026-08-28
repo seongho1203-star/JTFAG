@@ -308,6 +308,9 @@ input.course-input { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 
    pointer-events를 꺼서, 글자 위에서 표를 밀 때 선택이 시작되지 않게 한다.
    누르는 건 감싼 .course-slot이 받아 그 차수 일정을 연다. */
 input.course-input.locked { cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
+/* 남의 정산 칸. 값은 그대로 보이되 손댈 수 없다는 게 보여야 한다.
+   타수 칸과 달리 pointer-events를 살려 둔다 — 누르면 왜 안 되는지 알려 주기 때문이다. */
+input.money-input.locked { background-color: transparent !important; border-color: transparent !important; color: var(--text-sub, #64748b) !important; cursor: default; user-select: none; -webkit-user-select: none; }
 .course-slot { cursor: pointer; }
 .course-slot:active input.course-input.locked { background-color: #fde68a; }
 .photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }

@@ -262,6 +262,17 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 `processAllRoundSettlements()` (calc.js)가 핵심 로직이다.
 
 - 차수별 손익 = `roundMoney[r][name].end - start`, 이를 누적해 순위를 매긴다.
+- **시작 금액·남은 금액은 본인 칸만 열린다** (`canEditMoney()` in ui.js).
+  6차 정산 금액이 남의 손에 지워졌는데 **금액은 이력이 없어 되살리지 못했다** — 그래서 막았다.
+  `jtfag_my_name`으로 판단하므로 보안이 아니라 **실수 방지 장치**다(누구나 이름을 바꿀 수 있다).
+  - 남의 칸은 `readonly` + `.locked`로 값만 보인다. **`pointer-events`를 끄지 말 것** —
+    누르면 `moneyLockNotice()`가 왜 안 되는지 알려 준다. 아무 반응이 없으면 고장으로 보인다.
+  - `updateMoney()`에서 한 번 더 막는다. 화면이 아니라 **이 함수가 유일한 입구**다.
+  - 이름을 아직 안 정한 기기는 전부 잠긴다. 접속하면 이름을 묻게 되어 있다.
+  - 관리자 메뉴 → `💰 정산 금액 전체 수정`(`isMoneyUnlocked`)으로 잠시 전원을 열 수 있다.
+    이 문을 없애지 말 것 — 동반자 폰이 없을 때 아무도 못 고치게 된다. `adminLock()`이 되잠근다.
+  - `renderMoneyTable()`의 빠른 길(값만 갈아 끼우는 분기)은 `data-lock`으로 잠금 상태가
+    바뀐 걸 알아챈다. 이게 없으면 전체 열기를 눌러도 칸이 그대로 잠겨 보인다.
 - 순위별 벌금은 `RANK_CONFIG` (api.js)에 고정: 독수리 0 / 매 -40,000 / 학 -60,000 / 참새 -100,000원.
 - 핸디캡은 **모든 골퍼의 스코어가 채워진 가장 최근 연속 2개 차수**를 자동 선택해 평균으로 산출한다 (`calculateAndRender()`).
 - 뱃지 판정은 `getGolferBadgesArray()`. 싱글(79타 이하) 등 일부는 스코어에서, 버디/파 최다 등은 `CUMULATIVE_STATS`에서 나온다.

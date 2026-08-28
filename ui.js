@@ -1204,6 +1204,18 @@ function paintMoneyResult(el, v) {
     el.textContent = moneyResultText(v);
 }
 
+// 남의 칸은 readonly로 두고 누르면 왜 안 되는지 알려 준다.
+// pointer-events를 끄지 않는 이유가 그것이다 — 아무 반응이 없으면 고장으로 보인다.
+function moneyCell(g, type, value) {
+    const editable = canEditMoney(g);
+    return `<input type="text" id="money_${type}_${g}" inputmode="numeric" pattern="[0-9]*"
+        class="money-input${editable ? '' : ' locked'}" value="${formatNumber(value)}"
+        ${editable ? '' : 'readonly '}onfocus="this.select()"
+        ${editable
+            ? `onchange="updateMoney('${g}', '${type}', this.value)"`
+            : `onclick="moneyLockNotice('${g}')"`}>`;
+}
+
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody');
     const roundSelect = document.getElementById('moneyRoundSelect');
@@ -1218,7 +1230,12 @@ function renderMoneyTable() {
         golfers.forEach(g => appData.roundMoney[selectedMoneyRoundIdx][g] = { start: 0, end: 0 });
     }
 
-    if (tbody.children.length === golfers.length && tbody.getAttribute('data-round') === String(selectedMoneyRoundIdx)) {
+    // 잠금 상태가 바뀌면 칸을 다시 만들어야 한다 — 아래 빠른 길은 값만 갈아 끼운다.
+    const lockKey = `${isMoneyUnlocked ? 'all' : myGolferName() || 'none'}`;
+
+    if (tbody.children.length === golfers.length
+        && tbody.getAttribute('data-round') === String(selectedMoneyRoundIdx)
+        && tbody.getAttribute('data-lock') === lockKey) {
         golfers.forEach(g => {
             const m = appData.roundMoney[selectedMoneyRoundIdx][g] || { start: 0, end: 0 };
             const sInput = document.getElementById(`money_start_${g}`);
@@ -1236,6 +1253,7 @@ function renderMoneyTable() {
     }
 
     tbody.setAttribute('data-round', String(selectedMoneyRoundIdx));
+    tbody.setAttribute('data-lock', lockKey);
     tbody.innerHTML = "";
     golfers.forEach(g => {
         const m = appData.roundMoney[selectedMoneyRoundIdx][g] || { start: 0, end: 0 };
@@ -1245,15 +1263,51 @@ function renderMoneyTable() {
         tbody.innerHTML += `
             <tr>
                 <td style="font-weight:800; color:var(--text-main);">${g}</td>
-                <td><input type="text" id="money_start_${g}" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.start)}" onfocus="this.select()" onchange="updateMoney('${g}', 'start', this.value)"></td>
-                <td><input type="text" id="money_end_${g}" inputmode="numeric" pattern="[0-9]*" class="money-input" value="${formatNumber(m.end)}" onfocus="this.select()" onchange="updateMoney('${g}', 'end', this.value)"></td>
+                <td>${moneyCell(g, 'start', m.start)}</td>
+                <td>${moneyCell(g, 'end', m.end)}</td>
                 <td><span id="money_rank_${g}" class="money-result-badge ${moneyResultTone(rankPenalty)}">${moneyResultText(rankPenalty)}</span></td>
                 <td><span id="money_stroke_${g}" class="money-result-badge ${moneyResultTone(pureStrokeDiff)}">${moneyResultText(pureStrokeDiff)}</span></td>
             </tr>`;
     });
 }
 
+/* ── 정산 금액은 본인 칸만 ───────────────────────────────────────
+   6차 정산 금액이 남의 손에 지워진 일이 있었다. 이제 시작·남은 금액은
+   `jtfag_my_name`이 그 사람일 때만 열린다.
+
+   이건 보안이 아니라 **실수 방지 장치**다 — jtfag_my_name은 누구나 바꿀 수 있고
+   서버는 접속자를 구분하지 못한다. 무심코 남의 줄을 건드리는 걸 막는 게 목적이다.
+
+   관리자는 `💰 정산 금액 전체 수정`으로 잠시 열 수 있다. 이 문이 없으면
+   동반자 폰이 없을 때 아무도 고칠 수 없게 되어 오히려 곤란해진다. */
+function myGolferName() {
+    const n = localStorage.getItem('jtfag_my_name');
+    return golfers.includes(n) ? n : '';
+}
+
+function canEditMoney(name) {
+    return isMoneyUnlocked || name === myGolferName();
+}
+
+function moneyLockNotice(name) {
+    const me = myGolferName();
+    showToast(me
+        ? `🔒 ${name}님 칸은 본인만 입력할 수 있습니다.`
+        : `🔒 먼저 본인 이름을 정해주세요. (설정 → 내 이름)`);
+}
+
+function toggleMoneyEdit() {
+    isMoneyUnlocked = !isMoneyUnlocked;
+    renderMoneyTable();
+    renderAdminModal();
+    showToast(isMoneyUnlocked
+        ? "💰 정산 금액 칸을 모두 열었습니다."
+        : "🔒 정산 금액은 다시 본인 칸만 열립니다.");
+}
+
 function updateMoney(name, type, value) {
+    // 화면이 막고 있어도 여기서 한 번 더 본다 — 이 함수가 유일한 입구다.
+    if (!canEditMoney(name)) { moneyLockNotice(name); renderMoneyTable(); return; }
     saveState();
     if (!appData.roundMoney[selectedMoneyRoundIdx]) appData.roundMoney[selectedMoneyRoundIdx] = {};
     if (!appData.roundMoney[selectedMoneyRoundIdx][name]) appData.roundMoney[selectedMoneyRoundIdx][name] = { start: 0, end: 0 };
@@ -2084,6 +2138,8 @@ function closeAdminModal() { document.getElementById('adminModal').classList.rem
 function adminLock() {
     isFundUnlocked = false;
     isScoreUnlocked = false;
+    isMoneyUnlocked = false;
+    renderMoneyTable();
     renderTable();
     updateLockUI();
     closeAdminModal();
@@ -2111,6 +2167,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
+        <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 잠그기' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전원 열림' : '평소엔 본인 칸만'}</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {

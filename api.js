@@ -11,6 +11,9 @@ let isFundUnlocked = false;
 // 타수 칸은 기본이 잠김이다. 홀 기록(stats.js)에서 자동으로 채워지므로 손댈 일이 없고,
 // 홀 기록이 없는 차수만 관리자가 잠시 열어 직접 넣을 수 있다.
 let isScoreUnlocked = false;
+// 정산의 시작·남은 금액은 본인 칸만 열린다 (6차 금액이 남의 손에 지워진 적이 있다).
+// 관리자가 잠시 전체를 열 수 있게 하는 열쇠 — 없으면 동반자 폰이 없을 때 아무도 못 고친다.
+let isMoneyUnlocked = false;
 
 const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
