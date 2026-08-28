@@ -1165,6 +1165,23 @@ function eagleSvg() {
     </svg>`;
 }
 
+/* 연출은 기기마다 한 번만 뜬다 — 접속할 때마다 뜨면 축하가 아니라 방해다.
+   그 '봤다' 표시가 localStorage에 남아 있어서, 차수를 지웠다 다시 만들어도
+   축포가 다시 뜨지 않는다(실제로 이것 때문에 안 나온다는 문의가 있었다).
+
+   이 버튼은 **표시만 지운다.** 타수·금액·사진 어느 것도 건드리지 않는다. */
+function resetEffectSeen() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('jtfag_eagle_') || k.startsWith('jtfag_rank_') || k === 'jtfag_result_seen')) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+    showToast(keys.length
+        ? `🎬 연출 표시 ${keys.length}개를 지웠습니다. 새로고침하면 다시 나옵니다.`
+        : "🎬 지울 표시가 없습니다. 새로고침하면 나옵니다.");
+}
+
 function celebrateEagleStreak(name, streak) {
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();
@@ -2273,6 +2290,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
         <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 잠그기' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전원 열림' : '평소엔 본인 칸만'}</span></button>
+        <button type="button" class="admin-btn" onclick="resetEffectSeen()">🎬 연출 다시 보기 <span class="admin-btn-sub">이 기기에서 본 표시만 지움</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {
