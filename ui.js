@@ -1111,49 +1111,57 @@ function playEagleCry() {
 }
 
 /* 앞에서 본 흰머리수리. 날개는 따로 묶어 두어 몸통과 별개로 회전시킨다(날갯짓).
-   독수리로 보이게 하는 건 세 가지다 — **흰 머리 · 갈고리 부리 · 갈라진 날개 끝**.
-   눈 위의 눈썹이 없으면 순한 새가 되므로 빼지 말 것. */
+
+   **병아리처럼 보이지 않게 하는 건 비율이다.** 머리가 크고 날개가 짧으면 아기 새가 된다.
+   그래서 날개폭을 몸통의 다섯 배 가까이 벌리고, 머리는 작게 두고, 날개를 위로 살짝
+   들어 올려(솟아오르는 V자) 활공하는 자세로 잡았다. 머리를 키우지 말 것.
+
+   독수리로 읽히게 하는 나머지는 **흰 머리 · 갈고리 부리 · 갈라진 날개 끝 · 사나운 눈썹**이다.
+   눈썹을 빼면 순한 새가 되므로 빼지 말 것. */
 function eagleSvg() {
-    // 어깨에서 뻗어 나가 끝이 네 갈래로 갈라지는 날개 (왼쪽 기준, 오른쪽은 뒤집어 쓴다)
-    const wing = `M 108 50
-        C 92 36, 58 24, 26 28
-        L 2 32 L 26 42
-        L 6 50 L 32 56
-        L 16 66 L 42 66
-        L 30 80 L 60 70
-        C 78 66, 100 58, 108 54 Z`;
+    // 어깨에서 위로 뻗어 나가 끝이 다섯 갈래로 갈라지는 날개 (왼쪽 기준, 오른쪽은 뒤집어 쓴다)
+    const wing = `M 138 58
+        C 116 44, 78 26, 40 18
+        L 12 10  L 40 26
+        L 8 26   L 40 38
+        L 14 44  L 44 52
+        L 26 62  L 56 62
+        L 44 76  L 74 66
+        C 98 60, 124 62, 138 66 Z`;
     return `
-    <svg class="eg-bird" viewBox="0 0 240 150" aria-hidden="true">
+    <svg class="eg-bird" viewBox="0 0 300 165" aria-hidden="true">
       <defs>
         <linearGradient id="egBody" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#a16207"/><stop offset="45%" stop-color="#78350f"/><stop offset="100%" stop-color="#431407"/>
+          <stop offset="0%" stop-color="#8a5a1b"/><stop offset="45%" stop-color="#5c2a0c"/><stop offset="100%" stop-color="#2e1206"/>
         </linearGradient>
         <linearGradient id="egWing" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#fde68a"/><stop offset="45%" stop-color="#d69e2e"/><stop offset="100%" stop-color="#7c2d12"/>
+          <stop offset="0%" stop-color="#fde68a"/><stop offset="38%" stop-color="#c98b25"/><stop offset="100%" stop-color="#5c2a0c"/>
         </linearGradient>
         <linearGradient id="egHead" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e2e8f0"/>
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#dbe2ea"/>
         </linearGradient>
       </defs>
 
       <g class="eg-wing eg-wl"><path d="${wing}" fill="url(#egWing)"/></g>
-      <g class="eg-wing eg-wr"><path d="${wing}" fill="url(#egWing)" transform="translate(240,0) scale(-1,1)"/></g>
+      <g class="eg-wing eg-wr"><path d="${wing}" fill="url(#egWing)" transform="translate(300,0) scale(-1,1)"/></g>
 
       <!-- 부챗살처럼 펼친 꼬리 -->
-      <path d="M 107 94 L 133 94 L 141 132 L 130 123 L 126 137 L 120 126 L 114 137 L 110 123 L 99 132 Z" fill="url(#egWing)"/>
+      <path d="M 138 104 L 162 104 L 170 148 L 159 138 L 155 152 L 150 140 L 145 152 L 141 138 L 130 148 Z" fill="url(#egWing)"/>
 
-      <!-- 가슴이 넓은 몸통 -->
-      <path d="M 120 36 C 134 36, 141 45, 140 56 L 136 82 L 129 100 L 120 108 L 111 100 L 104 82 L 100 56 C 99 45, 106 36, 120 36 Z" fill="url(#egBody)"/>
+      <!-- 몸통. 가슴은 넓고 아래로 갈수록 좁아진다 -->
+      <path d="M 150 44 C 164 44, 172 54, 171 66 L 167 92 L 160 110 L 150 118 L 140 110 L 133 92 L 129 66 C 128 54, 136 44, 150 44 Z" fill="url(#egBody)"/>
+      <!-- 가슴 깃 결 -->
+      <path d="M 150 62 L 156 76 L 150 90 L 144 76 Z" fill="#3f1c08" opacity="0.55"/>
 
-      <!-- 흰 머리 -->
-      <path d="M 120 6 C 133 6, 141 16, 141 27 C 141 36, 132 42, 120 42 C 108 42, 99 36, 99 27 C 99 16, 107 6, 120 6 Z" fill="url(#egHead)"/>
-      <!-- 사나운 눈매. 이 눈썹이 없으면 순한 새가 된다 -->
-      <path d="M 104 18 L 117 24 L 117 28 L 104 23 Z" fill="#78350f"/>
-      <path d="M 136 18 L 123 24 L 123 28 L 136 23 Z" fill="#78350f"/>
-      <circle cx="110" cy="27" r="3" fill="#f59e0b"/><circle cx="130" cy="27" r="3" fill="#f59e0b"/>
-      <circle cx="110" cy="27" r="1.6" fill="#111827"/><circle cx="130" cy="27" r="1.6" fill="#111827"/>
+      <!-- 흰 머리. 작게 둘 것 — 키우면 아기 새가 된다 -->
+      <path d="M 150 20 C 161 20, 168 28, 168 37 C 168 45, 160 50, 150 50 C 140 50, 132 45, 132 37 C 132 28, 139 20, 150 20 Z" fill="url(#egHead)"/>
+      <!-- 사나운 눈매 -->
+      <path d="M 136 29 L 147 34 L 147 38 L 136 33 Z" fill="#4a2109"/>
+      <path d="M 164 29 L 153 34 L 153 38 L 164 33 Z" fill="#4a2109"/>
+      <circle cx="141" cy="37" r="2.7" fill="#f59e0b"/><circle cx="159" cy="37" r="2.7" fill="#f59e0b"/>
+      <circle cx="141" cy="37" r="1.4" fill="#111827"/><circle cx="159" cy="37" r="1.4" fill="#111827"/>
       <!-- 끝이 아래로 굽은 갈고리 부리 -->
-      <path d="M 112 33 L 128 33 L 126 44 C 125 51, 122 55, 117 56 C 121 51, 122 46, 119 42 L 113 40 Z" fill="#facc15"/>
+      <path d="M 143 42 L 157 42 L 155 52 C 154 59, 151 63, 147 64 C 150 59, 151 54, 148 50 L 144 48 Z" fill="#facc15"/>
     </svg>`;
 }
 
@@ -1167,7 +1175,9 @@ function celebrateEagleStreak(name, streak) {
         <div class="eg-ring"></div>
         <div class="eg-ring eg-ring2"></div>
         <div class="eg-stage">
-            ${eagleSvg()}
+            ${EAGLE_HERO_URL
+                ? `<img class="eg-bird eg-hero" src="${EAGLE_HERO_URL}" alt="">`
+                : eagleSvg()}
             <div class="eg-count">${streak}<span>연속</span></div>
             <div class="eg-title">독 수 리</div>
             <div class="eg-name">${escapeHtml(name)}</div>

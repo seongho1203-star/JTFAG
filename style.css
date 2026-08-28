@@ -159,8 +159,12 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
     55%  { opacity: 1; }
     100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
 }
+/* GIF·APNG 등을 EAGLE_HERO_URL로 끼워 넣었을 때. 날아드는 연출은 그대로 받고
+   날갯짓만 그림 자신이 한다(아래 eg-wing은 SVG에만 걸린다). */
+.eg-hero { object-fit: contain; max-height: 42vh; }
+
 /* 날갯짓. 두 날개가 몸통 중심을 축으로 반대로 돌아 같이 위아래로 움직인다. */
-.eg-wing { transform-box: view-box; transform-origin: 120px 52px; }
+.eg-wing { transform-box: view-box; transform-origin: 150px 60px; }
 .celebrate-overlay.on .eg-wl { animation: eg-flap-l 0.5s ease-in-out 0.1s 3 both; }
 .celebrate-overlay.on .eg-wr { animation: eg-flap-r 0.5s ease-in-out 0.1s 3 both; }
 @keyframes eg-flap-l { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(17deg); } }
