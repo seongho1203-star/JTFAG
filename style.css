@@ -133,6 +133,18 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 }
 @keyframes eagle3-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
 
+/* 연속수가 늘수록 뱃지 등급이 올라간다. 흐름·광택·맥박은 위에서 그대로 물려받고
+   색만 바꾼다 — 3연속 금, 4연속 불꽃, 5연속부터 전설.
+   (숫자만 커지고 모양이 그대로면 3연속이나 10연속이나 똑같아 보인다.) */
+.badge-eagle-3.eagle-t4 {
+    background: linear-gradient(110deg, #7f1d1d 0%, #dc2626 24%, #fbbf24 45%, #dc2626 66%, #7f1d1d 100%);
+    background-size: 250% 100%; border-color: #fca5a5;
+}
+.badge-eagle-3.eagle-t5 {
+    background: linear-gradient(110deg, #4c1d95 0%, #7c3aed 22%, #fde68a 45%, #7c3aed 68%, #4c1d95 100%);
+    background-size: 250% 100%; border-color: #e9d5ff;
+}
+
 /* 독수리 연속 달성 축포 — 화면을 통째로 쓰는 연출.
    모임에서 크게 축하하기로 한 기록이라 여기만 이렇게 크게 간다.
 

@@ -66,8 +66,12 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
 
     const streak = eagleStreak(ranks);
     if (streak >= 3) {
+        // 연속수가 늘수록 뱃지도 등급이 올라간다 — 3연속 금, 4연속 불꽃, 5연속부터 전설.
+        // 숫자만 바뀌고 모양이 그대로면 3연속이나 10연속이나 똑같아 보인다.
+        const tier = streak >= 5 ? ' eagle-t5' : (streak >= 4 ? ' eagle-t4' : '');
+        const mark = streak >= 5 ? ' 👑' : (streak >= 4 ? ' 🔥' : '');
         // 눌러서 축포를 다시 볼 수 있게 해 둔다. 축하는 여러 번 받을수록 좋다.
-        badges.push({ html: `<div class="season-badge badge-eagle-3" style="cursor:pointer;" onclick="event.stopPropagation(); celebrateEagleStreak('${g}', ${streak})">${imgE} 독수리 ${streak}연속!</div>`, desc: `${streak}경기 연속 독수리 계급 달성` });
+        badges.push({ html: `<div class="season-badge badge-eagle-3${tier}" style="cursor:pointer;" onclick="event.stopPropagation(); celebrateEagleStreak('${g}', ${streak})">${imgE} 독수리 ${streak}연속!${mark}</div>`, desc: `${streak}경기 연속 독수리 계급 달성` });
     } else if (streak === 2) {
         badges.push({ html: `<div class="season-badge badge-eagle-2">${imgE} 독수리 2연속!</div>`, desc: "최근 2경기 연속 독수리 계급 달성" });
     }
