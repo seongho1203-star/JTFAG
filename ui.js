@@ -1062,12 +1062,13 @@ const CONFETTI_COLORS = ['#fbbf24', '#f59e0b', '#fde68a', '#ffffff', '#34d399', 
 
 // 색종이는 결과 발표와 독수리 축포가 함께 쓴다.
 // transform만 움직이므로 80장을 뿌려도 안드로이드에서 안 끊긴다.
-function dropConfetti(host, count) {
+function dropConfetti(host, count, colors) {
+    const palette = colors && colors.length ? colors : CONFETTI_COLORS;
     for (let i = 0; i < count; i++) {
         const bit = document.createElement('div');
         bit.className = 'confetti';
         bit.style.left = (Math.random() * 100) + 'vw';
-        bit.style.backgroundColor = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        bit.style.backgroundColor = palette[i % palette.length];
         bit.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
         bit.style.animationDelay = (Math.random() * 1.4) + 's';
         if (Math.random() < 0.35) bit.style.borderRadius = '50%';
@@ -1182,6 +1183,55 @@ function resetEffectSeen() {
         : "🎬 지울 표시가 없습니다. 새로고침하면 나옵니다.");
 }
 
+/* 연속수에 따라 축포도 등급이 갈린다 — 뱃지(금 → 불꽃 → 전설)와 같은 언어다.
+   둘이 어긋나면 '급이 올라갔다'가 전해지지 않는다.
+   바뀌는 건 색과 문구뿐이라 그리기 비용은 그대로다. */
+const EAGLE_TIERS = [
+    {
+        min: 5, cls: 'eg-legend', mark: '👑',
+        sub: n => `${n}경기 연속 독수리.<br><b>JTFAG의 전설입니다</b> 👑`,
+        confetti: 150, colors: ['#fde68a', '#fbbf24', '#c084fc', '#a78bfa', '#ffffff', '#7c3aed']
+    },
+    {
+        min: 4, cls: 'eg-fire', mark: '🔥',
+        sub: n => `${n}번을 내리 1등.<br><b>이제 말릴 사람이 없습니다</b> 🔥`,
+        confetti: 120, colors: ['#fbbf24', '#f59e0b', '#ef4444', '#fca5a5', '#ffffff', '#dc2626']
+    },
+    {
+        min: 3, cls: '', mark: '',
+        sub: n => `독수리 ${n}경기 연속 달성!<br>모두 축하해 주세요 🎉`,
+        confetti: 90, colors: null
+    }
+];
+
+function eagleTier(streak) {
+    return EAGLE_TIERS.find(t => streak >= t.min) || EAGLE_TIERS[EAGLE_TIERS.length - 1];
+}
+
+/* 연속한 만큼 독수리 도장을 한 줄로 찍는다.
+   숫자만으로는 4와 5의 차이가 잘 안 느껴지는데, 도장이 하나씩 톡톡 박히면
+   '쭉 이어졌다'가 눈에 들어온다. 열 개가 넘어도 줄만 길어지지 화면은 안 깨진다.
+   찍히는 시각은 인라인 delay로 준다 — 개수가 정해져 있지 않아 CSS로는 못 적는다. */
+const STAMP_START = 1.75, STAMP_GAP = 0.1;
+
+function eagleStamps(streak) {
+    const n = Math.min(streak, 12);       // 열두 개가 넘으면 줄이 두 줄로 넘어간다
+    const last = STAMP_START + (n - 1) * STAMP_GAP;
+    const more = streak > n
+        ? `<span class="eg-stamp-more" style="animation-delay:${(last + STAMP_GAP).toFixed(2)}s">+${streak - n}</span>`
+        : '';
+    return `<div class="eg-stamps">` +
+        Array.from({ length: n }, (_, i) =>
+            `<span class="eg-stamp" style="animation-delay:${(STAMP_START + i * STAMP_GAP).toFixed(2)}s">🦅</span>`).join('') +
+        more + `</div>`;
+}
+
+// 도장이 다 찍힌 뒤에 아래 문구가 올라와야 순서가 맞는다.
+// 개수만큼 늦춰야 하므로 CSS에 못 적고 인라인으로 준다.
+function eagleSubDelay(streak) {
+    return STAMP_START + (Math.min(streak, 12) - 1) * STAMP_GAP + 0.35;
+}
+
 function celebrateEagleStreak(name, streak) {
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();
@@ -1195,8 +1245,9 @@ function celebrateEagleStreak(name, streak) {
     // 밴드 위아래는 그라데이션으로 어둠에 녹인다 — `mask`를 쓰면 매 프레임
     // 다시 합성되므로(GIF는 계속 바뀐다) 그냥 그라데이션 조각을 덮는다.
     const photo = EAGLE_HERO_URL;
+    const tier = eagleTier(streak);
     const overlay = document.createElement('div');
-    overlay.className = 'celebrate-overlay' + (photo ? ' eg-photo-mode' : '');
+    overlay.className = 'celebrate-overlay' + (photo ? ' eg-photo-mode' : '') + (tier.cls ? ' ' + tier.cls : '');
     overlay.innerHTML = `
         <div class="eg-ring"></div>
         <div class="eg-ring eg-ring2"></div>
@@ -1209,10 +1260,11 @@ function celebrateEagleStreak(name, streak) {
                 <div class="eg-band-line eg-band-line-t"></div>
                 <div class="eg-band-line eg-band-line-b"></div>
             </div>` : eagleSvg()}
-            <div class="eg-count">${streak}<span>연속</span></div>
+            <div class="eg-count">${streak}<span>연속</span>${tier.mark ? `<b class="eg-mark">${tier.mark}</b>` : ''}</div>
             <div class="eg-title">독 수 리</div>
             <div class="eg-name">${escapeHtml(name)}</div>
-            <div class="eg-sub">독수리 ${streak}경기 연속 달성!<br>모두 축하해 주세요 🎉</div>
+            ${eagleStamps(streak)}
+            <div class="eg-sub" style="animation-delay:${eagleSubDelay(streak).toFixed(2)}s">${tier.sub(streak)}</div>
         </div>
         <div class="eg-skip">화면을 누르면 닫힙니다</div>`;
 
@@ -1225,7 +1277,7 @@ function celebrateEagleStreak(name, streak) {
         overlay.querySelector('.eg-stage').insertAdjacentHTML('afterbegin', eagleSvg());
     };
 
-    dropConfetti(overlay, 90);
+    dropConfetti(overlay, tier.confetti, tier.colors);
 
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('on'));

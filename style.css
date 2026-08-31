@@ -220,11 +220,49 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .eg-sub { margin-top: 10px; font-size: clamp(0.78rem, 3.4vw, 0.92rem); font-weight: 800; color: #cbd5e1; line-height: 1.6; word-break: keep-all; opacity: 0; }
 .celebrate-overlay.on .eg-title { animation: eg-rise 0.45s ease-out 1.3s 1 both; }
 .celebrate-overlay.on .eg-name  { animation: eg-rise 0.45s ease-out 1.5s 1 both; }
-.celebrate-overlay.on .eg-sub   { animation: eg-rise 0.45s ease-out 1.7s 1 both; }
+/* delay는 도장 개수에 따라 달라져서 JS가 인라인으로 준다(eagleSubDelay). */
+.celebrate-overlay.on .eg-sub   { animation: eg-rise 0.45s ease-out 1 both; }
 @keyframes eg-rise { 0% { opacity: 0; transform: translateY(18px); } 100% { opacity: 1; transform: translateY(0); } }
 
 .eg-skip { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; opacity: 0; }
-.celebrate-overlay.on .eg-skip { animation: eg-rise 0.5s ease-out 2.4s 1 both; }
+.celebrate-overlay.on .eg-skip { animation: eg-rise 0.5s ease-out 3.2s 1 both; }
+
+/* ── 연속한 만큼 찍히는 독수리 도장 ──
+   숫자만으로는 4와 5의 차이가 잘 안 느껴진다. 하나씩 톡톡 박히면 눈에 들어온다.
+   찍히는 시각(animation-delay)은 개수가 정해져 있지 않아 JS가 인라인으로 준다. */
+.eg-stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 12px; }
+.eg-stamp { font-size: clamp(1rem, 4.6vw, 1.5rem); line-height: 1; opacity: 0; }
+.celebrate-overlay.on .eg-stamp { animation: eg-stamp 0.4s cubic-bezier(0.2, 1.7, 0.4, 1) 1 both; }
+@keyframes eg-stamp { 0% { opacity: 0; transform: scale(2.2); } 100% { opacity: 1; transform: scale(1); } }
+.eg-stamp-more { align-self: center; margin-left: 4px; font-size: 0.8rem; font-weight: 900; color: #fbbf24; opacity: 0; }
+.celebrate-overlay.on .eg-stamp-more { animation: eg-rise 0.4s ease-out 3.5s 1 both; }
+
+/* 숫자 옆에 붙는 등급 표시(🔥 · 👑). 숫자보다 조금 늦게 들어온다.
+   **부모(.eg-count)의 background-clip:text를 반드시 풀어야 한다** — 안 그러면
+   그림문자가 그라데이션에 같이 잘려 통째로 안 보인다(실제로 안 보였다). */
+.eg-mark { display: inline-block; font-size: 0.42em; margin-left: 6px; vertical-align: middle; opacity: 0;
+    background: none; -webkit-background-clip: initial; background-clip: initial; color: #ffffff; }
+.celebrate-overlay.on .eg-mark { animation: eg-stamp 0.45s cubic-bezier(0.2, 1.7, 0.4, 1) 1.5s 1 both; }
+
+/* ── 등급별 색. 뱃지와 같은 언어다 — 3연속 금, 4연속 불꽃, 5연속부터 전설.
+   색만 바꾸므로 애니메이션과 그리기 비용은 기본과 똑같다. ── */
+.celebrate-overlay.eg-fire { background: radial-gradient(circle at 50% 38%, #451a03 0%, #1c0a06 55%, #0a0403 100%); }
+.eg-fire .eg-band-line { background: linear-gradient(90deg, rgba(239,68,68,0) 0%, rgba(252,165,165,0.9) 50%, rgba(239,68,68,0) 100%); }
+.eg-fire .eg-band-top { background: linear-gradient(180deg, #1c0a06 0%, rgba(28, 10, 6, 0) 100%); }
+.eg-fire .eg-band-bot { background: linear-gradient(0deg, #1c0a06 0%, rgba(28, 10, 6, 0) 100%); }
+.eg-fire .eg-band { background: #1c0a06; }
+.eg-fire .eg-count { background: linear-gradient(180deg, #fef3c7 0%, #f97316 50%, #b91c1c 100%); -webkit-background-clip: text; background-clip: text; }
+.eg-fire .eg-title { color: #fca5a5; }
+.eg-fire .eg-ring { border-color: rgba(248, 113, 113, 0.8); }
+
+.celebrate-overlay.eg-legend { background: radial-gradient(circle at 50% 38%, #2e1065 0%, #150a2e 55%, #06030f 100%); }
+.eg-legend .eg-band-line { background: linear-gradient(90deg, rgba(192,132,252,0) 0%, rgba(233,213,255,0.95) 50%, rgba(192,132,252,0) 100%); }
+.eg-legend .eg-band-top { background: linear-gradient(180deg, #150a2e 0%, rgba(21, 10, 46, 0) 100%); }
+.eg-legend .eg-band-bot { background: linear-gradient(0deg, #150a2e 0%, rgba(21, 10, 46, 0) 100%); }
+.eg-legend .eg-band { background: #150a2e; }
+.eg-legend .eg-count { background: linear-gradient(180deg, #ffffff 0%, #fde68a 38%, #c084fc 72%, #7c3aed 100%); -webkit-background-clip: text; background-clip: text; }
+.eg-legend .eg-title { color: #e9d5ff; }
+.eg-legend .eg-ring { border-color: rgba(216, 180, 254, 0.85); }
 
 /* ─── 라운드 결과 발표 ───
    4위부터 한 줄씩 아래에서 솟아오르고, 1위가 뜰 때 색종이가 터진다.
