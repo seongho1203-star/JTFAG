@@ -66,8 +66,17 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         // 최근 것이 위로. 지울 때는 원래 배열의 위치가 필요해서 인덱스를 같이 넘긴다.
         content.innerHTML = logs.map((log, i) => ({ log, i })).reverse().map(({ log, i }) => {
+            // 한 건을 세 줄로 나눈다 — 잔액 변화 / 오간 금액 / 내역.
+            // 예전엔 셋을 한 줄에 붙여 놨는데 금액이 여섯 자리가 되니 '원)'만 다음 줄로
+            // 떨어져 읽기 나빴다. 줄을 나누면 자릿수가 늘어도 모양이 안 무너진다.
             const diff = (log.after || 0) - (log.before || 0);
-            const diffText = `${diff > 0 ? '+' : ''}${formatNumber(diff)}원`;
+            // 적립인지 사용인지는 부호로 안다 — 그래서 로그에 따로 안 담는다.
+            const move = diff > 0 ? { word: '적립', color: '#4ade80' }
+                       : diff < 0 ? { word: '사용', color: '#f87171' }
+                                  : { word: '변동 없음', color: '#94a3b8' };
+            const moveHtml = diff === 0
+                ? `<div style="margin-top:3px; color:#94a3b8; font-size:0.8rem; font-weight:700;">변동 없음</div>`
+                : `<div style="margin-top:3px; font-size:0.8rem; font-weight:800; color:${move.color};">${move.word} ${formatNumber(Math.abs(diff))}원</div>`;
             // 예전 기록에는 memo가 없다. 있을 때만 줄을 만든다.
             const memoHtml = log.memo
                 ? `<div style="margin-top:5px; color:#cbd5e1; font-size:0.78rem; background:rgba(212,175,55,0.1); border-left:2px solid #d4af37; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
@@ -78,7 +87,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     <span style="font-size:0.75rem; color:#fef08a; font-weight:700;">${escapeHtml(log.name || '')}</span>
                     <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
                 </div>
-                <div style="color:#e2e8f0; font-size:0.85rem;">${formatNumber(log.before)}원 ➔ <b style="color:#16a34a;">${formatNumber(log.after)}원</b> <span style="color:${diff < 0 ? '#f87171' : '#4ade80'}; font-size:0.75rem; font-weight:700;">(${diffText})</span></div>
+                <div style="color:#cbd5e1; font-size:0.82rem; white-space:nowrap;">${formatNumber(log.before)}원 ➔ <b style="color:#e2e8f0;">${formatNumber(log.after)}원</b></div>
+                ${moveHtml}
                 ${memoHtml}
              </div>`;
         }).join('');
