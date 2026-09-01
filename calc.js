@@ -632,3 +632,67 @@ function getHoleAnalysis(name) {
         front: front, back: back
     };
 }
+
+/* ── 1:1 승률 ─────────────────────────────────────────────────
+   핸디캡을 씌운 맞대결이다. 그 차수 **직전 두 차수**의 평균으로 핸디캡을 내고,
+   그 차이만큼 내 타수를 깎아 상대의 그 차수 타수와 견준다(적을수록 이긴다).
+   같으면 핸디캡이 낮은 쪽(잘 치는 쪽)이 이긴 것으로 본다.
+
+   **통산 승률과 골프장별 승률이 이 함수를 같이 쓴다.** 규칙이 두 군데가 되면
+   같은 경기를 두고 숫자가 어긋난다. 계산은 여기 한 곳에만 둘 것.
+
+   핸디캡이 직전 두 차수라 **골프장별로 볼 때도 그 두 차수는 골프장을 안 가린다** —
+   핸디캡은 '요즘 얼마나 치는가'이지 그 골프장 실력이 아니기 때문이다.
+   덕분에 골프장별 승패를 다 더하면 통산 승패와 정확히 맞는다. */
+function headToHead(name, rounds) {
+    const rec = {};
+    golfers.forEach(g => { if (g !== name) rec[g] = { w: 0, l: 0, t: 0 }; });
+
+    for (const r of rounds) {
+        if (r < 2) continue;                    // 직전 두 차수가 있어야 핸디캡을 낸다
+        let complete = true;
+        const hAvg = {}, cScore = {};
+        golfers.forEach(g => {
+            const s = appData.scores[g] || [];
+            const s1 = parseFloat(s[r - 2]), s2 = parseFloat(s[r - 1]), sr = parseFloat(s[r]);
+            if (isNaN(s1) || isNaN(s2) || isNaN(sr)) complete = false;
+            hAvg[g] = Math.floor((s1 + s2) / 2);
+            cScore[g] = sr;
+        });
+        if (!complete) continue;                // 넷 다 있어야 한 판으로 친다
+
+        for (const opp in rec) {
+            const mine = cScore[name] - (hAvg[name] - hAvg[opp]);
+            const theirs = cScore[opp];
+            if (mine < theirs) rec[opp].w++;
+            else if (mine > theirs) rec[opp].l++;
+            else if (hAvg[name] < hAvg[opp]) rec[opp].w++;
+            else if (hAvg[opp] < hAvg[name]) rec[opp].l++;
+            else rec[opp].t++;
+        }
+    }
+    return rec;
+}
+
+function allRoundIdx() {
+    return Array.from({ length: appData.totalRounds }, (_, i) => i);
+}
+
+/* 골프장 이름 → 그 골프장에서 치른 차수 목록.
+   띄어쓰기만 다른 이름은 같은 곳으로 본다 — `courseGeo()`·골프장 검색과 같은 규칙이다.
+   보여 줄 이름은 **처음 나온 표기**를 쓴다.
+
+   주의: 같은 클럽이라도 표에 적힌 이름이 다르면 다른 곳으로 갈린다
+   (`함평엘리체`와 `마제스티-펠리스`처럼). 이름을 임의로 묶으면 엉뚱한 곳끼리
+   합쳐질 수 있어 적힌 대로 둔다 — 합치려면 표의 이름을 맞추는 게 맞다. */
+function roundsByCourse() {
+    const map = new Map();                      // 공백 없앤 이름 → {label, rounds}
+    for (let r = 0; r < appData.totalRounds; r++) {
+        const raw = ((appData.courses || [])[r] || '').trim();
+        if (!raw) continue;
+        const key = raw.replace(/\s+/g, '');
+        if (!map.has(key)) map.set(key, { label: raw, rounds: [] });
+        map.get(key).rounds.push(r);
+    }
+    return [...map.values()];
+}

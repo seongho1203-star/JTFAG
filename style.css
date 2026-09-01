@@ -584,6 +584,13 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 }
 
 #personalReportModal .report-title { color: #b8860b; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+/* 제목 오른쪽에 골프장 고르는 칸이 앉는다. 골프장이 몇 곳이 되든 칸 크기가 그대로다. */
+.report-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.course-wr-select { max-width: 62%; flex-shrink: 0; background-color: var(--gold-light, #fdf6e3); color: #b8860b; border: 1px solid rgba(212, 175, 55, 0.35); padding: 3px 22px 3px 9px; border-radius: 10px; font-size: clamp(0.6rem, 2.1vw, 0.68rem); font-weight: 800; outline: none; cursor: pointer; font-family: inherit; white-space: nowrap; text-overflow: ellipsis; -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23b8860b' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center; background-size: 9px 6px; }
+.course-wr-select:focus { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25); }
+.winrate-note { margin-top: 6px; font-size: 0.62rem; color: #94a3b8; text-align: center; word-break: keep-all; line-height: 1.5; }
 #personalReportModal .stat-box { background: #f8fafc; border: 1px solid rgba(212, 175, 55, 0.3); }
 #personalReportModal .stat-label { color: #64748b; }
 #personalReportModal .badge-desc-item { background: #f8fafc; border: 1px solid rgba(212, 175, 55, 0.2); }

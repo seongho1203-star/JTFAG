@@ -2086,6 +2086,68 @@ async function downloadCurrentPhoto() {
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
+/* ── 1:1 승률 보여주기 ──────────────────────────────────────────
+   통산과 골프장별이 같은 모양으로 나와야 견주기 쉽다. 그래서 그리는 것도 한 함수다. */
+function winRateListHtml(rec) {
+    let html = "", any = false;
+    for (const opp in rec) {
+        const n = rec[opp].w + rec[opp].l + rec[opp].t;
+        if (!n) continue;
+        any = true;
+        html += `<div class="slot-roll" style="display:flex; animation-delay: 0.3s; width: 100%;"><span>vs ${opp}</span> <b style="color:#b8860b;">승률 ${Math.round((rec[opp].w / n) * 100)}%</b> <span>(${rec[opp].w}승 ${rec[opp].t}무 ${rec[opp].l}패)</span></div>`;
+    }
+    return any ? html : "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
+}
+
+/* 골프장별 1:1 승률.
+   핸디캡이 직전 두 차수라 1·2차는 승부가 안 나온다 — 그 골프장에 3차 이후 라운드가
+   하나도 없으면 목록에 올리지 않는다. 빈 칸을 골라 놓고 '매치 없음'만 보는 건 헛걸음이다. */
+let h2hCourseKey = null;
+
+function courseWinRateOptions(name) {
+    return roundsByCourse()
+        .map(c => ({ ...c, rec: headToHead(name, c.rounds) }))
+        .map(c => {
+            const played = Object.values(c.rec).reduce((m, v) => Math.max(m, v.w + v.l + v.t), 0);
+            return { ...c, played };
+        })
+        .filter(c => c.played > 0);
+}
+
+function renderCourseWinRate(name) {
+    const box = document.getElementById('courseWinRate');
+    const sel = document.getElementById('courseWinRateSelect');
+    if (!box || !sel) return;
+
+    const list = courseWinRateOptions(name);
+    if (list.length === 0) {
+        sel.style.display = 'none';
+        box.innerHTML = "<div style='text-align:center; color:#94a3b8;'>아직 골프장별로 볼 만한 기록이 없습니다.</div>";
+        return;
+    }
+    sel.style.display = '';
+
+    // 고른 곳이 없거나 사라졌으면 라운드가 가장 많은 곳부터 보여 준다.
+    if (!list.some(c => c.label.replace(/\s+/g, '') === h2hCourseKey)) {
+        h2hCourseKey = list.slice().sort((a, b) => b.played - a.played)[0].label.replace(/\s+/g, '');
+    }
+    const cur = list.find(c => c.label.replace(/\s+/g, '') === h2hCourseKey);
+
+    sel.innerHTML = list.map(c => {
+        const key = c.label.replace(/\s+/g, '');
+        return `<option value="${escapeHtml(key)}"${key === h2hCourseKey ? ' selected' : ''}>${escapeHtml(c.label)} (${c.played}판)</option>`;
+    }).join('');
+    sel.value = h2hCourseKey;
+
+    box.innerHTML = winRateListHtml(cur.rec)
+        + `<div class="winrate-note">핸디캡은 직전 두 차수로 내므로 1·2차전은 승부에서 빠집니다.</div>`;
+}
+
+function selectCourseWinRate(key, name) {
+    h2hCourseKey = key;
+    renderCourseWinRate(name);
+}
+
 function openPersonalReport(name) {
     const ranksForSound = golferRankHistory[name] || [];
     let currentRankForSound = ranksForSound.length > 0 ? ranksForSound[ranksForSound.length - 1] : 3;
@@ -2110,31 +2172,9 @@ function openPersonalReport(name) {
     const rankCounts = [0, 0, 0, 0]; (golferRankHistory[name] || []).forEach(r => rankCounts[r]++);
     const badgeHtmlWithDesc = (golferBadgesMap[name] || []).map((b, idx) => `<div class="badge-desc-item slot-roll" style="animation-delay: ${idx * 0.1}s;"><div style="flex-shrink:0;">${b.html}</div><div class="badge-desc-text">${b.desc}</div></div>`).join('');
     
-    const winRates = {}; golfers.forEach(g => { if(g !== name) winRates[g] = {w:0, l:0, t:0}; });
-    for (let r = 2; r < appData.totalRounds; r++) {
-        let isComplete = true; const hAvg = {}; const cScore = {};
-        golfers.forEach(g => {
-            const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r-2] : NaN), s2 = parseFloat(appData.scores[g] ? appData.scores[g][r-1] : NaN), sr = parseFloat(appData.scores[g] ? appData.scores[g][r] : NaN);
-            if(isNaN(s1) || isNaN(s2) || isNaN(sr)) isComplete = false;
-            hAvg[g] = Math.floor((s1+s2)/2); cScore[g] = sr;
-        });
-        if(!isComplete) continue;
-        for(let opp in winRates) {
-            const myAdj = cScore[name] - (hAvg[name] - hAvg[opp]), oppAdj = cScore[opp];
-            if(myAdj < oppAdj) winRates[opp].w++; else if(myAdj > oppAdj) winRates[opp].l++;
-            else { if(hAvg[name] < hAvg[opp]) winRates[opp].w++; else if(hAvg[opp] < hAvg[name]) winRates[opp].l++; else winRates[opp].t++; }
-        }
-    }
-
-    let winRateHtml = ""; let hasMatches = false;
-    for(let opp in winRates) {
-        const matchCount = winRates[opp].w + winRates[opp].l + winRates[opp].t;
-        if (matchCount > 0) { 
-            hasMatches = true; 
-            winRateHtml += `<div class="slot-roll" style="display:flex; animation-delay: 0.3s; width: 100%;"><span>vs ${opp}</span> <b style="color:#b8860b;">승률 ${Math.round((winRates[opp].w / matchCount) * 100)}%</b> <span>(${winRates[opp].w}승 ${winRates[opp].t}무 ${winRates[opp].l}패)</span></div>`; 
-        }
-    }
-    if (!hasMatches) winRateHtml = "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
+    // 통산 승률. 계산은 calc.js의 headToHead() 한 곳에만 있다 —
+    // 골프장별 승률이 같은 함수를 쓰므로 규칙이 어긋날 자리가 없다.
+    const winRateHtml = winRateListHtml(headToHead(name, allRoundIdx()));
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : { "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 } };
 
@@ -2170,8 +2210,17 @@ function openPersonalReport(name) {
             <div class="stat-box"><div class="stat-label">${iS}참새</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[3]}" data-suffix="회" style="color:#64748b; animation-delay: 0.4s;">0회</div></div>
         </div></div>
         <div class="report-section"><div class="report-title">⚔️ 1:1 통산 승률</div><div class="winrate-list">${winRateHtml}</div></div>
+        <div class="report-section">
+            <div class="report-title report-title-row">
+                <span>🏌️ 골프장별 1:1 승률</span>
+                <select class="course-wr-select" id="courseWinRateSelect"
+                        onchange="selectCourseWinRate(this.value, '${escapeHtml(name)}')"></select>
+            </div>
+            <div class="winrate-list" id="courseWinRate"></div>
+        </div>
         </div>
     `;
+    renderCourseWinRate(name);
     switchReportTab('record');
     
     document.getElementById('personalReportModal').classList.add('active');
