@@ -85,7 +85,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                     <span style="font-size:0.72rem; font-weight:800; color:#e2e8f0; background:rgba(255,255,255,0.08); border-radius:5px; padding:2px 6px; white-space:nowrap;">${log.time}</span>
                     <span style="font-size:0.75rem; color:#fef08a; font-weight:700;">${escapeHtml(log.name || '')}</span>
-                    <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
+                    <button type="button" onclick="editFundLog(${i})" title="내역 고치기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✎</button>
+                    <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
                 </div>
                 <div style="color:#cbd5e1; font-size:0.82rem; white-space:nowrap;">${formatNumber(log.before)}원 ➔ <b style="color:#e2e8f0;">${formatNumber(log.after)}원</b></div>
                 ${moveHtml}
@@ -107,6 +108,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 기록 지우기. 공금 잔액은 건드리지 않는다 — 로그만 없앤다.
     // 테스트로 남긴 줄을 걷어내려고 만든 것이라, 되돌릴 수 있게 saveState()를 먼저 부른다.
+    // 내역을 잘못 적었을 때 그 줄만 고친다. 금액은 못 고친다 —
+    // 로그는 before → after가 사슬로 이어져 있어 지난 금액을 고치면 이력이 어긋난다.
+    window.editFundLog = async (idx) => {
+        const log = (appData.fundLogs || [])[idx];
+        if (!log) return;
+        const memo = await showMemoPrompt(log);
+        if (memo === null) return;                       // 취소
+        if (memo === (log.memo || '')) return;           // 그대로면 저장하지 않는다
+        saveState();
+        if (memo) log.memo = memo; else delete log.memo; // 비우면 아예 없앤다(옛 기록과 같은 모양)
+        syncToSupabase(appData);
+        renderFundLogs();
+        showToast(memo ? "✏️ 내역을 고쳤습니다." : "✏️ 내역을 지웠습니다.");
+    };
+
     window.removeFundLog = async (idx) => {
         const log = (appData.fundLogs || [])[idx];
         if (!log) return;
@@ -297,6 +313,70 @@ function showConfirmPrompt(message, confirmLabel, accent) {
         cancelBtn.onclick = () => cleanup(false);
         confirmBtn.onclick = () => cleanup(true);
         overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+    });
+}
+
+/* 공금 로그의 내역(메모)을 고치는 창.
+   `.modal-overlay` 클래스를 쓰지 않고 스스로 스타일을 다 지정한다 —
+   그 클래스는 닫히면 `visibility:hidden`이라 인라인 opacity만으로는 안 보인다.
+   z-index는 로그 창(9999)보다 위여야 한다.
+
+   **금액은 고칠 수 없고 내역만 고친다.** 로그는 `before → after`가 사슬로 이어져 있어
+   지난 금액을 고치면 다음 기록의 `before`와 어긋나 이력이 거짓말이 된다.
+   금액을 잘못 넣었으면 공금을 한 번 더 수정해 바로잡는 게 맞다. */
+function showMemoPrompt(log) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10001; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+
+        const box = document.createElement('div');
+        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:300px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+
+        const diff = (log.after || 0) - (log.before || 0);
+        const moveText = diff === 0 ? '변동 없음'
+            : `${diff > 0 ? '적립' : '사용'} ${formatNumber(Math.abs(diff))}원`;
+
+        const msgEl = document.createElement('div');
+        msgEl.innerHTML = `내역 고치기<br>`
+            + `<span style="font-size:0.74rem; font-weight:700; color:#94a3b8;">${escapeHtml(log.time || '')} · ${escapeHtml(log.name || '')}</span><br>`
+            + `<span style="font-size:0.78rem; font-weight:800; color:${diff < 0 ? '#f87171' : diff > 0 ? '#4ade80' : '#94a3b8'};">${moveText}</span>`;
+        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:14px; font-weight:800; line-height:1.6;";
+
+        const input = document.createElement('input');
+        input.type = "text"; input.maxLength = 40;
+        input.value = log.memo || '';
+        input.placeholder = "예: 박승수 9월회비";
+        input.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
+
+        const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = "취소";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
+        const okBtn = document.createElement('button');
+        okBtn.textContent = "저장";
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#1e293b; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        row.appendChild(cancelBtn); row.appendChild(okBtn);
+
+        box.appendChild(msgEl); box.appendChild(input); box.appendChild(row);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            box.style.transform = "scale(1)";
+            input.focus(); input.select();
+        }, 10);
+
+        function cleanup(value) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => { overlay.remove(); resolve(value); }, 200);
+        }
+
+        cancelBtn.onclick = () => cleanup(null);
+        okBtn.onclick = () => cleanup(input.value.trim());
+        input.onkeydown = (e) => { if (e.key === 'Enter') cleanup(input.value.trim()); };
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
     });
 }
 
