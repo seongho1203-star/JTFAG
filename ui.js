@@ -877,8 +877,29 @@ function subCourseMap() {
     return appData.roundSubCourses;
 }
 
+/* 지난 차수의 코스는 **아무도 입력하지 않아도 이미 있다.**
+   스코어카드 판독이 카드에 인쇄된 코스 이름을 `ROUND_HOLES[n].course`에 적어 왔다
+   (`함평엘리체 (마제스티-펠리스)` · `어등-송정`). 앱이 그걸 안 읽고 있었을 뿐이다.
+   그래서 골프장별 코스 정보를 어디서 받아 올 필요가 없다 — 사진이 원본이다.
+
+   괄호가 있으면 그 안이 코스다. 없으면 `어등-송정`처럼 코스만 적힌 경우라
+   **하이픈으로 이어진 것만** 코스로 본다(골프장 이름 하나만 적힌 걸 코스로 오해하지 않게). */
+function subCourseFromStats(roundIdx) {
+    if (typeof ROUND_HOLES === 'undefined') return '';
+    const rec = ROUND_HOLES[String(roundIdx + 1)];
+    const text = String((rec && rec.course) || '').trim();
+    if (!text) return '';
+    const paren = text.match(/\(([^()]+)\)\s*$/);
+    if (paren) return paren[1].trim();
+    return text.includes('-') ? text : '';
+}
+
+/* 사람이 일정에서 정한 값이 먼저다. 없으면 스코어카드에서 읽은 값을 쓴다.
+   **읽은 값을 payload에 옮겨 적지 말 것** — stats.js가 이미 원본이라 두 곳이 되면
+   어긋나고, 저장이 나가면 실시간 이벤트가 되돌아와 렌더가 또 돈다. 읽기만 한다. */
 function subCourseOf(roundIdx) {          // roundIdx는 0부터
-    return String(subCourseMap()[roundIdx + 1] || '').trim();
+    const set = String(subCourseMap()[roundIdx + 1] || '').trim();
+    return set || subCourseFromStats(roundIdx);
 }
 
 /* 표 머리의 코스 줄을 그 차수 값에 맞춘다. 코스가 없으면 줄을 아예 지운다.
@@ -902,12 +923,14 @@ function paintSubCourse(r) {
 function pastSubCourses(club) {
     const key = String(club || '').replace(/\s+/g, '');
     if (!key) return [];
-    const clubs = roundCourseMap(), subs = subCourseMap(), seen = new Set();
-    Object.keys(subs).forEach(no => {
-        const c = String(clubs[no] || (appData.courses && appData.courses[no - 1]) || '').replace(/\s+/g, '');
-        if (c !== key) return;
-        splitSubCourse(subs[no]).forEach(v => seen.add(v));
-    });
+    const clubs = roundCourseMap(), seen = new Set();
+    // 차수를 하나씩 훑는다 — 일정에서 정한 것과 스코어카드에서 읽은 것을 같이 본다.
+    // subCourseOf()가 그 우선순위를 이미 알고 있으므로 여기서 다시 가리지 않는다.
+    for (let r = 0; r < (appData.totalRounds || 0); r++) {
+        const c = String(clubs[r + 1] || (appData.courses && appData.courses[r]) || '').replace(/\s+/g, '');
+        if (c !== key) continue;
+        splitSubCourse(subCourseOf(r)).forEach(v => seen.add(v));
+    }
     return [...seen];
 }
 
@@ -1021,9 +1044,9 @@ function openScheduleModal(pickRound) {
     const search = document.getElementById('schCourseSearch');
     search.value = roundCourseMap()[pick] || (appData.courses && appData.courses[pick - 1]) || lastScheduledCourse();
 
-    // 그 차수에 정해 둔 코스도 같이 채운다. 없으면 빈 칸으로 둔다 —
-    // 지난 차수의 코스가 남아 있으면 다른 골프장인데 엉뚱한 코스가 딸려 들어간다.
-    document.getElementById('schSubCourse').value = subCourseMap()[pick] || '';
+    // 그 차수의 코스도 같이 채운다 — 일정에서 정한 게 없으면 스코어카드에서 읽은 값이 온다.
+    // 없으면 빈 칸으로 둔다. 지난 차수의 코스가 남아 있으면 다른 골프장인데 엉뚱한 게 딸려 들어간다.
+    document.getElementById('schSubCourse').value = subCourseOf(pick - 1);
     renderSubCourseChips();
 
     const statusText = document.getElementById('courseLoadStatus');
@@ -1038,7 +1061,7 @@ function onScheduleRoundChange() {
     const no = parseInt(document.getElementById('schRound').value, 10);
     if (!no) return;
     const club = roundCourseMap()[no] || (appData.courses && appData.courses[no - 1]) || '';
-    const sub = subCourseMap()[no] || '';
+    const sub = subCourseOf(no - 1);
     if (club) {
         document.getElementById('schCourseSearch').value = club;
         document.getElementById('schSubCourse').value = sub;
