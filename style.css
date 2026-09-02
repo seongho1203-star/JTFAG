@@ -90,6 +90,12 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .course-mark { font-size: 0.72rem; flex-shrink: 0; }
 .course-empty { padding: 10px; font-size: 0.72rem; font-weight: 600; color: #94a3b8; text-align: center; }
 
+/* 9홀 코스 칩. 그 골프장에서 전에 쓴 이름만 뜨므로 대개 한두 개다 —
+   목록이 비면 renderSubCourseChips()가 통째로 숨긴다(빈 줄이 남지 않게). */
+.sub-course-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.sub-course-chip { padding: 4px 9px; border-radius: 999px; border: 1px solid rgba(184, 134, 11, 0.4); background: var(--gold-light); color: var(--primary-gold); font-size: 0.7rem; font-weight: 800; cursor: pointer; }
+.sub-course-chip:active { background: #fde68a; }
+
 .total-summary-card { background: linear-gradient(145deg, #ffffff, #fefce8); border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 4px 10px 4px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); }
 .total-summary-card h2 { font-size: clamp(0.75rem, 3vw, 0.88rem); margin: 0 0 5px 0; text-align: center; color: var(--primary-gold); font-weight: 800; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
@@ -431,6 +437,10 @@ input.course-input.locked { cursor: default; pointer-events: none; user-select: 
 input.money-input.locked { background-color: transparent !important; border-color: transparent !important; color: var(--text-sub, #64748b) !important; cursor: default; user-select: none; -webkit-user-select: none; }
 .course-slot { cursor: pointer; }
 .course-slot:active input.course-input.locked { background-color: #fde68a; }
+/* 클럽 이름 아래 한 줄로 붙는 9홀 코스. 골프장 칸과 폭을 맞추고,
+   길면 말줄임으로 자른다 — 두 줄이 되면 표 머리 높이가 차수마다 달라진다.
+   잠긴 칸과 같은 이유로 터치를 안 받는다(누르는 건 .course-slot이 받는다). */
+.course-sub { width: 63px; margin: 1px auto 0 auto; font-size: clamp(0.5rem, 1.8vw, 0.56rem); font-weight: 700; color: var(--primary-gold); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; user-select: none; -webkit-user-select: none; }
 .photo-btn { width: 63px; padding: 2px 1px; border: 1px solid rgba(184, 134, 11, 0.4); border-radius: 4px; text-align: center; font-size: clamp(0.58rem, 2.1vw, 0.65rem); font-weight: 800; color: var(--primary-gold); background: #ffffff; margin: 3px auto 0 auto; display: block; box-sizing: border-box; }
 .photo-btn:hover { background: #fef9e7; }
 

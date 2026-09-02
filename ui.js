@@ -845,6 +845,7 @@ function renderCourseResults(browse) {
 
 function pickCourse(name) {
     document.getElementById('schCourseSearch').value = name;
+    renderSubCourseChips();
     renderCourseResults();
     document.getElementById('courseResults').scrollTop = 0;
 }
@@ -854,6 +855,78 @@ function pickCourse(name) {
 function roundCourseMap() {
     if (!appData.roundCourses || typeof appData.roundCourses !== 'object') appData.roundCourses = {};
     return appData.roundCourses;
+}
+
+/* ── 골프장 안의 9홀 코스 ─────────────────────────────────────────
+   한 클럽에 코스가 여럿이다(함평엘리체 = 임페리얼 · 마제스티 · 펠리스).
+   한 라운드는 그중 둘을 도는데, 그 조합이 `마제스티-펠리스`다.
+
+   **코스는 `courses[]`에 넣지 않고 따로 기억한다.** 합쳐 넣으면
+   `함평엘리체 (마제스티-펠리스)`가 통째로 골프장 이름이 되어,
+   날씨 좌표를 못 찾고 골프장별 1:1 승률에서도 같은 클럽이 갈라진다.
+   `courses[]`는 클럽 이름만, 코스는 여기에. 키는 차수 번호(1부터)로 `roundCourses`와 같다. */
+function subCourseMap() {
+    if (!appData.roundSubCourses || typeof appData.roundSubCourses !== 'object') appData.roundSubCourses = {};
+    return appData.roundSubCourses;
+}
+
+function subCourseOf(roundIdx) {          // roundIdx는 0부터
+    return String(subCourseMap()[roundIdx + 1] || '').trim();
+}
+
+/* 표 머리의 코스 줄을 그 차수 값에 맞춘다. 코스가 없으면 줄을 아예 지운다.
+   **renderTable()의 빠른 길(값만 갈아 끼우는 분기)에서도 반드시 부를 것** —
+   빠뜨리면 일정에서 코스를 고쳐도 표는 새로고침 전까지 옛 코스를 붙들고 있다
+   (정산 칸 잠금이 data-lock 없이 그랬던 것과 같은 자리다).
+   사용자가 친 글이라 textContent로 넣는다. */
+function paintSubCourse(r) {
+    const input = document.getElementById(`course_input_${r}`);
+    if (!input || !input.parentElement) return;
+    const slot = input.parentElement;
+    const name = subCourseOf(r);
+    let line = slot.querySelector('.course-sub');
+    if (!name) { if (line) line.remove(); return; }
+    if (!line) { line = document.createElement('div'); line.className = 'course-sub'; slot.appendChild(line); }
+    if (line.textContent !== name) line.textContent = name;
+}
+
+/* 그 클럽에서 전에 쓴 코스 이름들. 목록을 따로 들고 있지 않고 기록에서 뽑는다 —
+   쓸수록 저절로 늘어나고, 관리할 데이터가 새로 생기지 않는다. */
+function pastSubCourses(club) {
+    const key = String(club || '').replace(/\s+/g, '');
+    if (!key) return [];
+    const clubs = roundCourseMap(), subs = subCourseMap(), seen = new Set();
+    Object.keys(subs).forEach(no => {
+        const c = String(clubs[no] || appData.courses[no - 1] || '').replace(/\s+/g, '');
+        const v = String(subs[no] || '').trim();
+        if (c === key && v) seen.add(v);
+    });
+    return [...seen];
+}
+
+function renderSubCourseChips() {
+    const box = document.getElementById('subCourseChips');
+    const search = document.getElementById('schCourseSearch');
+    if (!box || !search) return;
+    const list = pastSubCourses(search.value.trim());
+    box.innerHTML = '';
+    // 코스 이름은 사용자가 친 글이다. onclick 문자열에 끼워 넣지 말 것 —
+    // escapeHtml이 만든 &#39;는 속성값에서 다시 '로 풀려 그 자리에서 코드가 깨진다.
+    // 요소를 만들어 리스너를 직접 걸면 따옴표가 들어 있어도 그대로 넘어간다.
+    list.forEach(v => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sub-course-chip';
+        btn.textContent = v;
+        btn.addEventListener('click', () => pickSubCourse(v));
+        box.appendChild(btn);
+    });
+    box.style.display = list.length ? '' : 'none';
+}
+
+function pickSubCourse(name) {
+    const input = document.getElementById('schSubCourse');
+    if (input) input.value = name;
 }
 
 // 기억해 둔 이름을 표의 빈 골프장 칸에 채운다. 이미 적혀 있으면 건드리지 않는다.
@@ -905,16 +978,40 @@ function openScheduleModal(pickRound) {
     const search = document.getElementById('schCourseSearch');
     search.value = roundCourseMap()[pick] || (appData.courses && appData.courses[pick - 1]) || lastScheduledCourse();
 
+    // 그 차수에 정해 둔 코스도 같이 채운다. 없으면 빈 칸으로 둔다 —
+    // 지난 차수의 코스가 남아 있으면 다른 골프장인데 엉뚱한 코스가 딸려 들어간다.
+    document.getElementById('schSubCourse').value = subCourseMap()[pick] || '';
+    renderSubCourseChips();
+
     const statusText = document.getElementById('courseLoadStatus');
     if (statusText) statusText.textContent = `전국 ${allCourses().length}곳에서 검색`;
     renderCourseResults(true);
 }
 
+/* 창을 열어 둔 채로 차수를 바꾸면 그 차수에 정해 둔 골프장·코스로 갈아 끼운다.
+   **이미 정해진 게 있을 때만** 바꾼다 — 아직 아무것도 없는 차수로 옮겼는데
+   치던 이름을 지워 버리면, 새 차수를 잡으려던 사람이 처음부터 다시 쳐야 한다. */
+function onScheduleRoundChange() {
+    const no = parseInt(document.getElementById('schRound').value, 10);
+    if (!no) return;
+    const club = roundCourseMap()[no] || (appData.courses && appData.courses[no - 1]) || '';
+    const sub = subCourseMap()[no] || '';
+    if (club) {
+        document.getElementById('schCourseSearch').value = club;
+        document.getElementById('schSubCourse').value = sub;
+        renderCourseResults(true);
+    }
+    renderSubCourseChips();
+}
+
 // 저장돼 있는 일정 문구("8월 20일 오전 7:30 무등산CC")의 끝에 골프장 이름이 붙어 있다.
+// 9홀 코스를 정했으면 뒤에 괄호로 딸려 있다 — 그건 떼고 클럽 이름만 돌려준다.
+// 안 떼면 다음 차수 일정을 열 때 검색칸에 "함평엘리체 (마제스티-펠리스)"가 들어앉아
+// 그대로 저장되면 그게 통째로 골프장 이름이 된다.
 function lastScheduledCourse() {
     const text = String(appData.nextRoundDate || '');
     const m = text.match(/\d{1,2}:\d{2}\s+(.+)$/);
-    return m ? m[1].trim() : '';
+    return m ? m[1].replace(/\s*\([^()]*\)\s*$/, '').trim() : '';
 }
 
 function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('active'); }
@@ -943,7 +1040,10 @@ function saveSchedule() {
     const ampm = document.getElementById('schAmpm').value;
     const hh = document.getElementById('schHour').value;
     const mm = document.getElementById('schMinute').value;
-    appData.nextRoundDate = `${m}월 ${d}일 ${ampm} ${hh}:${mm} ${course}`;
+    // 코스는 클럽 이름 뒤에 괄호로 붙인다. courseFromText()가 문구 안에서
+    // 클럽 이름을 찾아내므로 이렇게 적어도 날씨는 그대로 뜬다.
+    const sub = (document.getElementById('schSubCourse').value || '').trim();
+    appData.nextRoundDate = `${m}월 ${d}일 ${ampm} ${hh}:${mm} ${course}${sub ? ` (${sub})` : ''}`;
     // 표시용 문구에는 연도가 없어 알림이 연도를 알 수 없다. 별도로 남긴다.
     appData.nextRoundISO = resolveRoundDate(m, d);
 
@@ -952,6 +1052,8 @@ function saveSchedule() {
     const roundNo = parseInt(document.getElementById('schRound').value, 10) || (appData.totalRounds + 1);
     appData.nextRoundNo = roundNo;
     roundCourseMap()[roundNo] = course;
+    // 코스는 따로 둔다. courses[]에 합치면 골프장 이름이 되어 날씨와 승률 묶음이 깨진다.
+    if (sub) subCourseMap()[roundNo] = sub; else delete subCourseMap()[roundNo];
     if (roundNo <= appData.totalRounds) {
         if (!appData.courses) appData.courses = [];
         appData.courses[roundNo - 1] = course;
@@ -1650,6 +1752,7 @@ function renderTable() {
         for (let r = 0; r < appData.totalRounds; r++) {
             const cInput = document.getElementById(`course_input_${r}`);
             if (cInput && document.activeElement !== cInput) cInput.value = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
+            paintSubCourse(r);
             const pBtn = document.getElementById(`photo_btn_${r}`);
             if (pBtn) pBtn.innerHTML = `📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장`;
         }
@@ -1674,6 +1777,7 @@ function renderTable() {
     }
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
+    for (let r = 0; r < appData.totalRounds; r++) paintSubCourse(r);
 
     tbody.innerHTML = "";
     golfers.forEach(name => {

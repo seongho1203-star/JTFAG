@@ -295,7 +295,10 @@ function getDefaultData() {
         scoreRequests: [],
         // 차수별 골프장 기억. 표의 courses[]와 달리 차수를 지워도 남는다 —
         // 6차를 지웠다 다시 만들어도 골프장 이름이 그대로 돌아온다.
-        roundCourses: {}
+        roundCourses: {},
+        // 그 라운드에 돈 9홀 코스(`마제스티-펠리스`). 클럽 이름과 섞으면
+        // 날씨 좌표와 골프장별 승률 묶음이 깨져서 따로 둔다.
+        roundSubCourses: {}
     };
 }
 

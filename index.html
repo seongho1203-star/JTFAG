@@ -136,7 +136,7 @@
                 <div class="sch-row">
                     <label>차수 · 날짜</label>
                     <div class="sch-inputs">
-                        <select id="schRound" class="sch-round"></select>
+                        <select id="schRound" class="sch-round" onchange="onScheduleRoundChange()"></select>
                         <select id="schMonth"></select><span>월</span>
                         <select id="schDay"></select><span>일</span>
                     </div>
@@ -153,6 +153,11 @@
                     <label style="margin-bottom:6px;">⛳ 골프장 <span id="courseLoadStatus" style="font-size:0.6rem; color:#10b981; font-weight:normal;"></span></label>
                     <input type="text" id="schCourseSearch" class="course-search" placeholder="골프장 이름 검색 (예: 무등산)" autocomplete="off" oninput="renderCourseResults()" onfocus="this.select(); renderCourseResults(true);">
                     <div id="courseResults" class="course-results"></div>
+                </div>
+                <div class="sch-row" style="flex-direction: column; align-items: flex-start;">
+                    <label style="margin-bottom:6px;">🏁 코스 <span style="font-size:0.6rem; color:#94a3b8; font-weight:normal;">(선택 · 예: 마제스티-펠리스)</span></label>
+                    <input type="text" id="schSubCourse" class="course-search" placeholder="9홀 코스 이름 (비워도 됩니다)" autocomplete="off" maxlength="30">
+                    <div id="subCourseChips" class="sub-course-chips"></div>
                 </div>
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
