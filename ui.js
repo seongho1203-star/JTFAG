@@ -844,7 +844,14 @@ function renderCourseResults(browse) {
 }
 
 function pickCourse(name) {
-    document.getElementById('schCourseSearch').value = name;
+    const search = document.getElementById('schCourseSearch');
+    // 골프장을 바꿨으면 골라 둔 코스를 비운다 — 다른 골프장의 코스가 남아 있으면
+    // 목록에도 없는 이름이 그대로 저장된다(어등산인데 마제스티가 붙는 식).
+    if (search.value.trim() !== name) {
+        const sub = document.getElementById('schSubCourse');
+        if (sub) sub.value = '';
+    }
+    search.value = name;
     renderSubCourseChips();
     renderCourseResults();
     document.getElementById('courseResults').scrollTop = 0;
@@ -890,43 +897,79 @@ function paintSubCourse(r) {
     if (line.textContent !== name) line.textContent = name;
 }
 
-/* 그 클럽에서 전에 쓴 코스 이름들. 목록을 따로 들고 있지 않고 기록에서 뽑는다 —
-   쓸수록 저절로 늘어나고, 관리할 데이터가 새로 생기지 않는다. */
+/* 그 클럽에서 전에 쓴 코스 이름들. `마제스티-펠리스`처럼 붙여 적은 것도 쪼개서 센다 —
+   기록에서 뽑으므로 표에 없는 골프장이라도 한 번 쳐 넣으면 다음부터 목록에 오른다. */
 function pastSubCourses(club) {
     const key = String(club || '').replace(/\s+/g, '');
     if (!key) return [];
     const clubs = roundCourseMap(), subs = subCourseMap(), seen = new Set();
     Object.keys(subs).forEach(no => {
-        const c = String(clubs[no] || appData.courses[no - 1] || '').replace(/\s+/g, '');
-        const v = String(subs[no] || '').trim();
-        if (c === key && v) seen.add(v);
+        const c = String(clubs[no] || (appData.courses && appData.courses[no - 1]) || '').replace(/\s+/g, '');
+        if (c !== key) return;
+        splitSubCourse(subs[no]).forEach(v => seen.add(v));
     });
     return [...seen];
 }
 
+// `마제스티-펠리스` → ["마제스티", "펠리스"]. 전·후반 두 코스를 하이픈으로 잇는다.
+function splitSubCourse(text) {
+    return String(text || '').split('-').map(s => s.trim()).filter(Boolean);
+}
+
+/* 그 골프장에서 고를 수 있는 9홀 코스. 손으로 적어 둔 표(`CLUB_COURSES`)가 먼저 오고,
+   거기 없는데 전에 쳐 넣은 이름이 있으면 뒤에 붙는다. 둘 다 없으면 빈 목록이다 —
+   그때는 칩 줄이 통째로 숨고 직접 쳐 넣게 된다. */
+function subCourseChoices(club) {
+    const known = clubCourses(club);
+    const past = pastSubCourses(club).filter(v => !known.includes(v));
+    return [...known, ...past];
+}
+
+/* 코스는 눌러서 고른다. 한 라운드는 두 코스를 도니까 **누를 때마다 켜지고 꺼진다** —
+   `마제스티` 누르고 `펠리스` 누르면 `마제스티-펠리스`가 된다. 다시 누르면 빠진다.
+   고른 차례가 곧 전·후반 순서라 정렬하지 않는다. */
 function renderSubCourseChips() {
     const box = document.getElementById('subCourseChips');
     const search = document.getElementById('schCourseSearch');
-    if (!box || !search) return;
-    const list = pastSubCourses(search.value.trim());
+    const input = document.getElementById('schSubCourse');
+    if (!box || !search || !input) return;
+
+    const list = subCourseChoices(search.value.trim());
+    const picked = splitSubCourse(input.value);
     box.innerHTML = '';
-    // 코스 이름은 사용자가 친 글이다. onclick 문자열에 끼워 넣지 말 것 —
+    // 코스 이름은 사용자가 친 글일 수 있다. onclick 문자열에 끼워 넣지 말 것 —
     // escapeHtml이 만든 &#39;는 속성값에서 다시 '로 풀려 그 자리에서 코드가 깨진다.
     // 요소를 만들어 리스너를 직접 걸면 따옴표가 들어 있어도 그대로 넘어간다.
     list.forEach(v => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'sub-course-chip';
+        const at = picked.indexOf(v);
+        btn.className = 'sub-course-chip' + (at !== -1 ? ' on' : '');
         btn.textContent = v;
-        btn.addEventListener('click', () => pickSubCourse(v));
+        // 몇 번째로 고른 코스인지 보여 준다 — 전반·후반이 뒤바뀌면 눈에 띄어야 한다.
+        if (at !== -1) {
+            const no = document.createElement('span');
+            no.className = 'chip-no';
+            no.textContent = at + 1;
+            btn.appendChild(no);
+        }
+        btn.addEventListener('click', () => toggleSubCourse(v));
         box.appendChild(btn);
     });
     box.style.display = list.length ? '' : 'none';
+
+    const hint = document.getElementById('subCourseHint');
+    if (hint) hint.style.display = list.length ? 'none' : '';
 }
 
-function pickSubCourse(name) {
+function toggleSubCourse(name) {
     const input = document.getElementById('schSubCourse');
-    if (input) input.value = name;
+    if (!input) return;
+    const picked = splitSubCourse(input.value);
+    const at = picked.indexOf(name);
+    if (at !== -1) picked.splice(at, 1); else picked.push(name);
+    input.value = picked.join('-');
+    renderSubCourseChips();
 }
 
 // 기억해 둔 이름을 표의 빈 골프장 칸에 채운다. 이미 적혀 있으면 건드리지 않는다.

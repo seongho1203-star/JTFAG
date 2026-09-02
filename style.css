@@ -90,11 +90,19 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .course-mark { font-size: 0.72rem; flex-shrink: 0; }
 .course-empty { padding: 10px; font-size: 0.72rem; font-weight: 600; color: #94a3b8; text-align: center; }
 
-/* 9홀 코스 칩. 그 골프장에서 전에 쓴 이름만 뜨므로 대개 한두 개다 —
-   목록이 비면 renderSubCourseChips()가 통째로 숨긴다(빈 줄이 남지 않게). */
-.sub-course-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-.sub-course-chip { padding: 4px 9px; border-radius: 999px; border: 1px solid rgba(184, 134, 11, 0.4); background: var(--gold-light); color: var(--primary-gold); font-size: 0.7rem; font-weight: 800; cursor: pointer; }
-.sub-course-chip:active { background: #fde68a; }
+/* 9홀 코스 칩. 골프장 하나에 서너 개뿐이라 검색창 없이 다 늘어놓는다.
+   **누를 때마다 켜지고 꺼진다** — 두 개를 골라 `마제스티-펠리스`를 만드는 방식이다.
+   목록을 모르는 골프장이면 renderSubCourseChips()가 줄을 통째로 숨기고
+   대신 안내(.sub-course-hint)를 띄운다. */
+.sub-course-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.sub-course-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 999px; border: 1px solid #cbd5e1; background: #ffffff; color: #64748b; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
+.sub-course-chip:active { background: #f1f5f9; }
+/* 고른 것. 색이 확 달라야 두 개를 골랐는지 한눈에 보인다. */
+.sub-course-chip.on { border-color: var(--primary-gold); background: var(--primary-gold); color: #ffffff; }
+.sub-course-chip.on:active { background: #b8860b; }
+/* 몇 번째로 골랐는가 — 전반·후반 순서다. */
+.chip-no { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: rgba(255, 255, 255, 0.32); font-size: 0.58rem; font-weight: 900; }
+.sub-course-hint { margin-top: 7px; font-size: 0.64rem; font-weight: 600; color: #94a3b8; line-height: 1.5; }
 
 .total-summary-card { background: linear-gradient(145deg, #ffffff, #fefce8); border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 4px 10px 4px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); }
 .total-summary-card h2 { font-size: clamp(0.75rem, 3vw, 0.88rem); margin: 0 0 5px 0; text-align: center; color: var(--primary-gold); font-weight: 800; }
