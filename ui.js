@@ -1767,20 +1767,20 @@ function renderDonateRow() {
             }).join('') + `</div>
         </div>
         <div class="near-box">
-            <span class="near-head">🎯 니어 <span id="nearCarryLabel">이월</span></span>
+            <span class="near-head">🎯 니어 잔액</span>
             <b id="nearCarry">0원</b>
         </div>`;
     paintDonateSum();
     paintNearBox();
 }
 
-/* ── 니어 이월 ───────────────────────────────────────────────────
-   파3 홀마다 1인당 5천원씩 걷어 니어한 사람이 가져가는데, 니어가 없으면 다음으로 이월된다.
-   그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** — 8차가 -93,000 / +53,000이었고
-   남은 40,000원이 팟에 남아 넘어간 돈이다.
+/* ── 니어 잔액 ───────────────────────────────────────────────────
+   파3 홀마다 1인당 5천원씩 걷어 니어한 사람이 가져가는데, 니어가 없으면 팟에 남아
+   다음으로 넘어간다. 그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** —
+   8차가 -93,000 / +53,000이었고 남은 40,000원이 팟에 남은 잔액이다.
 
-   **잃은·딴 금액은 여기 안 적는다.** 표의 `타수정산` 칸에 사람마다 이미 다 나와 있어
-   되풀이일 뿐이다. 표에 없는 건 이월 하나뿐이라 그것만 적는다.
+   **잔액 하나만 적는다.** 잃은·딴 금액은 표의 `타수정산` 칸에 사람마다 이미 다 나와 있어
+   되풀이일 뿐이다. 표에 없는 건 잔액 하나뿐이다.
 
    **더하는 값은 표의 `타수정산` 칸이다**(`strokeDiffOf()`). 시작·남은 차이를 그대로 쓰면 안 된다 —
    거기엔 계급정산이 섞여 있는데 그 돈은 공금으로 가지 선수들 사이에서 오간 게 아니다.
@@ -1789,19 +1789,18 @@ function renderDonateRow() {
    **입력받지 않고 계산한다.** 타수정산의 합이 정확히 그 금액이라, 따로 적으면
    시작·남은 금액을 고칠 때마다 어긋난다. 계산하면 언제나 맞는다.
 
-   차액이 플러스일 수도 있다 — 지난 차수에서 넘어온 이월을 이번에 누가 먹은 경우다.
-   그때는 문구를 바꿔 '이월 받음'으로 적는다. 0이면 '이월 없음'. */
+   **마이너스일 수도 있다** — 지난 차수에서 넘어온 잔액을 이번에 누가 먹어, 팟에서 나간 돈이
+   걷은 돈보다 많은 경우다. 부호를 그대로 붙여 적고 색으로 구분한다. 0이면 '없음'. */
 function paintNearBox() {
     const el = document.getElementById('nearCarry');
     if (!el) return;
 
-    // 타수정산을 다 더하면 팟에 남은 돈이 된다. 마이너스면 이월, 플러스면 이월을 먹은 것이다.
+    // 타수정산을 다 더하면 팟에 남은 돈이 된다. 마이너스면 팟에 쌓인 것이다.
     const sum = golfers.reduce((a, g) => a + strokeDiffOf(g, selectedMoneyRoundIdx), 0);
-    const carry = -sum;
+    const left = -sum;
 
-    document.getElementById('nearCarryLabel').textContent = carry < 0 ? '이월 받음' : '이월';
-    el.textContent = carry === 0 ? '없음' : `${formatNumber(Math.abs(carry))}원`;
-    el.className = carry === 0 ? 'zero' : (carry > 0 ? 'carry-out' : 'carry-in');
+    el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : ''}${formatNumber(Math.abs(left))}원`;
+    el.className = left === 0 ? 'zero' : (left > 0 ? 'carry-out' : 'carry-in');
 }
 
 // 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.

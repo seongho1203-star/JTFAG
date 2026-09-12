@@ -376,13 +376,13 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 /* 남의 칸. 정산 칸과 같이 터치는 살려 둔다 — 누르면 왜 안 되는지 알려 준다. */
 .donate-input.locked { background: transparent; border-color: transparent; color: var(--text-sub); cursor: default; user-select: none; -webkit-user-select: none; }
 
-/* 니어 — 파3 팟에서 임자 없이 넘어간 돈. 이월 하나만 적는다.
+/* 니어 — 파3 팟에 남은 잔액. 이 금액 하나만 적는다.
    잃은·딴 금액은 표의 `타수정산` 칸에 사람마다 이미 다 나와 있어 되풀이일 뿐이다. */
 .near-box { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .near-head { font-size: 0.68rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
 .near-box b { font-size: 0.72rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
-.near-box b.carry-out { color: #0369a1; }   /* 팟에 남아 다음으로 넘어간 돈 */
-.near-box b.carry-in { color: #b45309; }    /* 지난 이월을 이번에 먹은 경우 */
+.near-box b.carry-out { color: #0369a1; }   /* 팟에 남아 다음으로 넘어가는 돈 */
+.near-box b.carry-in { color: #b45309; }    /* 지난 잔액을 이번에 먹어 마이너스가 된 경우 */
 .near-box b.zero { color: #94a3b8; }
 /* 계급정산·타수정산 두 칸이 같은 모양을 쓴다.
    예전에는 각 칸에 인라인 스타일을 따로 적어 굵기·배경 농도가 어긋나 있었다.
