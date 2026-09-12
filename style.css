@@ -355,37 +355,38 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .money-table td { padding: 4px 1px; }
 .money-input { width: 95% !important; max-width: 68px !important; height: 26px !important; background-color: var(--input-bg) !important; border: 1px solid #cbd5e1 !important; border-radius: 6px !important; text-align: center !important; font-size: clamp(0.65rem, 2.4vw, 0.72rem) !important; font-weight: 700 !important; }
 
-/* 찬조 + 니어 — 정산 표 아래에 나란히 둔 두 칸.
+/* 찬조 + 니어 — 정산 표 아래에 위아래로 놓인 두 줄.
    찬조를 표의 6번째 열로 넣으면 안 들어간다(5열이 이미 364px를 꽉 쓰고,
    320px에서는 지금도 가로로 넘친다). 아래에 두니 칸이 넉넉하다.
    **`.money-input`을 쓰지 말 것** — 68px로 묶여 있어 여기 붙이면 찌그러진다. */
-.donate-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
-.donate-box { flex: 1 1 0; min-width: 0; }
-.donate-head { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 5px; font-size: 0.7rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
+.donate-row { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+.donate-head { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 5px; font-size: 0.7rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
 /* 320px에서 합계 문구가 제목을 밀어 '찬'/'조' 두 글자가 갈라졌다.
    제목은 안 쪼개지게 묶고, 자리가 모자라면 합계가 아랫줄로 내려가게 둔다. */
 .donate-title { white-space: nowrap; flex-shrink: 0; }
 /* 찬조 합계. 있을 때만 적히므로 margin-left:auto로 오른쪽 끝에 붙인다. */
 .donate-head b { margin-left: auto; font-size: 0.6rem; font-weight: 800; color: #c026d3; white-space: nowrap; }
-/* 니어 칸이 오른쪽 절반을 쓰므로 찬조는 한 줄에 하나씩 쌓는다.
-   두 칸씩 늘어놓으면 절반 폭에서 입력칸이 40px로 찌그러진다. */
-.donate-grid { display: grid; grid-template-columns: 1fr; gap: 5px; }
-.donate-cell { display: flex; align-items: center; gap: 5px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 6px; }
-.donate-name { flex-shrink: 0; font-size: 0.66rem; font-weight: 800; color: var(--text-sub); }
-.donate-input { width: 100%; min-width: 0; box-sizing: border-box; height: 26px; padding: 0 6px; border: 1px solid #cbd5e1; border-radius: 6px; background: var(--input-bg); text-align: right; font-size: 0.7rem; font-weight: 700; color: var(--text-main); }
+/* 가로 한 줄에 넷. 391px 기기에서 한 칸이 약 88px이라 **이름을 위, 칸을 아래**에 둔다 —
+   옆에 붙이면 이름이 자리를 먹어 입력칸이 45px로 찌그러진다. */
+.donate-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.donate-cell { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px 4px; }
+.donate-name { font-size: 0.62rem; font-weight: 800; color: var(--text-sub); text-align: center; white-space: nowrap; }
+.donate-input { width: 100%; min-width: 0; box-sizing: border-box; height: 24px; padding: 0 4px; border: 1px solid #cbd5e1; border-radius: 6px; background: var(--input-bg); text-align: center; font-size: 0.66rem; font-weight: 700; color: var(--text-main); }
 .donate-input::placeholder { color: #cbd5e1; font-weight: 700; }
 /* 남의 칸. 정산 칸과 같이 터치는 살려 둔다 — 누르면 왜 안 되는지 알려 준다. */
 .donate-input.locked { background: transparent; border-color: transparent; color: var(--text-sub); cursor: default; user-select: none; -webkit-user-select: none; }
 
-/* 니어 — 파3 팟에서 임자 없이 넘어간 돈. 입력이 아니라 계산해서 보여 주는 칸이라
-   잃은·딴 합계를 같이 적는다. 셋을 보면 왜 합이 안 맞았는지가 그 자리에서 풀린다. */
-.near-box { flex: 1 1 0; min-width: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px 7px; }
-.near-head { font-size: 0.7rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; }
-.near-line { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 0.63rem; font-weight: 700; color: #64748b; padding: 2px 0; white-space: nowrap; }
+/* 니어 — 파3 팟에서 임자 없이 넘어간 돈. 입력이 아니라 계산해서 보여 주는 줄이라
+   잃은·딴 합계를 같이 적는다. 셋을 보면 왜 합이 안 맞았는지가 그 자리에서 풀린다.
+   좁은 화면에서는 줄바꿈으로 흘러내리게 둔다(가로로 넘기지 않는다). */
+.near-box { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 7px; padding: 5px 7px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.near-head { font-size: 0.68rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+.near-line { display: inline-flex; align-items: baseline; gap: 4px; font-size: 0.63rem; font-weight: 700; color: #64748b; white-space: nowrap; }
 .near-line b { font-weight: 800; color: var(--text-main); }
 .near-line b.neg { color: #dc2626; }
 .near-line b.pos { color: #16a34a; }
-.near-line.carry { margin-top: 2px; padding-top: 4px; border-top: 1px solid #e2e8f0; font-weight: 800; color: var(--text-main); }
+/* 이월은 결론이라 오른쪽 끝에 밀어 붙이고 선으로 끊는다. */
+.near-line.carry { margin-left: auto; padding-left: 9px; border-left: 1px solid #cbd5e1; font-weight: 800; color: var(--text-main); }
 .near-line b.carry-out { color: #0369a1; }   /* 팟에 남아 다음으로 넘어간 돈 */
 .near-line b.carry-in { color: #b45309; }    /* 지난 이월을 이번에 먹은 경우 */
 .near-line b.zero { color: #94a3b8; }

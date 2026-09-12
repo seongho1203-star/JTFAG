@@ -1648,6 +1648,21 @@ function moneyCell(g, type, value) {
             : `onclick="moneyLockNotice('${g}')"`}>`;
 }
 
+/* 계급정산·타수정산 — 표의 뒤 두 칸이 이 값이다.
+   **니어 이월이 `strokeDiffOf()`를 같이 쓴다** — 규칙이 두 군데가 되면
+   표에 적힌 타수정산과 니어가 합이 안 맞아 어디가 틀렸는지 알 수 없게 된다. */
+function rankPenaltyOf(name, roundIdx) {
+    return (cachedRoundRankProfit[name] && cachedRoundRankProfit[name][roundIdx] !== undefined)
+        ? cachedRoundRankProfit[name][roundIdx] : 0;
+}
+
+function strokeDiffOf(name, roundIdx) {
+    const m = (appData.roundMoney && appData.roundMoney[roundIdx] && appData.roundMoney[roundIdx][name]) || { start: 0, end: 0 };
+    const start = Number(m.start) || 0, end = Number(m.end) || 0;
+    if (start === 0 && end === 0) return 0;      // 아직 안 적은 사람은 0으로 둔다
+    return (end - start) - rankPenaltyOf(name, roundIdx);
+}
+
 function renderMoneyTable() {
     const tbody = document.getElementById('moneyTbody');
     const roundSelect = document.getElementById('moneyRoundSelect');
@@ -1674,12 +1689,9 @@ function renderMoneyTable() {
             const eInput = document.getElementById(`money_end_${g}`);
             if (sInput && document.activeElement !== sInput) sInput.value = formatNumber(m.start);
             if (eInput && document.activeElement !== eInput) eInput.value = formatNumber(m.end);
-            
-            const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][selectedMoneyRoundIdx] !== undefined) ? cachedRoundRankProfit[g][selectedMoneyRoundIdx] : 0;
-            const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : ((m.end - m.start) - rankPenalty);
-            
-            paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenalty);
-            paintMoneyResult(document.getElementById(`money_stroke_${g}`), pureStrokeDiff);
+
+            paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenaltyOf(g, selectedMoneyRoundIdx));
+            paintMoneyResult(document.getElementById(`money_stroke_${g}`), strokeDiffOf(g, selectedMoneyRoundIdx));
         });
         renderDonateRow();
         return;
@@ -1690,8 +1702,8 @@ function renderMoneyTable() {
     tbody.innerHTML = "";
     golfers.forEach(g => {
         const m = appData.roundMoney[selectedMoneyRoundIdx][g] || { start: 0, end: 0 };
-        const rankPenalty = (cachedRoundRankProfit[g] && cachedRoundRankProfit[g][selectedMoneyRoundIdx] !== undefined) ? cachedRoundRankProfit[g][selectedMoneyRoundIdx] : 0;
-        const pureStrokeDiff = (m.start === 0 && m.end === 0) ? 0 : ((m.end - m.start) - rankPenalty);
+        const rankPenalty = rankPenaltyOf(g, selectedMoneyRoundIdx);
+        const pureStrokeDiff = strokeDiffOf(g, selectedMoneyRoundIdx);
 
         tbody.innerHTML += `
             <tr>
@@ -1717,7 +1729,8 @@ function renderMoneyTable() {
    하나를 더 넣으면 금액 칸이 찌그러진다 — 320px에서는 지금도 가로로 넘친다.
    `.money-input`도 재사용하지 않는다(68px로 묶여 있다).
 
-   왼쪽 절반이 찬조, 오른쪽 절반이 니어다(아래 `paintNearBox()`). */
+   가로 한 줄에 넷을 늘어놓는다. 이름을 위, 칸을 아래에 둬야 91px 안에 들어간다 —
+   옆에 붙이면 이름이 자리를 먹어 칸이 45px로 찌그러진다. 니어는 그 아래 줄이다. */
 function renderDonateRow() {
     const box = document.getElementById('donateRow');
     if (!box) return;
@@ -1754,10 +1767,10 @@ function renderDonateRow() {
             }).join('') + `</div>
         </div>
         <div class="near-box">
-            <div class="near-head">🎯 니어</div>
-            <div class="near-line"><span>잃은</span><b id="nearLoss" class="neg">0원</b></div>
-            <div class="near-line"><span>딴</span><b id="nearGain" class="pos">0원</b></div>
-            <div class="near-line carry"><span id="nearCarryLabel">이월</span><b id="nearCarry">0원</b></div>
+            <span class="near-head">🎯 니어</span>
+            <span class="near-line"><span>잃은</span><b id="nearLoss" class="neg">0원</b></span>
+            <span class="near-line"><span>딴</span><b id="nearGain" class="pos">0원</b></span>
+            <span class="near-line carry"><span id="nearCarryLabel">이월</span><b id="nearCarry">0원</b></span>
         </div>`;
     paintDonateSum();
     paintNearBox();
@@ -1765,8 +1778,13 @@ function renderDonateRow() {
 
 /* ── 니어 이월 ───────────────────────────────────────────────────
    파3 홀마다 1인당 5천원씩 걷어 니어한 사람이 가져가는데, 니어가 없으면 다음으로 이월된다.
-   그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** — 8차가 -94,000 / +53,000이었다.
-   남은 차액이 곧 팟에 남아 넘어간 돈이다.
+   그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** — 8차가 -93,000 / +53,000이었고
+   남은 40,000원이 팟에 남아 넘어간 돈이다.
+
+   **표의 `타수정산` 칸을 더한다**(`strokeDiffOf()`). 시작·남은 차이를 그대로 쓰면 안 된다 —
+   거기엔 계급정산이 섞여 있는데 그 돈은 공금으로 가지 선수들 사이에서 오간 게 아니다.
+   니어 팟에 들고 난 돈만 보려면 타수정산이 맞다. 표에 적힌 숫자와 같은 함수를 써야
+   눈으로 더해 봤을 때도 맞는다.
 
    **입력받지 않고 계산한다.** `잃은 + 딴`이 정확히 그 금액이라, 따로 적으면
    시작·남은 금액을 고칠 때마다 어긋난다. 계산하면 언제나 맞는다.
@@ -1776,12 +1794,10 @@ function renderDonateRow() {
 function paintNearBox() {
     const loss = document.getElementById('nearLoss');
     if (!loss) return;
-    const round = (appData.roundMoney && appData.roundMoney[selectedMoneyRoundIdx]) || {};
 
     let minus = 0, plus = 0;
     golfers.forEach(g => {
-        const m = round[g] || {};
-        const diff = (Number(m.end) || 0) - (Number(m.start) || 0);
+        const diff = strokeDiffOf(g, selectedMoneyRoundIdx);
         if (diff < 0) minus += diff; else plus += diff;
     });
     const carry = -(minus + plus);          // 팟에 남은 돈. 플러스면 이월된 것이다.
