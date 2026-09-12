@@ -1767,10 +1767,8 @@ function renderDonateRow() {
             }).join('') + `</div>
         </div>
         <div class="near-box">
-            <span class="near-head">🎯 니어</span>
-            <span class="near-line"><span>잃은</span><b id="nearLoss" class="neg">0원</b></span>
-            <span class="near-line"><span>딴</span><b id="nearGain" class="pos">0원</b></span>
-            <span class="near-line carry"><span id="nearCarryLabel">이월</span><b id="nearCarry">0원</b></span>
+            <span class="near-head">🎯 니어 <span id="nearCarryLabel">이월</span></span>
+            <b id="nearCarry">0원</b>
         </div>`;
     paintDonateSum();
     paintNearBox();
@@ -1781,33 +1779,27 @@ function renderDonateRow() {
    그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** — 8차가 -93,000 / +53,000이었고
    남은 40,000원이 팟에 남아 넘어간 돈이다.
 
-   **표의 `타수정산` 칸을 더한다**(`strokeDiffOf()`). 시작·남은 차이를 그대로 쓰면 안 된다 —
-   거기엔 계급정산이 섞여 있는데 그 돈은 공금으로 가지 선수들 사이에서 오간 게 아니다.
-   니어 팟에 들고 난 돈만 보려면 타수정산이 맞다. 표에 적힌 숫자와 같은 함수를 써야
-   눈으로 더해 봤을 때도 맞는다.
+   **잃은·딴 금액은 여기 안 적는다.** 표의 `타수정산` 칸에 사람마다 이미 다 나와 있어
+   되풀이일 뿐이다. 표에 없는 건 이월 하나뿐이라 그것만 적는다.
 
-   **입력받지 않고 계산한다.** `잃은 + 딴`이 정확히 그 금액이라, 따로 적으면
+   **더하는 값은 표의 `타수정산` 칸이다**(`strokeDiffOf()`). 시작·남은 차이를 그대로 쓰면 안 된다 —
+   거기엔 계급정산이 섞여 있는데 그 돈은 공금으로 가지 선수들 사이에서 오간 게 아니다.
+   표에 적힌 숫자와 같은 함수를 써야 눈으로 더해 봤을 때도 맞는다.
+
+   **입력받지 않고 계산한다.** 타수정산의 합이 정확히 그 금액이라, 따로 적으면
    시작·남은 금액을 고칠 때마다 어긋난다. 계산하면 언제나 맞는다.
 
    차액이 플러스일 수도 있다 — 지난 차수에서 넘어온 이월을 이번에 누가 먹은 경우다.
    그때는 문구를 바꿔 '이월 받음'으로 적는다. 0이면 '이월 없음'. */
 function paintNearBox() {
-    const loss = document.getElementById('nearLoss');
-    if (!loss) return;
-
-    let minus = 0, plus = 0;
-    golfers.forEach(g => {
-        const diff = strokeDiffOf(g, selectedMoneyRoundIdx);
-        if (diff < 0) minus += diff; else plus += diff;
-    });
-    const carry = -(minus + plus);          // 팟에 남은 돈. 플러스면 이월된 것이다.
-
-    loss.textContent = minus ? `${formatNumber(minus)}원` : '0원';
-    document.getElementById('nearGain').textContent = plus ? `+${formatNumber(plus)}원` : '0원';
-
-    const label = document.getElementById('nearCarryLabel');
     const el = document.getElementById('nearCarry');
-    label.textContent = carry < 0 ? '이월 받음' : '이월';
+    if (!el) return;
+
+    // 타수정산을 다 더하면 팟에 남은 돈이 된다. 마이너스면 이월, 플러스면 이월을 먹은 것이다.
+    const sum = golfers.reduce((a, g) => a + strokeDiffOf(g, selectedMoneyRoundIdx), 0);
+    const carry = -sum;
+
+    document.getElementById('nearCarryLabel').textContent = carry < 0 ? '이월 받음' : '이월';
     el.textContent = carry === 0 ? '없음' : `${formatNumber(Math.abs(carry))}원`;
     el.className = carry === 0 ? 'zero' : (carry > 0 ? 'carry-out' : 'carry-in');
 }

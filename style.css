@@ -376,20 +376,14 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 /* 남의 칸. 정산 칸과 같이 터치는 살려 둔다 — 누르면 왜 안 되는지 알려 준다. */
 .donate-input.locked { background: transparent; border-color: transparent; color: var(--text-sub); cursor: default; user-select: none; -webkit-user-select: none; }
 
-/* 니어 — 파3 팟에서 임자 없이 넘어간 돈. 입력이 아니라 계산해서 보여 주는 줄이라
-   잃은·딴 합계를 같이 적는다. 셋을 보면 왜 합이 안 맞았는지가 그 자리에서 풀린다.
-   좁은 화면에서는 줄바꿈으로 흘러내리게 둔다(가로로 넘기지 않는다). */
-.near-box { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 7px; padding: 5px 7px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+/* 니어 — 파3 팟에서 임자 없이 넘어간 돈. 이월 하나만 적는다.
+   잃은·딴 금액은 표의 `타수정산` 칸에 사람마다 이미 다 나와 있어 되풀이일 뿐이다. */
+.near-box { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .near-head { font-size: 0.68rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
-.near-line { display: inline-flex; align-items: baseline; gap: 4px; font-size: 0.63rem; font-weight: 700; color: #64748b; white-space: nowrap; }
-.near-line b { font-weight: 800; color: var(--text-main); }
-.near-line b.neg { color: #dc2626; }
-.near-line b.pos { color: #16a34a; }
-/* 이월은 결론이라 오른쪽 끝에 밀어 붙이고 선으로 끊는다. */
-.near-line.carry { margin-left: auto; padding-left: 9px; border-left: 1px solid #cbd5e1; font-weight: 800; color: var(--text-main); }
-.near-line b.carry-out { color: #0369a1; }   /* 팟에 남아 다음으로 넘어간 돈 */
-.near-line b.carry-in { color: #b45309; }    /* 지난 이월을 이번에 먹은 경우 */
-.near-line b.zero { color: #94a3b8; }
+.near-box b { font-size: 0.72rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+.near-box b.carry-out { color: #0369a1; }   /* 팟에 남아 다음으로 넘어간 돈 */
+.near-box b.carry-in { color: #b45309; }    /* 지난 이월을 이번에 먹은 경우 */
+.near-box b.zero { color: #94a3b8; }
 /* 계급정산·타수정산 두 칸이 같은 모양을 쓴다.
    예전에는 각 칸에 인라인 스타일을 따로 적어 굵기·배경 농도가 어긋나 있었다.
    색은 여기서만 정한다 — JS는 pos/neg/zero 중 하나만 붙인다. */
