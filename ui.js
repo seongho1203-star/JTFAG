@@ -1715,7 +1715,9 @@ function renderMoneyTable() {
 
    **표의 6번째 열로 넣지 말 것.** 5열이 이미 364px(390px 기기)를 꽉 쓰고 있어
    하나를 더 넣으면 금액 칸이 찌그러진다 — 320px에서는 지금도 가로로 넘친다.
-   `.money-input`도 재사용하지 않는다(68px로 묶여 있다). */
+   `.money-input`도 재사용하지 않는다(68px로 묶여 있다).
+
+   왼쪽 절반이 찬조, 오른쪽 절반이 니어다(아래 `paintNearBox()`). */
 function renderDonateRow() {
     const box = document.getElementById('donateRow');
     if (!box) return;
@@ -1731,24 +1733,67 @@ function renderDonateRow() {
             if (el && document.activeElement !== el) el.value = valueOf(g) ? formatNumber(valueOf(g)) : '';
         });
         paintDonateSum();
+        paintNearBox();
         return;
     }
 
     box.setAttribute('data-key', key);
     box.innerHTML = `
-        <div class="donate-head">🎁 찬조<b id="donateSum"></b></div>
-        <div class="donate-grid">` + golfers.map(g => {
-            const v = valueOf(g);
-            const editable = canEditMoney(g);
-            return `<label class="donate-cell"><span class="donate-name">${g}</span>
-                <input type="text" id="money_donate_${g}" inputmode="numeric" pattern="[0-9]*"
-                    class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="0"
-                    ${editable ? '' : 'readonly '}onfocus="this.select()"
-                    ${editable
-                        ? `onchange="updateMoney('${g}', 'donate', this.value)"`
-                        : `onclick="moneyLockNotice('${g}')"`}></label>`;
-        }).join('') + `</div>`;
+        <div class="donate-box">
+            <div class="donate-head"><span class="donate-title">🎁 찬조</span><b id="donateSum"></b></div>
+            <div class="donate-grid">` + golfers.map(g => {
+                const v = valueOf(g);
+                const editable = canEditMoney(g);
+                return `<label class="donate-cell"><span class="donate-name">${g}</span>
+                    <input type="text" id="money_donate_${g}" inputmode="numeric" pattern="[0-9]*"
+                        class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="0"
+                        ${editable ? '' : 'readonly '}onfocus="this.select()"
+                        ${editable
+                            ? `onchange="updateMoney('${g}', 'donate', this.value)"`
+                            : `onclick="moneyLockNotice('${g}')"`}></label>`;
+            }).join('') + `</div>
+        </div>
+        <div class="near-box">
+            <div class="near-head">🎯 니어</div>
+            <div class="near-line"><span>잃은</span><b id="nearLoss" class="neg">0원</b></div>
+            <div class="near-line"><span>딴</span><b id="nearGain" class="pos">0원</b></div>
+            <div class="near-line carry"><span id="nearCarryLabel">이월</span><b id="nearCarry">0원</b></div>
+        </div>`;
     paintDonateSum();
+    paintNearBox();
+}
+
+/* ── 니어 이월 ───────────────────────────────────────────────────
+   파3 홀마다 1인당 5천원씩 걷어 니어한 사람이 가져가는데, 니어가 없으면 다음으로 이월된다.
+   그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** — 8차가 -94,000 / +53,000이었다.
+   남은 차액이 곧 팟에 남아 넘어간 돈이다.
+
+   **입력받지 않고 계산한다.** `잃은 + 딴`이 정확히 그 금액이라, 따로 적으면
+   시작·남은 금액을 고칠 때마다 어긋난다. 계산하면 언제나 맞는다.
+
+   차액이 플러스일 수도 있다 — 지난 차수에서 넘어온 이월을 이번에 누가 먹은 경우다.
+   그때는 문구를 바꿔 '이월 받음'으로 적는다. 0이면 '이월 없음'. */
+function paintNearBox() {
+    const loss = document.getElementById('nearLoss');
+    if (!loss) return;
+    const round = (appData.roundMoney && appData.roundMoney[selectedMoneyRoundIdx]) || {};
+
+    let minus = 0, plus = 0;
+    golfers.forEach(g => {
+        const m = round[g] || {};
+        const diff = (Number(m.end) || 0) - (Number(m.start) || 0);
+        if (diff < 0) minus += diff; else plus += diff;
+    });
+    const carry = -(minus + plus);          // 팟에 남은 돈. 플러스면 이월된 것이다.
+
+    loss.textContent = minus ? `${formatNumber(minus)}원` : '0원';
+    document.getElementById('nearGain').textContent = plus ? `+${formatNumber(plus)}원` : '0원';
+
+    const label = document.getElementById('nearCarryLabel');
+    const el = document.getElementById('nearCarry');
+    label.textContent = carry < 0 ? '이월 받음' : '이월';
+    el.textContent = carry === 0 ? '없음' : `${formatNumber(Math.abs(carry))}원`;
+    el.className = carry === 0 ? 'zero' : (carry > 0 ? 'carry-out' : 'carry-in');
 }
 
 // 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.
