@@ -361,7 +361,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
    **`.money-input`을 쓰지 말 것** — 68px로 묶여 있어 여기 붙이면 찌그러진다. */
 .donate-row { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
 .donate-head { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
-.donate-head span { font-size: 0.58rem; font-weight: 600; color: #94a3b8; }
+/* 찬조 합계. 있을 때만 적히므로 margin-left:auto로 오른쪽 끝에 붙인다. */
 .donate-head b { margin-left: auto; font-size: 0.62rem; font-weight: 800; color: #c026d3; white-space: nowrap; }
 /* 두 칸씩 두 줄. 한 줄에 넷을 넣으면 입력칸이 정산 표보다 좁아진다. */
 .donate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }

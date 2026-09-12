@@ -1736,8 +1736,7 @@ function renderDonateRow() {
 
     box.setAttribute('data-key', key);
     box.innerHTML = `
-        <div class="donate-head">🎁 찬조 <span>모임을 위해 쓴 돈 · 합산에서 빠집니다</span>
-            <b id="donateSum"></b></div>
+        <div class="donate-head">🎁 찬조<b id="donateSum"></b></div>
         <div class="donate-grid">` + golfers.map(g => {
             const v = valueOf(g);
             const editable = canEditMoney(g);
@@ -1758,7 +1757,7 @@ function paintDonateSum() {
     if (!el) return;
     const round = (appData.roundMoney && appData.roundMoney[selectedMoneyRoundIdx]) || {};
     const sum = golfers.reduce((a, g) => a + (Number(round[g] && round[g].donate) || 0), 0);
-    el.textContent = sum ? `이 차수 ${formatNumber(sum)}원` : '';
+    el.textContent = sum ? `찬조 합계 ${formatNumber(sum)}원` : '';
 }
 
 /* ── 정산 금액은 본인 칸만 ───────────────────────────────────────
