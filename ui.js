@@ -1769,6 +1769,7 @@ function renderDonateRow() {
         <div class="near-box">
             <span class="near-head">🎯 니어 잔액</span>
             <b id="nearCarry">0원</b>
+            <span id="nearCheck" class="near-check"></span>
         </div>`;
     paintDonateSum();
     paintNearBox();
@@ -1794,6 +1795,9 @@ function renderDonateRow() {
    걷은 돈보다 많은 경우다. 부호를 그대로 붙여 적고 색으로 구분한다. 0이면 '없음'.
 
    금액 옆에 `파3 2개`처럼 홀 수를 적어 봤는데 사용자 요청으로 뺐다. 되살리지 말 것. */
+const NEAR_PER_PERSON = 5000;                 // 파3 한 홀에 한 사람이 내는 돈
+function nearPotPerHole() { return NEAR_PER_PERSON * golfers.length; }   // 한 홀에 모이는 돈
+
 function paintNearBox() {
     const el = document.getElementById('nearCarry');
     if (!el) return;
@@ -1804,6 +1808,41 @@ function paintNearBox() {
 
     el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : ''}${formatNumber(Math.abs(left))}원`;
     el.className = left === 0 ? 'zero' : (left > 0 ? 'carry-out' : 'carry-in');
+    paintNearCheck(left);
+}
+
+/* ── 정산 검산 ───────────────────────────────────────────────────
+   니어 팟은 파3 홀마다 2만원(1인당 5천 × 넷)씩 모이므로 **잔액은 반드시 2만원의 배수**다.
+   배수가 아니면 누군가의 시작·남은 금액이 잘못 적힌 것이다. 얼마가 어긋났는지 같이 적는다.
+
+   **`잃은 + 딴 + 잔액`을 검산으로 쓰지 말 것** — 잔액을 그 둘의 합으로 계산하므로
+   언제나 0이 나온다. 늘 '일치'만 뜨는 표시는 아무것도 안 알려 준다.
+
+   아무도 금액을 안 적은 차수는 '일치'라고 하면 거짓말이라 `입력 전`으로 둔다. */
+function paintNearCheck(left) {
+    const badge = document.getElementById('nearCheck');
+    if (!badge) return;
+    const round = (appData.roundMoney && appData.roundMoney[selectedMoneyRoundIdx]) || {};
+    const entered = golfers.some(g => {
+        const m = round[g] || {};
+        return (Number(m.start) || 0) !== 0 || (Number(m.end) || 0) !== 0;
+    });
+
+    if (!entered) {
+        badge.className = 'near-check none';
+        badge.textContent = '입력 전';
+        return;
+    }
+
+    const per = nearPotPerHole();
+    const off = per > 0 ? Math.abs(left) % per : 0;
+    if (off === 0) {
+        badge.className = 'near-check ok';
+        badge.textContent = '✅ 정산 일치';
+    } else {
+        badge.className = 'near-check bad';
+        badge.textContent = `⚠️ 불일치 ${formatNumber(Math.min(off, per - off))}원`;
+    }
 }
 
 // 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.
