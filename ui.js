@@ -585,7 +585,7 @@ function undoLastAction() {
 
 function renderSkeleton() {
     const summaryGrid = document.getElementById('summaryGrid');
-    if (summaryGrid) { summaryGrid.innerHTML = golfers.map(() => `<div class="summary-item skeleton"><div class="name">---</div><div class="detail-line">---</div><div class="detail-line">---</div><div class="final-total">---</div></div>`).join(''); }
+    if (summaryGrid) { summaryGrid.innerHTML = golfers.map(() => `<div class="summary-item skeleton"><div class="name">---</div><div class="detail-line">---</div><div class="detail-line">---</div><div class="detail-line">---</div><div class="final-total">---</div></div>`).join(''); }
 }
 
 let toastTimer = null;
@@ -1681,6 +1681,7 @@ function renderMoneyTable() {
             paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenalty);
             paintMoneyResult(document.getElementById(`money_stroke_${g}`), pureStrokeDiff);
         });
+        renderDonateRow();
         return;
     }
 
@@ -1701,6 +1702,63 @@ function renderMoneyTable() {
                 <td><span id="money_stroke_${g}" class="money-result-badge ${moneyResultTone(pureStrokeDiff)}">${moneyResultText(pureStrokeDiff)}</span></td>
             </tr>`;
     });
+    renderDonateRow();
+}
+
+/* ── 찬조 ────────────────────────────────────────────────────────
+   모임을 위해 개인이 쓴 돈이다. 정산과 달리 시작·남은 금액에서 나오지 않고
+   그 사람이 따로 적는다. **합산에서 그만큼 뺀다** — -50만인 사람이 5만을 찬조하면 -55만.
+
+   값은 `roundMoney[차수][이름].donate`에 같이 둔다. 배열을 새로 만들면
+   `addRound()`·`removeRound()`가 길이를 또 맞춰야 하는데, 여기 얹으면 저절로 따라다닌다.
+   예전 payload에는 이 키가 없으므로 **없으면 0으로 볼 것.**
+
+   **표의 6번째 열로 넣지 말 것.** 5열이 이미 364px(390px 기기)를 꽉 쓰고 있어
+   하나를 더 넣으면 금액 칸이 찌그러진다 — 320px에서는 지금도 가로로 넘친다.
+   `.money-input`도 재사용하지 않는다(68px로 묶여 있다). */
+function renderDonateRow() {
+    const box = document.getElementById('donateRow');
+    if (!box) return;
+    const round = (appData.roundMoney && appData.roundMoney[selectedMoneyRoundIdx]) || {};
+    const valueOf = g => Number(round[g] && round[g].donate) || 0;
+
+    // 차수나 잠금이 바뀔 때만 다시 만든다. 아니면 값만 갈아 끼운다 —
+    // 정산 표와 같은 이유다(안 그러면 타이핑 중에 칸이 새로 만들어져 포커스가 날아간다).
+    const key = `${selectedMoneyRoundIdx}|${isMoneyUnlocked ? 'all' : myGolferName() || 'none'}`;
+    if (box.getAttribute('data-key') === key) {
+        golfers.forEach(g => {
+            const el = document.getElementById(`money_donate_${g}`);
+            if (el && document.activeElement !== el) el.value = valueOf(g) ? formatNumber(valueOf(g)) : '';
+        });
+        paintDonateSum();
+        return;
+    }
+
+    box.setAttribute('data-key', key);
+    box.innerHTML = `
+        <div class="donate-head">🎁 찬조 <span>모임을 위해 쓴 돈 · 합산에서 빠집니다</span>
+            <b id="donateSum"></b></div>
+        <div class="donate-grid">` + golfers.map(g => {
+            const v = valueOf(g);
+            const editable = canEditMoney(g);
+            return `<label class="donate-cell"><span class="donate-name">${g}</span>
+                <input type="text" id="money_donate_${g}" inputmode="numeric" pattern="[0-9]*"
+                    class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="0"
+                    ${editable ? '' : 'readonly '}onfocus="this.select()"
+                    ${editable
+                        ? `onchange="updateMoney('${g}', 'donate', this.value)"`
+                        : `onclick="moneyLockNotice('${g}')"`}></label>`;
+        }).join('') + `</div>`;
+    paintDonateSum();
+}
+
+// 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.
+function paintDonateSum() {
+    const el = document.getElementById('donateSum');
+    if (!el) return;
+    const round = (appData.roundMoney && appData.roundMoney[selectedMoneyRoundIdx]) || {};
+    const sum = golfers.reduce((a, g) => a + (Number(round[g] && round[g].donate) || 0), 0);
+    el.textContent = sum ? `이 차수 ${formatNumber(sum)}원` : '';
 }
 
 /* ── 정산 금액은 본인 칸만 ───────────────────────────────────────

@@ -10,6 +10,19 @@ function formatFinalBalance(v) {
     return (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만";
 }
 
+// 찬조 합계 — 모임을 위해 그 사람이 쓴 돈. `roundMoney[차수][이름].donate`에 있다.
+// 정산에서 나온 값이 아니라 따로 적은 값이라, 합산에서 그만큼 **뺀다**
+// (-50만인 사람이 5만을 찬조하면 -55만). 예전 payload에는 키가 없으므로 없으면 0.
+function donationOf(name) {
+    if (!appData.roundMoney) return 0;
+    let sum = 0;
+    for (let r = 0; r < (appData.totalRounds || 0); r++) {
+        const m = appData.roundMoney[r] && appData.roundMoney[r][name];
+        sum += Number(m && m.donate) || 0;
+    }
+    return sum;
+}
+
 // 파3·파4·파5 각각에서 파 대비 평균이 가장 좋은 사람을 가린다.
 // ROUND_HOLES(stats.js)의 홀 단위 기록이 있어야 하고, 없으면 아무도 뽑지 않는다.
 function computeParSpecialists() {
@@ -492,7 +505,7 @@ function processAllRoundSettlements() {
                 }
             }
         }
-        golferFinalNetProfitMap[g] = rankProfit + totalPureStrokeProfit; 
+        golferFinalNetProfitMap[g] = rankProfit + totalPureStrokeProfit - donationOf(g);
     });
 
     let minNetProfit = Infinity;
@@ -533,9 +546,12 @@ function processAllRoundSettlements() {
             golferBadgesMap[g] = allBadges; 
             const summaryBadgesHtml = allBadges.slice(0, 2).map(b => b.html).join('');
             
-            const finalBalance = rankProfit + totalPureStrokeProfit;
+            // 찬조는 정산에서 나온 값이 아니라 따로 적은 돈이라 여기서 뺀다.
+            const donation = donationOf(g);
+            const finalBalance = rankProfit + totalPureStrokeProfit - donation;
             const rankProfitText = rankProfit === 0 ? "0원" : (rankProfit > 0 ? "+" : "") + (rankProfit / 10000).toFixed(1) + "만";
             const strokeProfitText = totalPureStrokeProfit === 0 ? "0원" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
+            const donationText = donation === 0 ? "0원" : "-" + (donation / 10000).toFixed(1) + "만";
             
             let finalColor = "#64748b";
             let finalText = formatFinalBalance(finalBalance);
@@ -567,6 +583,7 @@ function processAllRoundSettlements() {
                         </div>
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                         <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
+                        <div class="detail-line"><span class="label">찬조</span> <span class="val${donation ? ' donate' : ''}">${donationText}</span></div>
                     </div>
                     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; margin-top: 4px;">
                         ${summaryBadgesHtml}
