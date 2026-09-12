@@ -1768,7 +1768,7 @@ function renderDonateRow() {
         </div>
         <div class="near-box">
             <span class="near-head">🎯 니어 잔액</span>
-            <span class="near-val"><b id="nearCarry">0원</b><span id="nearHoles" class="near-holes"></span></span>
+            <b id="nearCarry">0원</b>
         </div>`;
     paintDonateSum();
     paintNearBox();
@@ -1791,10 +1791,9 @@ function renderDonateRow() {
    시작·남은 금액을 고칠 때마다 어긋난다. 계산하면 언제나 맞는다.
 
    **마이너스일 수도 있다** — 지난 차수에서 넘어온 잔액을 이번에 누가 먹어, 팟에서 나간 돈이
-   걷은 돈보다 많은 경우다. 부호를 그대로 붙여 적고 색으로 구분한다. 0이면 '없음'. */
-const NEAR_PER_PERSON = 5000;                 // 파3 한 홀에 한 사람이 내는 돈
-function nearPotPerHole() { return NEAR_PER_PERSON * golfers.length; }   // 한 홀에 모이는 돈
+   걷은 돈보다 많은 경우다. 부호를 그대로 붙여 적고 색으로 구분한다. 0이면 '없음'.
 
+   금액 옆에 `파3 2개`처럼 홀 수를 적어 봤는데 사용자 요청으로 뺐다. 되살리지 말 것. */
 function paintNearBox() {
     const el = document.getElementById('nearCarry');
     if (!el) return;
@@ -1805,16 +1804,6 @@ function paintNearBox() {
 
     el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : ''}${formatNumber(Math.abs(left))}원`;
     el.className = left === 0 ? 'zero' : (left > 0 ? 'carry-out' : 'carry-in');
-
-    /* 몇 홀이 주인 없이 남았는지 같이 적는다 — 4만원이 '파3 두 홀'이라는 게 바로 읽힌다.
-       한 홀 몫으로 딱 나누어떨어질 때만 적는다. 안 나누어떨어지면 우리가 모르는 사정이
-       있는 것이므로 **금액만 적고 넘어간다** — 여기서 틀렸다고 단정하지 말 것. */
-    const holes = document.getElementById('nearHoles');
-    if (!holes) return;
-    const per = nearPotPerHole();
-    const n = (left > 0 && per > 0 && left % per === 0) ? left / per : 0;
-    holes.textContent = n ? `파3 ${n}개` : '';
-    holes.style.display = n ? '' : 'none';
 }
 
 // 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.
