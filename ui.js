@@ -1768,16 +1768,17 @@ function renderDonateRow() {
         </div>
         <div class="near-box">
             <span class="near-head">🎯 니어 잔액</span>
-            <b id="nearCarry">0원</b>
+            <span class="near-val"><b id="nearCarry">0원</b><span id="nearHoles" class="near-holes"></span></span>
         </div>`;
     paintDonateSum();
     paintNearBox();
 }
 
 /* ── 니어 잔액 ───────────────────────────────────────────────────
-   파3 홀마다 1인당 5천원씩 걷어 니어한 사람이 가져가는데, 니어가 없으면 팟에 남아
-   다음으로 넘어간다. 그래서 그 차수의 **잃은 돈과 딴 돈의 합이 안 맞는다** —
-   8차가 -93,000 / +53,000이었고 남은 40,000원이 팟에 남은 잔액이다.
+   파3 홀마다 **1인당 5천원씩** 걷는다 — 넷이면 한 홀에 2만원이다.
+   18홀에 파3가 넷이니 한 차수에 8만원이 모이고, 그 홀의 니어 임자가 없으면
+   그 2만원이 팟에 남아 다음으로 넘어간다. 그게 니어 잔액이다.
+   **그래서 잔액은 2만원의 배수가 된다** — 8차의 40,000원은 두 홀이 주인 없이 남은 것이다.
 
    **잔액 하나만 적는다.** 잃은·딴 금액은 표의 `타수정산` 칸에 사람마다 이미 다 나와 있어
    되풀이일 뿐이다. 표에 없는 건 잔액 하나뿐이다.
@@ -1791,6 +1792,9 @@ function renderDonateRow() {
 
    **마이너스일 수도 있다** — 지난 차수에서 넘어온 잔액을 이번에 누가 먹어, 팟에서 나간 돈이
    걷은 돈보다 많은 경우다. 부호를 그대로 붙여 적고 색으로 구분한다. 0이면 '없음'. */
+const NEAR_PER_PERSON = 5000;                 // 파3 한 홀에 한 사람이 내는 돈
+function nearPotPerHole() { return NEAR_PER_PERSON * golfers.length; }   // 한 홀에 모이는 돈
+
 function paintNearBox() {
     const el = document.getElementById('nearCarry');
     if (!el) return;
@@ -1801,6 +1805,16 @@ function paintNearBox() {
 
     el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : ''}${formatNumber(Math.abs(left))}원`;
     el.className = left === 0 ? 'zero' : (left > 0 ? 'carry-out' : 'carry-in');
+
+    /* 몇 홀이 주인 없이 남았는지 같이 적는다 — 4만원이 '파3 두 홀'이라는 게 바로 읽힌다.
+       한 홀 몫으로 딱 나누어떨어질 때만 적는다. 안 나누어떨어지면 우리가 모르는 사정이
+       있는 것이므로 **금액만 적고 넘어간다** — 여기서 틀렸다고 단정하지 말 것. */
+    const holes = document.getElementById('nearHoles');
+    if (!holes) return;
+    const per = nearPotPerHole();
+    const n = (left > 0 && per > 0 && left % per === 0) ? left / per : 0;
+    holes.textContent = n ? `파3 ${n}개` : '';
+    holes.style.display = n ? '' : 'none';
 }
 
 // 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.
