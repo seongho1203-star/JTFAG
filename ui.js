@@ -2467,12 +2467,22 @@ async function handleRoundPhotoUpload(event) {
         input.value = ''; return;
     }
 
-    showToast("⏳ 사진을 압축하여 업로드 중입니다...");
+    /* 라운드 사진은 **원본 그대로** 올린다. 예전엔 긴 변 800px·품질 0.6으로 줄였는데,
+       큰 화면에서 보거나 저장하면 뭉개져서 남는 기록으로는 아까웠다.
+       payload에는 URL만 들어가므로(사진은 Storage에) payload 용량에는 영향이 없다.
+       대신 Storage는 그만큼 쓰고 업로드도 오래 걸려, 몇 장째인지 보여 준다.
+       **스코어카드는 그대로 1600px로 줄인다**(`SCORECARD_MAX_PX`) — 판독에 그 이상은
+       필요 없고, 크게 보내면 판독만 느려지고 비싸진다. */
+    showToast(files.length > 1
+        ? `⏳ 사진 ${files.length}장을 원본 그대로 올리는 중입니다...`
+        : "⏳ 사진을 원본 그대로 올리는 중입니다...");
     const urls = [];
     let failed = 0;
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
         try {
-            urls.push(await uploadPhotoBlob(await compressImageToBlob(file, 800), selectedPhotoRoundIdx));
+            if (files.length > 1) showToast(`⏳ ${i + 1}/${files.length}장 올리는 중... (원본)`);
+            // File은 Blob이라 그대로 올라간다 — 다시 그리지 않으므로 화질이 그대로다.
+            urls.push(await uploadPhotoBlob(files[i], selectedPhotoRoundIdx));
         } catch (err) { console.error("사진 업로드 실패:", err); failed++; }
     }
     input.value = '';

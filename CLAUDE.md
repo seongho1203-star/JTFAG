@@ -553,6 +553,17 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   예전에 등록된 사진은 아직 base64(`data:`로 시작)로 남아 있을 수 있어, 사진을 다루는 코드는 **두 형태를 모두** 처리해야 한다
   (`downloadCurrentPhoto()` 참고). 사진 갤러리의 관리자 버튼이 `migratePhotosToStorage()`로 남은 base64를 옮긴다.
   Storage 헬퍼(`uploadPhotoBlob` / `deletePhotoFromStorage` / `storagePathFromUrl`)는 api.js에 있다.
+  - **라운드 사진은 원본 그대로 올린다.** 예전엔 긴 변 800px·품질 0.6으로 줄였는데 큰 화면에서
+    보거나 저장하면 뭉개져서 남는 기록으로는 아까웠다. `File`이 곧 `Blob`이라 다시 그리지 않고
+    그대로 넘긴다 — 다시 줄이지 말 것. payload에는 URL만 들어가므로 **payload 용량과는 무관**하고,
+    대신 **Storage를 그만큼 쓴다**(무료 1GB · 차수당 `MAX_PHOTOS_PER_ROUND` 30장).
+    여러 장이면 몇 장째인지 토스트로 알린다 — 원본은 느려서 멈춘 것처럼 보이기 때문이다.
+  - **`uploadPhotoBlob()`은 확장자와 `contentType`을 blob에서 읽는다**(`PHOTO_EXT`).
+    예전엔 무조건 `.jpg` · `image/jpeg`였다 — 캔버스를 거쳐 늘 JPEG였기 때문이다.
+    원본을 올리면서 PNG·HEIC도 들어올 수 있어, 그대로 뒀으면 PNG를 `.jpg`로 올려 놓고
+    JPEG라고 말하는 꼴이 됐다. 모르는 종류는 예전처럼 jpeg로 본다.
+  - **스코어카드는 그대로 1600px로 줄인다**(`SCORECARD_MAX_PX` · `compressImageToBlob`).
+    판독에 그 이상은 필요 없고, 크게 보내면 판독만 느려지고 비싸진다. 여기는 원본으로 바꾸지 말 것.
 - payload는 매 저장마다 행 전체가 전송되므로 용량 증가에 민감하다 (`renderStorageUsage()`가 현재 사용량을 표시한다).
 - **공금 수정은 공지 카드의 `💰 남은 공금 잔액` 칸을 눌러 연다.** 관리자 메뉴에는 없다
   (로그만 남아 있다). 예전엔 메뉴 안에 있어 비밀번호 문을 이미 지난 뒤였으므로,

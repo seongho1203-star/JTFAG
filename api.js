@@ -267,11 +267,23 @@ function storagePathFromUrl(src) {
     return idx === -1 ? null : decodeURIComponent(String(src).slice(idx + marker.length));
 }
 
+/* 파일 종류를 blob에서 읽어 확장자와 contentType을 맞춘다.
+   예전엔 무조건 `.jpg` · `image/jpeg`로 올렸다 — 올리기 전에 캔버스로 다시 그려서
+   늘 JPEG였기 때문이다. **라운드 사진을 원본 그대로 올리게 되면서** PNG·HEIC도
+   들어올 수 있어, 그대로 두면 PNG를 `.jpg`로 올려 놓고 JPEG라고 말하는 꼴이 된다.
+   모르는 종류는 예전처럼 jpeg로 본다. */
+const PHOTO_EXT = {
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+    'image/heic': 'heic', 'image/heif': 'heif', 'image/gif': 'gif'
+};
+
 async function uploadPhotoBlob(blob, roundIdx) {
+    const type = (blob && blob.type) || 'image/jpeg';
+    const ext = PHOTO_EXT[type] || 'jpg';
     const rand = Math.random().toString(36).slice(2, 8);
-    const path = `round${roundIdx + 1}/${Date.now()}_${rand}.jpg`;
+    const path = `round${roundIdx + 1}/${Date.now()}_${rand}.${ext}`;
     const { error } = await window._supabase.storage.from(PHOTO_BUCKET)
-        .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+        .upload(path, blob, { contentType: type, upsert: false });
     if (error) throw error;
     return window._supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
 }
