@@ -437,6 +437,10 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .scorecard-guest-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
 .scorecard-guest-input { width: 100%; padding: 10px 6px; border: 1px solid #cbd5e1; border-radius: 8px; background: var(--input-bg); color: var(--text-main); font-weight: 800; font-size: clamp(0.78rem, 3vw, 0.88rem); text-align: center; box-sizing: border-box; }
 #scorecardPickBtn:disabled { opacity: 0.45; }
+/* 홀 기록 삭제. 사진 올리기 버튼과 급을 달리해 눈에 덜 띄게 두되,
+   지울 게 있는 차수에서만 나오므로 숨겨 두지는 않는다. */
+.scorecard-del-btn { width: 100%; margin-top: 7px; padding: 8px; background: #ffffff; color: #dc2626; border: 1px solid #fecaca; border-radius: 10px; font-weight: 800; font-size: clamp(0.7rem, 2.8vw, 0.78rem); }
+.scorecard-del-btn:active { background: #fef2f2; }
 .scorecard-log { margin-top: 12px; }
 .scorecard-log-empty { text-align: center; padding: 14px; color: #94a3b8; font-size: 0.78rem; }
 .scorecard-log-row { padding: 8px 0; border-top: 1px solid #f1f5f9; }

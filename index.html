@@ -287,6 +287,9 @@
             </div>
             <input type="file" accept="image/*" id="scorecardUpload" style="display:none;" onchange="handleScorecardUpload(event)">
             <button type="button" class="open-history-btn" id="scorecardPickBtn" onclick="document.getElementById('scorecardUpload').click()">📷 스코어카드 사진 올리기</button>
+            <!-- 잘못 올라간 카드를 되돌리는 유일한 길. 홀 기록이 있는 차수는 타수 칸이
+                 잠겨 관리자 메뉴로도 못 고치므로, 이 버튼이 없으면 막다른 길이 된다. -->
+            <button type="button" class="scorecard-del-btn" id="scorecardDelBtn" onclick="requestHoleDelete()">🗑️ 이 차수 홀 기록 지우기</button>
             <div class="scorecard-log" id="scoreRequestLog"></div>
         </div>
     </div>

@@ -407,6 +407,35 @@ function matchBrace(src, open) {
     throw new Error('stats.js의 괄호 짝이 맞지 않습니다.');
 }
 
+/* 차수 하나를 통째로 지운다. 잘못 올라간 카드를 되돌리는 유일한 길이다 —
+   `stats.js`는 저장소 파일이라 앱이 직접 못 고치고, 홀 기록이 있는 차수는
+   타수 칸이 잠겨 관리자 메뉴로도 못 고치기 때문이다(8차 카드가 9차로 올라간 적이 있다).
+
+   앞의 쉼표까지 같이 걷어낸다. 안 그러면 `}, }`가 남아 형식이 깨진다.
+   마지막 블록이면 뒤 쉼표가 없으므로 앞 쉼표를 지우는 쪽이 맞다. */
+function removeRoundBlock(source, round) {
+    const anchor = source.indexOf('const ROUND_HOLES = {');
+    if (anchor === -1) throw new Error('stats.js에서 ROUND_HOLES를 찾지 못했습니다.');
+    const objOpen = source.indexOf('{', anchor);
+    const objClose = matchBrace(source, objOpen);
+
+    const body = source.slice(objOpen + 1, objClose);
+    const keyRe = new RegExp(`\\n[ \\t]*"${round}"\\s*:\\s*\\{`);
+    const hit = keyRe.exec(body);
+    if (!hit) throw new Error(`${round}차 홀 기록이 없습니다. 지울 게 없습니다.`);
+
+    const blockOpen = body.indexOf('{', hit.index + hit[0].length - 1);
+    const blockClose = matchBrace(body, blockOpen);
+
+    let head = body.slice(0, hit.index);        // 이 블록 앞
+    let tail = body.slice(blockClose + 1);      // 이 블록 뒤
+
+    if (/^\s*,/.test(tail)) tail = tail.replace(/^\s*,/, '');   // 뒤에 형제가 있으면 그 쉼표를 먹는다
+    else head = head.replace(/,\s*$/, '');                      // 마지막 블록이면 앞 쉼표를 뗀다
+
+    return source.slice(0, objOpen + 1) + head + tail + source.slice(objClose);
+}
+
 function upsertRound(source, round, block) {
     const anchor = source.indexOf('const ROUND_HOLES = {');
     if (anchor === -1) throw new Error('stats.js에서 ROUND_HOLES를 찾지 못했습니다.');
@@ -433,8 +462,12 @@ function upsertRound(source, round, block) {
 }
 
 async function processOne(req, names) {
-    console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
     if (!Number.isInteger(req.round) || req.round < 1 || req.round > 99) throw new Error(`차수(${req.round})가 이상합니다.`);
+
+    // 삭제 요청은 사진도 판독도 없다. 그 차수 블록만 걷어낸다.
+    if (req.action === '삭제') return removeOne(req);
+
+    console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
     if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 이상합니다.');
     // 게스트 참여를 체크했을 때만 온다. 버디·파는 동타일 때 쓰는 보조값이라 없을 수 있다.
     const num = (v) => Number.isInteger(v) ? v : null;
@@ -477,6 +510,28 @@ async function processOne(req, names) {
     return { totals, skipped: data.skipped, records, written: true };
 }
 
+// 홀 기록 지우기. 판독과 같은 자리에서 처리해 커밋·상태·알림 흐름을 그대로 탄다.
+function removeOne(req) {
+    console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 홀 기록 삭제`);
+    const before = fs.readFileSync(STATS_FILE, 'utf8');
+    const after = removeRoundBlock(before, req.round);       // 없는 차수면 여기서 걸린다
+
+    if (DRY_RUN) { console.log('  [DRY RUN] stats.js는 건드리지 않습니다.'); return { totals: `${req.round}차 홀 기록 삭제`, skipped: [], records: [], written: false }; }
+
+    fs.writeFileSync(STATS_FILE, after);
+    try {
+        execFileSync(process.execPath, ['--check', STATS_FILE], { stdio: 'pipe' });
+    } catch (err) {
+        fs.writeFileSync(STATS_FILE, before);
+        throw new Error('stats.js를 지우다가 형식이 깨져 되돌렸습니다.');
+    }
+    console.log(`  ${req.round}차 블록을 걷어냈습니다.`);
+    return {
+        totals: `${req.round}차 홀 기록을 지웠습니다. 표의 타수 칸이 다시 열립니다.`,
+        skipped: [], records: [], written: true
+    };
+}
+
 async function main() {
     const payload = await readPayload();
     if (!payload) { console.log('데이터가 없습니다. 종료.'); return; }
@@ -499,7 +554,7 @@ async function main() {
             const guest = out.skipped.length ? ` (게스트 ${out.skipped.join(', ')} 제외)` : '';
             const records = out.records.length ? `\n${out.records.join('\n')}` : '';
             results.set(req.id, { status: '완료', note: `${out.totals}${guest}${records}` });
-            if (out.written) done.push(`${req.round}차`);
+            if (out.written) done.push(`${req.round}차${req.action === '삭제' ? ' 삭제' : ''}`);
         } catch (err) {
             console.error(`  실패: ${err.message}`);
             results.set(req.id, { status: '실패', note: err.message });

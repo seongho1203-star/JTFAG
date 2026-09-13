@@ -2269,6 +2269,14 @@ function renderScoreRequestModal() {
             ? `📷 ${selectedScorecardRound + 1}차 스코어카드 다시 올리기`
             : `📷 ${selectedScorecardRound + 1}차 스코어카드 사진 올리기`);
 
+    // 지울 게 있을 때만 보여 준다 — 홀 기록이 없는 차수에 뜨면 누를 이유가 없다.
+    const delBtn = document.getElementById('scorecardDelBtn');
+    if (delBtn) {
+        const can = selectedScorecardRound !== -1 && hasHoleRecord(selectedScorecardRound);
+        delBtn.style.display = can ? '' : 'none';
+        if (can) delBtn.textContent = `🗑️ ${selectedScorecardRound + 1}차 홀 기록 지우기`;
+    }
+
     const list = (appData.scoreRequests || []).slice().reverse();
     if (list.length === 0) {
         log.innerHTML = `<div class="scorecard-log-empty">아직 등록한 스코어카드가 없습니다.</div>`;
@@ -2284,6 +2292,55 @@ function renderScoreRequestModal() {
             </div>${note}
         </div>`;
     }).join('');
+}
+
+/* 홀 기록 지우기 요청. 사진 판독과 **같은 줄**을 탄다 —
+   `stats.js`는 저장소 파일이라 앱이 직접 못 고치고, 워크플로만 고칠 수 있기 때문이다.
+   요청을 payload에 남기면 `kickScorecardWorkflow()`가 깨우고,
+   `scripts/read-scorecard.js`의 `removeOne()`이 그 차수 블록을 걷어내 커밋한다.
+
+   **이 길이 없으면 막다른 길이 된다** — 홀 기록이 있는 차수는 타수 칸이 잠겨
+   관리자 메뉴로도 못 고친다. 8차 카드가 9차로 잘못 올라갔을 때 실제로 그랬다. */
+async function requestHoleDelete() {
+    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해주세요."); return; }
+    const round = selectedScorecardRound;
+    if (!hasHoleRecord(round)) { showToast(`${round + 1}차는 홀 기록이 없습니다.`); return; }
+
+    const scores = golfers.map(g => {
+        const v = appData.scores && appData.scores[g] && appData.scores[g][round];
+        return `${g} ${v || '-'}타`;
+    }).join(' · ');
+    const okGo = await showConfirmPrompt(
+        `🗑️ <b>${round + 1}차</b> 홀 기록을 지울까요?` +
+        `<div style="font-size:0.76rem; font-weight:600; color:#cbd5e1; margin-top:10px; line-height:1.6;">` +
+        `지금 기록<br>${escapeHtml(scores)}</div>` +
+        `<div style="font-size:0.74rem; font-weight:600; color:#94a3b8; margin-top:10px; line-height:1.6;">` +
+        `지우면 타수 칸이 다시 열려 올바른 사진을 올리거나 직접 고칠 수 있습니다.<br>` +
+        `<span style="color:#fbbf24;">표의 타수는 바로 안 사라집니다 — 지운 뒤 직접 고쳐주세요.</span></div>`,
+        "지우기");
+    if (!okGo) return;
+
+    const now = new Date();
+    saveState();
+    if (!appData.scoreRequests) appData.scoreRequests = [];
+    appData.scoreRequests.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        action: '삭제',                 // 이게 있으면 판독 대신 삭제로 간다
+        round: round + 1,
+        time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        by: localStorage.getItem('jtfag_my_name') || SCORE_OWNER,
+        status: '대기',
+        note: ''
+    });
+    while (appData.scoreRequests.length > MAX_SCORE_REQUESTS) appData.scoreRequests.shift();
+
+    // 사진 등록과 같은 이유로 저장이 끝난 뒤에 깨운다 — 워크플로가 DB의 '대기'를 보고 움직인다.
+    await syncToSupabase(appData);
+    renderScoreRequestModal();
+    showToast(`🗑️ ${round + 1}차 삭제를 요청했습니다.`);
+    if (await kickScorecardWorkflow()) {
+        showToast("🚀 처리를 시작했습니다. 1~2분 뒤 새로고침하면 반영됩니다.");
+    }
 }
 
 async function handleScorecardUpload(event) {
