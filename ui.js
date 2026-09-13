@@ -2533,32 +2533,225 @@ async function deleteRoundPhoto(photoIdx) {
     await deletePhotoFromStorage(removed);
 }
 
-function openImageViewModal(src) { document.getElementById('fullImageView').src = src; document.getElementById('imageViewModal').classList.add('active'); }
-function closeImageViewModal() { document.getElementById('imageViewModal').classList.remove('active'); document.getElementById('fullImageView').src = ""; }
+function openImageViewModal(src) {
+    initPhotoZoom();
+    photoZoomReset();
+    document.getElementById('fullImageView').src = src;
+    document.getElementById('imageViewModal').classList.add('active');
+}
+function closeImageViewModal() {
+    document.getElementById('imageViewModal').classList.remove('active');
+    document.getElementById('fullImageView').src = "";
+    photoZoomReset();
+}
 
+/* ── 사진 확대 ────────────────────────────────────────────────────
+   viewport가 `user-scalable=no`라 브라우저의 두 손가락 확대가 안 먹는다. 그래서 여기서
+   포인터 이벤트로 직접 한다 — 두 손가락 벌리기 · 한 손가락 끌기 · 두 번 두드리기 · 마우스 휠.
+   **`transform`만 움직인다.** 다른 연출과 같은 이유다(안드로이드에서 filter는 끊긴다).
+
+   벌릴 때 손가락 가운데 점이 제자리에 있어야 자연스럽다. 가운데를 기준으로 그냥 키우면
+   보고 있던 곳이 밖으로 밀려난다. 그래서 그 점의 원본 좌표를 잡아 두고 배율을 바꾼 뒤
+   같은 자리에 오도록 이동값을 다시 푼다.
+
+   무대(.photo-stage)에 `touch-action: none`을 줘야 페이지가 같이 밀리지 않는다.
+   **손을 뗀 자리가 사진 밖이고 움직인 적이 없으면 닫는다** — 끌다가 놓았다고 닫히면 안 된다. */
+const photoZoom = {
+    bound: false, scale: 1, tx: 0, ty: 0,
+    pointers: new Map(), pinch: null, drag: null, moved: false, lastTap: 0
+};
+const PHOTO_ZOOM_MAX = 5;
+const PHOTO_ZOOM_TAP = 2.5;   // 두 번 두드렸을 때 배율
+
+function photoZoomApply(animate) {
+    const img = document.getElementById('fullImageView');
+    if (!img) return;
+    img.style.transition = animate ? 'transform 0.18s ease-out' : 'none';
+    img.style.transform = `translate(${photoZoom.tx}px, ${photoZoom.ty}px) scale(${photoZoom.scale})`;
+}
+
+function photoZoomReset() {
+    photoZoom.scale = 1; photoZoom.tx = 0; photoZoom.ty = 0;
+    photoZoom.pointers.clear(); photoZoom.pinch = null; photoZoom.drag = null; photoZoom.moved = false;
+    photoZoomApply(false);
+}
+
+// 사진이 화면보다 커진 만큼만 밀 수 있게 붙잡는다. 안 그러면 사진이 화면 밖으로 날아간다.
+function photoZoomClamp() {
+    const img = document.getElementById('fullImageView');
+    const stage = document.getElementById('photoStage');
+    if (!img || !stage) return;
+    const s = photoZoom.scale;
+    const w = img.clientWidth * s, h = img.clientHeight * s;
+    const maxX = Math.max(0, (w - stage.clientWidth) / 2);
+    const maxY = Math.max(0, (h - stage.clientHeight) / 2);
+    photoZoom.tx = Math.min(maxX, Math.max(-maxX, photoZoom.tx));
+    photoZoom.ty = Math.min(maxY, Math.max(-maxY, photoZoom.ty));
+}
+
+// 화면의 한 점(px,py)이 제자리에 남도록 배율을 next로 바꾼다.
+function photoZoomTo(next, px, py, animate) {
+    const img = document.getElementById('fullImageView');
+    if (!img) return;
+    const r = img.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;   // 지금 화면에서의 사진 중심
+    const s0 = photoZoom.scale;
+    const s1 = Math.min(PHOTO_ZOOM_MAX, Math.max(1, next));
+    // 그 점이 사진 안에서 어디였는지(원본 배율 기준)를 잡고, 새 배율에서 같은 자리에 오게 민다.
+    const lx = (px - cx) / s0, ly = (py - cy) / s0;
+    photoZoom.tx += lx * (s0 - s1);
+    photoZoom.ty += ly * (s0 - s1);
+    photoZoom.scale = s1;
+    if (s1 === 1) { photoZoom.tx = 0; photoZoom.ty = 0; }
+    photoZoomClamp();
+    photoZoomApply(animate);
+}
+
+function initPhotoZoom() {
+    if (photoZoom.bound) return;
+    const stage = document.getElementById('photoStage');
+    const img = document.getElementById('fullImageView');
+    if (!stage || !img) return;
+    photoZoom.bound = true;
+
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    const two = () => [...photoZoom.pointers.values()];
+
+    stage.addEventListener('pointerdown', e => {
+        // 이미 풀린 포인터면 브라우저가 예외를 던진다. 잡아야 나머지 손가락 처리가 이어진다.
+        try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+        photoZoom.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, onImg: e.target === img });
+        photoZoom.moved = false;
+        if (photoZoom.pointers.size === 2) {
+            const [a, b] = two();
+            const r = img.getBoundingClientRect();
+            photoZoom.pinch = {
+                d0: dist(a, b), s0: photoZoom.scale, m0: mid(a, b), tx0: photoZoom.tx, ty0: photoZoom.ty,
+                cx0: r.left + r.width / 2, cy0: r.top + r.height / 2      // 벌리기 시작할 때의 사진 중심
+            };
+            photoZoom.drag = null;
+        } else if (photoZoom.pointers.size === 1) {
+            photoZoom.drag = { x: e.clientX, y: e.clientY, tx0: photoZoom.tx, ty0: photoZoom.ty };
+        }
+    });
+
+    stage.addEventListener('pointermove', e => {
+        const p = photoZoom.pointers.get(e.pointerId);
+        if (!p) return;
+        p.x = e.clientX; p.y = e.clientY;
+
+        if (photoZoom.pointers.size === 2 && photoZoom.pinch) {
+            const [a, b] = two();
+            const k = photoZoom.pinch;
+            const m = mid(a, b);
+            const s1 = Math.min(PHOTO_ZOOM_MAX, Math.max(1, k.s0 * dist(a, b) / k.d0));
+            // 벌리기 시작한 가운데 점이 사진의 어디였는지(원본 배율 기준) 잡아 두고,
+            // 새 배율에서 그 점이 지금 손가락 가운데로 오도록 이동값을 푼다.
+            const lx = (k.m0.x - k.cx0) / k.s0, ly = (k.m0.y - k.cy0) / k.s0;
+            photoZoom.scale = s1;
+            photoZoom.tx = k.tx0 + lx * (k.s0 - s1) + (m.x - k.m0.x);
+            photoZoom.ty = k.ty0 + ly * (k.s0 - s1) + (m.y - k.m0.y);
+            photoZoom.moved = true;
+            photoZoomClamp();
+            photoZoomApply(false);
+        } else if (photoZoom.pointers.size === 1 && photoZoom.drag && photoZoom.scale > 1) {
+            const d = photoZoom.drag;
+            const dx = e.clientX - d.x, dy = e.clientY - d.y;
+            if (Math.abs(dx) + Math.abs(dy) > 3) photoZoom.moved = true;
+            photoZoom.tx = d.tx0 + dx; photoZoom.ty = d.ty0 + dy;
+            photoZoomClamp();
+            photoZoomApply(false);
+        }
+    });
+
+    const up = e => {
+        const p = photoZoom.pointers.get(e.pointerId);
+        photoZoom.pointers.delete(e.pointerId);
+        if (photoZoom.pointers.size === 1) {
+            // 한 손가락이 남으면 그 자리에서 끌기를 새로 시작한다 — 안 그러면 사진이 튄다.
+            const [a] = two();
+            photoZoom.drag = { x: a.x, y: a.y, tx0: photoZoom.tx, ty0: photoZoom.ty };
+            photoZoom.pinch = null;
+            return;
+        }
+        if (photoZoom.pointers.size > 0) return;
+        photoZoom.pinch = null; photoZoom.drag = null;
+
+        if (photoZoom.scale < 1.05) { photoZoom.scale = 1; photoZoom.tx = 0; photoZoom.ty = 0; photoZoomApply(true); }
+
+        if (photoZoom.moved || !p) return;
+        // 여기부터는 '두드림'이다. 사진 밖이면 닫고, 사진이면 두 번 두드림을 본다.
+        if (!p.onImg) { closeImageViewModal(); return; }
+        const now = Date.now();
+        if (now - photoZoom.lastTap < 300) {
+            photoZoom.lastTap = 0;
+            photoZoomTo(photoZoom.scale > 1 ? 1 : PHOTO_ZOOM_TAP, e.clientX, e.clientY, true);
+        } else {
+            photoZoom.lastTap = now;
+        }
+    };
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+
+    // 데스크톱: 휠로 확대·축소. 마우스가 있는 자리를 기준으로 한다.
+    stage.addEventListener('wheel', e => {
+        e.preventDefault();
+        photoZoomTo(photoZoom.scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY, false);
+    }, { passive: false });
+}
+
+// 사진 파일을 Blob으로. Storage URL이거나, 아직 이전하지 않은 예전 base64일 수 있다.
+async function currentPhotoBlob() {
+    const imgSrc = document.getElementById('fullImageView').src;
+    if (!imgSrc) return null;
+    if (imgSrc.startsWith('data:')) {
+        const splitDataURI = imgSrc.split(','); const byteString = atob(splitDataURI[1]); const mime = splitDataURI[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
+        return new Blob([ab], { type: mime });
+    }
+    const res = await fetch(imgSrc);
+    if (!res.ok) throw new Error("사진을 불러오지 못했습니다.");
+    return await res.blob();
+}
+
+function photoFileName(blob) {
+    const ext = (PHOTO_EXT && PHOTO_EXT[blob.type]) || 'jpg';
+    return `JTFAG_${new Date().getTime()}.${ext}`;
+}
+
+/* 다운로드와 공유를 갈랐다. 예전엔 다운로드 버튼이 공유 창을 먼저 띄웠는데,
+   사용자가 둘을 따로 원했다 — 다운로드는 바로 저장, 공유는 공유 창. */
 async function downloadCurrentPhoto() {
-    const imgSrc = document.getElementById('fullImageView').src; if (!imgSrc) return;
+    if (!document.getElementById('fullImageView').src) return;
     if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡에선 다운로드가 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!"); return; }
     try {
-        // 사진은 Storage URL이거나, 아직 이전하지 않은 예전 base64일 수 있다.
-        let blob;
-        if (imgSrc.startsWith('data:')) {
-            const splitDataURI = imgSrc.split(','); const byteString = atob(splitDataURI[1]); const mime = splitDataURI[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
-            blob = new Blob([ab], { type: mime });
-        } else {
-            const res = await fetch(imgSrc);
-            if (!res.ok) throw new Error("사진을 불러오지 못했습니다.");
-            blob = await res.blob();
+        const blob = await currentPhotoBlob();
+        if (!blob) return;
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.style.display = 'none'; a.href = blobUrl; a.download = photoFileName(blob);
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(blobUrl);
+        showToast("💾 기기에 저장했습니다.");
+    } catch (error) { console.error("다운로드 에러:", error); showToast("⚠️ 다운로드 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요."); }
+}
+
+async function shareCurrentPhoto() {
+    if (!document.getElementById('fullImageView').src) return;
+    try {
+        const blob = await currentPhotoBlob();
+        if (!blob) return;
+        const file = new File([blob], photoFileName(blob), { type: blob.type || 'image/jpeg' });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'JTFAG 사진' });
+            return;
         }
-        const mimeString = blob.type || 'image/jpeg'; const fileName = `JTFAG_Gallery_${new Date().getTime()}.jpeg`;
-        if (navigator.share && navigator.canShare) {
-            const file = new File([blob], fileName, { type: mimeString });
-            if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'JTFAG 사진 저장' }); showToast("💾 갤러리 저장 메뉴를 성공적으로 열었습니다."); return; }
-        }
-        const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = blobUrl; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(blobUrl);
-        showToast("💾 기기에 성공적으로 저장되었습니다!");
-    } catch (error) { console.error("다운로드 에러:", error); if (error.name !== 'AbortError') { showToast("⚠️ 다운로드 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요."); } }
+        // 파일 공유가 안 되는 브라우저(PC 크롬 등)는 주소라도 넘긴다.
+        if (navigator.share) { await navigator.share({ title: 'JTFAG 사진', url: document.getElementById('fullImageView').src }); return; }
+        showToast("⚠️ 이 브라우저는 공유를 지원하지 않습니다. 다운로드를 눌러 주세요.");
+    } catch (error) {
+        if (error && error.name === 'AbortError') return;   // 공유 창을 그냥 닫은 것
+        console.error("공유 에러:", error); showToast("⚠️ 공유에 실패했습니다.");
+    }
 }
 
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }

@@ -295,13 +295,25 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="imageViewModal" onclick="if(event.target === this) closeImageViewModal()">
-    <div class="modal-content" style="background:transparent; border:none; box-shadow:none; max-width:95vw;">
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
-            <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center;" onclick="downloadCurrentPhoto()" title="다운로드">⬇️</button>
-            <button type="button" class="close-btn" style="color:white; font-size:1.2rem; background:rgba(0,0,0,0.5); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:bold;" onclick="closeImageViewModal()">✕</button>
+<!-- 사진 보기. 두 손가락으로 벌리면 확대되고 한 손가락으로 끌어 옮긴다(두 번 두드려도 됨).
+     viewport가 user-scalable=no라 브라우저 확대가 안 먹으므로 앱이 직접 한다(ui.js photoZoom).
+     아래 도구는 다운로드 · 공유 · 닫기 셋뿐이다. -->
+<div class="modal-overlay" id="imageViewModal">
+    <div class="photo-viewer">
+        <div class="photo-stage" id="photoStage">
+            <img id="fullImageView" src="" alt="사진" draggable="false">
         </div>
-        <img id="fullImageView" src="" alt="Full Screen" style="border-radius:8px;">
+        <div class="photo-tools">
+            <button type="button" class="photo-tool" onclick="downloadCurrentPhoto()" aria-label="다운로드" title="다운로드">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+            </button>
+            <button type="button" class="photo-tool" onclick="shareCurrentPhoto()" aria-label="공유" title="공유">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+            </button>
+            <button type="button" class="photo-tool" onclick="closeImageViewModal()" aria-label="닫기" title="닫기">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+            </button>
+        </div>
     </div>
 </div>
 

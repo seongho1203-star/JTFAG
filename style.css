@@ -578,8 +578,18 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .photo-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; background: #f1f5f9; }
 .photo-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
 .photo-delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(220, 38, 38, 0.85); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-#imageViewModal { z-index: 1000; }
-#imageViewModal img { width: 100%; height: auto; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+/* 사진 보기 — 화면을 통째로 쓴다. 다른 모달과 달리 카드가 없다.
+   사진 확대는 ui.js의 photoZoom이 transform으로만 한다. */
+#imageViewModal { z-index: 1000; padding: 0; background: rgba(8, 10, 20, 0.94); }
+#imageViewModal.active { backdrop-filter: none; }   /* 검은 배경이라 blur이 필요 없고, 원본 사진 위에서는 비싸다 */
+.photo-viewer { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+.photo-stage { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; cursor: grab; }
+.photo-stage img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; transform-origin: center center; will-change: transform; }
+/* 아래 도구줄. 다운로드 · 공유 · 닫기. 반투명한 둥근 단추 — 사진 위에 떠도 읽힌다. */
+.photo-tools { flex-shrink: 0; display: flex; justify-content: center; gap: 22px; padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.photo-tool { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.16); color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 0; }
+.photo-tool:active { background: rgba(255, 255, 255, 0.3); }
+.photo-tool svg { display: block; }
 
 .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; color: transparent !important; }
 @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
