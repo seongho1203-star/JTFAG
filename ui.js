@@ -2720,7 +2720,8 @@ function photoFileName(blob) {
     return `JTFAG_${new Date().getTime()}.${ext}`;
 }
 
-/* 다운로드와 공유는 단추가 따로다. 사용자가 둘을 따로 원했다.
+/* 도구는 다운로드와 닫기 둘뿐이다. 공유 단추도 있었는데, 폰에서 다운로드가 같은 시스템 시트를
+   띄우게 되면서 둘이 똑같아져 사용자 요청으로 뺐다 — 되살리지 말 것.
 
    **모바일에서 다운로드는 시스템 저장 시트를 띄운다.** 웹앱은 갤러리에 직접 쓸 수 없다 —
    `<a download>`를 써 봤더니 삼성 브라우저는 "다운로드하시겠습니까?" 확인창을 띄우고,
@@ -2755,25 +2756,6 @@ async function downloadCurrentPhoto() {
     } catch (error) {
         if (error && error.name === 'AbortError') return;   // 시트를 그냥 닫은 것
         console.error("다운로드 에러:", error); showToast("⚠️ 저장 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요.");
-    }
-}
-
-async function shareCurrentPhoto() {
-    if (!document.getElementById('fullImageView').src) return;
-    try {
-        const blob = await currentPhotoBlob();
-        if (!blob) return;
-        const file = new File([blob], photoFileName(blob), { type: blob.type || 'image/jpeg' });
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'JTFAG 사진' });
-            return;
-        }
-        // 파일 공유가 안 되는 브라우저(PC 크롬 등)는 주소라도 넘긴다.
-        if (navigator.share) { await navigator.share({ title: 'JTFAG 사진', url: document.getElementById('fullImageView').src }); return; }
-        showToast("⚠️ 이 브라우저는 공유를 지원하지 않습니다. 다운로드를 눌러 주세요.");
-    } catch (error) {
-        if (error && error.name === 'AbortError') return;   // 공유 창을 그냥 닫은 것
-        console.error("공유 에러:", error); showToast("⚠️ 공유에 실패했습니다.");
     }
 }
 
