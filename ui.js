@@ -2720,19 +2720,42 @@ function photoFileName(blob) {
     return `JTFAG_${new Date().getTime()}.${ext}`;
 }
 
-/* 다운로드와 공유를 갈랐다. 예전엔 다운로드 버튼이 공유 창을 먼저 띄웠는데,
-   사용자가 둘을 따로 원했다 — 다운로드는 바로 저장, 공유는 공유 창. */
+/* 다운로드와 공유는 단추가 따로다. 사용자가 둘을 따로 원했다.
+
+   **모바일에서 다운로드는 시스템 저장 시트를 띄운다.** 웹앱은 갤러리에 직접 쓸 수 없다 —
+   `<a download>`를 써 봤더니 삼성 브라우저는 "다운로드하시겠습니까?" 확인창을 띄우고,
+   아이폰은 갤러리가 아니라 파일 앱으로 보내 버려 "이상한 게 뜬다"는 말이 나왔다.
+   사진을 갤러리로 넣는 정식 길은 `navigator.share`에 파일을 넘기는 것이다 —
+   iOS는 시트에 '이미지 저장'이 있고, 안드로이드는 갤러리·포토가 대상으로 뜬다.
+   그래서 손가락 기기면 시트를 띄우고, PC처럼 시트가 없는 곳에서만 `<a download>`를 쓴다.
+   `<a download>`로 되돌리지 말 것. */
+// 손가락 기기인가 — maxTouchPoints만 본다. 'ontouchstart' in window는 예전 방식이라
+// PC 크롬에서도 true가 나올 때가 있어 쓰지 않는다. 아이폰·안드로이드는 5 이상을 돌려준다.
+function isTouchDevice() {
+    return (navigator.maxTouchPoints || 0) > 0;
+}
+
 async function downloadCurrentPhoto() {
     if (!document.getElementById('fullImageView').src) return;
-    if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡에선 다운로드가 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!"); return; }
+    if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡에선 저장이 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!"); return; }
     try {
         const blob = await currentPhotoBlob();
         if (!blob) return;
+        const file = new File([blob], photoFileName(blob), { type: blob.type || 'image/jpeg' });
+
+        if (isTouchDevice() && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'JTFAG 사진 저장' });
+            showToast("📷 '이미지 저장' 또는 갤러리를 고르면 저장됩니다.");
+            return;
+        }
         const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.style.display = 'none'; a.href = blobUrl; a.download = photoFileName(blob);
+        const a = document.createElement('a'); a.style.display = 'none'; a.href = blobUrl; a.download = file.name;
         document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(blobUrl);
         showToast("💾 기기에 저장했습니다.");
-    } catch (error) { console.error("다운로드 에러:", error); showToast("⚠️ 다운로드 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요."); }
+    } catch (error) {
+        if (error && error.name === 'AbortError') return;   // 시트를 그냥 닫은 것
+        console.error("다운로드 에러:", error); showToast("⚠️ 저장 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요.");
+    }
 }
 
 async function shareCurrentPhoto() {
