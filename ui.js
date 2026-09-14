@@ -1644,8 +1644,80 @@ function moneyCell(g, type, value) {
         class="money-input${editable ? '' : ' locked'}" value="${formatNumber(value)}"
         ${editable ? '' : 'readonly '}onfocus="this.select()"
         ${editable
-            ? `onchange="updateMoney('${g}', '${type}', this.value)"`
+            ? `onchange="updateMoney('${g}', '${type}', this.value)" onkeydown="moneyKeydown(event)"`
             : `onclick="moneyLockNotice('${g}')"`}>`;
+}
+
+/* ── 금액 입력 마무리 ─────────────────────────────────────────────
+   금액 칸은 확인 단추 없이 **포커스가 빠질 때(`onchange`)** 저장된다. 그런데 저장됐다는
+   표시가 없어 "다른 데를 눌렀는데 들어간 건지 모르겠다"는 말이 나왔다. 아이폰 숫자
+   키패드에는 완료 키조차 없어(홈 화면 앱은 사파리의 '완료' 줄도 안 뜬다) 더 그렇다.
+
+   그래서 셋을 둔다:
+   1. 저장되면 **토스트로 무엇이 얼마로 저장됐는지** 알리고 그 칸을 잠깐 반짝인다
+      (`.just-saved` — 한 칸에 한 번만 도는 box-shadow 애니메이션이다. 배경색은
+      `.money-input`이 `!important`라 애니메이션이 못 이긴다).
+   2. 금액 칸에 커서가 있는 동안만 화면 아래에 **`✓ 입력 완료`**(`#moneyDoneBar`)가 뜬다.
+      누르면 포커스를 빼서 저장을 태우고, 바뀐 게 없으면 그렇다고 말해 준다.
+      단추의 `pointerdown`을 막아 **단추를 누르는 순간 포커스가 먼저 빠지지 않게** 한다 —
+      안 막으면 눌리기 전에 바가 사라져 손가락이 엉뚱한 곳에 닿는다.
+      아이폰은 키보드가 올라와도 `position:fixed`가 키보드 뒤에 깔리므로
+      `visualViewport`로 키보드 위에 붙인다.
+   3. Enter(안드로이드 키보드의 완료 키)로도 포커스가 빠져 저장된다. */
+const MONEY_FIELD_LABEL = { start: '시작 금액', end: '남은 금액', donate: '찬조' };
+let lastMoneySavedAt = 0;
+
+function isMoneyField(el) {
+    return !!el && el.matches && el.matches('.money-input:not(.locked), .donate-input:not(.locked)');
+}
+
+function moneyKeydown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+}
+
+function flashMoneySaved(name, type, after) {
+    lastMoneySavedAt = Date.now();
+    showToast(`💾 ${name} ${MONEY_FIELD_LABEL[type] || type} ${formatNumber(after)}원 저장됨`);
+    const el = document.getElementById(`money_${type}_${name}`);
+    if (!el) return;
+    el.classList.remove('just-saved');
+    void el.offsetWidth;                          // 애니메이션을 처음부터 다시 돌린다
+    el.classList.add('just-saved');
+}
+
+function placeMoneyDoneBar() {
+    const bar = document.getElementById('moneyDoneBar');
+    if (!bar || !bar.classList.contains('on')) return;
+    const vv = window.visualViewport;
+    // 키보드가 올라오면 보이는 영역이 줄어든다. 그 아래쪽 끝에서 12px 위에 둔다.
+    const hidden = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    bar.style.bottom = `${hidden + 12}px`;
+}
+
+function showMoneyDoneBar(on) {
+    const bar = document.getElementById('moneyDoneBar');
+    if (!bar) return;
+    bar.classList.toggle('on', !!on);
+    if (on) placeMoneyDoneBar(); else bar.style.bottom = '';
+}
+
+function finishMoneyInput() {
+    const el = document.activeElement;
+    const before = lastMoneySavedAt;
+    if (isMoneyField(el)) el.blur();              // change → updateMoney → 토스트
+    if (lastMoneySavedAt === before) showToast('✔️ 바뀐 금액이 없습니다.');
+    showMoneyDoneBar(false);
+}
+
+document.addEventListener('focusin', e => { if (isMoneyField(e.target)) showMoneyDoneBar(true); });
+document.addEventListener('focusout', e => {
+    if (!isMoneyField(e.target)) return;
+    // 다음 칸으로 옮겨 가는 중이면 바를 그대로 둔다.
+    setTimeout(() => { if (!isMoneyField(document.activeElement)) showMoneyDoneBar(false); }, 0);
+});
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', placeMoneyDoneBar);
+    window.visualViewport.addEventListener('scroll', placeMoneyDoneBar);
 }
 
 /* 계급정산·타수정산 — 표의 뒤 두 칸이 이 값이다.
@@ -1762,7 +1834,7 @@ function renderDonateRow() {
                         class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="0"
                         ${editable ? '' : 'readonly '}onfocus="this.select()"
                         ${editable
-                            ? `onchange="updateMoney('${g}', 'donate', this.value)"`
+                            ? `onchange="updateMoney('${g}', 'donate', this.value)" onkeydown="moneyKeydown(event)"`
                             : `onclick="moneyLockNotice('${g}')"`}></label>`;
             }).join('') + `</div>
         </div>
@@ -1891,12 +1963,16 @@ function toggleMoneyEdit() {
 function updateMoney(name, type, value) {
     // 화면이 막고 있어도 여기서 한 번 더 본다 — 이 함수가 유일한 입구다.
     if (!canEditMoney(name)) { moneyLockNotice(name); renderMoneyTable(); return; }
-    saveState();
     if (!appData.roundMoney[selectedMoneyRoundIdx]) appData.roundMoney[selectedMoneyRoundIdx] = {};
     if (!appData.roundMoney[selectedMoneyRoundIdx][name]) appData.roundMoney[selectedMoneyRoundIdx][name] = { start: 0, end: 0 };
     const after = parseNumber(value);
-    appData.roundMoney[selectedMoneyRoundIdx][name][type] = after;
-    syncToSupabase(appData); renderAll();
+    const before = Number(appData.roundMoney[selectedMoneyRoundIdx][name][type]) || 0;
+    if (after !== before) {                       // 같은 값이면 헛저장을 안 만든다
+        saveState();
+        appData.roundMoney[selectedMoneyRoundIdx][name][type] = after;
+        syncToSupabase(appData); renderAll();
+    }
+    flashMoneySaved(name, type, after);           // 렌더 뒤에 — 칸이 새로 만들어졌을 수 있다
 }
 
 // ─── 타수 자동 입력 ───
