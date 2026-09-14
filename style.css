@@ -365,9 +365,14 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 }
 /* 금액 칸에 커서가 있는 동안만 뜨는 완료 단추. 토스트와 같은 자리(아래 가운데)에 두고,
    키보드가 올라오면 JS가 visualViewport로 bottom을 키보드 위로 올린다. */
-#moneyDoneBar { display: none; position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 9998; padding: 11px 26px; border-radius: 22px; border: none; background: #16a34a; color: #ffffff; font-size: 0.86rem; font-weight: 900; letter-spacing: 0.02em; box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35); }
+/* 가운데 정렬에 transform을 쓰지 말 것 — 전역 `button:active`가 transform을
+   scale(0.96) !important로 덮어써서 누르는 순간 translateX가 사라져 오른쪽으로 튀었다.
+   left/right 0 + margin auto + fit-content로 가운데에 둔다.
+   눌림은 `.pressing`(JS가 pointerdown/up에 붙였다 뗀다)으로 그린다 — `:active`는 터치에서
+   안 켜진다(pointerdown을 막아서). 작아지고 색이 진해지고 그림자가 줄어 눌러 들어가는 느낌. */
+#moneyDoneBar { display: none; position: fixed; bottom: 12px; left: 0; right: 0; margin: 0 auto; width: fit-content; z-index: 9998; padding: 11px 26px; border-radius: 22px; border: none; background: #16a34a; color: #ffffff; font-size: 0.86rem; font-weight: 900; letter-spacing: 0.02em; box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35); transition: background 0.08s, box-shadow 0.08s, transform 0.08s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 #moneyDoneBar.on { display: block; }
-#moneyDoneBar:active { background: #15803d; }
+#moneyDoneBar.pressing, #moneyDoneBar:active { background: #15803d; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3); transform: scale(0.94) !important; opacity: 0.95 !important; }
 
 /* 찬조 + 니어 — 정산 표 아래에 위아래로 놓인 두 줄.
    찬조를 표의 6번째 열로 넣으면 안 들어간다(5열이 이미 364px를 꽉 쓰고,

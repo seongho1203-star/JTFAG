@@ -329,7 +329,7 @@
 <div id="customToast"></div>
 <!-- 금액 칸에 커서가 있는 동안만 뜨는 완료 단추. pointerdown을 막아 누르는 순간 포커스가
      먼저 빠지지 않게 한다 — 안 막으면 눌리기 전에 바가 사라진다. -->
-<button type="button" id="moneyDoneBar" onpointerdown="event.preventDefault()" onclick="finishMoneyInput()">✓ 입력 완료</button>
+<button type="button" id="moneyDoneBar" onpointerdown="pressMoneyDone(event, true)" onpointerup="pressMoneyDone(event, false)" onpointercancel="pressMoneyDone(event, false)" onpointerleave="pressMoneyDone(event, false)" onclick="finishMoneyInput()">✓ 입력 완료</button>
 
 <!-- 🔥 분리된 4개의 자바스크립트 파일을 순서대로 묶어서 실행합니다 🔥 -->
 <script>

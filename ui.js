@@ -1701,6 +1701,13 @@ function showMoneyDoneBar(on) {
     if (on) placeMoneyDoneBar(); else bar.style.bottom = '';
 }
 
+// 눌림 표시. `:active`는 터치에서 안 켜진다 — pointerdown을 막았기 때문이다(포커스를 지키려고).
+// 그래서 pointerdown/up에 직접 `.pressing`을 붙였다 뗀다. 손가락이 밖으로 나가도 풀린다.
+function pressMoneyDone(e, on) {
+    if (on) e.preventDefault();                   // 포커스가 먼저 빠지지 않게
+    e.currentTarget.classList.toggle('pressing', !!on);
+}
+
 function finishMoneyInput() {
     const el = document.activeElement;
     const before = lastMoneySavedAt;
