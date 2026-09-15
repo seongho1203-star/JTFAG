@@ -64,6 +64,18 @@ function eagleStreak(ranks) {
     return n;
 }
 
+/* 지난 기록을 통틀어 가장 길었던 연속.
+   위의 `eagleStreak()`은 **지금 이어지는 중**만 센다 — 매를 한 번 하면 0이 되어
+   3연속 뱃지가 흔적도 없이 사라진다. '한 번이라도 3연속을 이뤘다'는 건 그것과 별개라
+   여기서 따로 센다. 이름 옆 명예 표식(`paintEagleCrowns()` in ui.js)이 이 값을 본다.
+   **계급 기록에서 계산하므로 payload에 새로 저장하는 값이 없다** — 차수를 지웠다
+   되살려도 저절로 맞고, 4명이 서로 덮어쓸 일도 없다. */
+function bestEagleStreak(ranks) {
+    let best = 0, run = 0;
+    (ranks || []).forEach(r => { run = (r === 0) ? run + 1 : 0; if (run > best) best = run; });
+    return best;
+}
+
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -577,7 +589,7 @@ function processAllRoundSettlements() {
             summaryGrid.innerHTML += `
                 <div class="summary-item" style="height: 100%; justify-content: flex-start;">
                     <div>
-                        <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
+                        <div class="name" onclick="openPersonalReport('${g}')">${g}<span class="eagle-honor off" data-crown="${g}" onclick="event.stopPropagation(); eagleHonorNotice('${g}')"></span></div>
                         <div style="margin-top:2px; margin-bottom: 6px;">
                             <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:6px; ${badgeGlowStyle}">${currentRankInfo.icon} ${currentRankInfo.name}</span>
                         </div>
@@ -593,6 +605,8 @@ function processAllRoundSettlements() {
             `;
         });
 
+        // 이름 옆 명예 표식. 표와 요약 카드가 같은 함수를 쓴다 — 여기서 한 번에 채운다.
+        if (typeof paintEagleCrowns === 'function') paintEagleCrowns();
         rememberCurrentRanks();
     }
 }

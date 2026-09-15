@@ -2060,6 +2060,41 @@ function toggleScoreEdit() {
         : "🔒 타수 칸을 다시 잠갔습니다.");
 }
 
+/* ── 독수리 3연속 명예 표식 ────────────────────────────────────────
+   `🦅 3연속` 뱃지는 **연속이 이어지는 동안만** 붙는다 — 매를 한 번 하면 사라져
+   '예전에 이뤘다'는 기록이 어디에도 안 남는다. 그래서 이름 옆에 작은 ⭐를 붙인다.
+   한 번 달리면 안 없어지고, `bestEagleStreak()`(calc.js)로 **계산해서** 내므로
+   payload에 새 필드가 안 생긴다.
+
+   **표와 요약 카드가 이 함수 하나를 같이 쓴다** — 규칙이 두 군데가 되면 한쪽에만 별이 붙는다.
+   양쪽에 빈 `<span data-crown="이름">`을 심어 두고 여기서 채운다.
+   부르는 곳은 `calculateAndRender()`(계급을 낸 직후)와 `renderTable()`(칸을 새로 만든 뒤)이다.
+
+   **표식에 애니메이션을 걸지 말 것** — 이름은 표에 네 줄, 요약 카드에 네 개가 늘 떠 있어
+   '항상 켜져 있는 그리기 비용'이 된다(안드로이드에서 화면이 끊긴 그 자리다). */
+const EAGLE_HONOR_NEED = 3;
+
+function eagleHonorBest(g) {
+    if (typeof bestEagleStreak !== 'function') return 0;
+    return bestEagleStreak((typeof golferRankHistory !== 'undefined' && golferRankHistory[g]) || []);
+}
+
+function paintEagleCrowns() {
+    document.querySelectorAll('[data-crown]').forEach(el => {
+        const best = eagleHonorBest(el.getAttribute('data-crown'));
+        const on = best >= EAGLE_HONOR_NEED;
+        el.textContent = on ? '⭐' : '';
+        el.className = on ? 'eagle-honor' : 'eagle-honor off';
+    });
+}
+
+// 별을 누르면 무슨 뜻인지 알려 준다. 안 그러면 아는 사람만 아는 표시가 된다.
+function eagleHonorNotice(g) {
+    const best = eagleHonorBest(g);
+    if (best < EAGLE_HONOR_NEED) return;
+    showToast(`⭐ ${g}님 · 독수리 ${EAGLE_HONOR_NEED}연속 달성자 (최고 ${best}연속)`);
+}
+
 function renderTable() {
     const headerRow = document.getElementById('headerRow'); const tbody = document.getElementById('scoreTbody');
     
@@ -2084,6 +2119,9 @@ function renderTable() {
                 sInput.classList.toggle('locked', locked);
             }
         });
+        // 빠른 길에서도 명예 표식을 다시 칠한다 — 빠뜨리면 차수가 늘어 3연속이 되어도
+        // 표의 별이 새로고침 전까지 안 붙는다(정산 칸 잠금이 `data-lock` 없이 그랬던 자리다).
+        paintEagleCrowns();
         return;
     }
 
@@ -2100,7 +2138,7 @@ function renderTable() {
     tbody.innerHTML = "";
     golfers.forEach(name => {
         const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
-        let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td>`;
+        let rowHtml = `<td class="golfer-name sticky-col-1">${name}<span class="eagle-honor off" data-crown="${name}" onclick="eagleHonorNotice('${name}')"></span></td>`;
         for (let r = 0; r < appData.totalRounds; r++) {
             const locked = isScoreCellLocked(r);
             rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input${locked ? ' locked' : ''}"${locked ? ' readonly' : ''} value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
@@ -2108,6 +2146,7 @@ function renderTable() {
         rowHtml += `<td class="avg-cell"><span class="avg-pill empty">-</span></td>`;
         tr.innerHTML = rowHtml; tbody.appendChild(tr);
     });
+    paintEagleCrowns();   // 칸을 새로 만들었으니 명예 표식을 다시 붙인다
 }
 
 function renderHandicapMatchCard(r1, r2) {
