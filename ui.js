@@ -2030,7 +2030,8 @@ function applyHoleScores() {
     const changed = syncScoresFromHoles();
     const filled = applyRoundCourses();
     const dropped = dropRetiredFields();
-    if (changed || filled || dropped) syncToSupabase(appData);
+    const settled = settleScheduleRound();   // 지운 차수에 남아 있던 일정을 마지막 차수로
+    if (changed || filled || dropped || settled) syncToSupabase(appData);
 }
 
 function toggleScoreEdit() {
@@ -2173,7 +2174,68 @@ async function removeRound() {
     golfers.forEach(name => { if (appData.scores[name]) appData.scores[name].pop(); });
     if (appData.roundMoney && appData.roundMoney.length > 0) appData.roundMoney.pop();
     if (selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
-    syncToSupabase(appData); renderAll(); showToast(`➖ ${appData.totalRounds + 1}차전 데이터가 삭제되었습니다.`);
+    const moved = carryScheduleAfterRemove(r + 1);
+    syncToSupabase(appData); renderAll();
+    showToast(`➖ ${r + 1}차전 데이터가 삭제되었습니다.` + (moved ? ` 일정은 ${appData.totalRounds}차로 옮겼습니다.` : ''));
+}
+
+/* 지운 차수에 일정이 붙어 있었다면 어디로 가야 하나.
+   10차를 지웠는데 일정 창을 열면 여전히 `10차 (예정) · 골프장`이 골라져 있었다 —
+   `nextRoundNo`와 `roundCourses[10]`이 그대로 남기 때문이다(골프장 이름은 차수를 지웠다
+   다시 만들어도 돌아오도록 **일부러** 남긴다). 그런데 일정까지 지운 차수를 붙들고 있으면
+   "지웠는데 아직 있다"로 보인다.
+
+   남은 마지막 차수가 **아직 안 친 차수**면 일정을 그쪽으로 옮긴다 — 지운 차수는 미리 만들어
+   둔 것이었을 테니. 골프장·코스도 함께 옮기고 지운 번호의 것은 지운다.
+   '안 친 차수'는 `roundIsEmpty()`로 본다 — 홀 기록·타수·정산 금액·사진이 **모두** 없을 때만이다.
+   홀 기록만 보면 지난 차수를 치고 스코어카드를 아직 안 올린 사이에 다음 일정을 잡은 경우에
+   그 차수를 안 친 것으로 잘못 보고 골프장을 덮어쓴다. 하나라도 있으면 다음 라운드는 정말로
+   지운 번호이므로 그대로 둔다.
+
+   **이미 그렇게 된 데이터도 접속할 때 바로잡는다**(`settleScheduleRound()`, `applyHoleScores()`에서).
+   일정이 '아직 없는 다음 차수'에 붙어 있는데 마지막 차수가 비어 있으면 같은 규칙으로 옮긴다.
+   바뀐 게 있을 때만 true를 돌려 헛저장이 안 나간다. */
+function roundIsEmpty(r) {
+    if (r < 0 || r >= appData.totalRounds || hasHoleRecord(r)) return false;
+    const scored = golfers.some(g => {
+        const v = appData.scores && appData.scores[g] && appData.scores[g][r];
+        return v !== "" && v !== undefined && v !== null && !isNaN(parseFloat(v));
+    });
+    if (scored) return false;
+    const money = appData.roundMoney && appData.roundMoney[r];
+    const paid = money && golfers.some(g => money[g] && ((Number(money[g].start) || 0) !== 0 || (Number(money[g].end) || 0) !== 0 || (Number(money[g].donate) || 0) !== 0));
+    if (paid) return false;
+    const photos = appData.roundPhotos && appData.roundPhotos[r];
+    return !(photos && photos.length);
+}
+
+function moveScheduleTo(from, to) {
+    const clubs = roundCourseMap(), subs = subCourseMap();
+    appData.nextRoundNo = to;
+    if (clubs[from]) {
+        clubs[to] = clubs[from];
+        if (!appData.courses) appData.courses = [];
+        if (to <= appData.totalRounds) appData.courses[to - 1] = clubs[from];
+    }
+    delete clubs[from];
+    if (subs[from]) subs[to] = subs[from]; else delete subs[to];
+    delete subs[from];
+}
+
+function carryScheduleAfterRemove(deleted) {
+    if (parseInt(appData.nextRoundNo, 10) !== deleted) return false;
+    const last = appData.totalRounds;
+    if (!roundIsEmpty(last - 1)) return false;
+    moveScheduleTo(deleted, last);
+    return true;
+}
+
+function settleScheduleRound() {
+    const next = parseInt(appData.nextRoundNo, 10);
+    const last = appData.totalRounds;
+    if (next !== last + 1 || !roundIsEmpty(last - 1)) return false;
+    moveScheduleTo(next, last);
+    return true;
 }
 
 let selectedPhotoRoundIdx = -1;
