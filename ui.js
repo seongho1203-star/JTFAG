@@ -620,9 +620,26 @@ function ddayBadgeHtml() {
     return `<span class="dday-badge ${left <= 3 ? 'dday-soon' : 'dday-far'}">D-${left}</span>`;
 }
 
+/* 일정 문구에 요일을 붙인다 — `10월 3일 오후 5:21` → `10월 3일(토) 오후 5:21`.
+   문구(`nextRoundDate`)에는 연도가 없어 요일을 알 수 없으므로 함께 저장된 `nextRoundISO`에서 낸다.
+   **화면에 그릴 때만 붙이고 저장하지 않는다** — 문구를 읽는 곳(알림 발송 · `lastScheduledCourse()` ·
+   날씨의 `courseFromText()`)이 여럿이라 저장 형식을 바꾸면 하나씩 다 손봐야 한다.
+   ISO의 월·일이 문구와 다르면(예전 데이터가 어긋난 경우) 틀린 요일을 붙이는 대신 그냥 둔다. */
+function withWeekday(text) {
+    const iso = appData.nextRoundISO;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m || !text) return text || '';
+    const month = parseInt(m[2], 10), day = parseInt(m[3], 10);
+    const re = /(\d{1,2})월\s*(\d{1,2})일(?!\s*\()/;
+    const hit = re.exec(text);
+    if (!hit || parseInt(hit[1], 10) !== month || parseInt(hit[2], 10) !== day) return text;
+    const wd = '일월화수목금토'[new Date(Date.UTC(+m[1], month - 1, day)).getUTCDay()];
+    return text.replace(re, `$1월 $2일(${wd})`);
+}
+
 function renderNoticeArea() {
     const dateDisplay = document.getElementById('nextRoundDisplay');
-    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + appData.nextRoundDate) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
+    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + withWeekday(appData.nextRoundDate)) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
     updateLockUI();
 }
 

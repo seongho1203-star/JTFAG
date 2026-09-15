@@ -177,6 +177,11 @@ sw.js (서비스워커)  ←푸시←  GitHub Actions (매일 KST 08:30)
   D-day 뱃지(`daysUntilNextRound()` in ui.js). 둘 다 기기 시간대와 무관하게 한국 날짜로 비교한다.
   D-day는 자정을 넘겨도 갱신되도록 `visibilitychange`에서 `renderNoticeArea()`를 다시 부른다
   (홈 화면 앱은 백그라운드에 계속 떠 있어서 필요하다).
+  **공지 카드의 요일(`10월 3일(토)`)도 이 값에서 낸다**(`withWeekday()` in ui.js). 문구에는 연도가
+  없어 요일을 알 수 없기 때문이다. **화면에 그릴 때만 붙이고 `nextRoundDate`에 저장하지 않는다** —
+  문구를 읽는 곳(알림 발송 · `lastScheduledCourse()` · 날씨의 `courseFromText()`)이 여럿이라
+  저장 형식을 바꾸면 하나씩 다 손봐야 한다. ISO의 월·일이 문구와 다르거나 ISO가 없는
+  예전 데이터면 붙이지 않는다(틀린 요일보다 없는 게 낫다).
 - **지금 누가 받고 있는지는 관리자 메뉴 → `🔔 알림 받는 기기`에서 본다.**
   `push_subscriptions`를 그대로 읽어 사람별로 묶어 보여 준다 (사람 수가 아니라 **기기 수**다 —
   한 사람이 폰과 PC로 따로 구독하면 두 줄). endpoint 주소로 브라우저 종류를 짐작해 적고,
