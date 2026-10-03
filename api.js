@@ -396,13 +396,21 @@ async function fetchFromSupabase() {
         }
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
         // 접속할 때만 도는 게 아니라 앱이 앞으로 나올 때도 돈다(ui.js의 visibilitychange).
-        // 방금 적은 내 금액보다 읽어 온 게 낡았으면 다시 얹는다 — 처음 접속이면 기억이 비어 있어 그냥 지나간다.
-        if (typeof reapplyMyMoney === 'function' && reapplyMyMoney()) syncToSupabase(appData);
+        // **금액은 따로 둔 테이블(money.js)이 진짜다.** 읽어서 payload의 낡은 금액 위에 얹는다.
+        // 테이블이 없으면(SQL을 아직 안 돌렸으면) 예전 보호막으로 돈다.
+        if (typeof loadMoneyTable === 'function' && await loadMoneyTable()) {
+            await migrateMoneyFromPayload();
+            overlayMoney();
+        } else if (typeof reapplyMyMoney === 'function' && reapplyMyMoney()) {
+            syncToSupabase(appData);
+        }
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
         isLoaded = true;
         renderNoticeArea();
         renderAll();
-        showSaveStatus("⚡ Supabase 연결 완료");
+        // 금액 분리 저장이 켜졌는지 눈으로 확인할 수 있게 적어 둔다(docs/금액분리.md의 확인 단계).
+        showSaveStatus(typeof moneyMode !== 'undefined' && moneyMode === 'table'
+            ? "⚡ 연결 완료 · 💰 금액 분리 저장" : "⚡ Supabase 연결 완료");
     } catch (err) {
         console.error("Load Error:", err);
         showSaveStatus("⚠️ DB 연결 확인 필요");

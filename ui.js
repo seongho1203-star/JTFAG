@@ -22,9 +22,11 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
             if (!appData.fundLogs) appData.fundLogs = [];
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
-            // 내가 방금 적은 금액이 이 payload에 없으면 다시 얹는다(순서가 엇갈렸거나 남이 낡은 걸 보냈다).
-            // 얹었으면 한 번 더 저장해 남의 화면에도 돌려준다 — 내 화면에만 있으면 다음 사람이 또 지운다.
-            if (reapplyMyMoney()) syncToSupabase(appData);
+            // **금액은 이 payload를 믿지 않는다.** 보낸 폰이 낡았으면 남의 금액이 0이거나 옛 값이다.
+            // 따로 둔 테이블(money.js)의 값을 그 위에 얹는다 — 그래서 누가 무엇을 저장해도 금액은 안 바뀐다.
+            // 테이블이 없을 때만 예전 보호막(내 칸을 다시 얹고 한 번 더 저장)으로 돈다.
+            if (moneyMode === 'table') overlayMoney();
+            else if (reapplyMyMoney()) syncToSupabase(appData);
             applyHoleScores();
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
@@ -587,7 +589,13 @@ function updateLockUI() {
 
 function undoLastAction() {
     if (historyStack.length === 0) { showToast("⚠️ 되돌릴 이전 내역이 없습니다."); return; }
-    appData = JSON.parse(historyStack.pop()); syncToSupabase(appData); showToast("↩️ 이전 상태로 되돌렸습니다."); renderAll();
+    const snapshot = JSON.parse(historyStack.pop());
+    // 금액은 테이블이 진짜라 사본을 덮어씌우는 것만으로는 안 돌아간다. 내 칸만 테이블에 되돌려 쓴다
+    // (사본에 든 남의 금액은 그때 값이라, 그대로 쓰면 그 뒤에 남이 적은 금액을 지운다).
+    if (typeof commitUndoMoney === 'function') commitUndoMoney(appData, snapshot);
+    appData = snapshot;
+    if (typeof overlayMoney === 'function') overlayMoney();
+    syncToSupabase(appData); showToast("↩️ 이전 상태로 되돌렸습니다."); renderAll();
 }
 
 function renderSkeleton() {
@@ -2062,6 +2070,9 @@ function rememberMyMoney(round, name, field, value) {
    없으면 다시 얹는다. 시간이 아니라 '확인됐는가'로 손을 떼므로, 보호가 필요 없는 값을
    붙들고 있지 않고 확인이 늦어도 지켜 준다. (그래도 영영 붙들진 않게 1분 상한을 둔다.) */
 function reapplyMyMoney() {
+    // 테이블 모드에서는 쓰지 않는다 — 테이블 값을 얹는 `overlayMoney()`가 그 일을 한다.
+    // 여기서 payload를 또 저장하면 그게 다시 낡은 값을 퍼뜨리는 통로가 된다.
+    if (typeof moneyMode !== 'undefined' && moneyMode === 'table') { myMoneyEdits = []; saveMoneyGuard(); return false; }
     const now = Date.now();
     let fixed = false;
     myMoneyEdits = myMoneyEdits.filter(e => {
@@ -2071,7 +2082,10 @@ function reapplyMyMoney() {
         if (!appData.roundMoney[e.round]) appData.roundMoney[e.round] = {};
         if (!appData.roundMoney[e.round][e.name]) appData.roundMoney[e.round][e.name] = { start: 0, end: 0 };
         const row = appData.roundMoney[e.round][e.name];
-        if ((Number(row[e.field]) || 0) === e.value) return false;   // 확인됐다 — 이제 안 지켜도 된다
+        // 값이 맞으면 확인된 것으로 보고 손을 뗀다. '맞아도 1분 내내 지키기'로 바꿔 봤는데
+        // 네 폰이 서로 자기 칸을 되살리느라 4초에 저장이 83번 나갔다(multi.js payload).
+        // 이 보호막은 테이블이 없을 때만 쓰는 임시 그물이다 — 진짜 해법은 money.js의 분리 저장이다.
+        if ((Number(row[e.field]) || 0) === e.value) return false;
         row[e.field] = e.value; fixed = true;
         return true;
     });
@@ -2090,11 +2104,21 @@ function updateMoney(name, type, value, round) {
     if (!appData.roundMoney[r][name]) appData.roundMoney[r][name] = { start: 0, end: 0 };
     const after = parseNumber(value);
     const before = Number(appData.roundMoney[r][name][type]) || 0;
-    rememberMyMoney(r, name, type, after);        // 낡은 payload에 덮이지 않게
-    if (after !== before) {                       // 같은 값이면 헛저장을 안 만든다
-        saveState();
-        appData.roundMoney[r][name][type] = after;
-        syncToSupabase(appData); renderAll();
+    if (moneyMode === 'table') {
+        // **그 칸 한 줄만 쓴다**(money.js). payload를 통째로 보내지 않으므로 남의 금액에 닿을 수 없다.
+        if (after !== before) {
+            saveState();
+            appData.roundMoney[r][name][type] = after;
+            writeMoneyCell(r, name, type, after);
+            renderAll();
+        }
+    } else {
+        rememberMyMoney(r, name, type, after);    // 테이블이 없을 때의 보호막 — 낡은 payload에 덮이지 않게
+        if (after !== before) {                   // 같은 값이면 헛저장을 안 만든다
+            saveState();
+            appData.roundMoney[r][name][type] = after;
+            syncToSupabase(appData); renderAll();
+        }
     }
     // 값이 그대로여도 칸의 글자는 맞춰 둔다 — `300000`을 치면 `300,000`으로 보여야
     // '입력이 안 먹었나' 싶지 않다. 보고 있는 차수의 칸일 때만 손댄다.
@@ -2300,6 +2324,8 @@ function addRound() {
     golfers.forEach(g => { if (!appData.scores[g]) appData.scores[g] = []; appData.scores[g].push(""); });
     const newRoundMoney = {}; golfers.forEach(g => newRoundMoney[g] = { start: 0, end: 0 });
     if (!appData.roundMoney) appData.roundMoney = []; appData.roundMoney.push(newRoundMoney);
+    // 같은 번호의 차수를 예전에 지운 적이 있으면 테이블에 그때 금액이 남아 있다. 새 경기라 비운다.
+    if (typeof clearMoneyRound === 'function') clearMoneyRound(appData.totalRounds - 1);
     selectedMoneyRoundIdx = appData.totalRounds - 1;
     syncToSupabase(appData); renderAll(); showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     setTimeout(() => { const wrapper = document.getElementById('tableWrapper'); if(wrapper) wrapper.scrollTo({ left: wrapper.scrollWidth + 1000, behavior: 'smooth' }); }, 150);

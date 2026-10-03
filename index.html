@@ -339,6 +339,7 @@
     // 접속할 때마다 새로 받을 이유가 없다 (Pages 캐시가 10분이라 갱신도 금방 따라온다).
     document.write('<script src="courses.js"><\/script>');
     document.write('<script src="api.js?ver=' + v + '"><\/script>');
+    document.write('<script src="money.js?ver=' + v + '"><\/script>');   // 정산 금액 저장소(칸마다 따로)
     document.write('<script src="calc.js?ver=' + v + '"><\/script>');
     document.write('<script src="ui.js?ver=' + v + '"><\/script>');
 </script>
