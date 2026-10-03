@@ -422,7 +422,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .money-result-badge.neg  { background: rgba(220, 38, 38, 0.10); color: #dc2626; }
 .money-result-badge.zero { background: rgba(0, 0, 0, 0.03);     color: #64748b; }
 
-/* 핸디캡 제목 + 저장 상태 한 줄. 상태 문구가 길어지면(`⚡ 연결 완료 · 💰 금액 분리 저장`)
+/* 핸디캡 제목 + 저장 상태 한 줄. 상태 문구가 길어지면(`⚡ 연결 완료 · 금액 분리 저장`)
    제목이 `산/출`처럼 단어 가운데서 잘렸다 — 제목이 `flex: 1`로 남은 자리만 받았기 때문이다.
    이제 둘이 한 줄에 안 들어가면 **상태 문구가 아랫줄로 내려가고**(flex-wrap · 제목은 제 길이를 먼저 잡는다),
    제목은 **단어 단위로만** 줄바꿈한다(keep-all). 짧은 상태(`⚡ 동기화 완료`)일 땐 예전처럼 한 줄이다. */
