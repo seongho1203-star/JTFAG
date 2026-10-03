@@ -395,6 +395,9 @@ async function fetchFromSupabase() {
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
         }
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
+        // 접속할 때만 도는 게 아니라 앱이 앞으로 나올 때도 돈다(ui.js의 visibilitychange).
+        // 방금 적은 내 금액보다 읽어 온 게 낡았으면 다시 얹는다 — 처음 접속이면 기억이 비어 있어 그냥 지나간다.
+        if (typeof reapplyMyMoney === 'function' && reapplyMyMoney()) syncToSupabase(appData);
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
         isLoaded = true;
         renderNoticeArea();

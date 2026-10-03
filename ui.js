@@ -18,6 +18,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
             if (!appData.fundLogs) appData.fundLogs = [];
             if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
+            // 내가 방금 적은 금액이 이 payload에 없으면 다시 얹는다(순서가 엇갈렸거나 남이 낡은 걸 보냈다).
+            // 얹었으면 한 번 더 저장해 남의 화면에도 돌려준다 — 내 화면에만 있으면 다음 사람이 또 지운다.
+            if (reapplyMyMoney()) syncToSupabase(appData);
             applyHoleScores();
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
@@ -645,8 +648,16 @@ function renderNoticeArea() {
 
 // 홈 화면 앱은 백그라운드에 그대로 떠 있어, 자정을 넘겨도 어제 계산한 D-day가 남는다.
 // 다시 앞으로 불러올 때 한 번 더 그린다.
+//
+// **그때 payload도 다시 읽는다.** 실시간 이벤트는 놓친 걸 나중에 다시 보내 주지 않는다 —
+// 폰이 잠겨 있는 동안 남이 고친 내용을 못 받은 채로 깨어나면, 그 낡은 appData를 그대로
+// 저장하는 순간 **남의 금액이 통째로 지워진다**(행 전체가 오가는 구조라 그렇다).
+// 앞으로 나올 때 한 번 읽어 두면 그 창이 닫힌다. 적다 만 칸은 `renderMoneyTable()`의
+// 빠른 길이 포커스 있는 칸을 건너뛰므로 글자가 날아가지 않는다.
 document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && isLoaded) renderNoticeArea();
+    if (document.hidden || !isLoaded) return;
+    renderNoticeArea();
+    fetchFromSupabase();
 });
 
 // 표가 가끔 안 그려지는 걸 막으려고 overflow를 잠깐 껐다 켜서 다시 그리게 한다.
@@ -1984,6 +1995,47 @@ function toggleMoneyEdit() {
         : "🔒 정산 금액은 다시 본인 칸만 열립니다.");
 }
 
+/* ── 내가 방금 적은 금액은 들어오는 payload에 덮이지 않는다 ───────
+   "시작 금액을 적고 남은 금액을 적다 보면 금액이 사라진다"는 제보가 있었다.
+   부분 저장이 없어 **언제나 행 전체가 오가기** 때문에 두 갈래로 지워진다:
+   1. **내 저장의 메아리가 늦게 온다.** 시작 금액 저장(A)과 남은 금액 저장(B)을 잇따라 보내면
+      A의 실시간 이벤트가 B보다 늦게 도착할 수 있다. A에는 남은 금액이 없으므로
+      `appData = payload`로 갈아 끼우는 순간 방금 적은 남은 금액이 0으로 돌아간다.
+   2. **남이 같은 때 저장한다.** 넷이 둘러앉아 각자 금액을 적는 정산 자리에서, 내 금액을
+      아직 모르는 payload가 내 것을 덮는다. 폰이 잠겨 있던 사람은 실시간을 놓쳐 더 낡아 있다.
+   그래서 내가 적은 금액을 `MONEY_GUARD_MS` 동안 들고 있다가, 들어온 payload에 그 값이 없으면
+   `reapplyMyMoney()`가 다시 얹는다. 얹었으면 **한 번 더 저장해** 남의 화면에도 돌려준다 —
+   내 화면에만 있고 DB에 없으면 다음 사람이 또 지운다.
+   **금액은 이력이 없어 한 번 지워지면 못 되살린다**(6차 정산 금액이 그렇게 날아갔다).
+   이 보호막을 빼지 말 것.
+   값이 이미 같으면 아무것도 안 하므로 저장 → 메아리 → 저장으로 끝없이 돌지 않는다.
+   내가 **0으로 지운 것도 기억한다** — 안 그러면 낡은 payload의 옛 금액이 되살아난다. */
+const MONEY_GUARD_MS = 20000;
+let myMoneyEdits = [];
+
+function rememberMyMoney(round, name, field, value) {
+    const now = Date.now();
+    myMoneyEdits = myMoneyEdits.filter(e => now - e.at < MONEY_GUARD_MS
+        && !(e.round === round && e.name === name && e.field === field));
+    myMoneyEdits.push({ round, name, field, value, at: now });
+}
+
+function reapplyMyMoney() {
+    const now = Date.now();
+    myMoneyEdits = myMoneyEdits.filter(e => now - e.at < MONEY_GUARD_MS);
+    if (!myMoneyEdits.length) return false;
+    let fixed = false;
+    myMoneyEdits.forEach(e => {
+        if (e.round < 0 || e.round >= (appData.totalRounds || 0)) return;   // 차수가 지워졌으면 손대지 않는다
+        if (!appData.roundMoney) appData.roundMoney = [];
+        if (!appData.roundMoney[e.round]) appData.roundMoney[e.round] = {};
+        if (!appData.roundMoney[e.round][e.name]) appData.roundMoney[e.round][e.name] = { start: 0, end: 0 };
+        const row = appData.roundMoney[e.round][e.name];
+        if ((Number(row[e.field]) || 0) !== e.value) { row[e.field] = e.value; fixed = true; }
+    });
+    return fixed;
+}
+
 function updateMoney(name, type, value) {
     // 화면이 막고 있어도 여기서 한 번 더 본다 — 이 함수가 유일한 입구다.
     if (!canEditMoney(name)) { moneyLockNotice(name); renderMoneyTable(); return; }
@@ -1991,6 +2043,7 @@ function updateMoney(name, type, value) {
     if (!appData.roundMoney[selectedMoneyRoundIdx][name]) appData.roundMoney[selectedMoneyRoundIdx][name] = { start: 0, end: 0 };
     const after = parseNumber(value);
     const before = Number(appData.roundMoney[selectedMoneyRoundIdx][name][type]) || 0;
+    rememberMyMoney(selectedMoneyRoundIdx, name, type, after);   // 낡은 payload에 덮이지 않게
     if (after !== before) {                       // 같은 값이면 헛저장을 안 만든다
         saveState();
         appData.roundMoney[selectedMoneyRoundIdx][name][type] = after;
