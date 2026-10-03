@@ -96,6 +96,9 @@ async function main() {
     }
 
     payload.roundPhotos = restored;
+    // 쓰는 사람 도장을 내 것으로 바꾼다 — 읽어 온 도장을 그대로 두면 마지막에 쓴 사람의 앱이
+    // 이 갱신을 자기 메아리로 보고 무시한다(read-scorecard.js에 같은 주석이 있다).
+    payload._rev = { by: 'workflow', n: Date.now() };
     const put = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.1`, {
         method: 'PATCH', headers: { ...headers, Prefer: 'return=minimal' },
         body: JSON.stringify({ payload })

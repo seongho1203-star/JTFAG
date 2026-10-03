@@ -321,6 +321,19 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   키마다 값을 비교할 것.
   헤드리스로 확인할 땐 **스텁이 upsert를 되돌려 주고 키 순서까지 섞어야** 이 버그가 재현된다
   (스크래치패드의 `stub-echo.txt`).
+- **저장은 한 줄로 세운다**(`syncToSupabase` in api.js). 예전엔 보내 놓고 안 기다렸다 —
+  저장 두 개가 동시에 날아가 **DB에 닿는 순서가 뒤바뀌면 나중 값이 먼저 값에 덮였다.**
+  이제 한 번에 하나만 보내고, 보내는 동안 생긴 변경은 `_saveNext`에 마지막 것 하나로 합친다
+  (보낼 때 `appData`를 그대로 집어 보내므로 중간 상태를 건너뛰어도 결과가 같다).
+  **되돌리지 말 것** — 금액이 사라지던 원인 중 하나였다(헤드리스로 '동시 최대 1개'를 확인한다).
+- **내 저장의 메아리는 통째로 무시한다.** `syncToSupabase`가 보낼 때마다 payload에
+  `_rev = { by: CLIENT_ID, n }` 도장을 찍고, 실시간 핸들러(ui.js)가 `isMyEcho()`로 걸러 **그냥 돌아간다.**
+  내 화면이 이미 더 최신인데 다시 그리면 **적고 있던 칸이 되돌아간다** — 이게 금액 충돌의 가장 큰 뿌리였다.
+  저장을 한 줄로 세우므로 내 로컬 상태가 내가 보낸 것보다 뒤처질 수 없어 안전하다.
+  - **payload를 쓰는 서버 스크립트는 `_rev.by`를 자기 것으로 바꿔야 한다**
+    (`scripts/read-scorecard.js`·`scripts/restore-photos.js`가 `{by:'workflow'}`로 찍는다).
+    읽어 온 도장을 그대로 두고 쓰면 **마지막에 쓴 사람의 앱이 그 갱신을 자기 메아리로 착각해
+    혼자만 못 본다.** payload를 쓰는 스크립트를 새로 만들면 여기에도 도장을 찍을 것.
 - 상태를 변경하는 함수는 **반드시** `saveState()` (실행취소 스택, 최대 10개) → 값 수정 → `syncToSupabase(appData)` 순서를 지킨다.
 - `renderAll()`이 렌더 파이프라인 전체를 돌린다: `renderTable` → `calculateAndRender` → `renderMoneyTable` → `forceTableReflow` → `renderStorageUsage` → `checkAndGreetUser`.
 - 데이터 구조 기본형은 `getDefaultData()` (api.js) 참조. 배열들(`courses`, `scores[name]`, `roundMoney`, `roundPhotos`)은 모두 **차수(round) 인덱스로 정렬**되어 있어 길이가 `totalRounds`와 일치해야 한다. 차수를 추가/삭제하는 `addRound()` / `removeRound()`가 이 배열들을 함께 관리한다.
@@ -371,13 +384,26 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
      하나에 30만·25만이 둘 다 날아갔다(스크래치패드의 `moneylost.js`).
   2. **남이 같은 때 저장한다.** 정산 자리에서 넷이 각자 적는데, 내 금액을 아직 모르는 payload가
      내 것을 덮는다.
-  - `updateMoney()`가 적은 값을 `MONEY_GUARD_MS`(20초) 동안 기억하고, 실시간 이벤트와
-    `fetchFromSupabase()`가 들어온 payload에 그 값이 없으면 다시 얹는다.
-    **얹었으면 한 번 더 저장한다** — 내 화면에만 있고 DB에 없으면 다음 사람이 또 지운다.
-    값이 이미 같으면 아무것도 안 하므로 저장 → 메아리 → 저장으로 끝없이 돌지 않는다.
+  - 위의 **저장 한 줄 세우기**와 **내 메아리 무시**가 1번을 뿌리째 없앴다. 이 보호막은
+    2번(남의 낡은 payload)에 대한 그물이다.
+  - `updateMoney()`가 적은 값을 기억하고, 실시간 이벤트와 `fetchFromSupabase()`가 들어온
+    payload에 그 값이 없으면 다시 얹는다. **얹었으면 한 번 더 저장한다** —
+    내 화면에만 있고 DB에 없으면 다음 사람이 또 지운다.
+  - **손을 떼는 기준은 시간이 아니라 '확인'이다.** 들어온 payload에 내 값이 그대로 있으면
+    확인된 것이라 기억에서 지운다. 그래서 필요 없는 값을 붙들고 있지 않고, 확인이 늦어도
+    지켜 준다. 그래도 영영 붙들진 않게 `MONEY_GUARD_MS`(1분) 상한을 둔다.
   - **내가 0으로 지운 것도 기억한다.** 안 그러면 낡은 payload의 옛 금액이 되살아난다.
   - **남의 칸은 안 건드린다.** 내가 적은 칸만 들고 있으므로 남이 적은 남의 금액은 그대로 들어온다.
   - 차수가 지워졌으면(`round >= totalRounds`) 손대지 않는다.
+- **금액 칸에는 그 칸이 만들어질 때의 차수를 박아 둔다**(`moneyCell()`·`renderDonateRow()`가
+  `updateMoney(..., 차수)`로 넘긴다). 예전엔 `updateMoney()`가 그때그때의 `selectedMoneyRoundIdx`를
+  읽었다 — 금액을 적다가 차수 드롭다운을 바꾸면 **블러(= 저장)가 드롭다운 처리보다 늦게 도는
+  기기에서 방금 적은 금액이 엉뚱한 차수에 들어간다**(그 차수 금액은 덮이고 원래 차수는 안 바뀐다).
+  **`selectedMoneyRoundIdx`를 읽는 방식으로 되돌리지 말 것.**
+- **값이 그대로여도 칸의 글자는 다듬는다.** `300000`을 치면 `300,000`으로 보여야 '입력이 안 먹었나'
+  싶지 않다. 저장이 안 나가는 경우(같은 값)에도 `updateMoney()`가 칸의 글자를 맞춘다.
+- **적다가 앱을 내려놓으면 떠나기 전에 저장한다**(`visibilitychange`에서 `document.hidden`일 때
+  금액 칸의 포커스를 뺀다). 안 그러면 `change`가 안 울려 **적은 값이 그냥 사라진다.**
 - **앱이 앞으로 나올 때 payload를 다시 읽는다**(`visibilitychange` → `fetchFromSupabase()`).
   **실시간은 놓친 이벤트를 나중에 다시 보내 주지 않는다** — 폰이 잠겨 있는 동안 남이 고친 걸
   못 받은 채 깨어나면, 그 낡은 `appData`를 저장하는 순간 **남의 금액이 통째로 지워진다**.

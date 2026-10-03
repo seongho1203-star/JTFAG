@@ -13,6 +13,10 @@ window.addEventListener('DOMContentLoaded', () => {
     fetchFromSupabase();
     window._supabase.channel('public:jtfag_league').on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
         if (payload.new && payload.new.payload) {
+            // **내가 보낸 저장의 메아리는 통째로 무시한다.** 내 화면이 이미 더 최신이라
+            // 다시 그릴 이유가 없고, 그리는 순간 적고 있던 금액 칸이 되돌아간다.
+            // (저장을 한 줄로 세우므로 내 로컬 상태가 내가 보낸 것보다 뒤처질 수 없다.)
+            if (isMyEcho(payload.new.payload)) { showSaveStatus("⚡ 동기화 완료"); return; }
             appData = payload.new.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
@@ -655,7 +659,13 @@ function renderNoticeArea() {
 // 앞으로 나올 때 한 번 읽어 두면 그 창이 닫힌다. 적다 만 칸은 `renderMoneyTable()`의
 // 빠른 길이 포커스 있는 칸을 건너뛰므로 글자가 날아가지 않는다.
 document.addEventListener('visibilitychange', function () {
-    if (document.hidden || !isLoaded) return;
+    if (document.hidden) {
+        // 금액을 적다가 앱을 내려놓거나 화면이 꺼지면 `change`가 안 울려 **적은 값이 그냥 사라진다.**
+        // 떠나기 전에 포커스를 빼서 저장을 태운다.
+        if (isMoneyField(document.activeElement)) document.activeElement.blur();
+        return;
+    }
+    if (!isLoaded) return;
     renderNoticeArea();
     fetchFromSupabase();
 });
@@ -1666,13 +1676,19 @@ function paintMoneyResult(el, v) {
 
 // 남의 칸은 readonly로 두고 누르면 왜 안 되는지 알려 준다.
 // pointer-events를 끄지 않는 이유가 그것이다 — 아무 반응이 없으면 고장으로 보인다.
+/* 칸에 **그 칸이 만들어질 때의 차수를 박아 둔다**(네 번째 인자).
+   예전엔 `updateMoney()`가 그때그때의 `selectedMoneyRoundIdx`를 읽었다 — 금액을 적다가
+   차수 드롭다운을 바꾸면 블러(= 저장)가 드롭다운 처리보다 늦게 도는 기기에서
+   **방금 적은 금액이 엉뚱한 차수에 들어간다**(그 차수 금액은 덮이고 원래 차수는 안 바뀐다).
+   칸에 박아 두면 어떤 순서로 돌든 적은 자리에 들어간다. */
 function moneyCell(g, type, value) {
     const editable = canEditMoney(g);
+    const r = selectedMoneyRoundIdx;
     return `<input type="text" id="money_${type}_${g}" inputmode="numeric" pattern="[0-9]*"
         class="money-input${editable ? '' : ' locked'}" value="${formatNumber(value)}"
         ${editable ? '' : 'readonly '}onfocus="this.select()"
         ${editable
-            ? `onchange="updateMoney('${g}', '${type}', this.value)" onkeydown="moneyKeydown(event)"`
+            ? `onchange="updateMoney('${g}', '${type}', this.value, ${r})" onkeydown="moneyKeydown(event)"`
             : `onclick="moneyLockNotice('${g}')"`}>`;
 }
 
@@ -1869,7 +1885,7 @@ function renderDonateRow() {
                         class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="0"
                         ${editable ? '' : 'readonly '}onfocus="this.select()"
                         ${editable
-                            ? `onchange="updateMoney('${g}', 'donate', this.value)" onkeydown="moneyKeydown(event)"`
+                            ? `onchange="updateMoney('${g}', 'donate', this.value, ${selectedMoneyRoundIdx})" onkeydown="moneyKeydown(event)"`
                             : `onclick="moneyLockNotice('${g}')"`}></label>`;
             }).join('') + `</div>
         </div>
@@ -2010,7 +2026,7 @@ function toggleMoneyEdit() {
    이 보호막을 빼지 말 것.
    값이 이미 같으면 아무것도 안 하므로 저장 → 메아리 → 저장으로 끝없이 돌지 않는다.
    내가 **0으로 지운 것도 기억한다** — 안 그러면 낡은 payload의 옛 금액이 되살아난다. */
-const MONEY_GUARD_MS = 20000;
+const MONEY_GUARD_MS = 60000;      // 확인이 영영 안 와도 이만큼만 붙들고 있는다
 let myMoneyEdits = [];
 
 function rememberMyMoney(round, name, field, value) {
@@ -2020,34 +2036,50 @@ function rememberMyMoney(round, name, field, value) {
     myMoneyEdits.push({ round, name, field, value, at: now });
 }
 
+/* 들어온 payload에 내가 적은 금액이 그대로 있으면 **확인된 것**이라 기억에서 지운다.
+   없으면 다시 얹는다. 시간이 아니라 '확인됐는가'로 손을 떼므로, 보호가 필요 없는 값을
+   붙들고 있지 않고 확인이 늦어도 지켜 준다. (그래도 영영 붙들진 않게 1분 상한을 둔다.) */
 function reapplyMyMoney() {
     const now = Date.now();
-    myMoneyEdits = myMoneyEdits.filter(e => now - e.at < MONEY_GUARD_MS);
-    if (!myMoneyEdits.length) return false;
     let fixed = false;
-    myMoneyEdits.forEach(e => {
-        if (e.round < 0 || e.round >= (appData.totalRounds || 0)) return;   // 차수가 지워졌으면 손대지 않는다
+    myMoneyEdits = myMoneyEdits.filter(e => {
+        if (now - e.at >= MONEY_GUARD_MS) return false;
+        if (e.round < 0 || e.round >= (appData.totalRounds || 0)) return false;   // 차수가 지워졌으면 손대지 않는다
         if (!appData.roundMoney) appData.roundMoney = [];
         if (!appData.roundMoney[e.round]) appData.roundMoney[e.round] = {};
         if (!appData.roundMoney[e.round][e.name]) appData.roundMoney[e.round][e.name] = { start: 0, end: 0 };
         const row = appData.roundMoney[e.round][e.name];
-        if ((Number(row[e.field]) || 0) !== e.value) { row[e.field] = e.value; fixed = true; }
+        if ((Number(row[e.field]) || 0) === e.value) return false;   // 확인됐다 — 이제 안 지켜도 된다
+        row[e.field] = e.value; fixed = true;
+        return true;
     });
     return fixed;
 }
 
-function updateMoney(name, type, value) {
+function updateMoney(name, type, value, round) {
     // 화면이 막고 있어도 여기서 한 번 더 본다 — 이 함수가 유일한 입구다.
     if (!canEditMoney(name)) { moneyLockNotice(name); renderMoneyTable(); return; }
-    if (!appData.roundMoney[selectedMoneyRoundIdx]) appData.roundMoney[selectedMoneyRoundIdx] = {};
-    if (!appData.roundMoney[selectedMoneyRoundIdx][name]) appData.roundMoney[selectedMoneyRoundIdx][name] = { start: 0, end: 0 };
+    // 칸에 박아 둔 차수를 쓴다. 없으면(예전 호출) 지금 보고 있는 차수.
+    const r = (round === undefined || round === null) ? selectedMoneyRoundIdx : Number(round);
+    if (r < 0 || r >= appData.totalRounds) return;          // 그 사이 차수가 지워졌다
+    if (!appData.roundMoney) appData.roundMoney = [];
+    if (!appData.roundMoney[r]) appData.roundMoney[r] = {};
+    if (!appData.roundMoney[r][name]) appData.roundMoney[r][name] = { start: 0, end: 0 };
     const after = parseNumber(value);
-    const before = Number(appData.roundMoney[selectedMoneyRoundIdx][name][type]) || 0;
-    rememberMyMoney(selectedMoneyRoundIdx, name, type, after);   // 낡은 payload에 덮이지 않게
+    const before = Number(appData.roundMoney[r][name][type]) || 0;
+    rememberMyMoney(r, name, type, after);        // 낡은 payload에 덮이지 않게
     if (after !== before) {                       // 같은 값이면 헛저장을 안 만든다
         saveState();
-        appData.roundMoney[selectedMoneyRoundIdx][name][type] = after;
+        appData.roundMoney[r][name][type] = after;
         syncToSupabase(appData); renderAll();
+    }
+    // 값이 그대로여도 칸의 글자는 맞춰 둔다 — `300000`을 치면 `300,000`으로 보여야
+    // '입력이 안 먹었나' 싶지 않다. 보고 있는 차수의 칸일 때만 손댄다.
+    if (r === selectedMoneyRoundIdx) {
+        const el = document.getElementById(`money_${type}_${name}`);
+        if (el && document.activeElement !== el) {
+            el.value = (type === 'donate') ? (after ? formatNumber(after) : '') : formatNumber(after);
+        }
     }
     flashMoneySaved(name, type, after);           // 렌더 뒤에 — 칸이 새로 만들어졌을 수 있다
 }

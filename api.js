@@ -409,13 +409,43 @@ async function fetchFromSupabase() {
     }
 }
 
+/* ── 저장은 한 줄로 세운다 ────────────────────────────────────────
+   예전엔 저장을 보내 놓고 기다리지 않았다(fire-and-forget). 시작 금액 저장(A)과 남은 금액
+   저장(B)을 잇따라 보내면 **둘이 동시에 날아가 DB에 닿는 순서가 뒤바뀔 수 있었다** —
+   A가 나중에 닿으면 남은 금액이 DB에서 사라진다. 실시간 이벤트도 뒤집힌 순서로 돌아와
+   화면의 금액이 0으로 되돌아갔다.
+   이제 **한 번에 하나만 보내고, 보내는 동안 생긴 변경은 마지막 것 하나로 합친다.**
+   보낼 때마다 `appData`를 그대로 집어 보내므로 중간 상태를 건너뛰어도 결과는 같다.
+
+   **보내는 payload에 누가·몇 번째로 썼는지 도장을 찍는다**(`_rev`).
+   실시간으로 되돌아온 게 내 도장이면 ui.js가 통째로 무시한다 — 내 화면이 이미 더 최신이라
+   다시 그릴 이유가 없고, 그리는 순간 적고 있던 칸이 되돌아간다. 이게 충돌의 가장 큰 뿌리였다.
+   `_rev`는 보낼 때 찍으므로 payload에 늘 하나만 들어간다(용량 영향 없음). */
+const CLIENT_ID = 'c' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+let _revSeq = 0;
+let _saveBusy = false;
+let _saveNext = null;
+
 async function syncToSupabase(dataToSave) {
+    _saveNext = dataToSave || appData;      // 언제나 '가장 마지막 상태'만 남긴다
+    if (_saveBusy) return;                  // 이미 보내는 중이면 끝나고 이어서 보낸다
+    _saveBusy = true;
     try {
-        const payloadData = { id: 1, payload: dataToSave };
-        const { error } = await window._supabase.from(window.SUPABASE_TABLE).upsert(payloadData);
-        if (error) { console.error("Save Error:", error); showSaveStatus("⚠️ 저장 실패"); } 
-        else { showSaveStatus("⚡ 동기화 완료"); }
-    } catch (err) { console.error("Sync Exception:", err); }
+        while (_saveNext) {
+            const snap = _saveNext; _saveNext = null;
+            snap._rev = { by: CLIENT_ID, n: ++_revSeq };
+            try {
+                const { error } = await window._supabase.from(window.SUPABASE_TABLE).upsert({ id: 1, payload: snap });
+                if (error) { console.error("Save Error:", error); showSaveStatus("⚠️ 저장 실패"); }
+                else { showSaveStatus("⚡ 동기화 완료"); }
+            } catch (err) { console.error("Sync Exception:", err); showSaveStatus("⚠️ 저장 실패"); }
+        }
+    } finally { _saveBusy = false; }
+}
+
+// 실시간으로 돌아온 payload가 내가 보낸 것인가. 내 것이면 다시 그릴 필요가 없다.
+function isMyEcho(payload) {
+    return !!(payload && payload._rev && payload._rev.by === CLIENT_ID);
 }
 
 function weatherIcon(code) {

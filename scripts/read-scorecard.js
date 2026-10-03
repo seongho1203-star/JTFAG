@@ -113,6 +113,12 @@ async function writeStatuses(results) {
     });
     if (!changed) return;
 
+    // **쓰는 사람 도장을 내 것으로 바꾼다.** 앱은 `_rev.by`가 자기 것이면 '내가 보낸 메아리'로
+    // 보고 그 실시간 이벤트를 통째로 무시한다(금액 칸이 되돌아가는 걸 막는 장치다).
+    // 읽어 온 payload의 도장을 그대로 두고 쓰면, 마지막에 쓴 사람의 앱이 이 갱신을
+    // 자기 메아리로 착각해 **판독 결과가 그 사람 화면에만 안 뜬다.**
+    payload._rev = { by: 'workflow', n: Date.now() };
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.1`, {
         method: 'PATCH', headers, body: JSON.stringify({ payload })
     });
