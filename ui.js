@@ -2027,13 +2027,35 @@ function toggleMoneyEdit() {
    값이 이미 같으면 아무것도 안 하므로 저장 → 메아리 → 저장으로 끝없이 돌지 않는다.
    내가 **0으로 지운 것도 기억한다** — 안 그러면 낡은 payload의 옛 금액이 되살아난다. */
 const MONEY_GUARD_MS = 60000;      // 확인이 영영 안 와도 이만큼만 붙들고 있는다
-let myMoneyEdits = [];
+const MONEY_GUARD_KEY = 'jtfag_money_guard';
+
+/* **이 기억은 새로고침해도 살아남아야 한다.** 넷이 동시에 적으면, 먼저 적은 사람 금액이
+   남의 낡은 payload에 잠깐 지워졌다가 **그 사람 폰이 되살려 놓는다.** 그런데 적자마자 앱을
+   닫거나 새로고침하면 기억이 날아가 되살릴 사람이 없어진다(금액은 이력이 없어 끝이다).
+   그래서 localStorage에 같이 둔다 — 다시 열면 `fetchFromSupabase()`가 읽어 온 payload에
+   내 값이 없는 걸 보고 되돌려 놓는다. 1분 상한은 그대로다. */
+function loadMoneyGuard() {
+    try {
+        const a = JSON.parse(localStorage.getItem(MONEY_GUARD_KEY) || '[]');
+        const now = Date.now();
+        return Array.isArray(a) ? a.filter(e => e && typeof e.at === 'number' && now - e.at < MONEY_GUARD_MS) : [];
+    } catch (e) { return []; }
+}
+function saveMoneyGuard() {
+    try {
+        if (myMoneyEdits.length) localStorage.setItem(MONEY_GUARD_KEY, JSON.stringify(myMoneyEdits));
+        else localStorage.removeItem(MONEY_GUARD_KEY);
+    } catch (e) { /* 저장 공간이 막혀도 앱은 그대로 돌아간다 */ }
+}
+
+let myMoneyEdits = loadMoneyGuard();
 
 function rememberMyMoney(round, name, field, value) {
     const now = Date.now();
     myMoneyEdits = myMoneyEdits.filter(e => now - e.at < MONEY_GUARD_MS
         && !(e.round === round && e.name === name && e.field === field));
     myMoneyEdits.push({ round, name, field, value, at: now });
+    saveMoneyGuard();
 }
 
 /* 들어온 payload에 내가 적은 금액이 그대로 있으면 **확인된 것**이라 기억에서 지운다.
@@ -2053,6 +2075,7 @@ function reapplyMyMoney() {
         row[e.field] = e.value; fixed = true;
         return true;
     });
+    saveMoneyGuard();
     return fixed;
 }
 
