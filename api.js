@@ -410,7 +410,7 @@ async function fetchFromSupabase() {
         renderAll();
         // 금액 분리 저장이 켜졌는지 눈으로 확인할 수 있게 적어 둔다(docs/금액분리.md의 확인 단계).
         showSaveStatus(typeof moneyMode !== 'undefined' && moneyMode === 'table'
-            ? "⚡ 연결 완료 · 금액 분리 저장" : "⚡ Supabase 연결 완료");
+            ? "⚡ 서버 연결 및 동기화 완료" : "⚡ Supabase 연결 완료");
     } catch (err) {
         console.error("Load Error:", err);
         showSaveStatus("⚠️ DB 연결 확인 필요");
