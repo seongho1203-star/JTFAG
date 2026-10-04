@@ -653,9 +653,20 @@ function withWeekday(text) {
     return text.replace(re, `$1월 $2일(${wd})`);
 }
 
+/* 일정 문구를 줄바꿈해도 안 갈리게 다듬는다. `keep-all`은 콜론 뒤에서 줄을 바꿔
+   `오후 5:` / `34 JNJ골프리조트`처럼 시각이 두 동강 났다. 날짜(`10월 14일(수)`)와
+   시각(`오후 5:34`)을 한 덩어리로 묶어 줄은 그 사이에서만 바뀌게 한다.
+   사용자가 적은 글이라 먼저 `escapeHtml()`을 거친다. */
+function scheduleHtml(text) {
+    return escapeHtml(text)
+        .replace(/\d{1,2}월\s*\d{1,2}일(?:\([일월화수목금토]\))?/, m => `<span class="nowrap">${m}</span>`)
+        .replace(/(?:(?:오전|오후)\s*)?\d{1,2}:\d{2}/, m => `<span class="nowrap">${m}</span>`)
+        .replace(/\([^()]*\)\s*$/, m => `<span class="nowrap">${m}</span>`);   // 끝의 코스 `(정-남)` — 하이픈에서 갈렸다
+}
+
 function renderNoticeArea() {
     const dateDisplay = document.getElementById('nextRoundDisplay');
-    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + withWeekday(appData.nextRoundDate)) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
+    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + scheduleHtml(withWeekday(appData.nextRoundDate))) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
     updateLockUI();
 }
 
