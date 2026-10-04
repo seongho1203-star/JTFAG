@@ -611,8 +611,9 @@ function showToast(msg, ms) {
     toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, ms || 2200);
 }
 
+// `⚠️`로 시작하는 문구는 서버와 안 이어진 상태라 빨강(.off), 나머지는 초록이다.
 function showSaveStatus(msg) {
-    const saveStatus = document.getElementById('saveStatus'); if (saveStatus) { saveStatus.textContent = msg; saveStatus.style.opacity = '1'; setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200); }
+    const saveStatus = document.getElementById('saveStatus'); if (saveStatus) { saveStatus.textContent = msg; saveStatus.classList.toggle('off', msg.startsWith('⚠️')); saveStatus.style.opacity = '1'; setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200); }
 }
 
 // 다음 라운드까지 남은 날. 표시 문구(nextRoundDate)에는 연도가 없으므로

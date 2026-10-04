@@ -411,6 +411,7 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
     실서비스가 안 깨진다. 판정은 `loadMoneyTable()`이 줄 목록(배열)을 받았는가로 한다 — 어정쩡한 응답에
     'table'로 넘어가면 쓰기는 실패하는데 화면은 빈 테이블을 믿게 된다.
   - 켜는 방법은 `docs/금액분리.md`. 켜지면 접속 상태 문구가 `⚡ 서버 연결 및 동기화 완료`가 된다.
+    상태 문구는 연결 전(`연결 중...`)과 `⚠️`로 시작하는 문구일 때 빨강, 나머지는 초록이다(`showSaveStatus()`가 `.off`를 붙였다 뗀다).
 - **아래는 테이블이 없을 때만 쓰는 예전 보호막이다.** 테이블 모드에서는 `reapplyMyMoney()`가 아무것도 안 한다.
 - **내가 방금 적은 금액은 들어오는 payload에 덮이지 않는다** (`myMoneyEdits` · `rememberMyMoney()` ·
   `reapplyMyMoney()` in ui.js). "시작 금액을 적고 남은 금액을 적다 보면 금액이 사라진다"는
