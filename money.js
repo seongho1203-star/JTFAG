@@ -146,7 +146,7 @@ function subscribeMoney() {
     if (moneyChannel) return;
     moneyChannel = window._supabase.channel('public:' + MONEY_TABLE)
         .on('postgres_changes', { event: '*', schema: 'public', table: MONEY_TABLE }, ev => onMoneyRow(ev && ev.new))
-        .subscribe();
+        .subscribe(typeof realtimeStatus === 'function' ? realtimeStatus('money') : undefined);   // 끊기면 상태 문구가 빨강(ui.js)
 }
 
 // 넷이 한꺼번에 적으면 이벤트가 몰려온다. 한 번에 모아 한 번만 그린다.

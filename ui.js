@@ -33,7 +33,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // 판독 결과(status)는 워크플로가 payload에 써 넣으므로 실시간으로 들어온다.
             if (document.getElementById('scoreRequestModal').classList.contains('active')) renderScoreRequestModal();
         }
-    }).subscribe();
+    }).subscribe(realtimeStatus('league'));
 
     watchTableTouch();
     watchOverlays();
@@ -612,8 +612,41 @@ function showToast(msg, ms) {
 }
 
 // `⚠️`로 시작하는 문구는 서버와 안 이어진 상태라 빨강(.off), 나머지는 초록이다.
+// 실시간이 끊겨 있는 동안은 초록 문구를 띄우지 않는다 — 저장(REST)은 돼도 남이 고친 게 안 들어오는
+// 상태라, `동기화 완료`로 덮으면 끊긴 걸 모르고 지나간다.
 function showSaveStatus(msg) {
+    if (realtimeDown && !msg.startsWith('⚠️')) return;
     const saveStatus = document.getElementById('saveStatus'); if (saveStatus) { saveStatus.textContent = msg; saveStatus.classList.toggle('off', msg.startsWith('⚠️')); saveStatus.style.opacity = '1'; setTimeout(() => { saveStatus.style.opacity = '0.7'; }, 1200); }
+}
+
+/* 실시간 연결 상태를 상태 문구에 반영한다. 예전엔 접속·저장만 봐서, 쓰는 도중 실시간이 끊겨도
+   초록으로 남아 있었다 — 그 사이 남이 고친 금액·일정이 안 들어오는데 아무도 모른다.
+   채널(payload · 금액)마다 `.subscribe(realtimeStatus('이름'))`으로 상태를 받는다.
+   - 하나라도 끊기면(`CHANNEL_ERROR`·`TIMED_OUT`·`CLOSED`) 3초 기다렸다 빨강으로 바꾼다.
+     잠깐 끊겼다 바로 붙는 경우까지 깜빡이면 오히려 불안하다.
+   - 다시 다 붙으면 **payload를 한 번 다시 읽는다.** 실시간은 끊긴 동안의 이벤트를 다시 보내 주지
+     않으므로(앞으로 나올 때 다시 읽는 것과 같은 이유) 읽어야 그 틈이 메워지고, 읽고 나면 초록이 된다.
+   supabase-js가 끊긴 채널을 알아서 다시 붙이므로 여기서 재접속은 하지 않는다. */
+let realtimeDown = false;
+let realtimeDownTimer = null;
+const realtimeStates = {};
+function realtimeStatus(name) {
+    return status => {
+        realtimeStates[name] = status;
+        const down = Object.values(realtimeStates).some(st => st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED');
+        if (down) {
+            if (!realtimeDown && !realtimeDownTimer) realtimeDownTimer = setTimeout(() => {
+                realtimeDownTimer = null;
+                realtimeDown = true;
+                showSaveStatus("⚠️ 실시간 연결 끊김");
+            }, 3000);
+            return;
+        }
+        clearTimeout(realtimeDownTimer); realtimeDownTimer = null;
+        if (!realtimeDown) return;
+        realtimeDown = false;
+        if (isLoaded) fetchFromSupabase();   // 끊긴 사이 놓친 걸 메운다(끝나면 초록 문구를 띄운다)
+    };
 }
 
 // 다음 라운드까지 남은 날. 표시 문구(nextRoundDate)에는 연도가 없으므로
