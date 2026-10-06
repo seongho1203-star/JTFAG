@@ -119,11 +119,21 @@ window.addEventListener('DOMContentLoaded', () => {
     // 테스트로 남긴 줄을 걷어내려고 만든 것이라, 되돌릴 수 있게 saveState()를 먼저 부른다.
     // 내역을 잘못 적었을 때 그 줄만 고친다. 금액은 못 고친다 —
     // 로그는 before → after가 사슬로 이어져 있어 지난 금액을 고치면 이력이 어긋난다.
+    /* 입력창·확인창이 떠 있는 사이 남의 저장이 실시간으로 들어오면 appData가 통째로 바뀐다.
+       예전엔 창을 열 때 집은 기록(옛 appData의 것)을 그대로 고쳐 **'고쳤습니다'라고 떠도 저장이 안 됐고**,
+       지우기는 순번으로 지워 **다른 기록이 지워질 수 있었다.** 그래서 창을 닫은 뒤 지금 목록에서
+       같은 기록(시각·이름·금액이 같은 것)을 다시 찾아 처리한다. 없으면 손대지 않는다. */
+    const findFundLog = (log) => (appData.fundLogs || []).findIndex(l =>
+        l.time === log.time && l.name === log.name && l.before === log.before && l.after === log.after);
+
     window.editFundLog = async (idx) => {
-        const log = (appData.fundLogs || [])[idx];
-        if (!log) return;
-        const memo = await showMemoPrompt(log);
+        const picked = (appData.fundLogs || [])[idx];
+        if (!picked) return;
+        const memo = await showMemoPrompt(picked);
         if (memo === null) return;                       // 취소
+        const at = findFundLog(picked);
+        if (at < 0) { showToast("그 사이 지워진 기록입니다."); renderFundLogs(); return; }
+        const log = appData.fundLogs[at];
         if (memo === (log.memo || '')) return;           // 그대로면 저장하지 않는다
         saveState();
         if (memo) log.memo = memo; else delete log.memo; // 비우면 아예 없앤다(옛 기록과 같은 모양)
@@ -139,8 +149,10 @@ window.addEventListener('DOMContentLoaded', () => {
             `이 기록을 지울까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">${log.time} · ${escapeHtml(log.name || '')}</span>`,
             '지우기');
         if (!ok) return;
+        const at = findFundLog(log);
+        if (at < 0) { showToast("이미 지워진 기록입니다."); renderFundLogs(); return; }
         saveState();
-        appData.fundLogs.splice(idx, 1);
+        appData.fundLogs.splice(at, 1);
         syncToSupabase(appData);
         renderFundLogs();
         showToast("🗑️ 기록 1건을 지웠습니다.");
@@ -2306,7 +2318,7 @@ function renderTable() {
     for (let r = 0; r < appData.totalRounds; r++) {
         // 골프장은 사람이 여기서 치지 않는다 — 일정에서 차수를 고르면 저절로 채워진다.
         // 칸을 눌렀을 때 그 차수 일정이 열리게 해 둔다(고칠 길이 있어야 한다).
-        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot" onclick="openScheduleForRound(${r})"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${(appData.courses && appData.courses[r]) ? appData.courses[r] : ""}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
+        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot" onclick="openScheduleForRound(${r})"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${escapeHtml((appData.courses && appData.courses[r]) || "")}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
@@ -2840,9 +2852,12 @@ async function handleRoundPhotoUpload(event) {
     const input = event.target;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
+    // **올리기 시작한 차수를 붙들어 둔다.** 원본은 오래 걸려 그사이 다른 차수 갤러리를 열 수 있는데,
+    // 그때그때 `selectedPhotoRoundIdx`를 읽으면 사진이 나중에 연 차수에 붙었다(금액 칸이 그랬던 것과 같은 자리).
+    const round = selectedPhotoRoundIdx;
     if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
-    if (!appData.roundPhotos[selectedPhotoRoundIdx]) appData.roundPhotos[selectedPhotoRoundIdx] = [];
-    if (appData.roundPhotos[selectedPhotoRoundIdx].length + files.length > MAX_PHOTOS_PER_ROUND) {
+    if (!appData.roundPhotos[round]) appData.roundPhotos[round] = [];
+    if (appData.roundPhotos[round].length + files.length > MAX_PHOTOS_PER_ROUND) {
         showToast(`⚠️ 사진은 차수별로 최대 ${MAX_PHOTOS_PER_ROUND}장까지만 등록 가능합니다.`);
         input.value = ''; return;
     }
@@ -2862,15 +2877,20 @@ async function handleRoundPhotoUpload(event) {
         try {
             if (files.length > 1) showToast(`⏳ ${i + 1}/${files.length}장 올리는 중... (원본)`);
             // File은 Blob이라 그대로 올라간다 — 다시 그리지 않으므로 화질이 그대로다.
-            urls.push(await uploadPhotoBlob(files[i], selectedPhotoRoundIdx));
+            urls.push(await uploadPhotoBlob(files[i], round));
         } catch (err) { console.error("사진 업로드 실패:", err); failed++; }
     }
     input.value = '';
 
     // 한 장이라도 올라갔으면 그만큼만 반영한다. 전부 실패하면 상태를 건드리지 않는다.
     if (urls.length === 0) { showToast("⚠️ 사진 업로드에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
+    // 올리는 사이 실시간 갱신으로 appData가 통째로 바뀌었을 수 있어 지금 것에 다시 붙인다.
+    // 그사이 그 차수가 지워졌으면 붙일 곳이 없다 — 파일은 Storage에 남아 있다.
+    if (round >= appData.totalRounds) { showToast("⚠️ 올리는 사이 그 차수가 지워져 사진을 붙이지 못했습니다."); return; }
+    if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
+    if (!appData.roundPhotos[round]) appData.roundPhotos[round] = [];
     saveState();
-    appData.roundPhotos[selectedPhotoRoundIdx].push(...urls);
+    appData.roundPhotos[round].push(...urls);
     syncToSupabase(appData); renderRoundPhotos(); renderAll();
     showToast(failed === 0 ? `✅ 사진 ${urls.length}장 업로드 완료!` : `⚠️ ${urls.length}장 완료, ${failed}장 실패`);
 }
@@ -2904,10 +2924,18 @@ async function migratePhotosToStorage() {
     showToast(failed === 0 ? `✅ 사진 ${done}장 이전 완료!` : `⚠️ ${done}장 완료, ${failed}장 실패`);
 }
 
+/* **누른 순간의 사진 주소로 지운다.** 예전엔 순번으로 지웠는데, 확인창이 떠 있는 사이 남이
+   같은 차수 사진을 지우면 실시간 갱신으로 순번이 밀려 **엉뚱한 사진이 Storage에서 영구히 지워졌다.**
+   확인을 누른 뒤 지금 목록에서 그 주소를 다시 찾고, 이미 없으면 아무것도 안 한다. */
 async function deleteRoundPhoto(photoIdx) {
+    const round = selectedPhotoRoundIdx;
+    const removed = ((appData.roundPhotos || [])[round] || [])[photoIdx];
+    if (!removed) return;
     if (!(await showConfirmPrompt("이 사진을 삭제할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>되돌릴 수 없습니다.</span>"))) return;
-    const removed = appData.roundPhotos[selectedPhotoRoundIdx][photoIdx];
-    saveState(); appData.roundPhotos[selectedPhotoRoundIdx].splice(photoIdx, 1);
+    const list = (appData.roundPhotos || [])[round] || [];
+    const idx = list.indexOf(removed);
+    if (idx < 0) { showToast("이미 삭제된 사진입니다."); renderRoundPhotos(); return; }
+    saveState(); list.splice(idx, 1);
     syncToSupabase(appData); renderRoundPhotos(); renderAll();
     showToast("🗑️ 사진이 삭제되었습니다.");
     await deletePhotoFromStorage(removed);
