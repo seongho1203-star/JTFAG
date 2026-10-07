@@ -341,12 +341,32 @@ async function deleteTrip() {
     renderTripModal(); renderTripCard();
 }
 
-function courseDatalist() {
-    if (document.getElementById('tripCourseList')) return;
-    const dl = document.createElement('datalist');
-    dl.id = 'tripCourseList';
-    dl.innerHTML = (typeof allCourses === 'function' ? allCourses() : []).map(c => `<option value="${escapeHtml(c.name)}">`).join('');
-    document.body.appendChild(dl);
+// 국내 골프장 칸의 검색 목록. **브라우저의 `<datalist>`를 쓰지 말 것** — 아이폰은 그걸 목록으로
+// 펼치지 않고 자판 위 추천 줄에만 한두 개 띄워서 '목록이 안 나온다'(사용자 제보).
+// 일정 창의 골프장 검색과 같은 `searchCourses()`를 쓰고, 칸 바로 아래에 직접 그린다.
+// 이름은 사용자가 친 글일 수도 있어(`customCourses`) onclick 문자열이 아니라 리스너로 붙인다.
+function tripCourseSuggest(browse) {
+    const box = document.getElementById('tripCourseResults');
+    const input = document.getElementById('tripEdCourse');
+    if (!box || !input || typeof searchCourses !== 'function') return;
+    const { group, list } = searchCourses(browse ? '' : input.value);
+    box.innerHTML = `<div class="course-group">${group}</div>` +
+        (list.length ? '' : `<div class="course-empty">찾는 곳이 없으면 이름을 그대로 쓰면 됩니다.</div>`);
+    list.forEach(name => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'course-item';
+        b.innerHTML = `<span>${escapeHtml(name)}</span><span class="course-mark">${courseGeo(name) ? '🌤️' : ''}</span>`;
+        // 누르는 순간 칸이 포커스를 잃어 목록이 먼저 닫히지 않게 한다.
+        b.addEventListener('pointerdown', e => e.preventDefault());
+        b.addEventListener('click', () => { input.value = name; box.style.display = 'none'; });
+        box.appendChild(b);
+    });
+    box.style.display = 'block';
+}
+function tripCourseHide() {
+    // 목록을 누르는 손가락이 먼저 닿도록 잠깐 기다렸다 닫는다.
+    setTimeout(() => { const box = document.getElementById('tripCourseResults'); if (box) box.style.display = 'none'; }, 200);
 }
 
 function tripDayHtml(trip, d, i, today) {
@@ -355,11 +375,11 @@ function tripDayHtml(trip, d, i, today) {
     const dateId = d.date;
     const kind = tripKind(trip);
     if (tripEditing === dateId) {
-        if (kind === 'domestic') courseDatalist();
         return `
         <div class="trip-day editing">
             <div class="trip-day-head"><span class="trip-day-no">${i + 1}일차</span> ${isoLabel(d.date)}</div>
-            <label class="trip-field">⛳ 골프장<input type="text" id="tripEdCourse" maxlength="60" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' list="tripCourseList" placeholder="이름을 치면 목록이 뜹니다"' : ''}></label>
+            <label class="trip-field">⛳ 골프장<input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' placeholder="이름을 치면 목록이 뜹니다" onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
+            ${kind === 'domestic' ? '<div id="tripCourseResults" class="course-results" style="display:none;"></div>' : ''}
             <label class="trip-field">📍 지역<input type="text" id="tripEdArea" maxlength="20" placeholder="예: 여수 · 지바" value="${escapeHtml(d.area)}"></label>
             <label class="trip-field">🕐 티오프<input type="text" id="tripEdTee" maxlength="20" placeholder="예: 오전 7:30" value="${escapeHtml(d.tee)}"></label>
             <label class="trip-field">🏨 숙소<input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>

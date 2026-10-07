@@ -331,7 +331,9 @@ scripts/fetch-courses.js  →  courses.js를 커밋
   안 고치는 중이면 `renderAll()`이 `refreshTripModal()`로 바로 갈아 그린다.
 - **onclick 속성에 여행 id·날짜를 그대로 넣으므로** `allTrips()`가 `ID_RE`(영숫자·`-`·`_`)에 맞는 id만,
   `tripDays()`가 `YYYY-MM-DD`만 받는다. 이름·메모 같은 글은 늘 `escapeHtml()`을 거친다.
-- 국내 여행의 골프장 칸은 `courses.js` 이름이 `<datalist>`로 뜬다 — **이름이 글자까지 같아야 날씨·길찾기가 붙는다.**
+- 국내 여행의 골프장 칸은 누르거나 치면 바로 아래에 목록이 뜬다(`tripCourseSuggest()` — 일정 창과 같은
+  `searchCourses()`). **`<datalist>`로 되돌리지 말 것** — 아이폰은 그걸 목록으로 안 펼치고 자판 위 추천 줄에만
+  띄워 '목록이 안 나온다'는 제보가 왔다. **이름이 `courses.js`와 글자까지 같아야 날씨·길찾기가 붙는다.**
   위치는 `dayGeo()`: 날에 적힌 `lat/lon`(GORA에서 고른 것) → 없으면 `courseGeo()`.
   **골프장 이름을 손으로 바꾸면 `lat/lon/gora`를 걷는다** — 옛 골프장 것이라 남기면 엉뚱한 곳이 뜬다.
 - 날씨는 공지 카드와 같은 규칙(Open-Meteo · 16일치만 · 10분 재사용 · `res.ok`·429 처리)이고
