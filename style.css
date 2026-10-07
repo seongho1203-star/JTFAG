@@ -901,6 +901,16 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .gora-item-name small { display: block; font-size: 0.66rem; color: #64748b; }
 .gora-item-meta { margin-top: 3px; font-size: 0.74rem; color: #334155; word-break: keep-all; overflow-wrap: anywhere; }
 .gora-item-meta.addr { color: #64748b; font-size: 0.68rem; }
+.gora-sub { font-weight: 500; color: #94a3b8; font-size: 0.68rem; margin-left: 4px; }
+.gora-hint.warn { color: #b45309; }
+.gora-plans { margin-top: 5px; display: flex; flex-direction: column; gap: 4px; }
+.gora-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 5px 7px; border-radius: 8px; background: #f8fafc; font-size: 0.72rem; }
+.gora-plan small { flex: 1 1 100%; color: #64748b; font-size: 0.66rem; word-break: keep-all; overflow-wrap: anywhere; }
+.gora-plan.more { background: none; padding: 0 2px; color: #94a3b8; font-size: 0.66rem; }
+.gora-plan-price { font-weight: 800; color: #0f172a; margin-right: 2px; }
+.gora-tag { padding: 1px 6px; border-radius: 999px; background: #ccfbf1; color: #115e59; font-size: 0.64rem; font-weight: 700; }
+.gora-tag.no { background: #fee2e2; color: #b91c1c; }
+.gora-item-name .gora-tag { display: inline-block; margin-top: 3px; }
 .gora-tip { margin-top: 6px; padding: 7px 10px; border-radius: 8px; background: #f0fdfa; border: 1px solid #99f6e4; color: #134e4a; font-size: 0.72rem; line-height: 1.5; word-break: keep-all; }
 .gora-raw-row { margin-top: 12px; text-align: center; }
 .gora-raw-btn { border: none; background: none; color: #94a3b8; font-size: 0.68rem; text-decoration: underline; padding: 6px; }
