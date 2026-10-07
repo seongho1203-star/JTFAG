@@ -889,9 +889,11 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .gora-pin.base { background: #ffffff; font-size: 15px; border-color: #0f766e; }
 .gora-setup { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fff7ed; border: 1px solid #fdba74; color: #7c2d12; font-size: 0.78rem; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
 .gora-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 9px 11px; margin-top: 8px; background: #fff; transition: box-shadow 0.3s; }
-.gora-item.flash { box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.45); }
+.gora-item.flash { box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.6); background: #f0fdfa; }
 .gora-item-top { display: flex; gap: 8px; align-items: flex-start; }
-.gora-no { flex: 0 0 22px; height: 22px; border-radius: 50%; background: #0f766e; color: #fff; font-size: 0.7rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.gora-no { flex: 0 0 22px; height: 22px; border-radius: 50%; background: #0f766e; color: #fff; font-size: 0.7rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; cursor: pointer; font-family: inherit; }
+.gora-no:disabled { background: #94a3b8; cursor: default; }
+.gora-item, .gora-map { scroll-margin-top: 6px; }
 .gora-item-name { min-width: 0; }
 .gora-item-name b { display: block; font-size: 0.86rem; color: #0f172a; word-break: keep-all; overflow-wrap: anywhere; }
 .gora-item-name small { display: block; font-size: 0.66rem; color: #64748b; }

@@ -392,7 +392,7 @@ function tripDayHtml(trip, d, i, today) {
     }
     const targets = mapTargets(d, kind);
     const wx = past ? '' : `<div class="trip-row trip-wx" id="tripWx-${dateId}">${tripWeatherHtml(d)}</div>`;
-    const gora = d.gora ? goraUrl(d.gora.url) || (d.course ? goraSearchUrl(d.course) : '') : '';
+    const gora = d.gora ? goraUrl(d.gora.url) || (d.course ? goraSearchUrl(d.gora.ja || d.course) : '') : '';
     return `
         <div class="trip-day${isToday ? ' today' : ''}${past ? ' past' : ''}">
             <div class="trip-day-head">
@@ -406,7 +406,7 @@ function tripDayHtml(trip, d, i, today) {
             ${d.course ? wx : ''}
             ${kind === 'japan' && !past ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (바꾸기)' : ''}</button></div>` : ''}
             ${gora ? `<div class="trip-actions">
-                <a class="trip-btn" href="${escapeHtml(gora)}" target="_blank" rel="noopener">🎫 GORA에서 예약</a>
+                <a class="trip-btn" href="${escapeHtml(gora)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
             </div>` : ''}
             <div class="trip-actions">
                 ${targets.map ? `<button type="button" class="trip-btn" onclick="openTripMap('map', '${dateId}')">🗺️ 지도</button>` : ''}
@@ -547,6 +547,7 @@ async function loadTripWeather(d) {
 const GORA_RANGES = [20, 40, 60, 100];   // km (직선)
 const GORA_PRICES = [0, 10000, 15000, 20000, 30000];   // 0 = 상관없음
 const GORA_PAGES = 3;   // 한 번에 30곳씩, 최대 90곳까지 본다
+const JP_PREFS_KO = ['홋카이도', '아오모리', '이와테', '미야기', '아키타', '야마가타', '후쿠시마', '이바라키', '도치기', '군마', '사이타마', '지바', '도쿄', '가나가와', '니가타', '도야마', '이시카와', '후쿠이', '야마나시', '나가노', '기후', '시즈오카', '아이치', '미에', '시가', '교토', '오사카', '효고', '나라', '와카야마', '돗토리', '시마네', '오카야마', '히로시마', '야마구치', '도쿠시마', '가가와', '에히메', '고치', '후쿠오카', '사가', '나가사키', '구마모토', '오이타', '미야자키', '가고시마', '오키나와'];
 const JP_PREFS = ['北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島', '茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川', '新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜', '静岡', '愛知', '三重', '滋賀', '京都', '大阪', '兵庫', '奈良', '和歌山', '鳥取', '島根', '岡山', '広島', '山口', '徳島', '香川', '愛媛', '高知', '福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'];
 
 let gora = { date: null, base: null, range: 40, price: 0, items: [], busy: false, map: null, layer: null, places: [], raw: {} };
@@ -626,6 +627,7 @@ function drawGoraMap() {
 function paintGoraMap() {
     if (!gora.map || !gora.layer) return;
     gora.layer.clearLayers();
+    gora.markers = [];
     const pts = [];
     if (gora.base) {
         L.circle([gora.base.lat, gora.base.lon], { radius: gora.range * 1000, color: '#0f766e', weight: 1, fillOpacity: 0.05 }).addTo(gora.layer);
@@ -635,11 +637,48 @@ function paintGoraMap() {
     gora.items.forEach((it, i) => {
         if (!it.geo) return;
         const m = L.marker([it.geo.lat, it.geo.lon], { icon: L.divIcon({ className: 'gora-pin', html: `<b>${i + 1}</b>`, iconSize: [24, 24] }) }).addTo(gora.layer);
-        m.on('click', () => { const row = document.getElementById('goraItem' + i); if (row) { row.scrollIntoView({ block: 'nearest' }); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1200); } });
+        m.bindTooltip(escapeHtml(`${i + 1}. ${it.ko || it.name}`), { direction: 'top', offset: [0, -10] });
+        m.on('click', ev => { if (ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent); goraJumpTo(i); });
+        gora.markers[i] = m;
         pts.push([it.geo.lat, it.geo.lon]);
     });
     if (pts.length > 1) gora.map.fitBounds(pts, { padding: [24, 24], maxZoom: 12 });
     else if (pts.length === 1) gora.map.setView(pts[0], 10);
+}
+
+// 지도의 번호 → 목록의 그 골프장을 화면 맨 위로 올리고 반짝인다(사용자 요청).
+function goraJumpTo(i) {
+    const row = document.getElementById('goraItem' + i);
+    if (!row) return;
+    row.scrollIntoView({ block: 'start' });
+    row.classList.remove('flash');
+    void row.offsetWidth;
+    row.classList.add('flash');
+    clearTimeout(row._flash);
+    row._flash = setTimeout(() => row.classList.remove('flash'), 2200);
+}
+// 목록의 번호 → 지도로 올라가 그 핀을 가운데 두고 이름을 띄운다.
+function goraShowOnMap(i) {
+    const m = gora.markers && gora.markers[i];
+    const box = document.getElementById('goraMap');
+    if (!m || !gora.map || !box) return;
+    box.scrollIntoView({ block: 'start' });
+    gora.map.setView(m.getLatLng(), Math.max(gora.map.getZoom(), 11));
+    m.openTooltip();
+}
+// GORA 예약 페이지는 아이폰이면 **사파리로** 바로 연다. 새 창(target=_blank)으로 열면 앱 안 브라우저가 떠
+// 번역이 없고, 사파리 단추를 한 번 더 눌러야 했다(사용자 제보). `x-safari-https://`는 iOS 17부터 사파리를 직접 연다.
+function openGoraLink(url) {
+    if (!IS_IOS || !/^https:\/\//.test(url)) return true;   // 그 밖은 링크 그대로(새 탭)
+    let left = false;
+    const away = () => { if (document.hidden) left = true; };
+    document.addEventListener('visibilitychange', away);
+    setTimeout(() => {
+        document.removeEventListener('visibilitychange', away);
+        if (!left && !document.hidden) window.open(url, '_blank', 'noopener');   // 옛 iOS — 예전처럼 연다
+    }, 1500);
+    tripGo('x-safari-' + url);
+    return false;
 }
 
 // 기준 위치는 OpenStreetMap의 이름 찾기(Nominatim)로 찾는다. 열쇠가 필요 없다(가끔만 쓰는 정도면 된다).
@@ -687,8 +726,7 @@ function setGoraBase(base) {
 
 function prefCode(addr) {
     const text = addr ? [addr.province, addr.state, addr.region, addr.city].filter(Boolean).join(' ') : '';
-    const ko = { '홋카이도': 1, '아오모리': 2, '이와테': 3, '미야기': 4, '아키타': 5, '야마가타': 6, '후쿠시마': 7, '이바라키': 8, '도치기': 9, '군마': 10, '사이타마': 11, '지바': 12, '도쿄': 13, '가나가와': 14, '니가타': 15, '도야마': 16, '이시카와': 17, '후쿠이': 18, '야마나시': 19, '나가노': 20, '기후': 21, '시즈오카': 22, '아이치': 23, '미에': 24, '시가': 25, '교토': 26, '오사카': 27, '효고': 28, '나라': 29, '와카야마': 30, '돗토리': 31, '시마네': 32, '오카야마': 33, '히로시마': 34, '야마구치': 35, '도쿠시마': 36, '가가와': 37, '에히메': 38, '고치': 39, '후쿠오카': 40, '사가': 41, '나가사키': 42, '구마모토': 43, '오이타': 44, '미야자키': 45, '가고시마': 46, '오키나와': 47 };
-    for (const [k, v] of Object.entries(ko)) if (text.includes(k)) return v;
+    for (let i = 0; i < JP_PREFS_KO.length; i++) if (text.includes(JP_PREFS_KO[i])) return i + 1;
     const i = JP_PREFS.findIndex(p => text.includes(p));
     return i >= 0 ? i + 1 : null;
 }
@@ -749,6 +787,81 @@ function goraSearchUrl(name) {
     return `https://www.google.com/search?q=${encodeURIComponent('楽天GORA ' + name)}`;
 }
 
+// ─── 일본 이름을 한글로 ───
+// 라쿠텐은 골프장 이름을 한자로 주고, 읽는 법(가나)을 따로 준다(`golfCourseNameKana`).
+// 가나를 외래어 표기법대로 한글로 옮기고, 골프장 이름에 늘 붙는 말(カントリークラブ 따위)은 뜻으로 바꾼다.
+// 원문 일본어는 아래 작은 글씨로 남긴다 — GORA 사이트와 맞춰 볼 때 쓴다.
+const KANA_KO = (() => {
+    const t = {};
+    // '가|카' — 앞엣것은 낱말 첫머리, 뒤엣것은 가운데·끝 (외래어 표기법)
+    const rows = 'ア아 イ이 ウ우 エ에 オ오 カ가|카 キ기|키 ク구|쿠 ケ게|케 コ고|코 サ사 シ시 ス스 セ세 ソ소 タ다|타 チ지|치 ツ쓰 テ데|테 ト도|토 ナ나 ニ니 ヌ누 ネ네 ノ노 ハ하 ヒ히 フ후 ヘ헤 ホ호 マ마 ミ미 ム무 メ메 モ모 ヤ야 ユ유 ヨ요 ラ라 リ리 ル루 レ레 ロ로 ワ와 ヰ이 ヱ에 ヲ오 ガ가 ギ기 グ구 ゲ게 ゴ고 ザ자 ジ지 ズ즈 ゼ제 ゾ조 ダ다 ヂ지 ヅ즈 デ데 ド도 バ바 ビ비 ブ부 ベ베 ボ보 パ파 ピ피 プ푸 ペ페 ポ포 ヴ부 ァ아 ィ이 ゥ우 ェ에 ォ오 ャ야 ュ유 ョ요 ヮ와 '
+        + 'キャ갸|캬 キュ규|큐 キョ교|쿄 シャ샤 シュ슈 ショ쇼 シェ셰 チャ자|차 チュ주|추 チョ조|초 チェ제|체 ニャ냐 ニュ뉴 ニョ뇨 ヒャ햐 ヒュ휴 ヒョ효 ミャ먀 ミュ뮤 ミョ묘 リャ랴 リュ류 リョ료 ギャ갸 ギュ규 ギョ교 ジャ자 ジュ주 ジョ조 ジェ제 ビャ뱌 ビュ뷰 ビョ뵤 ピャ퍄 ピュ퓨 ピョ표 '
+        + 'ファ파 フィ피 フェ페 フォ포 ティ티 ディ디 トゥ투 ドゥ두 ウィ위 ウェ웨 ウォ워 ヴァ바 ヴィ비 ヴェ베 ヴォ보 テュ튜 デュ듀 フュ퓨';
+    rows.split(' ').filter(Boolean).forEach(x => { const k = x.match(/^[ァ-ヿ]+/)[0]; t[k] = x.slice(k.length).split('|'); });
+    return t;
+})();
+// 이름에 늘 붙는 말. 긴 것부터 맞춘다.
+const GOLF_WORDS = [
+    ['カントリークラブ', '컨트리클럽'], ['カンツリークラブ', '컨트리클럽'], ['カントリー倶楽部', '컨트리클럽'], ['カンツリー倶楽部', '컨트리클럽'],
+    ['ゴルフクラブ', '골프클럽'], ['ゴルフ倶楽部', '골프클럽'], ['ゴルフコース', '골프코스'], ['ゴルフリンクス', '골프링크스'],
+    ['ゴルフジョウ', '골프장'], ['ゴルフジヨウ', '골프장'], ['ゴルフ場', '골프장'], ['ゴルフパーク', '골프파크'], ['ゴルフリゾート', '골프리조트'],
+    ['インターナショナル', '인터내셔널'], ['カントリー', '컨트리'], ['カンツリー', '컨트리'], ['ゴルフ', '골프'], ['クラブ', '클럽'], ['倶楽部', '클럽'], ['俱楽部', '클럽'],
+    ['リゾート', '리조트'], ['ホテル', '호텔'], ['コース', '코스'], ['リンクス', '링크스'], ['スプリングス', '스프링스'], ['ヒルズ', '힐스'],
+    ['パーク', '파크'], ['レイクス', '레이크스'], ['レイク', '레이크'], ['ガーデン', '가든'], ['ヴィレッジ', '빌리지'], ['ビレッジ', '빌리지'],
+    ['ロイヤル', '로열'], ['クラシック', '클래식'], ['グランド', '그랜드'], ['オーシャン', '오션'], ['シーサイド', '시사이드'], ['バレー', '밸리'], ['ヴァレー', '밸리'], ['フォレスト', '포레스트'],
+    ['ゴルフ', '골프']
+];
+function kanaToKo(run) {
+    let out = '', prevVowel = '';
+    for (let i = 0; i < run.length;) {
+        const two = KANA_KO[run.slice(i, i + 2)] && run.slice(i, i + 2);
+        const k = two || run[i];
+        i += k.length;
+        if (k === 'ー') continue;   // 장음은 적지 않는다
+        if (k === 'ン' || k === 'ッ') {   // 받침 ㄴ · ㅅ
+            const c = out.charCodeAt(out.length - 1);
+            if (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 === 0) out = out.slice(0, -1) + String.fromCharCode(c + (k === 'ン' ? 4 : 19));
+            else if (k === 'ン') out += '응';
+            continue;
+        }
+        const ko = KANA_KO[k];
+        if (!ko) { out += k; prevVowel = ''; continue; }
+        const syl = ko[out ? 1 : 0] || ko[0];
+        const jung = (syl.charCodeAt(0) - 0xAC00) % 588 / 28 | 0;
+        // 오+우 · 같은 모음이 겹치면 장음이라 적지 않는다 (とうきょう → 도쿄)
+        if (out && k === 'ウ' && [8, 12, 13, 17].includes(prevVowel)) continue;
+        out += syl;
+        prevVowel = jung;
+    }
+    return out;
+}
+// 가나(또는 이름)를 한글로. 한자가 남으면 못 옮긴 것이라 ''를 돌려준다.
+function koName(src) {
+    let s = String(src || '').normalize('NFKC').replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/[・･]/g, ' ');
+    if (!s.trim()) return '';
+    s = s.replace(/^\s*ザ\s+/, '더 ');
+    for (const [ja, ko] of GOLF_WORDS) s = s.split(ja).join(` ${ko} `);
+    s = s.replace(/[ァ-ヺー]+/g, run => kanaToKo(run));
+    s = s.replace(/[（(]\s*/g, ' (').replace(/\s*[）)]/g, ')').replace(/\s+/g, ' ').trim();
+    return /[぀-ヿ㐀-鿿]/.test(s) ? '' : s;
+}
+// 주소 앞의 현 이름을 한글로 (福岡県糸島市… → 후쿠오카현 糸島市…). 시·정 이름은 읽는 법이 없어 그대로 둔다.
+function koAddress(addr) {
+    const a = String(addr || '');
+    const i = JP_PREFS.findIndex(p => a.startsWith(p));
+    if (i < 0) return a;
+    const rest = a.slice(JP_PREFS[i].length);
+    const suf = rest[0] === '県' ? '현' : rest[0] === '府' ? '부' : rest[0] === '都' ? '도' : '';
+    const ko = JP_PREFS_KO[i] + suf;
+    return (ko + ' ' + rest.replace(/^[県府都]/, '')).trim();
+}
+function koPref(addr) {
+    const i = JP_PREFS.findIndex(p => String(addr || '').startsWith(p));
+    if (i < 0) return '';
+    const r = String(addr)[JP_PREFS[i].length];
+    return JP_PREFS_KO[i] + (r === '県' ? '현' : r === '府' ? '부' : r === '都' ? '도' : '');
+}
+
 // GORA 플랜 검색 답 한 건을 한 모양으로 맞춘다. 판(formatVersion)에 따라 감싸는 모양이 달라 둘 다 읽는다.
 function goraItem(raw) {
     const plans = (raw.planInfo || raw.plans || []).map(p => p && p.plan ? p.plan : p).filter(Boolean).map(p => {
@@ -769,7 +882,8 @@ function goraItem(raw) {
 
 // 현(pref) 하나의 골프장 위치표 — 플랜 검색 답에는 위치가 없어서, 골프장 검색으로 따로 받아 이 폰에 한 달 기억한다.
 async function goraCourseGeo(pref, tick) {
-    const key = 'jtfag_gora_geo_' + pref;
+    const key = 'jtfag_gora_geo2_' + pref;   // 2 — 읽는 법(k)을 함께 담는다
+    try { localStorage.removeItem('jtfag_gora_geo_' + pref); } catch (e) {}
     try {
         const c = JSON.parse(localStorage.getItem(key) || 'null');
         if (c && Date.now() - c.at < GORA_GEO_TTL && c.map && Object.keys(c.map).length) return c.map;
@@ -782,7 +896,7 @@ async function goraCourseGeo(pref, tick) {
         r.items.forEach(raw => {
             if (!raw.golfCourseId) return;
             const g = goraGeoOf(raw);
-            map[raw.golfCourseId] = { g: g ? [+g.lat.toFixed(5), +g.lon.toFixed(5)] : null, a: raw.address || '', u: goraUrl(raw.reserveCalUrl, raw.golfCourseDetailUrl) };
+            map[raw.golfCourseId] = { g: g ? [+g.lat.toFixed(5), +g.lon.toFixed(5)] : null, a: raw.address || '', u: goraUrl(raw.reserveCalUrl, raw.golfCourseDetailUrl), k: raw.golfCourseNameKana || '' };
         });
         if (r.items.length < 30 || (r.pageCount && page >= r.pageCount)) break;
     }
@@ -839,7 +953,9 @@ async function searchGora() {
                 if (!it.geo && g.g) it.geo = { lat: g.g[0], lon: g.g[1] };
                 if (!it.address) it.address = g.a;
                 it.url = goraUrl(g.u, it.url);
+                if (!it.kana) it.kana = g.k || '';
             }
+            it.ko = koName(it.kana) || koName(it.name);
             if (!it.url) it.url = goraSearchUrl(it.name);
             return it;
         }).filter(it => { const k = it.id || it.name; if (seen.has(k)) return false; seen.add(k); return true; })
@@ -881,23 +997,23 @@ function renderGoraResult() {
     if (gora.busy) { box.innerHTML = `<div class="gora-hint" id="goraProgress">라쿠텐 GORA에 묻는 중…</div><div class="gora-hint">처음 찾는 지역은 골프장 위치까지 받느라 10~20초 걸립니다.</div>`; return; }
     if (!gora.items.length) { box.innerHTML = gora.base && gora._searched ? '<div class="gora-hint">그날 예약 가능한 곳이 없습니다. 범위나 금액을 넓혀 보세요. (예약은 보통 두세 달 앞까지 열립니다)</div>' + rawLink : ''; return; }
     box.innerHTML = `<div class="gora-hint">${gora.items.length}곳 · 가까운 순${gora.note ? ' · ' + escapeHtml(gora.note) : ''}</div>
-        <div class="gora-tip">💡 예약 페이지는 일본어입니다. 열린 화면의 메뉴(<b>≡</b> 또는 주소창의 <b>가가</b>)에서 <b>번역 → 한국어</b>를 누르면 한국어로 보입니다.</div>` + gora.items.map((it, i) => {
+        <div class="gora-tip">💡 지도의 번호를 누르면 그 골프장으로, 목록의 번호를 누르면 지도로 갑니다.<br>예약 페이지는 ${IS_IOS ? '<b>사파리</b>로 열립니다. 주소창 왼쪽 <b>가가</b> → <b>번역 → 한국어</b>' : '일본어입니다. 브라우저 메뉴의 <b>번역 → 한국어</b>'}를 누르면 한국어로 보입니다.</div>` + gora.items.map((it, i) => {
         const low = it.plans.find(p => p.price);
         const times = [...new Set(it.plans.map(p => p.time).filter(Boolean))].slice(0, 3).join(', ');
         return `
         <div class="gora-item" id="goraItem${i}">
             <div class="gora-item-top">
-                <span class="gora-no">${i + 1}</span>
-                <div class="gora-item-name"><b>${escapeHtml(it.name)}</b>${it.kana ? `<small>${escapeHtml(it.kana)}</small>` : ''}</div>
+                <button type="button" class="gora-no"${it.geo ? ` onclick="goraShowOnMap(${i})" title="지도에서 보기"` : ' disabled'}>${i + 1}</button>
+                <div class="gora-item-name"><b>${escapeHtml(it.ko || it.name)}</b>${it.ko ? `<small>${escapeHtml(it.name)}</small>` : ''}</div>
             </div>
             <div class="gora-item-meta">
                 ${it.km !== null ? `📍 직선 ${it.km.toFixed(0)}km · 차로 약 ${driveMinutes(it.km)}분` : '📍 거리 모름'}
                 ${low ? ` · 💴 ¥${low.price.toLocaleString()}~` : ''}${it.plans.length ? ` · 플랜 ${it.plans.length}개` : ''}${it.rating ? ` · ⭐${it.rating.toFixed(1)}` : ''}
             </div>
             ${times ? `<div class="gora-item-meta">🕐 ${escapeHtml(times)}</div>` : ''}
-            ${it.address ? `<div class="gora-item-meta addr">${escapeHtml(it.address)}</div>` : ''}
+            ${it.address ? `<div class="gora-item-meta addr">${escapeHtml(koAddress(it.address))}</div>` : ''}
             <div class="trip-actions">
-                <a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">🎫 GORA에서 예약</a>
+                <a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
                 <button type="button" class="trip-btn primary" onclick="pickGoraCourse(${i})">이 날로 정하기</button>
             </div>
         </div>`;
@@ -908,14 +1024,14 @@ function pickGoraCourse(i) {
     const it = gora.items[i];
     const date = gora.date;
     if (!it || !date) return;
-    const area = (it.address.match(/^(.+?[都道府県])/) || [])[1] || '';
+    const area = koPref(it.address) || (it.address.match(/^(.+?[都道府県])/) || [])[1] || '';
     const ok = editTrip(t => {
         const d = t.days.find(x => x.date === date);
         if (!d) return false;
-        d.course = it.name;
+        d.course = it.ko || it.name;
         if (area && !d.area) d.area = area;
         if (it.geo) { d.lat = +it.geo.lat.toFixed(5); d.lon = +it.geo.lon.toFixed(5); } else { delete d.lat; delete d.lon; }
-        d.gora = { id: it.id || null, url: /google\.com\/search/.test(it.url) ? '' : (it.url || '') };
+        d.gora = { id: it.id || null, url: /google\.com\/search/.test(it.url) ? '' : (it.url || ''), ...(it.ko ? { ja: it.name } : {}) };
     }, `✅ ${isoLabel(date)} 골프장을 정했습니다. 예약은 GORA에서 해 주세요.`);
     if (ok) { closeGora(); renderTripModal(); renderTripCard(); }
 }
