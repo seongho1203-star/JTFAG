@@ -709,7 +709,12 @@ async function goraCall(api, params) {
     if (out.error === 'not_configured') return { error: 'not_configured' };
     const data = out.data || {};
     if (out.error || data.error || (out.status && out.status >= 400)) {
-        return { error: 'api', message: [out.status, data.error, data.error_description, data.raw, out.message, out.error].filter(Boolean).join(' · ') };
+        // 라쿠텐이 준 답을 **통째로** 적는다 — 판마다 오류 칸 이름이 달라(`error`·`errors`·`message`…)
+        // 몇 개만 골라 적었더니 `403` 숫자 하나만 남아 무엇이 틀렸는지 알 수 없었다.
+        let detail = '';
+        try { detail = JSON.stringify(data); } catch (e) { detail = String(data); }
+        if (detail === '{}') detail = '';
+        return { error: 'api', message: [out.status, out.message, out.error, detail.slice(0, 400)].filter(Boolean).join(' · ') };
     }
     const raw = data.Items || data.items || [];
     return { items: raw.map(x => x && x.Item ? x.Item : x).filter(Boolean), count: data.count, pageCount: data.pageCount };
