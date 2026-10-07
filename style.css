@@ -810,3 +810,40 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .summary-item .rank-crane,
 .summary-item .rank-sparrow { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
 .admin-btn.danger-strong { color: #dc2626; background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.3); }
+
+/* ─── 여행 일정 (trip.js) ─── */
+.trip-card { background: linear-gradient(145deg, #0f3d3a, #0f172a); color: #ffffff; border-radius: 14px; padding: 11px 14px; margin-bottom: 10px; border: 1px solid rgba(45, 212, 191, 0.45); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); cursor: pointer; transition: transform 0.1s ease, opacity 0.1s ease; }
+.trip-card:active { transform: scale(0.98); opacity: 0.9; }
+.trip-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.trip-card-title { font-size: clamp(0.82rem, 3.4vw, 0.92rem); font-weight: 800; color: #99f6e4; min-width: 0; }
+.trip-card-top .dday-badge { margin-right: 0; flex: 0 0 auto; }
+.trip-card-when { margin-top: 5px; font-size: 0.8rem; font-weight: 800; }
+.trip-card-sub { margin-top: 3px; font-size: 0.74rem; color: #cbd5e1; word-break: keep-all; line-height: 1.45; }
+.trip-card-more { margin-top: 4px; font-size: 0.68rem; color: #5eead4; font-weight: 700; text-align: right; }
+
+.trip-summary { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 9px 11px; margin-bottom: 10px; font-size: 0.86rem; color: #134e4a; }
+.trip-summary-sub { margin-top: 3px; word-break: keep-all; font-size: 0.72rem; color: #0f766e; }
+.trip-day { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; background: #ffffff; }
+.trip-day.today { border-color: #14b8a6; box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.18); }
+.trip-day.past { background: #f8fafc; opacity: 0.7; }
+.trip-day.editing { border-color: #14b8a6; background: #f0fdfa; }
+.trip-day-head { font-size: 0.86rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.trip-day-no { background: #1e293b; color: #99f6e4; border-radius: 6px; padding: 1px 7px; font-size: 0.7rem; }
+.trip-today { margin-left: auto; background: #14b8a6; color: #fff; border-radius: 6px; padding: 1px 7px; font-size: 0.68rem; }
+.trip-course { font-size: 0.92rem; font-weight: 800; color: #0f172a; margin-bottom: 5px; word-break: keep-all; }
+.trip-area { font-size: 0.7rem; font-weight: 700; color: #0f766e; background: #ccfbf1; border-radius: 5px; padding: 1px 5px; vertical-align: 1px; }
+.trip-row { display: flex; gap: 8px; font-size: 0.8rem; color: #334155; margin-top: 3px; }
+.trip-row .k { flex: 0 0 64px; color: #64748b; font-weight: 700; }
+.trip-row .v { min-width: 0; word-break: keep-all; overflow-wrap: anywhere; font-weight: 700; }
+.trip-row .v.empty { color: #94a3b8; font-weight: 500; }
+.trip-wx { display: block; margin-top: 6px; padding: 5px 8px; background: #f1f5f9; border-radius: 7px; font-size: 0.76rem; }
+.trip-memo { margin-top: 6px; font-size: 0.8rem; color: #334155; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.45; }
+.trip-memo.empty { color: #94a3b8; }
+.trip-actions { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.trip-btn { flex: 1 1 0; min-width: 0; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 6px 8px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #1e293b; font-size: 0.78rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.trip-btn.ghost { background: #f1f5f9; }
+.trip-btn.primary { background: #0f766e; border-color: #0f766e; color: #ffffff; }
+.trip-field { display: block; font-size: 0.74rem; font-weight: 800; color: #475569; margin-top: 7px; }
+.trip-field input, .trip-field textarea { display: block; width: 100%; margin-top: 3px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #0f172a; font-size: 16px; font-weight: 600; resize: vertical; }
+.trip-field input:focus, .trip-field textarea:focus { outline: none; border-color: #14b8a6; }
+.trip-empty { text-align: center; color: #94a3b8; padding: 20px 0; font-size: 0.85rem; }

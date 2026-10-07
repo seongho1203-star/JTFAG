@@ -1247,6 +1247,7 @@ function renderAll() {
     checkRankChange();
     checkRoundResultReveal();
     checkEagleStreakCelebration();
+    if (typeof renderTripCard === 'function') { renderTripCard(); refreshTripModal(); }
 }
 
 // ─── 연출 세 가지 ───
@@ -2237,7 +2238,8 @@ function applyHoleScores() {
     const filled = applyRoundCourses();
     const dropped = dropRetiredFields();
     const settled = settleScheduleRound();   // 지운 차수에 남아 있던 일정을 마지막 차수로
-    if (changed || filled || dropped || settled) syncToSupabase(appData);
+    const seeded = typeof seedTrips === 'function' && seedTrips();   // 여행 일정(trip.js) — 처음 한 번만
+    if (changed || filled || dropped || settled || seeded) syncToSupabase(appData);
 }
 
 function toggleScoreEdit() {

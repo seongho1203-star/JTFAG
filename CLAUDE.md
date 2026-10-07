@@ -37,7 +37,7 @@ python3 -m http.server 8000        # http://localhost:8000
 모듈 시스템이 없다. 모든 함수와 상태가 전역(window)에 올라가고, `index.html` 하단에서 고정된 순서로 로드된다:
 
 ```
-stats.js → courses.js → api.js → money.js → calc.js → ui.js
+stats.js → courses.js → api.js → money.js → calc.js → ui.js → trip.js
 ```
 
 - **`stats.js`** — 홀 단위 스코어 기록. DB에 없는 유일한 데이터로, 스코어카드 사진을 판독해 갱신한다.
@@ -306,6 +306,29 @@ scripts/fetch-courses.js  →  courses.js를 커밋
   주는데, `res.ok`를 안 보면 `data.daily`도 `data.current_weather`도 없어 **아무 분기도 안 타고
   '확인중...'에 멈춘 채로 남는다.** 저장이 무한 반복되던 때 실제로 이렇게 날씨가 아예 안 떴다.
   429를 만나면 `WEATHER_COOLDOWN`(1분)만큼 쉬었다 다시 시도한다.
+
+### 여행 일정 (🧳 · `trip.js`)
+
+넷이 같이 가는 골프 여행의 날짜·골프장·티오프·숙소·메모를 보는 자리다(사용자 요청 —
+2026년 10월 26~29일 여수 디오션 → 여수 경도 → 남해 사우스케이프 → 남해 아난티 → 귀가).
+나중에 일본 골프장 찾기(라쿠텐 GORA)도 여기에 붙일 생각이다.
+
+- **값은 `payload.trips`**(여행마다 `{id, title, days:[{date, course, area, tee, stay, memo}], memo}`).
+  처음 접속한 폰이 `TRIP_SEED`를 한 번 넣는다(`seedTrips()` — `applyHoleScores()`가 부른다).
+  **`undefined`일 때만 넣는다** — 누가 여행을 지워 빈 배열이 되면 다시 안 넣고, 저장 → 메아리 →
+  다시 넣기로 도는 일도 없다(헤드리스로 저장 1회 확인).
+- **홈의 `🧳` 카드는 아직 안 끝난 여행이 있을 때만 보인다**(`activeTrip()` · 한국 날짜 기준).
+  출발 전엔 `D-19`, 여행 중엔 `여행 중` + `N일차 · 오늘 ⛳ 골프장`. 마지막 날이 지나면 저절로 빠진다.
+- **누구나 고친다**(돈이 아니라 잠그지 않았다). 고칠 때는 **날짜로 다시 찾는다** — 순번으로 찾으면
+  창이 떠 있는 사이 남의 저장에 밀린다(공금 로그·사진에서 겪은 자리). 차례는 늘
+  `saveState()` → 수정 → `syncToSupabase()`, 값이 그대로면 저장하지 않는다.
+- **고치는 동안(`tripEditing`)은 창을 다시 그리지 않는다** — 남의 저장이 들어와도 적던 글이 안 날아간다.
+  안 고치는 중이면 `renderAll()`이 `refreshTripModal()`로 바로 갈아 그린다.
+- 날씨는 공지 카드와 같은 규칙(Open-Meteo · 16일치만 · 10분 재사용 · `res.ok`·429 처리)이고,
+  그 전에는 `예보는 10월 11일(일)부터 나와요`라고 적는다. 좌표는 `courseGeo()` —
+  **골프장 이름은 `courses.js`와 글자까지 같아야 날씨·길찾기가 붙는다**(없으면 지도 검색으로 물러난다).
+- 지도·길찾기는 카카오맵 링크(`map.kakao.com/link/map|to/이름,위도,경도`)라 키가 필요 없다.
+- 새 여행을 앱에서 만드는 화면은 아직 없다 — 지금은 `TRIP_SEED`처럼 코드로 넣는다.
 
 ### 데이터 흐름
 

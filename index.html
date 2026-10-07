@@ -53,6 +53,9 @@
         </div>
     </div>
 
+    <!-- 여행 일정(trip.js). 아직 안 끝난 여행이 있을 때만 보인다. -->
+    <div id="tripCard" class="trip-card" style="display:none;"></div>
+
     <div class="total-summary-card">
         <h2>💰 JTFAG 통합 정산 요약</h2>
         <div class="summary-grid" id="summaryGrid"></div>
@@ -166,6 +169,16 @@
                 <button type="button" class="action-btn add-btn" style="width:100%; margin-top:12px; padding:10px; font-size:0.85rem;" onclick="saveSchedule()">✅ 일정 저장하기</button>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="tripModal" onclick="if(event.target === this) closeTripModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="tripTitle">🧳 여행 일정</h3>
+            <button type="button" class="close-btn" onclick="closeTripModal()">✕</button>
+        </div>
+        <div class="modal-body" id="tripBody"></div>
     </div>
 </div>
 
@@ -342,6 +355,7 @@
     document.write('<script src="money.js?ver=' + v + '"><\/script>');   // 정산 금액 저장소(칸마다 따로)
     document.write('<script src="calc.js?ver=' + v + '"><\/script>');
     document.write('<script src="ui.js?ver=' + v + '"><\/script>');
+    document.write('<script src="trip.js?ver=' + v + '"><\/script>');   // 여행 일정
 </script>
 
 </body>
