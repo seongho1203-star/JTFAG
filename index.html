@@ -182,6 +182,17 @@
     </div>
 </div>
 
+<!-- 일본 골프장 찾기(trip.js). 여행 창 위에 뜨므로 층을 하나 높인다(여닫기는 .active). -->
+<div class="modal-overlay" id="goraModal" style="z-index:1001;" onclick="if(event.target === this) closeGora()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🔎 일본 골프장 찾기 · 라쿠텐 GORA</h3>
+            <button type="button" class="close-btn" onclick="closeGora()">✕</button>
+        </div>
+        <div class="modal-body"><div id="goraTop"></div><div id="goraMap" class="gora-map"></div><div id="goraBottom"></div></div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="notifySettingsModal" onclick="if(event.target === this) closeNotifySettings()">
     <div class="modal-content" style="max-width: 380px;">
         <div class="modal-header">

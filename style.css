@@ -847,3 +847,53 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .trip-field input, .trip-field textarea { display: block; width: 100%; margin-top: 3px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #0f172a; font-size: 16px; font-weight: 600; resize: vertical; }
 .trip-field input:focus, .trip-field textarea:focus { outline: none; border-color: #14b8a6; }
 .trip-empty { text-align: center; color: #94a3b8; padding: 20px 0; font-size: 0.85rem; }
+.trip-card.slim { padding: 9px 14px; }
+.trip-card.slim .trip-card-more { margin-top: 0; }
+.trip-chips { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; margin-bottom: 10px; scrollbar-width: none; }
+.trip-chips::-webkit-scrollbar { display: none; }
+.trip-field .trip-chips { margin: 4px 0 0; flex-wrap: wrap; overflow: visible; }
+.trip-chip { flex: 0 0 auto; min-height: 34px; padding: 5px 11px; border-radius: 17px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
+.trip-chip small { font-weight: 600; color: #64748b; font-size: 0.66rem; }
+.trip-chip.on { background: #0f766e; border-color: #0f766e; color: #ffffff; }
+.trip-chip.on small { color: #ccfbf1; }
+.trip-chip.past { opacity: 0.6; }
+.trip-chip.add { border-style: dashed; color: #0f766e; }
+.trip-chip.add.on { color: #ffffff; border-style: solid; }
+.trip-kind-row { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.trip-kind { flex: 1 1 0; min-width: 90px; }
+.trip-kind input { position: absolute; opacity: 0; pointer-events: none; }
+.trip-kind span { display: flex; align-items: center; justify-content: center; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; font-size: 0.78rem; font-weight: 800; color: #334155; cursor: pointer; }
+.trip-kind input:checked + span { background: #0f766e; border-color: #0f766e; color: #fff; }
+.trip-two { display: flex; gap: 8px; }
+.trip-two > * { flex: 1 1 0; min-width: 0; }
+.trip-field select { display: block; width: 100%; margin-top: 3px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a; font-size: 16px; font-weight: 600; }
+.trip-field input[type="date"] { min-height: 40px; -webkit-appearance: none; appearance: none; }
+.trip-hint, .gora-hint { margin-top: 8px; font-size: 0.72rem; color: #64748b; line-height: 1.5; word-break: keep-all; }
+.trip-summary-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.trip-gear { flex: 0 0 auto; width: 34px; height: 34px; border: 1px solid #99f6e4; border-radius: 9px; background: #ffffff; font-size: 0.95rem; }
+.trip-btn[disabled] { opacity: 0.45; }
+.trip-btn.danger { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+.trip-btn.gora { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+.trip-course .empty { color: #94a3b8; font-weight: 600; }
+
+.gora-date { font-size: 0.86rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.gora-search { display: flex; gap: 6px; margin-top: 3px; }
+.gora-search input { flex: 1 1 auto; min-width: 0; margin-top: 0 !important; }
+.gora-search .trip-btn { flex: 0 0 64px; }
+.gora-places { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.gora-place { text-align: left; padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+.gora-place b { display: block; font-size: 0.8rem; color: #0f172a; }
+.gora-place small { display: block; font-size: 0.66rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gora-map { height: 240px; margin: 8px 0 4px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
+.gora-pin { display: flex !important; align-items: center; justify-content: center; border-radius: 50%; background: #0f766e; color: #fff; font-size: 11px; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+.gora-pin.base { background: #ffffff; font-size: 15px; border-color: #0f766e; }
+.gora-setup { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fff7ed; border: 1px solid #fdba74; color: #7c2d12; font-size: 0.78rem; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+.gora-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 9px 11px; margin-top: 8px; background: #fff; transition: box-shadow 0.3s; }
+.gora-item.flash { box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.45); }
+.gora-item-top { display: flex; gap: 8px; align-items: flex-start; }
+.gora-no { flex: 0 0 22px; height: 22px; border-radius: 50%; background: #0f766e; color: #fff; font-size: 0.7rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.gora-item-name { min-width: 0; }
+.gora-item-name b { display: block; font-size: 0.86rem; color: #0f172a; word-break: keep-all; overflow-wrap: anywhere; }
+.gora-item-name small { display: block; font-size: 0.66rem; color: #64748b; }
+.gora-item-meta { margin-top: 3px; font-size: 0.74rem; color: #334155; word-break: keep-all; overflow-wrap: anywhere; }
+.gora-item-meta.addr { color: #64748b; font-size: 0.68rem; }
