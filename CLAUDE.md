@@ -327,7 +327,11 @@ scripts/fetch-courses.js  →  courses.js를 커밋
 - 날씨는 공지 카드와 같은 규칙(Open-Meteo · 16일치만 · 10분 재사용 · `res.ok`·429 처리)이고,
   그 전에는 `예보는 10월 11일(일)부터 나와요`라고 적는다. 좌표는 `courseGeo()` —
   **골프장 이름은 `courses.js`와 글자까지 같아야 날씨·길찾기가 붙는다**(없으면 지도 검색으로 물러난다).
-- 지도·길찾기는 카카오맵 링크(`map.kakao.com/link/map|to/이름,위도,경도`)라 키가 필요 없다.
+- 지도·길찾기는 카카오맵이라 키가 필요 없다(`openTripMap()`). **폰에서는 `<a target="_blank">`로 열지 말 것** —
+  새 창이 카카오맵 앱에 주소를 넘긴 뒤 **빈 창으로 남아**, 돌아오면 그것부터 닫아야 했다(사용자 제보).
+  그래서 앱 주소로 곧바로 연다 — 아이폰은 `kakaomap://route?ep=위도,경도&by=CAR`(1.5초 안에 앱으로 안
+  넘어가면 웹 지도로), 안드로이드는 `intent://…;package=net.daum.android.map;S.browser_fallback_url=웹지도`.
+  PC(손가락 없는 기기)만 웹 지도(`map.kakao.com/link/map|to/…`)를 새 탭으로 연다.
 - 새 여행을 앱에서 만드는 화면은 아직 없다 — 지금은 `TRIP_SEED`처럼 코드로 넣는다.
 
 ### 데이터 흐름

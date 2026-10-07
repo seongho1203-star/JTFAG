@@ -115,15 +115,51 @@ function refreshTripModal() {
     if (modal && modal.classList.contains('active') && !tripEditing) renderTripModal();
 }
 
+// ─── 지도·길찾기 ───
+// **`<a target="_blank">`로 열지 않는다.** 폰은 새 창을 열고 그 주소를 카카오맵 앱에 넘기는데,
+// 넘겨준 뒤 **빈 창이 남아** 돌아오면 그것부터 닫아야 했다(사용자 제보). 그래서 앱 주소
+// (`kakaomap://`)로 곧바로 앱을 연다 — 새 창이 안 생기므로 돌아오면 일정 창 그대로다.
+// 앱이 없으면: 안드로이드는 `intent:`의 `browser_fallback_url`이 웹 지도로 보내 주고,
+// 아이폰은 1.5초 안에 앱으로 안 넘어가면 웹 지도를 연다. PC는 처음부터 웹 지도다.
 function mapLinks(course) {
     const name = String(course || '').trim();
     const geo = courseGeo(name);
     const n = encodeURIComponent(name);
     if (geo) return {
         map: `https://map.kakao.com/link/map/${n},${geo.lat},${geo.lon}`,
-        route: `https://map.kakao.com/link/to/${n},${geo.lat},${geo.lon}`
+        route: `https://map.kakao.com/link/to/${n},${geo.lat},${geo.lon}`,
+        mapApp: `look?p=${geo.lat},${geo.lon}`,
+        routeApp: `route?ep=${geo.lat},${geo.lon}&by=CAR`
     };
-    return { map: `https://map.kakao.com/link/search/${n}`, route: null };
+    return { map: `https://map.kakao.com/link/search/${n}`, route: null, mapApp: `search?q=${n}`, routeApp: null };
+}
+
+function tripGo(url) { location.href = url; }   // 시험에서 갈아 끼울 수 있게 한 곳으로 모은다
+
+function openTripMap(kind, date) {
+    const trip = findTrip(tripOpenId);
+    const day = trip && tripDays(trip).find(d => d.date === date);
+    if (!day) return;
+    const links = mapLinks(day.course);
+    const web = kind === 'route' ? links.route : links.map;
+    const app = kind === 'route' ? links.routeApp : links.mapApp;
+    if (!web) return;
+    const touch = navigator.maxTouchPoints > 0;
+    if (!touch || !app) { window.open(web, '_blank', 'noopener'); return; }
+    if (/Android/i.test(navigator.userAgent)) {
+        tripGo(`intent://${app}#Intent;scheme=kakaomap;package=net.daum.android.map;S.browser_fallback_url=${encodeURIComponent(web)};end`);
+        return;
+    }
+    let left = false;
+    const away = () => { if (document.hidden) left = true; };
+    document.addEventListener('visibilitychange', away);
+    window.addEventListener('pagehide', away);
+    setTimeout(() => {
+        document.removeEventListener('visibilitychange', away);
+        window.removeEventListener('pagehide', away);
+        if (!left && !document.hidden) tripGo(web);   // 앱이 없다 — 웹 지도로
+    }, 1500);
+    tripGo(`kakaomap://${app}`);
 }
 
 function tripDayHtml(trip, d, i, today) {
@@ -158,8 +194,8 @@ function tripDayHtml(trip, d, i, today) {
             ${d.memo ? `<div class="trip-memo">${escapeHtml(d.memo)}</div>` : ''}
             ${wx}
             <div class="trip-actions">
-                <a class="trip-btn" href="${links.map}" target="_blank" rel="noopener">🗺️ 지도</a>
-                ${links.route ? `<a class="trip-btn" href="${links.route}" target="_blank" rel="noopener">🚗 길찾기</a>` : ''}
+                <button type="button" class="trip-btn" onclick="openTripMap('map', '${dateId}')">🗺️ 지도</button>
+                ${links.route ? `<button type="button" class="trip-btn" onclick="openTripMap('route', '${dateId}')">🚗 길찾기</button>` : ''}
                 <button type="button" class="trip-btn ghost" onclick="editTripDay('${dateId}')">✏️ 고치기</button>
             </div>
         </div>`;
