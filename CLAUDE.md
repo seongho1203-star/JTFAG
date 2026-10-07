@@ -351,19 +351,34 @@ scripts/fetch-courses.js  →  courses.js를 커밋
   → 범위(직선 20/40/60/100km)·1인 최대 금액 → **GORA 플랜 검색**(그날 예약 가능한 것만)
   → 지도(Leaflet + OSM 타일, 처음 열 때만 cdnjs에서 받는다)와 목록(가까운 순)
   → `이 날로 정하기`가 그 날짜의 `course/lat/lon/gora{id,url}`를 넣는다.
-- **예약·결제는 앱이 못 한다** — 라쿠텐이 예약 API를 안 열어 두었다. GORA 예약 주소를 원문과
-  **구글 번역(`translateUrl()`)** 두 가지로 열어 준다. 다시 찾아보지 말 것.
+- **예약·결제는 앱이 못 한다** — 라쿠텐이 예약 API를 안 열어 두었다. `🎫 GORA에서 예약`이 그 골프장의
+  GORA 페이지를 연다. 다시 찾아보지 말 것.
+  - **구글 번역 프록시(`translate.goog`)는 한국에서 막혀 있다**(`This translation service isn't available in your
+    region` — 사용자 제보). 그 단추를 걷어내고, 사파리 메뉴의 `번역 → 한국어`를 안내하는 한 줄(`.gora-tip`)로 바꿨다.
+    되살리지 말 것.
+  - **`gr.g.rakuten.co.jp`로 시작하는 주소는 폰에서 안 열린다**(플랜의 `reservePageUrl`이 그랬다 — DNS 실패).
+    `goraUrl()`이 그 주소를 건너뛰고 골프장 검색의 `reserveCalUrl`·`golfCourseDetailUrl`을 먼저 쓴다.
+    다 없으면 `楽天GORA 이름` 구글 검색 주소로 물러난다(`goraSearchUrl()` — 이건 저장하지 않는다).
 - **라쿠텐에 묻는 일은 Supabase 함수 `gora`가 한다**(`supabase/functions/gora/index.ts`) —
   열쇠(`RAKUTEN_APP_ID`·`RAKUTEN_ACCESS_KEY`)를 공개 저장소의 앱에 둘 수 없다. 켜는 법은 `docs/일본골프장찾기.md`.
   **그 함수는 일부러 얇다** — 정해 둔 칸 이름(`PARAMS`)만 골라 넘기고 답을 그대로 돌려준다.
   사람이 손으로 붙여넣어 올리는 함수라, **무엇을 어떻게 물을지는 `trip.js`에서 고친다**(밀면 바로 바뀐다).
-- 라쿠텐 새 API(2026)는 `openapi.rakuten.co.jp` · 앱 ID + 액세스 키 둘 다 필수 · **Referer가 허용된 웹사이트와
-  같아야 한다**(아니면 403). 함수가 `RAKUTEN_REFERER`(기본 `https://seongho1203-star.github.io/JTFAG/`)를 붙인다.
-- **답의 모양을 실제로 받아 보고 맞춘 것이 아니다**(이 환경에서 라쿠텐 문서·API가 막혀 있었다).
-  그래서 `goraItem()`이 판(formatVersion)마다 다른 모양(`Items[].Item`·평평한 것 · `planInfo[].plan` ·
-  `callInfo`가 배열/객체)을 다 받고, 오류는 **라쿠텐이 준 말 그대로** 화면에 적는다(`gora-setup`).
-  위치 검색(`latitude/longitude/searchRange`)이 답이 없거나 거절되면 **그 현(`areaCode`, 지바=12처럼
-  JIS 번호 — `prefCode()`)으로 다시 묻고 거리는 앱이 잰다**(`kmBetween()`). 첫 실사용 때 화면을 보고 맞출 것.
+- 라쿠텐 새 API(2026)는 `openapi.rakuten.co.jp` · 앱 ID + 액세스 키 둘 다 필수 · Referer가 허용된 웹사이트와
+  같아야 한다. 함수가 `RAKUTEN_REFERER`(기본 `https://seongho1203-star.github.io/JTFAG/`)를 붙인다.
+  **라쿠텐 앱의 `API Access Scopes`에 `Rakuten GORA API`가 켜져 있어야 한다** — 빠지면
+  `403 REQUESTED_SCOPES_NOT_ALLOWED`(처음에 Travel API만 체크해서 실제로 그랬다).
+- **실제로 받아 보고 맞춘 것(2026-10-07):** 플랜 검색(`GoraPlanSearch`)은
+  ① **`latitude/longitude/searchRange`를 무시한다** — 후쿠오카 기준인데 간토 골프장 90곳이 왔다.
+  ② **답에 골프장 위치가 없다**(그래서 `거리 모름`만 떴다).
+  그래서 지금은 **현 단위(`areaCode`, JIS 번호 — `prefCode()`)로 묻고**, 기준 위치에서 범위+50km 안에 현청이 있는
+  이웃 현까지 **많아야 셋**을 묻는다(`JP_PREF_CENTER`). 위치는 **골프장 검색(`GoraGolfCourseSearch`)을 현 단위로 받아**
+  `golfCourseId`로 붙이고 거리는 앱이 잰다(`kmBetween()`). 그 위치표는 **이 폰의 localStorage에 한 달**
+  (`jtfag_gora_geo_{현}`) 기억한다 — 처음 찾는 현만 10~20초 걸리고 그다음은 빠르다.
+  좌표는 `goraDeg()`가 **180을 넘으면 초(″)로 보고 3600으로 나눈다**(라쿠텐은 API에 따라 초로 준다).
+  위치를 끝내 못 붙인 곳은 빼지 않고 맨 아래에 `거리 모름`으로 둔다.
+- 라쿠텐 한도(앱 등록 때 1 QPS)를 넘지 않게 요청 사이를 `GORA_GAP`(0.4초) 띄우고, 429면 1.5초 쉬었다 다시 묻는다.
+- **결과 아래 `🔧 라쿠텐 원본 답 보기`**가 플랜·골프장 검색의 첫 건을 그대로 보여 준다(`gora.raw`).
+  라쿠텐 답의 모양을 이 환경에서는 볼 수 없으니(문서·API가 막혀 있다), 칸 이름이 어긋나면 그 화면을 받아 맞출 것.
 - 열쇠가 없으면(503 `not_configured`) 또는 함수가 없으면(404) 오류 대신 설정 안내를 띄운다.
 - 차로 걸리는 시간은 어림이다(`driveMinutes()` — 직선 × 1.3 ÷ 50km/h). 화면에도 `약`·`~`를 붙였다.
 - 헤드리스 확인(스크래치패드 `trip-new-test.js`)은 라쿠텐·Nominatim 답을 가짜로 주고 Leaflet은 npm 판을

@@ -897,3 +897,7 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .gora-item-name small { display: block; font-size: 0.66rem; color: #64748b; }
 .gora-item-meta { margin-top: 3px; font-size: 0.74rem; color: #334155; word-break: keep-all; overflow-wrap: anywhere; }
 .gora-item-meta.addr { color: #64748b; font-size: 0.68rem; }
+.gora-tip { margin-top: 6px; padding: 7px 10px; border-radius: 8px; background: #f0fdfa; border: 1px solid #99f6e4; color: #134e4a; font-size: 0.72rem; line-height: 1.5; word-break: keep-all; }
+.gora-raw-row { margin-top: 12px; text-align: center; }
+.gora-raw-btn { border: none; background: none; color: #94a3b8; font-size: 0.68rem; text-decoration: underline; padding: 6px; }
+.gora-raw { display: none; text-align: left; max-height: 240px; overflow: auto; background: #0f172a; color: #e2e8f0; font-size: 10px; line-height: 1.35; padding: 8px; border-radius: 8px; white-space: pre-wrap; word-break: break-all; }

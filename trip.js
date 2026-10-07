@@ -392,7 +392,7 @@ function tripDayHtml(trip, d, i, today) {
     }
     const targets = mapTargets(d, kind);
     const wx = past ? '' : `<div class="trip-row trip-wx" id="tripWx-${dateId}">${tripWeatherHtml(d)}</div>`;
-    const gora = d.gora && /^https:\/\//.test(d.gora.url || '') ? d.gora.url : '';
+    const gora = d.gora ? goraUrl(d.gora.url) || (d.course ? goraSearchUrl(d.course) : '') : '';
     return `
         <div class="trip-day${isToday ? ' today' : ''}${past ? ' past' : ''}">
             <div class="trip-day-head">
@@ -406,8 +406,7 @@ function tripDayHtml(trip, d, i, today) {
             ${d.course ? wx : ''}
             ${kind === 'japan' && !past ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (바꾸기)' : ''}</button></div>` : ''}
             ${gora ? `<div class="trip-actions">
-                <a class="trip-btn" href="${escapeHtml(gora)}" target="_blank" rel="noopener">🎫 GORA 예약 (원문)</a>
-                <a class="trip-btn" href="${escapeHtml(translateUrl(gora))}" target="_blank" rel="noopener">🇰🇷 한국어로 보기</a>
+                <a class="trip-btn" href="${escapeHtml(gora)}" target="_blank" rel="noopener">🎫 GORA에서 예약</a>
             </div>` : ''}
             <div class="trip-actions">
                 ${targets.map ? `<button type="button" class="trip-btn" onclick="openTripMap('map', '${dateId}')">🗺️ 지도</button>` : ''}
@@ -550,11 +549,7 @@ const GORA_PRICES = [0, 10000, 15000, 20000, 30000];   // 0 = 상관없음
 const GORA_PAGES = 3;   // 한 번에 30곳씩, 최대 90곳까지 본다
 const JP_PREFS = ['北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島', '茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川', '新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜', '静岡', '愛知', '三重', '滋賀', '京都', '大阪', '兵庫', '奈良', '和歌山', '鳥取', '島根', '岡山', '広島', '山口', '徳島', '香川', '愛媛', '高知', '福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'];
 
-let gora = { date: null, base: null, range: 40, price: 0, items: [], busy: false, map: null, layer: null, places: [] };
-
-function translateUrl(url) {
-    return `https://translate.google.com/translate?sl=ja&tl=ko&u=${encodeURIComponent(url)}`;
-}
+let gora = { date: null, base: null, range: 40, price: 0, items: [], busy: false, map: null, layer: null, places: [], raw: {} };
 
 function openGora(date) {
     const trip = findTrip(tripOpenId);
@@ -698,7 +693,16 @@ function prefCode(addr) {
     return i >= 0 ? i + 1 : null;
 }
 
-async function goraCall(api, params) {
+// 현청 소재지 좌표(현 번호 = 배열 순번 + 1). 기준 위치에서 범위 안에 드는 현을 고를 때만 쓴다.
+const JP_PREF_CENTER = [[43.06,141.35],[40.82,140.74],[39.70,141.15],[38.27,140.87],[39.72,140.10],[38.24,140.36],[37.75,140.47],[36.34,140.45],[36.57,139.88],[36.39,139.06],[35.86,139.65],[35.61,140.12],[35.69,139.69],[35.45,139.64],[37.90,139.02],[36.70,137.21],[36.59,136.63],[36.07,136.22],[35.66,138.57],[36.65,138.18],[35.39,136.72],[34.98,138.38],[35.18,136.91],[34.73,136.51],[35.00,135.87],[35.02,135.76],[34.69,135.52],[34.69,135.18],[34.69,135.83],[34.23,135.17],[35.50,134.24],[35.47,133.05],[34.66,133.93],[34.40,132.46],[34.19,131.47],[34.07,134.56],[34.34,134.04],[33.84,132.77],[33.56,133.53],[33.61,130.42],[33.25,130.30],[32.74,129.87],[32.79,130.74],[33.24,131.61],[31.91,131.42],[31.56,130.56],[26.21,127.68]];
+const GORA_GAP = 400;            // 라쿠텐 한도(초당 1회 남짓)를 넘지 않게 요청 사이를 띄운다
+const GORA_GEO_TTL = 30 * 86400000;   // 골프장 위치는 한 달 동안 이 폰에 기억한다
+let goraLast = 0;
+
+async function goraCall(api, params, tries = 2) {
+    const wait = goraLast + GORA_GAP - Date.now();
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    goraLast = Date.now();
     const res = await fetch(`${SUPABASE_URL}/functions/v1/gora`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
@@ -708,6 +712,10 @@ async function goraCall(api, params) {
     if (res.status === 404) return { error: 'no_function' };
     if (out.error === 'not_configured') return { error: 'not_configured' };
     const data = out.data || {};
+    if (out.status === 429 && tries > 0) {   // 너무 빨리 물었다 — 잠깐 쉬고 다시
+        await new Promise(r => setTimeout(r, 1500));
+        return goraCall(api, params, tries - 1);
+    }
     if (out.error || data.error || (out.status && out.status >= 400)) {
         // 라쿠텐이 준 답을 **통째로** 적는다 — 판마다 오류 칸 이름이 달라(`error`·`errors`·`message`…)
         // 몇 개만 골라 적었더니 `403` 숫자 하나만 남아 무엇이 틀렸는지 알 수 없었다.
@@ -717,63 +725,129 @@ async function goraCall(api, params) {
         return { error: 'api', message: [out.status, out.message, out.error, detail.slice(0, 400)].filter(Boolean).join(' · ') };
     }
     const raw = data.Items || data.items || [];
-    return { items: raw.map(x => x && x.Item ? x.Item : x).filter(Boolean), count: data.count, pageCount: data.pageCount };
+    const items = raw.map(x => x && x.Item ? x.Item : x).filter(Boolean);
+    if (items[0] && !gora.raw[api]) gora.raw[api] = items[0];   // 문제를 알릴 때 보여 줄 원본 한 건
+    return { items, count: data.count, pageCount: data.pageCount };
 }
 
-// GORA 답에서 쓸 것만 골라 한 모양으로 맞춘다. 판(formatVersion)에 따라 감싸는 모양이 달라 둘 다 읽는다.
+// 위도·경도를 도(°)로 맞춘다. 라쿠텐은 API에 따라 초(″) 단위로 주기도 해서, 180을 넘으면 초로 본다.
+function goraDeg(v) {
+    const n = parseFloat(v);
+    if (!isFinite(n) || !n) return null;
+    return Math.abs(n) > 180 ? n / 3600 : n;
+}
+function goraGeoOf(raw) {
+    const lat = goraDeg(raw.latitude), lon = goraDeg(raw.longitude);
+    return lat !== null && lon !== null ? { lat, lon } : null;
+}
+// 예약 주소. `gr.g.rakuten.co.jp`(라쿠텐 안쪽 주소)는 폰에서 안 열려(사용자 제보) 건너뛴다.
+function goraUrl(...cands) {
+    return cands.find(u => typeof u === 'string' && /^https?:\/\//.test(u) && !/\/\/gr\.g\.rakuten\.co\.jp/.test(u)) || '';
+}
+// 마지막 그물 — 이름으로 GORA를 찾는 검색 주소는 늘 열린다.
+function goraSearchUrl(name) {
+    return `https://www.google.com/search?q=${encodeURIComponent('楽天GORA ' + name)}`;
+}
+
+// GORA 플랜 검색 답 한 건을 한 모양으로 맞춘다. 판(formatVersion)에 따라 감싸는 모양이 달라 둘 다 읽는다.
 function goraItem(raw) {
-    const lat = parseFloat(raw.latitude), lon = parseFloat(raw.longitude);
     const plans = (raw.planInfo || raw.plans || []).map(p => p && p.plan ? p.plan : p).filter(Boolean).map(p => {
         const call = Array.isArray(p.callInfo) ? p.callInfo[0] : (p.callInfo || {});
         return {
             name: p.planName || '', price: parseInt(p.price || p.basePrice, 10) || 0,
-            time: p.startTimeZone || '', round: p.round || '', lunch: p.lunch, cart: p.cart, caddie: p.caddie,
-            url: (call && (call.reservePageUrl || call.reservePageUrlMobile)) || p.planUrl || ''
+            time: p.startTimeZone || '',
+            url: goraUrl(call && call.reservePageUrlPC, call && call.reservePageUrl, call && call.reservePageUrlMobile, p.planUrl)
         };
     }).sort((a, b) => (a.price || 1e9) - (b.price || 1e9));
-    const url = (plans.find(p => /^https:\/\//.test(p.url)) || {}).url || raw.reserveCalUrl || raw.golfCourseDetailUrl || raw.golfCourseUrl || '';
     return {
         id: raw.golfCourseId, name: raw.golfCourseName || raw.golfCourseAbbr || '(이름 없음)', kana: raw.golfCourseNameKana || '',
-        address: raw.address || '', image: raw.golfCourseImageUrl || raw.golfCourseImageUrl1 || '',
-        rating: parseFloat(raw.evaluation) || 0,
-        geo: isFinite(lat) && isFinite(lon) && lat ? { lat, lon } : null,
-        plans, url: /^https:\/\//.test(url) ? url : ''
+        address: raw.address || '', rating: parseFloat(raw.evaluation) || 0,
+        geo: goraGeoOf(raw),
+        plans, url: goraUrl(raw.reserveCalUrl, raw.golfCourseDetailUrl, ...plans.map(p => p.url))
     };
 }
 
+// 현(pref) 하나의 골프장 위치표 — 플랜 검색 답에는 위치가 없어서, 골프장 검색으로 따로 받아 이 폰에 한 달 기억한다.
+async function goraCourseGeo(pref, tick) {
+    const key = 'jtfag_gora_geo_' + pref;
+    try {
+        const c = JSON.parse(localStorage.getItem(key) || 'null');
+        if (c && Date.now() - c.at < GORA_GEO_TTL && c.map && Object.keys(c.map).length) return c.map;
+    } catch (e) {}
+    const map = {};
+    for (let page = 1; page <= 10; page++) {
+        tick();
+        const r = await goraCall('course', { areaCode: pref, hits: 30, page });
+        if (r.error) break;
+        r.items.forEach(raw => {
+            if (!raw.golfCourseId) return;
+            const g = goraGeoOf(raw);
+            map[raw.golfCourseId] = { g: g ? [+g.lat.toFixed(5), +g.lon.toFixed(5)] : null, a: raw.address || '', u: goraUrl(raw.reserveCalUrl, raw.golfCourseDetailUrl) };
+        });
+        if (r.items.length < 30 || (r.pageCount && page >= r.pageCount)) break;
+    }
+    if (Object.keys(map).length) { try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), map })); } catch (e) {} }
+    return map;
+}
+
+async function basePref(base) {
+    if (base.pref) return base.pref;
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=8&accept-language=ko&lat=${base.lat}&lon=${base.lon}`);
+        if (res.ok) { const j = await res.json(); const p = prefCode(j.address); if (p) { base.pref = p; return p; } }
+    } catch (e) {}
+    // 못 찾으면 가장 가까운 현청 소재지로 본다.
+    let best = null;
+    JP_PREF_CENTER.forEach(([lat, lon], i) => { const km = kmBetween(base, { lat, lon }); if (!best || km < best.km) best = { km, p: i + 1 }; });
+    return best ? best.p : null;
+}
+
+// 위치로 묻는 칸을 라쿠텐이 무시해서(후쿠오카 기준인데 간토 골프장이 나왔다) **현 단위로 묻고 거리는 앱이 잰다.**
+// 범위 안에 드는 이웃 현까지 많아야 셋을 묻는다.
 async function searchGora() {
     if (!gora.base) { showToast('⚠️ 먼저 기준 위치를 골라 주세요.'); return; }
     if (gora.busy) return;
-    gora.busy = true; gora.items = []; gora.note = ''; gora.error = null; gora._searched = true;
+    gora.busy = true; gora.items = []; gora.note = ''; gora.error = null; gora._searched = true; gora.raw = {};
+    gora.progress = 0;
     renderGora();
-    const common = { playDate: gora.date, hits: 30, ...(gora.price ? { maxPrice: gora.price } : {}) };
-    let found = [], first = null;
+    const tick = () => { gora.progress++; const el = document.getElementById('goraProgress'); if (el) el.textContent = `라쿠텐 GORA에 묻는 중… (${gora.progress})`; };
     try {
-        // 1) 위치로 묻는다. 2) 답이 없거나 그 칸을 모르면 그 지역(현)으로 묻고 거리는 여기서 잰다.
-        for (let page = 1; page <= GORA_PAGES; page++) {
-            const r = await goraCall('plan', { ...common, latitude: gora.base.lat.toFixed(5), longitude: gora.base.lon.toFixed(5), searchRange: gora.range, page });
-            if (page === 1) first = r;
-            if (r.error) break;
-            found = found.concat(r.items);
-            if (r.items.length < 30 || (r.pageCount && page >= r.pageCount)) break;
-        }
-        if (first && (first.error === 'not_configured' || first.error === 'no_function')) { gora.error = first; return; }
-        const pref = gora.base.pref || null;
-        if (!found.length && pref) {
+        const home = await basePref(gora.base);
+        if (!home) { gora.error = { error: 'api', message: '기준 위치가 어느 현인지 알 수 없습니다. 지도에서 다시 골라 주세요.' }; return; }
+        const prefs = [home, ...JP_PREF_CENTER.map(([lat, lon], i) => ({ p: i + 1, km: kmBetween(gora.base, { lat, lon }) }))
+            .filter(x => x.p !== home && x.km <= gora.range + 50).sort((a, b) => a.km - b.km).map(x => x.p)].slice(0, 3);
+        const common = { playDate: gora.date, hits: 30, ...(gora.price ? { maxPrice: gora.price } : {}) };
+        let found = [], firstErr = null;
+        for (const pref of prefs) {
             for (let page = 1; page <= GORA_PAGES; page++) {
+                tick();
                 const r = await goraCall('plan', { ...common, areaCode: pref, page });
-                if (r.error) { if (!first || !first.error) first = r; break; }
-                found = found.concat(r.items);
+                if (r.error) { firstErr = firstErr || r; break; }
+                found = found.concat(r.items.map(x => ({ raw: x, pref })));
                 if (r.items.length < 30 || (r.pageCount && page >= r.pageCount)) break;
             }
-            gora.note = '지역 전체에서 찾아 거리로 걸렀습니다.';
+            if (firstErr && (firstErr.error === 'not_configured' || firstErr.error === 'no_function')) { gora.error = firstErr; return; }
         }
-        if (!found.length && first && first.error) { gora.error = first; return; }
+        if (!found.length && firstErr) { gora.error = firstErr; return; }
+        const geoBy = {};
+        for (const pref of [...new Set(found.map(f => f.pref))]) geoBy[pref] = await goraCourseGeo(pref, tick);
         const seen = new Set();
-        gora.items = found.map(goraItem).filter(it => { const k = it.id || it.name; if (seen.has(k)) return false; seen.add(k); return true; })
+        gora.items = found.map(({ raw, pref }) => {
+            const it = goraItem(raw);
+            const g = (geoBy[pref] || {})[raw.golfCourseId];
+            if (g) {
+                if (!it.geo && g.g) it.geo = { lat: g.g[0], lon: g.g[1] };
+                if (!it.address) it.address = g.a;
+                it.url = goraUrl(g.u, it.url);
+            }
+            if (!it.url) it.url = goraSearchUrl(it.name);
+            return it;
+        }).filter(it => { const k = it.id || it.name; if (seen.has(k)) return false; seen.add(k); return true; })
             .map(it => ({ ...it, km: it.geo ? kmBetween(gora.base, it.geo) : null }))
-            .filter(it => it.km === null || it.km <= gora.range * 1.05)
+            .filter(it => it.km === null ? true : it.km <= gora.range * 1.05)
             .sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9));
+        const unknown = gora.items.filter(it => it.km === null).length;
+        if (unknown) gora.note = `위치를 모르는 ${unknown}곳은 맨 아래에 둡니다`;
     } catch (e) {
         gora.error = { error: 'network', message: String(e && e.message || e) };
     } finally {
@@ -783,19 +857,31 @@ async function searchGora() {
     }
 }
 
+function toggleGoraRaw() {
+    const el = document.getElementById('goraRaw');
+    if (!el) return;
+    if (el.style.display === 'block') { el.style.display = 'none'; return; }
+    let txt = '';
+    try { txt = JSON.stringify(gora.raw, null, 1).slice(0, 2500); } catch (e) { txt = String(e); }
+    el.textContent = txt || '(아직 받은 답이 없습니다)';
+    el.style.display = 'block';
+}
+
 function renderGoraResult() {
     const box = document.getElementById('goraResult');
     if (!box) return;
     const e = gora.error;
+    const rawLink = `<div class="gora-raw-row"><button type="button" class="gora-raw-btn" onclick="toggleGoraRaw()">🔧 라쿠텐 원본 답 보기 (문제 알릴 때)</button><pre id="goraRaw" class="gora-raw"></pre></div>`;
     if (e) {
-        box.innerHTML = e.error === 'not_configured' || e.error === 'no_function'
+        box.innerHTML = (e.error === 'not_configured' || e.error === 'no_function'
             ? `<div class="gora-setup"><b>아직 라쿠텐과 연결되지 않았습니다.</b><br>라쿠텐 앱 등록과 Supabase 설정이 한 번 필요합니다(설명서 <code>docs/일본골프장찾기.md</code>). 설정이 끝나면 이 단추가 바로 됩니다.</div>`
-            : `<div class="gora-setup">라쿠텐에서 답을 받지 못했습니다.<br><small>${escapeHtml(e.message || e.error)}</small></div>`;
+            : `<div class="gora-setup">라쿠텐에서 답을 받지 못했습니다.<br><small>${escapeHtml(e.message || e.error)}</small></div>`) + rawLink;
         return;
     }
-    if (gora.busy) { box.innerHTML = '<div class="gora-hint">라쿠텐 GORA에 묻는 중…</div>'; return; }
-    if (!gora.items.length) { box.innerHTML = gora.base && gora._searched ? '<div class="gora-hint">그날 예약 가능한 곳이 없습니다. 범위나 금액을 넓혀 보세요.</div>' : ''; return; }
-    box.innerHTML = `<div class="gora-hint">${gora.items.length}곳 · 가까운 순${gora.note ? ' · ' + escapeHtml(gora.note) : ''}</div>` + gora.items.map((it, i) => {
+    if (gora.busy) { box.innerHTML = `<div class="gora-hint" id="goraProgress">라쿠텐 GORA에 묻는 중…</div><div class="gora-hint">처음 찾는 지역은 골프장 위치까지 받느라 10~20초 걸립니다.</div>`; return; }
+    if (!gora.items.length) { box.innerHTML = gora.base && gora._searched ? '<div class="gora-hint">그날 예약 가능한 곳이 없습니다. 범위나 금액을 넓혀 보세요. (예약은 보통 두세 달 앞까지 열립니다)</div>' + rawLink : ''; return; }
+    box.innerHTML = `<div class="gora-hint">${gora.items.length}곳 · 가까운 순${gora.note ? ' · ' + escapeHtml(gora.note) : ''}</div>
+        <div class="gora-tip">💡 예약 페이지는 일본어입니다. 열린 화면의 메뉴(<b>≡</b> 또는 주소창의 <b>가가</b>)에서 <b>번역 → 한국어</b>를 누르면 한국어로 보입니다.</div>` + gora.items.map((it, i) => {
         const low = it.plans.find(p => p.price);
         const times = [...new Set(it.plans.map(p => p.time).filter(Boolean))].slice(0, 3).join(', ');
         return `
@@ -811,11 +897,11 @@ function renderGoraResult() {
             ${times ? `<div class="gora-item-meta">🕐 ${escapeHtml(times)}</div>` : ''}
             ${it.address ? `<div class="gora-item-meta addr">${escapeHtml(it.address)}</div>` : ''}
             <div class="trip-actions">
-                ${it.url ? `<a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">🎫 예약 (원문)</a><a class="trip-btn" href="${escapeHtml(translateUrl(it.url))}" target="_blank" rel="noopener">🇰🇷 한국어로</a>` : ''}
+                <a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">🎫 GORA에서 예약</a>
                 <button type="button" class="trip-btn primary" onclick="pickGoraCourse(${i})">이 날로 정하기</button>
             </div>
         </div>`;
-    }).join('');
+    }).join('') + rawLink;
 }
 
 function pickGoraCourse(i) {
@@ -829,7 +915,7 @@ function pickGoraCourse(i) {
         d.course = it.name;
         if (area && !d.area) d.area = area;
         if (it.geo) { d.lat = +it.geo.lat.toFixed(5); d.lon = +it.geo.lon.toFixed(5); } else { delete d.lat; delete d.lon; }
-        d.gora = { id: it.id || null, url: it.url || '' };
+        d.gora = { id: it.id || null, url: /google\.com\/search/.test(it.url) ? '' : (it.url || '') };
     }, `✅ ${isoLabel(date)} 골프장을 정했습니다. 예약은 GORA에서 해 주세요.`);
     if (ok) { closeGora(); renderTripModal(); renderTripCard(); }
 }
