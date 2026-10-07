@@ -223,18 +223,19 @@ function startNewTrip() { tripEditing = 'new'; renderTripModal(); }
 
 function newTripHtml() {
     const start = isoAdd(kstToday(), 14);
-    const opts = Array.from({ length: TRIP_MAX_DAYS }, (_, i) => `<option value="${i + 1}"${i === 2 ? ' selected' : ''}>${i + 1}일</option>`).join('');
+    const end = isoAdd(start, 2);
     return `
         <div class="trip-day editing">
             <div class="trip-day-head">🧳 새 여행 만들기</div>
-            <label class="trip-field">여행 이름<input type="text" id="tripNewTitle" maxlength="30" placeholder="예: 11월 지바 골프 여행"></label>
+            <label class="trip-field">여행 이름<input type="text" id="tripNewTitle" maxlength="30"></label>
             <div class="trip-field">어디로?
                 <div class="trip-kind-row">${Object.entries(TRIP_KINDS).map(([k, v], i) => `<label class="trip-kind"><input type="radio" name="tripNewKind" value="${k}"${i === 0 ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>
             </div>
             <div class="trip-two">
-                <label class="trip-field">첫날<input type="date" id="tripNewStart" value="${start}"></label>
-                <label class="trip-field">며칠<select id="tripNewDays">${opts}</select></label>
+                <label class="trip-field">첫날<input type="date" id="tripNewStart" value="${start}" onchange="tripNewDatesChanged('start')"></label>
+                <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripNewDatesChanged('end')"></label>
             </div>
+            <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
             <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 고치기</b>로 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
@@ -243,14 +244,41 @@ function newTripHtml() {
         </div>`;
 }
 
+// 두 날짜 사이 날수(같은 날이면 0). 한국 날짜 글자(YYYY-MM-DD)끼리 견준다 — 기기 시간대와 무관하다.
+function isoDiff(a, b) { return Math.round((Date.UTC(...b.split('-').map((x, i) => i === 1 ? x - 1 : +x)) - Date.UTC(...a.split('-').map((x, i) => i === 1 ? x - 1 : +x))) / 864e5); }
+function tripSpanText(start, end) {
+    if (!ISO_RE.test(start) || !ISO_RE.test(end)) return '';
+    const n = isoDiff(start, end) + 1;
+    return n >= 1 ? `${n - 1}박 ${n}일 · ${isoLabel(start, true)} ~ ${isoLabel(end, true)}` : '';
+}
+// 첫날을 옮기면 마지막날이 따라간다(날수 그대로). 마지막날은 첫날 앞으로도, 14일 넘게도 못 간다.
+function tripNewDatesChanged(which) {
+    const s = document.getElementById('tripNewStart'), e = document.getElementById('tripNewEnd');
+    if (!s || !e || !ISO_RE.test(s.value)) return;
+    if (which === 'start') {
+        const keep = ISO_RE.test(e.dataset.prevStart || '') && ISO_RE.test(e.value) ? isoDiff(e.dataset.prevStart, e.value) : 2;
+        e.value = isoAdd(s.value, Math.min(TRIP_MAX_DAYS - 1, Math.max(0, keep)));
+    }
+    if (!ISO_RE.test(e.value) || e.value < s.value) e.value = s.value;
+    if (isoDiff(s.value, e.value) > TRIP_MAX_DAYS - 1) e.value = isoAdd(s.value, TRIP_MAX_DAYS - 1);
+    e.min = s.value; e.max = isoAdd(s.value, TRIP_MAX_DAYS - 1);
+    e.dataset.prevStart = s.value;
+    const span = document.getElementById('tripNewSpan');
+    if (span) span.textContent = tripSpanText(s.value, e.value);
+}
+
 function createTrip() {
     const title = (document.getElementById('tripNewTitle').value || '').trim();
     const start = document.getElementById('tripNewStart').value;
-    const n = Math.min(TRIP_MAX_DAYS, Math.max(1, parseInt(document.getElementById('tripNewDays').value, 10) || 1));
+    const end = document.getElementById('tripNewEnd').value;
     const kindEl = document.querySelector('input[name="tripNewKind"]:checked');
     const kind = kindEl && TRIP_KINDS[kindEl.value] ? kindEl.value : 'domestic';
     if (!title) { showToast('⚠️ 여행 이름을 적어 주세요.'); return; }
     if (!ISO_RE.test(start)) { showToast('⚠️ 첫날을 골라 주세요.'); return; }
+    if (!ISO_RE.test(end)) { showToast('⚠️ 마지막날을 골라 주세요.'); return; }
+    if (end < start) { showToast('⚠️ 마지막날이 첫날보다 앞입니다.'); return; }
+    const n = isoDiff(start, end) + 1;
+    if (n > TRIP_MAX_DAYS) { showToast(`⚠️ 여행은 ${TRIP_MAX_DAYS}일까지 만들 수 있어요.`); return; }
     const trip = {
         id: 'trip-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
         title, kind, memo: '',
@@ -378,10 +406,10 @@ function tripDayHtml(trip, d, i, today) {
         return `
         <div class="trip-day editing">
             <div class="trip-day-head"><span class="trip-day-no">${i + 1}일차</span> ${isoLabel(d.date)}</div>
-            <label class="trip-field">⛳ 골프장<input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' placeholder="이름을 치면 목록이 뜹니다" onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
+            <label class="trip-field">⛳ 골프장<input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
             ${kind === 'domestic' ? '<div id="tripCourseResults" class="course-results" style="display:none;"></div>' : ''}
-            <label class="trip-field">📍 지역<input type="text" id="tripEdArea" maxlength="20" placeholder="예: 여수 · 지바" value="${escapeHtml(d.area)}"></label>
-            <label class="trip-field">🕐 티오프<input type="text" id="tripEdTee" maxlength="20" placeholder="예: 오전 7:30" value="${escapeHtml(d.tee)}"></label>
+            <label class="trip-field">📍 지역<input type="text" id="tripEdArea" maxlength="20" value="${escapeHtml(d.area)}"></label>
+            <label class="trip-field">🕐 티오프<input type="text" id="tripEdTee" maxlength="20" value="${escapeHtml(d.tee)}"></label>
             <label class="trip-field">🏨 숙소<input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>
             <label class="trip-field">📝 메모<textarea id="tripEdMemo" rows="2" maxlength="200">${escapeHtml(d.memo)}</textarea></label>
             <div class="trip-actions">
@@ -442,7 +470,7 @@ function renderTripModal() {
     const memo = tripEditing === 'memo' ? `
         <div class="trip-day editing">
             <div class="trip-day-head">📋 공통 메모</div>
-            <label class="trip-field"><textarea id="tripEdTripMemo" rows="4" maxlength="500" placeholder="준비물, 정산 방법, 항공편 등">${escapeHtml(trip.memo)}</textarea></label>
+            <label class="trip-field"><textarea id="tripEdTripMemo" rows="4" maxlength="500">${escapeHtml(trip.memo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripMemo()">저장</button>
@@ -557,8 +585,23 @@ let gora = { date: null, base: null, range: 40, price: 0, items: [], all: [], bu
 // 다시 묻지 않고 그 자리에서 목록이 바뀐다. 플랜마다 `lunch`·`playerNumMin`·`assu2sum`이 온다.
 const GORA_OPTS = [
     { key: 'two', label: '👥 2인 가능', tag: '2인', test: p => p.two },
-    { key: 'lunch', label: '🍱 점심 포함', tag: '점심', test: p => p.lunch }
+    { key: 'lunch', label: '🍱 점심 포함', tag: '점심', test: p => p.lunch },
+    { key: 'no9', label: '⛳ 9홀 제외', tag: '', test: p => !p.half }
 ];
+// 9홀(하프) 플랜 · 9홀짜리 골프장. 라쿠텐에 정해진 칸이 없어 이름과 `round` 값으로 가린다.
+// `ハーフ` 하나만으로 보지 말 것 — 18홀 플랜에도 `ハーフ休憩`(9홀 끝나고 쉬는 시간)·`ハーフ後`가 흔히 붙는다.
+const HALF_RE = /ハーフ(ラウンド|プレー|プレイ|のみ|プラン|コース|R)|(^|[^0-9０-９])(9|９)\s*(H|Ｈ|ホール|holes?)|0\.5\s*R|9홀|하프/i;
+function goraHalf(p) {
+    const r = p.round;
+    if (typeof r === 'number' && r > 0 && r < 1) return true;
+    if (typeof r === 'string' && (/^\s*ハーフ|0\.5/.test(r) || /^\s*(9|９)\s*(H|ホール)?\s*$/i.test(r))) return true;
+    return HALF_RE.test(String(p.planName || ''));
+}
+function goraNine(raw) {
+    const n = parseInt(raw.holeCount ?? raw.holes ?? raw.hole, 10);
+    if (n === 9) return true;
+    return /(^|[^0-9０-９])(9|９)\s*(H|Ｈ|ホール)|ショートコース|ハーフコース/i.test(String(raw.golfCourseName || ''));
+}
 // 외국인(한국인)을 안 받는 골프장 — 라쿠텐에 따로 칸이 없어 **답에 적힌 글**에서 찾는다(플랜·골프장 검색 답 통째로).
 // 적혀 있는 것만 잡히므로 '확실히 받는다'는 뜻이 아니다. 화면에도 그렇게 적는다.
 const FOREIGN_NO = /外国(人|籍)[^。\n"]{0,30}?(不可|お断り|ご遠慮|受け?付け?(でき|致しかね|いたしかね|不可)|NG|できません)|日本人(の方)?(のみ|限定)|日本国籍|日本語(が|を)?[^。\n"]{0,10}?(話せ|理解|できる|可能な)[^。\n"]{0,6}?方(のみ|限定|に限)|Japanese (speakers?|residents?|nationals?) only|no foreign/i;
@@ -584,7 +627,7 @@ function goraHour(v) {
 }
 // 플랜 이름에 자주 나오는 말만 한글로 바꾼다(나머지는 일본어 그대로 — 예약 화면과 맞춰 보는 데 쓴다).
 const PLAN_WORDS = [['2サム保証', '2인 확약'], ['２サム保証', '2인 확약'], ['2サム', '2인'], ['昼食付き', '점심 포함'], ['昼食付', '점심 포함'], ['昼食', '점심'], ['乗用カート', '카트'], ['カート付', '카트 포함'],
-    ['キャディ付き', '캐디 포함'], ['キャディ付', '캐디 포함'], ['キャディ', '캐디'], ['セルフ', '셀프'], ['スループレー', '스루 플레이'], ['ハーフ', '하프'], ['1ドリンク', '음료 1잔'], ['ドリンク', '음료'],
+    ['キャディ付き', '캐디 포함'], ['キャディ付', '캐디 포함'], ['キャディ', '캐디'], ['セルフ', '셀프'], ['スループレー', '스루 플레이'], ['ハーフラウンド', '9홀 라운드'], ['ハーフプレー', '9홀 플레이'], ['ハーフ休憩あり', '9홀 후 휴식'], ['ハーフ休憩', '9홀 후 휴식'], ['休憩', '휴식'], ['ハーフ', '하프'], ['1ドリンク', '음료 1잔'], ['ドリンク', '음료'],
     ['平日', '평일'], ['土日祝', '주말·공휴일'], ['土日', '주말'], ['早朝', '이른 아침'], ['午前', '오전'], ['午後', '오후'], ['薄暮', '해질녘'], ['限定', '한정'], ['割引', '할인'], ['特典', '혜택'],
     ['お得', '알뜰'], ['プラン', '플랜'], ['ポイント', '포인트'], ['付き', ' 포함'], ['付', ' 포함']];
 function koPlan(name) {
@@ -593,7 +636,7 @@ function koPlan(name) {
     return s.replace(/【/g, '[').replace(/】/g, '] ').replace(/\s+/g, ' ').trim();
 }
 function goraPlanTags(p) {
-    return [p.hour !== undefined ? `${p.hour}시대` : '', p.two ? '2인' : '', p.lunch ? '점심' : ''].filter(Boolean);
+    return [p.hour !== undefined ? `${p.hour}시대` : '', p.half ? '9홀' : '', p.two ? '2인' : '', p.lunch ? '점심' : ''].filter(Boolean);
 }
 // 켜 둔 조건으로 gora.all → gora.items. 라쿠텐 답에 그 칸이 아예 없으면 거르지 않고 알린다(다 지워 버리면 고장으로 보인다).
 function goraApply() {
@@ -608,7 +651,8 @@ function goraApply() {
     const filtering = usable.length || (gora.time && timeOk);
     gora.items = gora.all.map(it => ({ ...it, fit: filtering ? it.plans.filter(fits) : it.plans }))
         .filter(it => !filtering || it.fit.length)
-        .filter(it => !gora.opts.foreign || it.foreign !== 'no');
+        .filter(it => !gora.opts.foreign || it.foreign !== 'no')
+        .filter(it => !gora.opts.no9 || !it.nine);
     gora.fnote = missing.length ? `라쿠텐 답에 '${missing.join(', ')}' 정보가 없어 그 조건으로는 거르지 못했습니다` : '';
     gora.hidden = gora.all.length - gora.items.length;
 }
@@ -649,7 +693,7 @@ function renderGora() {
     top.innerHTML = `
         <div class="gora-date">📅 ${gora.date ? isoLabel(gora.date) : ''}에 칠 곳</div>
         <div class="trip-field">📍 기준 위치 (숙소·역·지역)
-            <div class="gora-search"><input type="text" id="goraPlace" maxlength="60" placeholder="예: 신주쿠, Narita, 東京駅" value="${gora.base ? escapeHtml(gora.base.name) : ''}" onkeydown="if(event.key==='Enter'){event.preventDefault();findGoraPlace();}"><button type="button" class="trip-btn" onclick="findGoraPlace()">찾기</button></div>
+            <div class="gora-search"><input type="text" id="goraPlace" maxlength="60" value="${gora.base ? escapeHtml(gora.base.name) : ''}" onkeydown="if(event.key==='Enter'){event.preventDefault();findGoraPlace();}"><button type="button" class="trip-btn" onclick="findGoraPlace()">찾기</button></div>
         </div>
         <div id="goraPlaces"></div>
         <div class="gora-hint">${gora.base ? `기준: <b>${escapeHtml(gora.base.name)}</b> · 지도의 빈 곳을 눌러 바꿀 수 있어요` : '이름으로 찾거나 아래 지도를 눌러 기준 위치를 고르세요.'}</div>`;
@@ -967,14 +1011,14 @@ function goraItem(raw) {
             name: p.planName || '', price: parseInt(p.price || p.basePrice, 10) || 0,
             time: p.startTimeZone || '', hour: goraHour(p.startTimeZone),
             two: (() => { const a = goraFlag(p.assu2sum); const n = parseInt(p.playerNumMin, 10); return a || (isFinite(n) ? n <= 2 : a); })(),
-            lunch: goraFlag(p.lunch),
+            lunch: goraFlag(p.lunch), half: goraHalf(p),
             url: goraUrl(call && call.reservePageUrlPC, call && call.reservePageUrl, call && call.reservePageUrlMobile, p.planUrl)
         };
     }).sort((a, b) => (a.price || 1e9) - (b.price || 1e9));
     return {
         id: raw.golfCourseId, name: raw.golfCourseName || raw.golfCourseAbbr || '(이름 없음)', kana: raw.golfCourseNameKana || '',
         address: raw.address || '', rating: parseFloat(raw.evaluation) || 0,
-        geo: goraGeoOf(raw), foreign: goraForeign(raw),
+        geo: goraGeoOf(raw), foreign: goraForeign(raw), nine: goraNine(raw),
         plans, url: goraUrl(raw.reserveCalUrl, raw.golfCourseDetailUrl, ...plans.map(p => p.url))
     };
 }
