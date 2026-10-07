@@ -580,7 +580,7 @@ function renderGora() {
             <div class="gora-search"><input type="text" id="goraPlace" maxlength="60" placeholder="예: 신주쿠, Narita, 東京駅" value="${gora.base ? escapeHtml(gora.base.name) : ''}" onkeydown="if(event.key==='Enter'){event.preventDefault();findGoraPlace();}"><button type="button" class="trip-btn" onclick="findGoraPlace()">찾기</button></div>
         </div>
         <div id="goraPlaces"></div>
-        <div class="gora-hint">${gora.base ? `기준: <b>${escapeHtml(gora.base.name)}</b> · 지도를 누르면 바꿀 수 있어요` : '이름으로 찾거나 아래 지도를 눌러 기준 위치를 고르세요.'}</div>`;
+        <div class="gora-hint">${gora.base ? `기준: <b>${escapeHtml(gora.base.name)}</b> · 지도의 빈 곳을 눌러 바꿀 수 있어요` : '이름으로 찾거나 아래 지도를 눌러 기준 위치를 고르세요.'}</div>`;
     bottom.innerHTML = `
         <div class="trip-field">범위 (직선거리)<div class="trip-chips">${GORA_RANGES.map(r => chip(gora.range === r, `${r}km <small>차로 ~${driveMinutes(r)}분</small>`, `setGoraRange(${r})`)).join('')}</div></div>
         <div class="trip-field">1인 최대 금액<div class="trip-chips">${GORA_PRICES.map(p => chip(gora.price === p, p ? `¥${p.toLocaleString()}` : '상관없음', `setGoraPrice(${p})`)).join('')}</div></div>
@@ -620,7 +620,7 @@ function drawGoraMap() {
         gora.map = L.map(box, { zoomControl: true, attributionControl: true }).setView([35.68, 139.76], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '© OpenStreetMap' }).addTo(gora.map);
         gora.layer = L.layerGroup().addTo(gora.map);
-        gora.map.on('click', e => setGoraBase({ name: `지도에서 고른 곳 (${e.latlng.lat.toFixed(3)}, ${e.latlng.lng.toFixed(3)})`, lat: e.latlng.lat, lon: e.latlng.lng }));
+        gora.map.on('click', onGoraMapClick);
     }
 }
 
@@ -631,7 +631,8 @@ function paintGoraMap() {
     const pts = [];
     if (gora.base) {
         L.circle([gora.base.lat, gora.base.lon], { radius: gora.range * 1000, color: '#0f766e', weight: 1, fillOpacity: 0.05 }).addTo(gora.layer);
-        L.marker([gora.base.lat, gora.base.lon], { icon: L.divIcon({ className: 'gora-pin base', html: '🏨', iconSize: [28, 28] }) }).addTo(gora.layer);
+        // 숙소는 눌리지 않게 하고 골프장 번호 밑에 깐다 — 가까운 골프장 번호를 가려 눌리지 않았다.
+        L.marker([gora.base.lat, gora.base.lon], { icon: L.divIcon({ className: 'gora-pin base', html: '🏨', iconSize: [28, 28] }), interactive: false, zIndexOffset: -1000 }).addTo(gora.layer);
         pts.push([gora.base.lat, gora.base.lon]);
     }
     gora.items.forEach((it, i) => {
@@ -646,6 +647,28 @@ function paintGoraMap() {
     else if (pts.length === 1) gora.map.setView(pts[0], 10);
 }
 
+// 지도를 누르면 — 번호 가까이(손가락 크기 안)면 그 골프장으로 간다. 번호는 24px라 손가락이 살짝 빗나가면
+// 지도 누르기로 잡혀 **기준 위치가 그 자리로 옮겨졌다**(사용자 제보). 그래서 빈 곳을 눌러도 곧바로 바꾸지 않고
+// `여기를 기준 위치로` 단추를 띄워 한 번 더 누르게 한다. 기준 위치가 아직 없을 때만 바로 정한다.
+const GORA_PIN_REACH = 32;   // px — 이 안이면 번호를 누른 것으로 본다
+function onGoraMapClick(e) {
+    let best = null;
+    (gora.markers || []).forEach((m, i) => {
+        if (!m) return;
+        const d = gora.map.latLngToContainerPoint(m.getLatLng()).distanceTo(e.containerPoint);
+        if (d <= GORA_PIN_REACH && (!best || d < best.d)) best = { i, d };
+    });
+    if (best) { goraJumpTo(best.i); return; }
+    const lat = +e.latlng.lat.toFixed(5), lon = +e.latlng.lng.toFixed(5);
+    if (!gora.base) { goraBaseHere(lat, lon); return; }
+    L.popup({ className: 'gora-here-pop', offset: [0, -4] }).setLatLng(e.latlng)
+        .setContent(`<button type="button" class="gora-here" onclick="goraBaseHere(${lat}, ${lon})">📍 여기를 기준 위치로</button>`)
+        .openOn(gora.map);
+}
+function goraBaseHere(lat, lon) {
+    if (gora.map) gora.map.closePopup();
+    setGoraBase({ name: `지도에서 고른 곳 (${lat.toFixed(3)}, ${lon.toFixed(3)})`, lat, lon });
+}
 // 지도의 번호 → 목록의 그 골프장을 화면 맨 위로 올리고 반짝인다(사용자 요청).
 function goraJumpTo(i) {
     const row = document.getElementById('goraItem' + i);
