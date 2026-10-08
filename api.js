@@ -501,7 +501,7 @@ async function checkWeather(text) {
         return;
     }
 
-    weatherText.textContent = `${targetCourse} 날씨 확인중...`;
+    weatherText.textContent = `${targetCourse} 날씨 조회 중...`;
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=16`;
         const res = await fetch(url);

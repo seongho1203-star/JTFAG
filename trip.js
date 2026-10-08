@@ -22,7 +22,7 @@ const TRIP_SEED = {
     memo: ''
 };
 
-const TRIP_KINDS = { domestic: '🇰🇷 국내', japan: '🇯🇵 일본', abroad: '🌏 그 밖의 해외' };
+const TRIP_KINDS = { domestic: '🇰🇷 국내', japan: '🇯🇵 일본', abroad: '🌏 기타 해외' };
 const TRIP_MAX_DAYS = 14;
 
 // 처음 한 번만 넣는다. `undefined`일 때만 — 누가 지워서 빈 배열이 되면 다시 안 넣는다.
@@ -68,7 +68,7 @@ function tripNotifyText() {
     const before = list.filter(n => n > 0).map(n => `${n}일 전`);
     const parts = [];
     if (before.length) parts.push(`출발 ${before.join('·')}`);
-    if (list.includes(0)) parts.push('여행 중 매일');
+    if (list.includes(0)) parts.push('여행 기간 중 매일');
     return `🔔 알림: ${parts.join(' · ')} 아침`;
 }
 function findTrip(id) { return allTrips().find(t => t.id === id) || null; }
@@ -96,7 +96,7 @@ function renderTripCard() {
     const trip = up[0];
     if (!trip) {
         card.classList.add('slim');
-        card.innerHTML = `<div class="trip-card-top"><span class="trip-card-title">🧳 여행</span><span class="trip-card-more">＋ 새 여행 만들기 ›</span></div>`;
+        card.innerHTML = `<div class="trip-card-top"><span class="trip-card-title">🧳 여행</span><span class="trip-card-more">＋ 새 여행 등록 ›</span></div>`;
         card.onclick = () => openTripModal(null, 'new');
         return;
     }
@@ -282,7 +282,7 @@ function showRoutePicker(t) {
     el.innerHTML = `<div class="route-sheet">
         <div class="route-title">🚗 ${escapeHtml(t.pick.name || '목적지')} 길찾기</div>
         ${apps.map(a => `<button type="button" class="route-app" onclick="pickRouteApp('${a.id}')">${a.label}${a.id === last ? ' <small>지난번</small>' : ''}</button>`).join('')}
-        <div class="route-note">폰에 없는 앱을 고르면 카카오맵 웹으로 열려요</div>
+        <div class="route-note">설치되지 않은 앱을 선택하면 카카오맵 웹으로 연결됩니다</div>
         <button type="button" class="route-app cancel" onclick="closeRoutePicker()">취소</button>
     </div>`;
     document.body.appendChild(el);
@@ -327,20 +327,20 @@ function newTripHtml() {
     const end = isoAdd(start, 2);
     return `
         <div class="trip-day editing">
-            <div class="trip-day-head">🧳 새 여행 만들기</div>
-            <label class="trip-field">여행 이름<input type="text" id="tripNewTitle" maxlength="30"></label>
-            <div class="trip-field">어디로?
+            <div class="trip-day-head">🧳 새 여행 등록</div>
+            <label class="trip-field">여행명<input type="text" id="tripNewTitle" maxlength="30"></label>
+            <div class="trip-field">여행 구분
                 <div class="trip-kind-row">${Object.entries(TRIP_KINDS).map(([k, v], i) => `<label class="trip-kind"><input type="radio" name="tripNewKind" value="${k}"${i === 0 ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>
             </div>
             <div class="trip-two">
-                <label class="trip-field">첫날<input type="date" id="tripNewStart" value="${start}" onchange="tripDatesChanged('start')"></label>
-                <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
+                <label class="trip-field">출발일<input type="date" id="tripNewStart" value="${start}" onchange="tripDatesChanged('start')"></label>
+                <label class="trip-field">종료일<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">일자별 골프장·티오프·숙소는 생성 후 <b>✏️ 입력</b>에서, 항공·렌트카는 <b>🧭 교통·숙소</b>에서 입력합니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
+            <div class="trip-hint">일자별 골프장·티오프·숙소는 등록 후 <b>✏️ 입력</b>에서, 항공·렌트카는 <b>🧭 교통·숙소</b>에서 입력합니다. 일본 여행은 일자별로 <b>🔎 일본 골프장 찾기</b>가 제공됩니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
-                <button type="button" class="trip-btn primary" onclick="createTrip()">만들기</button>
+                <button type="button" class="trip-btn primary" onclick="createTrip()">등록</button>
             </div>
         </div>`;
 }
@@ -375,12 +375,12 @@ function createTrip() {
     const end = document.getElementById('tripNewEnd').value;
     const kindEl = document.querySelector('input[name="tripNewKind"]:checked');
     const kind = kindEl && TRIP_KINDS[kindEl.value] ? kindEl.value : 'domestic';
-    if (!title) { showToast('⚠️ 여행 이름을 적어 주세요.'); return; }
-    if (!ISO_RE.test(start)) { showToast('⚠️ 첫날을 골라 주세요.'); return; }
-    if (!ISO_RE.test(end)) { showToast('⚠️ 마지막날을 골라 주세요.'); return; }
-    if (end < start) { showToast('⚠️ 마지막날이 첫날보다 앞입니다.'); return; }
+    if (!title) { showToast('⚠️ 여행명을 입력해 주세요.'); return; }
+    if (!ISO_RE.test(start)) { showToast('⚠️ 출발일을 선택해 주세요.'); return; }
+    if (!ISO_RE.test(end)) { showToast('⚠️ 종료일을 선택해 주세요.'); return; }
+    if (end < start) { showToast('⚠️ 종료일이 출발일보다 빠릅니다.'); return; }
     const n = isoDiff(start, end) + 1;
-    if (n > TRIP_MAX_DAYS) { showToast(`⚠️ 여행은 ${TRIP_MAX_DAYS}일까지 만들 수 있어요.`); return; }
+    if (n > TRIP_MAX_DAYS) { showToast(`⚠️ 여행은 ${TRIP_MAX_DAYS}일까지 등록할 수 있습니다.`); return; }
     const trip = {
         id: 'trip-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
         title, kind, memo: '',
@@ -392,7 +392,7 @@ function createTrip() {
     syncToSupabase(appData);
     tripOpenId = trip.id;
     tripEditing = null;
-    showToast(`✅ ${title}을(를) 만들었습니다.`);
+    showToast(`✅ ${title}을(를) 등록했습니다.`);
     renderTripModal();
     renderTripCard();
 }
@@ -403,28 +403,28 @@ function settingsHtml(trip) {
     const end = days.length ? days[days.length - 1].date : start;
     return `
         <div class="trip-day editing">
-            <div class="trip-day-head">⚙️ 여행 고치기</div>
-            <label class="trip-field">여행 이름<input type="text" id="tripSetTitle" maxlength="30" value="${escapeHtml(trip.title)}"></label>
-            <div class="trip-field">어디로?
+            <div class="trip-day-head">⚙️ 여행 수정</div>
+            <label class="trip-field">여행명<input type="text" id="tripSetTitle" maxlength="30" value="${escapeHtml(trip.title)}"></label>
+            <div class="trip-field">여행 구분
                 <div class="trip-kind-row">${Object.entries(TRIP_KINDS).map(([k, v]) => `<label class="trip-kind"><input type="radio" name="tripSetKind" value="${k}"${tripKind(trip) === k ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>
             </div>
             <div class="trip-two">
-                <label class="trip-field">첫날<input type="date" id="tripSetStart" value="${start}" onchange="tripDatesChanged('start', 'tripSet')"></label>
-                <label class="trip-field">마지막날<input type="date" id="tripSetEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" data-prev-start="${start}" onchange="tripDatesChanged('end', 'tripSet')"></label>
+                <label class="trip-field">출발일<input type="date" id="tripSetStart" value="${start}" onchange="tripDatesChanged('start', 'tripSet')"></label>
+                <label class="trip-field">종료일<input type="date" id="tripSetEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" data-prev-start="${start}" onchange="tripDatesChanged('end', 'tripSet')"></label>
             </div>
             <div class="trip-hint" id="tripSetSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">날짜를 옮기면 날마다 적어 둔 골프장·티오프·숙소는 <b>1일차부터 차례대로</b> 따라갑니다.</div>
+            <div class="trip-hint">일정을 변경하면 일자별 골프장·티오프·숙소 정보는 <b>1일차부터 순서대로</b> 이동합니다.</div>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripSettings()">저장</button>
             </div>
-            <div class="trip-actions"><button type="button" class="trip-btn danger" onclick="deleteTrip()">🗑️ 이 여행 지우기</button></div>
+            <div class="trip-actions"><button type="button" class="trip-btn danger" onclick="deleteTrip()">🗑️ 여행 삭제</button></div>
         </div>`;
 }
 
 // 고치는 동안 들어온 남의 저장을 덮지 않게, 늘 지금 appData에서 다시 찾아 고친다.
 function editTrip(mutate, msg) {
-    if (!findTrip(tripOpenId)) { showToast('⚠️ 그 여행을 찾지 못했습니다. 다시 열어 주세요.'); tripEditing = null; renderTripModal(); return false; }
+    if (!findTrip(tripOpenId)) { showToast('⚠️ 해당 여행을 찾을 수 없습니다. 다시 열어 주세요.'); tripEditing = null; renderTripModal(); return false; }
     saveState();
     const t = findTrip(tripOpenId);
     if (mutate(t) === false) { historyStack.pop(); return false; }
@@ -442,17 +442,17 @@ async function saveTripSettings() {
     const kind = kindEl && TRIP_KINDS[kindEl.value] ? kindEl.value : 'domestic';
     const start = (document.getElementById('tripSetStart') || {}).value || '';
     const end = (document.getElementById('tripSetEnd') || {}).value || '';
-    if (!title) { showToast('⚠️ 여행 이름을 적어 주세요.'); return; }
-    if (!ISO_RE.test(start) || !ISO_RE.test(end)) { showToast('⚠️ 첫날과 마지막날을 골라 주세요.'); return; }
-    if (end < start) { showToast('⚠️ 마지막날이 첫날보다 앞입니다.'); return; }
+    if (!title) { showToast('⚠️ 여행명을 입력해 주세요.'); return; }
+    if (!ISO_RE.test(start) || !ISO_RE.test(end)) { showToast('⚠️ 출발일과 종료일을 선택해 주세요.'); return; }
+    if (end < start) { showToast('⚠️ 종료일이 출발일보다 빠릅니다.'); return; }
     const n = isoDiff(start, end) + 1;
-    if (n > TRIP_MAX_DAYS) { showToast(`⚠️ 여행은 ${TRIP_MAX_DAYS}일까지 만들 수 있어요.`); return; }
+    if (n > TRIP_MAX_DAYS) { showToast(`⚠️ 여행은 ${TRIP_MAX_DAYS}일까지 등록할 수 있습니다.`); return; }
     const trip = findTrip(tripOpenId);
     if (!trip) return;
     const old = tripDays(trip);
     const datesChanged = !old.length || old[0].date !== start || old.length !== n;
     const dropped = old.slice(n).filter(dayFilled);
-    if (datesChanged && dropped.length && !await showConfirmPrompt(`날짜가 줄어 <b>${dropped.map(d => `${old.indexOf(d) + 1}일차`).join(', ')}</b> 일정이 빠집니다.<br><span style="font-weight:500;color:#6b7075;">적어 둔 골프장·메모도 함께 사라집니다.</span>`, '바꾸기')) return;
+    if (datesChanged && dropped.length && !await showConfirmPrompt(`일정이 단축되어 <b>${dropped.map(d => `${old.indexOf(d) + 1}일차`).join(', ')}</b> 일정이 삭제됩니다.<br><span style="font-weight:500;color:#6b7075;">입력된 골프장·메모도 함께 삭제됩니다.</span>`, '변경')) return;
     if (trip.title !== title || tripKind(trip) !== kind || datesChanged) {
         editTrip(t => {
             t.title = title; t.kind = kind;
@@ -460,20 +460,20 @@ async function saveTripSettings() {
                 const cur = tripDays(t);   // 묻는 사이 남이 고쳤을 수 있어 지금 것을 다시 읽는다
                 t.days = Array.from({ length: n }, (_, i) => ({ ...(cur[i] || { course: '', area: '', tee: '', stay: '', memo: '' }), date: isoAdd(start, i) }));
             }
-        }, datesChanged ? `✅ ${tripSpanText(start, end)}로 바꿨습니다.` : '✅ 저장했습니다.');
+        }, datesChanged ? `✅ ${tripSpanText(start, end)}(으)로 변경했습니다.` : '✅ 저장했습니다.');
     }
     tripEditing = null; renderTripModal(); renderTripCard();
 }
 async function deleteTrip() {
     const trip = findTrip(tripOpenId);
     if (!trip) return;
-    if (!await showConfirmPrompt(`<b>${escapeHtml(trip.title)}</b>을(를) 지울까요?<br><span style="font-weight:500;color:#6b7075;">일정·메모가 모두 사라집니다. 바로 뒤라면 ↩️ 되돌리기로 살릴 수 있습니다.</span>`, '지우기')) return;
+    if (!await showConfirmPrompt(`<b>${escapeHtml(trip.title)}</b>을(를) 삭제할까요?<br><span style="font-weight:500;color:#6b7075;">일정·메모가 모두 삭제됩니다. 직후에는 ↩️ 되돌리기로 복구할 수 있습니다.</span>`, '삭제')) return;
     const id = trip.id;
     if (!findTrip(id)) return;
     saveState();
     appData.trips = (appData.trips || []).filter(t => !t || t.id !== id);
     syncToSupabase(appData);
-    showToast('🗑️ 여행을 지웠습니다.');
+    showToast('🗑️ 여행을 삭제했습니다.');
     tripOpenId = (activeTrip() || allTrips()[0] || {}).id || null;
     tripEditing = tripOpenId ? null : 'new';
     renderTripModal(); renderTripCard();
@@ -489,7 +489,7 @@ function tripCourseSuggest(browse) {
     if (!box || !input || typeof searchCourses !== 'function') return;
     const { group, list } = searchCourses(browse ? '' : input.value);
     box.innerHTML = `<div class="course-group">${group}</div>` +
-        (list.length ? '' : `<div class="course-empty">찾는 곳이 없으면 이름을 그대로 쓰면 됩니다.</div>`);
+        (list.length ? '' : `<div class="course-empty">검색 결과가 없으면 골프장명을 직접 입력하세요.</div>`);
     list.forEach(name => {
         const b = document.createElement('button');
         b.type = 'button';
@@ -652,7 +652,7 @@ function tripDayHtml(trip, d, i, today) {
             <div class="trip-row"><span class="k">🏨 숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}</span></div>
             ${d.memo ? `<div class="trip-memo">${escapeHtml(d.memo)}</div>` : ''}
             ${d.course ? wx : ''}
-            ${kind === 'japan' && !past ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (바꾸기)' : ''}</button></div>` : ''}
+            ${kind === 'japan' && !past ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (변경)' : ''}</button></div>` : ''}
             ${gora ? `<div class="trip-actions">
                 <a class="trip-btn" href="${escapeHtml(gora)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
             </div>` : ''}
@@ -682,7 +682,7 @@ function renderTripModal() {
     const left = days.length ? isoDiff(today, days[0].date) : 0;
     const head = days.length ? `
         <div class="trip-summary">
-            <div class="trip-summary-top"><b>${isoLabel(days[0].date)} ~ ${isoLabel(days[days.length - 1].date)}</b><button type="button" class="trip-gear" onclick="editTripSettings()" title="여행 고치기">⚙️</button></div>
+            <div class="trip-summary-top"><b>${isoLabel(days[0].date)} ~ ${isoLabel(days[days.length - 1].date)}</b><button type="button" class="trip-gear" onclick="editTripSettings()" title="여행 수정">⚙️</button></div>
             <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''}</div>
             <div class="trip-summary-sub">${tripNotifyText()}</div>
         </div>` : '';
@@ -699,7 +699,7 @@ function renderTripModal() {
         </div>` : `
         <div class="trip-day">
             <div class="trip-day-head">📋 공통 메모</div>
-            <div class="trip-memo${trip.memo ? '' : ' empty'}">${trip.memo ? escapeHtml(trip.memo) : '준비물·정산 방법 등을 적어 두세요.'}</div>
+            <div class="trip-memo${trip.memo ? '' : ' empty'}">${trip.memo ? escapeHtml(trip.memo) : '준비물·정산 방법 등을 입력하세요.'}</div>
             <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripMemo()">✏️ 입력</button></div>
         </div>`;
 
@@ -718,7 +718,7 @@ function saveTripDay(date) {
     const trip = findTrip(tripOpenId);
     const day = trip && tripDays(trip).find(d => d.date === date);
     tripEditing = null;
-    if (!day) { showToast('⚠️ 그 날짜를 찾지 못했습니다. 다시 열어 주세요.'); renderTripModal(); return; }
+    if (!day) { showToast('⚠️ 해당 일자를 찾을 수 없습니다. 다시 열어 주세요.'); renderTripModal(); return; }
     const changed = Object.keys(next).some(k => (day[k] || '') !== next[k]);
     if (changed) editTrip(t => {
         const target = t.days.find(d => d.date === date);
@@ -746,11 +746,11 @@ const tripWeatherBusy = {};
 
 function tripWeatherHtml(d) {
     const geo = dayGeo(d);
-    if (!geo) return `🌤️ 날씨: 골프장 위치를 몰라 예보를 못 봅니다`;
+    if (!geo) return `🌤️ 날씨: 골프장 위치 정보가 없어 예보를 조회할 수 없습니다`;
     const left = isoDiff(kstToday(), d.date);
-    if (left > 15) return `🌤️ 날씨: 예보는 ${isoLabel(isoAdd(d.date, -15))}부터 나와요`;
+    if (left > 15) return `🌤️ 날씨: 예보는 ${isoLabel(isoAdd(d.date, -15))}부터 조회됩니다`;
     const hit = tripWeather[`${geo.lat},${geo.lon}|${d.date}`];
-    return hit ? hit.html : `🌤️ 날씨 확인중...`;
+    return hit ? hit.html : `🌤️ 날씨 조회 중...`;
 }
 
 async function loadTripWeather(d) {
@@ -767,19 +767,19 @@ async function loadTripWeather(d) {
         const res = await fetch(url);
         if (!res.ok) {
             if (res.status === 429) weatherBlockedUntil = Date.now() + WEATHER_COOLDOWN;
-            paint('🌤️ 날씨를 불러오지 못했습니다.');
+            paint('🌤️ 날씨 정보를 불러오지 못했습니다.');
             return;
         }
         const data = await res.json();
         const idx = data.daily && data.daily.time ? data.daily.time.indexOf(d.date) : -1;
-        if (idx < 0) { paint('🌤️ 날씨를 불러오지 못했습니다.'); return; }
+        if (idx < 0) { paint('🌤️ 날씨 정보를 불러오지 못했습니다.'); return; }
         const info = weatherIcon(data.daily.weathercode[idx]);
         const rain = data.daily.precipitation_probability_max ? data.daily.precipitation_probability_max[idx] : null;
         const html = `${info.i} ${info.d} · ${Math.round(data.daily.temperature_2m_min[idx])}°~${Math.round(data.daily.temperature_2m_max[idx])}°${rain != null ? ` · 강수 ${rain}%` : ''}`;
         tripWeather[key] = { html, at: Date.now() };
         paint(html);
     } catch (e) {
-        paint('🌤️ 날씨를 불러오지 못했습니다.');
+        paint('🌤️ 날씨 정보를 불러오지 못했습니다.');
     } finally {
         delete tripWeatherBusy[key];
     }
@@ -833,7 +833,7 @@ function goraForeign(raw) {
     return FOREIGN_NO.test(t) ? 'no' : FOREIGN_OK.test(t) ? 'yes' : '';
 }
 const GORA_FOREIGN = { key: 'foreign', label: '🇰🇷 외국인 제한 없는 곳' };
-const GORA_TIMES = [['', '상관없음'], ['am', '🌅 오전 (~11시)'], ['pm', '🌇 오후 (11시~)']];
+const GORA_TIMES = [['', '전체'], ['am', '🌅 오전 (~11시)'], ['pm', '🌇 오후 (11시~)']];
 function goraLoadOpts() { try { const o = JSON.parse(localStorage.getItem('jtfag_gora_opts') || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
 function goraFlag(v) {
     if (v === undefined || v === null || v === '') return undefined;
@@ -934,7 +934,7 @@ function goraApply() {
         .filter(it => !filtering || it.fit.length)
         .filter(it => !gora.opts.foreign || it.foreign !== 'no')
         .filter(it => !gora.opts.no9 || !it.nine);
-    gora.fnote = missing.length ? `라쿠텐 답에 '${missing.join(', ')}' 정보가 없어 그 조건으로는 거르지 못했습니다` : '';
+    gora.fnote = missing.length ? `라쿠텐 응답에 '${missing.join(', ')}' 정보가 없어 해당 조건은 적용되지 않았습니다` : '';
     gora.hidden = gora.all.length - gora.items.length;
 }
 function toggleGoraOpt(key) {
@@ -972,18 +972,18 @@ function renderGora() {
     if (!top || !bottom) return;
     const chip = (on, label, fn) => `<button type="button" class="trip-chip${on ? ' on' : ''}" onclick="${fn}">${label}</button>`;
     top.innerHTML = `
-        <div class="gora-date">📅 ${gora.date ? isoLabel(gora.date) : ''}에 칠 곳</div>
+        <div class="gora-date">📅 ${gora.date ? isoLabel(gora.date) : ''} 라운드 골프장</div>
         <div class="trip-field">📍 기준 위치 (숙소·역·지역)
             <div class="gora-search"><input type="text" id="goraPlace" maxlength="60" value="${gora.base ? escapeHtml(gora.base.name) : ''}" onkeydown="if(event.key==='Enter'){event.preventDefault();findGoraPlace();}"><button type="button" class="trip-btn" onclick="findGoraPlace()">찾기</button></div>
         </div>
         <div id="goraPlaces"></div>
-        <div class="gora-hint">${gora.base ? `기준: <b>${escapeHtml(gora.base.name)}</b> · 지도의 빈 곳을 눌러 바꿀 수 있어요` : '이름으로 찾거나 아래 지도를 눌러 기준 위치를 고르세요.'}</div>`;
+        <div class="gora-hint">${gora.base ? `기준: <b>${escapeHtml(gora.base.name)}</b> · 지도의 빈 곳을 눌러 변경할 수 있습니다` : '명칭으로 검색하거나 아래 지도를 눌러 기준 위치를 지정하세요.'}</div>`;
     bottom.innerHTML = `
         <div class="trip-field">범위 (직선거리)<div class="trip-chips">${GORA_RANGES.map(r => chip(gora.range === r, `${r}km <small>차로 ~${driveMinutes(r)}분</small>`, `setGoraRange(${r})`)).join('')}</div></div>
-        <div class="trip-field">1인 최대 금액<div class="trip-chips">${GORA_PRICES.map(p => chip(gora.price === p, p ? `¥${p.toLocaleString()}` : '상관없음', `setGoraPrice(${p})`)).join('')}</div></div>
-        <div class="trip-field">조건 <small class="gora-sub">여러 개 고를 수 있어요 · 찾은 뒤에 바꿔도 바로 걸러져요</small><div class="trip-chips">${[...GORA_OPTS, GORA_FOREIGN].map(o => chip(!!gora.opts[o.key], o.label, `toggleGoraOpt('${o.key}')`)).join('')}</div>${gora.opts.foreign ? '<div class="gora-hint">라쿠텐에 \'외국인 불가\'처럼 적힌 곳만 뺍니다. 안 적힌 곳도 예약 화면의 안내를 한 번 보세요.</div>' : ''}</div>
+        <div class="trip-field">1인 최대 금액<div class="trip-chips">${GORA_PRICES.map(p => chip(gora.price === p, p ? `¥${p.toLocaleString()}` : '전체', `setGoraPrice(${p})`)).join('')}</div></div>
+        <div class="trip-field">조건 <small class="gora-sub">복수 선택 가능 · 검색 후 변경해도 즉시 적용됩니다</small><div class="trip-chips">${[...GORA_OPTS, GORA_FOREIGN].map(o => chip(!!gora.opts[o.key], o.label, `toggleGoraOpt('${o.key}')`)).join('')}</div>${gora.opts.foreign ? '<div class="gora-hint">라쿠텐에 \'외국인 불가\' 등으로 명시된 곳만 제외합니다. 명시되지 않은 곳도 예약 화면의 안내를 확인하세요.</div>' : ''}</div>
         <div class="trip-field">시작 시간<div class="trip-chips">${GORA_TIMES.map(([v, l]) => chip(gora.time === v, l, `setGoraTime('${v}')`)).join('')}</div></div>
-        <div class="trip-actions"><button type="button" class="trip-btn primary" onclick="searchGora()"${gora.busy ? ' disabled' : ''}>${gora.busy ? '찾는 중…' : '⛳ 그날 예약 가능한 골프장 찾기'}</button></div>
+        <div class="trip-actions"><button type="button" class="trip-btn primary" onclick="searchGora()"${gora.busy ? ' disabled' : ''}>${gora.busy ? '검색 중…' : '⛳ 해당일 예약 가능 골프장 검색'}</button></div>
         <div id="goraResult"></div>`;
     renderGoraPlaces();
     renderGoraResult();
@@ -1070,7 +1070,7 @@ function onGoraMapClick(e) {
 }
 function goraBaseHere(lat, lon) {
     if (gora.map) gora.map.closePopup();
-    setGoraBase({ name: `지도에서 고른 곳 (${lat.toFixed(3)}, ${lon.toFixed(3)})`, lat, lon });
+    setGoraBase({ name: `지도 지정 위치 (${lat.toFixed(3)}, ${lon.toFixed(3)})`, lat, lon });
 }
 // 지도의 번호 → 목록의 그 골프장을 화면 맨 위로 올리고 반짝인다(사용자 요청).
 function goraJumpTo(i) {
@@ -1111,9 +1111,9 @@ function openGoraLink(url) {
 // 기준 위치는 OpenStreetMap의 이름 찾기(Nominatim)로 찾는다. 열쇠가 필요 없다(가끔만 쓰는 정도면 된다).
 async function findGoraPlace() {
     const q = ((document.getElementById('goraPlace') || {}).value || '').trim();
-    if (!q) { showToast('⚠️ 숙소나 지역 이름을 적어 주세요.'); return; }
+    if (!q) { showToast('⚠️ 숙소 또는 지역명을 입력해 주세요.'); return; }
     const box = document.getElementById('goraPlaces');
-    if (box) box.innerHTML = '<div class="gora-hint">찾는 중…</div>';
+    if (box) box.innerHTML = '<div class="gora-hint">검색 중…</div>';
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=jp&accept-language=ko&q=${encodeURIComponent(q)}`);
         if (!res.ok) throw new Error(res.status);
@@ -1123,10 +1123,10 @@ async function findGoraPlace() {
             full: p.display_name || '', lat: parseFloat(p.lat), lon: parseFloat(p.lon),
             pref: prefCode(p.address)
         })).filter(p => isFinite(p.lat) && isFinite(p.lon));
-        if (!gora.places.length && box) { box.innerHTML = '<div class="gora-hint">못 찾았습니다. 영어·일본어로도 쳐 보거나 지도를 눌러 고르세요.</div>'; return; }
+        if (!gora.places.length && box) { box.innerHTML = '<div class="gora-hint">검색 결과가 없습니다. 영어·일본어로 검색하거나 지도에서 지정하세요.</div>'; return; }
         renderGoraPlaces();
     } catch (e) {
-        if (box) box.innerHTML = '<div class="gora-hint">위치 찾기에 실패했습니다. 지도를 눌러 고를 수도 있어요.</div>';
+        if (box) box.innerHTML = '<div class="gora-hint">위치 검색에 실패했습니다. 지도에서 직접 지정할 수 있습니다.</div>';
     }
 }
 function renderGoraPlaces() {
@@ -1362,15 +1362,15 @@ async function basePref(base) {
 // 위치로 묻는 칸을 라쿠텐이 무시해서(후쿠오카 기준인데 간토 골프장이 나왔다) **현 단위로 묻고 거리는 앱이 잰다.**
 // 범위 안에 드는 이웃 현까지 많아야 셋을 묻는다.
 async function searchGora() {
-    if (!gora.base) { showToast('⚠️ 먼저 기준 위치를 골라 주세요.'); return; }
+    if (!gora.base) { showToast('⚠️ 먼저 기준 위치를 지정해 주세요.'); return; }
     if (gora.busy) return;
     gora.busy = true; gora.seq = (gora.seq || 0) + 1; gora.items = []; gora.all = []; gora.note = ''; gora.error = null; gora._searched = true; gora.raw = {};
     gora.progress = 0;
     renderGora();
-    const tick = () => { gora.progress++; const el = document.getElementById('goraProgress'); if (el) el.textContent = `라쿠텐 GORA에 묻는 중… (${gora.progress})`; };
+    const tick = () => { gora.progress++; const el = document.getElementById('goraProgress'); if (el) el.textContent = `라쿠텐 GORA 조회 중… (${gora.progress})`; };
     try {
         const home = await basePref(gora.base);
-        if (!home) { gora.error = { error: 'api', message: '기준 위치가 어느 현인지 알 수 없습니다. 지도에서 다시 골라 주세요.' }; return; }
+        if (!home) { gora.error = { error: 'api', message: '기준 위치의 현(県)을 확인할 수 없습니다. 지도에서 다시 지정해 주세요.' }; return; }
         const prefs = [home, ...JP_PREF_CENTER.map(([lat, lon], i) => ({ p: i + 1, km: kmBetween(gora.base, { lat, lon }) }))
             .filter(x => x.p !== home && x.km <= gora.range + 50).sort((a, b) => a.km - b.km).map(x => x.p)].slice(0, 3);
         const common = { playDate: gora.date, hits: 30, ...(gora.price ? { maxPrice: gora.price } : {}) };
@@ -1407,7 +1407,7 @@ async function searchGora() {
             .filter(it => it.km === null ? true : it.km <= gora.range * 1.05)
             .sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9));
         const unknown = gora.items.filter(it => it.km === null).length;
-        if (unknown) gora.note = `위치를 모르는 ${unknown}곳은 맨 아래에 둡니다`;
+        if (unknown) gora.note = `위치 정보가 없는 ${unknown}곳은 하단에 표시합니다`;
         gora.all = gora.items;
         goraApply();
     } catch (e) {
@@ -1426,7 +1426,7 @@ function toggleGoraRaw() {
     if (el.style.display === 'block') { el.style.display = 'none'; return; }
     let txt = '';
     try { txt = JSON.stringify(gora.raw, null, 1).slice(0, 2500); } catch (e) { txt = String(e); }
-    el.textContent = txt || '(아직 받은 답이 없습니다)';
+    el.textContent = txt || '(수신된 응답이 없습니다)';
     el.style.display = 'block';
 }
 
@@ -1434,19 +1434,19 @@ function renderGoraResult() {
     const box = document.getElementById('goraResult');
     if (!box) return;
     const e = gora.error;
-    const rawLink = `<div class="gora-raw-row"><button type="button" class="gora-raw-btn" onclick="toggleGoraRaw()">🔧 라쿠텐 원본 답 보기 (문제 알릴 때)</button><pre id="goraRaw" class="gora-raw"></pre></div>`;
+    const rawLink = `<div class="gora-raw-row"><button type="button" class="gora-raw-btn" onclick="toggleGoraRaw()">🔧 라쿠텐 원본 응답 보기 (오류 확인용)</button><pre id="goraRaw" class="gora-raw"></pre></div>`;
     if (e) {
         box.innerHTML = (e.error === 'not_configured' || e.error === 'no_function'
-            ? `<div class="gora-setup"><b>아직 라쿠텐과 연결되지 않았습니다.</b><br>라쿠텐 앱 등록과 Supabase 설정이 한 번 필요합니다(설명서 <code>docs/일본골프장찾기.md</code>). 설정이 끝나면 이 단추가 바로 됩니다.</div>`
-            : `<div class="gora-setup">라쿠텐에서 답을 받지 못했습니다.<br><small>${escapeHtml(e.message || e.error)}</small></div>`) + rawLink;
+            ? `<div class="gora-setup"><b>아직 라쿠텐과 연결되지 않았습니다.</b><br>라쿠텐 앱 등록과 Supabase 설정이 필요합니다(설명서 <code>docs/일본골프장찾기.md</code>). 설정 완료 후 바로 사용할 수 있습니다.</div>`
+            : `<div class="gora-setup">라쿠텐 응답을 받지 못했습니다.<br><small>${escapeHtml(e.message || e.error)}</small></div>`) + rawLink;
         return;
     }
-    if (gora.busy) { box.innerHTML = `<div class="gora-hint" id="goraProgress">라쿠텐 GORA에 묻는 중…</div><div class="gora-hint">처음 찾는 지역은 골프장 위치까지 받느라 10~20초 걸립니다.</div>`; return; }
-    if (!gora.items.length && gora.all.length) { box.innerHTML = `<div class="gora-hint">조건에 맞는 곳이 없습니다 — 찾은 ${gora.all.length}곳이 모두 조건 때문에 빠졌어요. 위의 조건을 줄여 보세요.</div>${gora.fnote ? `<div class="gora-hint">${escapeHtml(gora.fnote)}</div>` : ''}` + rawLink; return; }
-    if (!gora.items.length) { box.innerHTML = gora.base && gora._searched ? '<div class="gora-hint">그날 예약 가능한 곳이 없습니다. 범위나 금액을 넓혀 보세요. (예약은 보통 두세 달 앞까지 열립니다)</div>' + rawLink : ''; return; }
-    box.innerHTML = `<div class="gora-hint">${gora.items.length}곳 · 가까운 순${gora.hidden ? ` · 조건에 안 맞는 ${gora.hidden}곳은 뺐어요` : ''}${gora.note ? ' · ' + escapeHtml(gora.note) : ''}</div>
+    if (gora.busy) { box.innerHTML = `<div class="gora-hint" id="goraProgress">라쿠텐 GORA 조회 중…</div><div class="gora-hint">처음 조회하는 지역은 골프장 위치 정보 수신으로 10~20초 소요됩니다.</div>`; return; }
+    if (!gora.items.length && gora.all.length) { box.innerHTML = `<div class="gora-hint">조건에 맞는 골프장이 없습니다. 검색된 ${gora.all.length}곳이 모두 조건에서 제외되었습니다. 조건을 완화해 보세요.</div>${gora.fnote ? `<div class="gora-hint">${escapeHtml(gora.fnote)}</div>` : ''}` + rawLink; return; }
+    if (!gora.items.length) { box.innerHTML = gora.base && gora._searched ? '<div class="gora-hint">해당일 예약 가능한 골프장이 없습니다. 범위나 금액 조건을 넓혀 보세요. (예약은 통상 2~3개월 전부터 가능합니다)</div>' + rawLink : ''; return; }
+    box.innerHTML = `<div class="gora-hint">${gora.items.length}곳 · 거리순${gora.hidden ? ` · 조건 미충족 ${gora.hidden}곳 제외` : ''}${gora.note ? ' · ' + escapeHtml(gora.note) : ''}</div>
         ${gora.fnote ? `<div class="gora-hint warn">${escapeHtml(gora.fnote)}</div>` : ''}
-        <div class="gora-tip">💡 지도의 번호를 누르면 그 골프장으로, 목록의 번호를 누르면 지도로 갑니다.<br>예약 페이지는 ${IS_IOS ? '<b>사파리</b>로 열립니다. 주소창 왼쪽 <b>가가</b> → <b>번역 → 한국어</b>' : '일본어입니다. 브라우저 메뉴의 <b>번역 → 한국어</b>'}를 누르면 한국어로 보입니다.</div>` + gora.items.map((it, i) => {
+        <div class="gora-tip">💡 지도의 번호를 누르면 해당 골프장 목록으로, 목록의 번호를 누르면 지도 위치로 이동합니다.<br>예약 페이지는 ${IS_IOS ? '<b>사파리</b>로 열립니다. 주소창 왼쪽 <b>가가</b> → <b>번역 → 한국어</b>' : '일본어입니다. 브라우저 메뉴의 <b>번역 → 한국어</b>'}를 선택하면 한국어로 표시됩니다.</div>` + gora.items.map((it, i) => {
         const plans = it.fit || it.plans;
         const low = plans.find(p => p.price);
         const shown = plans.slice(0, 3);
@@ -1493,6 +1493,6 @@ function pickGoraCourse(i) {
         if (area && !d.area) d.area = area;
         if (it.geo) { d.lat = +it.geo.lat.toFixed(5); d.lon = +it.geo.lon.toFixed(5); } else { delete d.lat; delete d.lon; }
         d.gora = { id: it.id || null, url: /google\.com\/search/.test(it.url) ? '' : (it.url || ''), ...(it.ko ? { ja: it.name } : {}) };
-    }, `✅ ${isoLabel(date)} 골프장을 정했습니다. 예약은 GORA에서 해 주세요.`);
+    }, `✅ ${isoLabel(date)} 골프장을 지정했습니다. 예약은 GORA에서 진행해 주세요.`);
     if (ok) { closeGora(); renderTripModal(); renderTripCard(); }
 }

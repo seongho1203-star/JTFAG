@@ -192,7 +192,7 @@ function resolveNames(players, names) {
     players.forEach(p => {
         const hit = matchGolfer(p.name, names);
         if (!hit) return;
-        if (taken.has(hit)) throw new Error(`${hit}이(가) 사진에 두 번 나옵니다. 이름을 못 가리겠습니다.`);
+        if (taken.has(hit)) throw new Error(`${hit}이(가) 사진에 두 번 나옵니다. 이름을 식별할 수 없습니다.`);
         assigned.set(p, hit); taken.add(hit);
     });
 
@@ -206,7 +206,7 @@ function resolveNames(players, names) {
 
     const ambiguous = rest.filter(p => cands.get(p).length > 1);
     if (ambiguous.length) {
-        throw new Error(`"${ambiguous.map(p => p.name).join('", "')}"이(가) 누구인지 가릴 수 없습니다.`);
+        throw new Error(`"${ambiguous.map(p => p.name).join('", "')}"이(가) 누구인지 식별할 수 없습니다.`);
     }
 
     rest.forEach(p => {
@@ -214,8 +214,8 @@ function resolveNames(players, names) {
         if (list.length === 0) { if (squeeze(p.name)) skipped.push(String(p.name).trim()); return; }
         const golfer = list[0];
         if (taken.has(golfer)) {
-            throw new Error(`"${p.name}"이(가) ${golfer}인지 아닌지 가릴 수 없습니다. `
-                + `성이 같은 사람이 둘 있으면 이름이 다 보이는 화면으로 다시 올려주세요.`);
+            throw new Error(`"${p.name}"이(가) ${golfer}인지 식별할 수 없습니다. `
+                + `성이 같은 인원이 있으면 이름이 모두 표시된 화면으로 다시 업로드해 주세요.`);
         }
         assigned.set(p, golfer); taken.add(golfer);
     });
@@ -247,7 +247,7 @@ function pullOutGuest(players, par, guest) {
     let hits = players.filter(p => p.total === total);
 
     if (hits.length === 0) {
-        throw new Error(`게스트 타수로 적은 ${total}타인 사람이 사진에 없습니다. `
+        throw new Error(`입력한 게스트 타수(${total}타)와 일치하는 인원이 사진에 없습니다. `
             + `읽힌 합계: ${players.map(p => p.total).join(', ')}`);
     }
 
@@ -256,8 +256,8 @@ function pullOutGuest(players, par, guest) {
         if (birdies !== null && birdies !== undefined) keys.push('버디');
         if (pars !== null && pars !== undefined) keys.push('파');
         if (keys.length === 0) {
-            throw new Error(`${total}타가 ${hits.length}명이라 누가 게스트인지 가릴 수 없습니다. `
-                + `게스트의 버디·파 개수도 함께 적어 다시 올려주세요.`);
+            throw new Error(`${total}타가 ${hits.length}명이어서 게스트를 식별할 수 없습니다. `
+                + `게스트의 버디·파 개수를 함께 입력해 다시 업로드해 주세요.`);
         }
 
         const narrowed = hits.filter(p => {
@@ -274,7 +274,7 @@ function pullOutGuest(players, par, guest) {
                 return c ? `버디 ${c.birdies}·파 ${c.pars}` : '판독 불가';
             }).join(' / ');
             throw new Error(`${total}타가 ${hits.length}명인데 ${keys.join('·')} 개수로도 `
-                + `${narrowed.length === 0 ? '맞는 사람이 없습니다' : '하나로 좁혀지지 않습니다'}. `
+                + `${narrowed.length === 0 ? '일치하는 인원이 없습니다' : '1명으로 특정되지 않습니다'}. `
                 + `사진 속 ${total}타: ${seen}`);
         }
         hits = narrowed;
@@ -288,9 +288,9 @@ function pullOutGuest(players, par, guest) {
 function validate(read, names, guest) {
     const par = read.par;
     if (!Array.isArray(par) || par.length !== HOLES) throw new Error(`파가 ${Array.isArray(par) ? par.length : 0}홀만 읽혔습니다.`);
-    if (par.some(p => !Number.isInteger(p) || p < 3 || p > 6)) throw new Error('파에 이상한 값이 있습니다.');
+    if (par.some(p => !Number.isInteger(p) || p < 3 || p > 6)) throw new Error('파 값에 오류가 있습니다.');
     const parSum = par.reduce((a, b) => a + b, 0);
-    if (parSum < 68 || parSum > 74) throw new Error(`파 합계가 ${parSum}입니다. 판독이 어긋난 것 같습니다.`);
+    if (parSum < 68 || parSum > 74) throw new Error(`파 합계가 ${parSum}입니다. 판독 오류로 보입니다.`);
 
     const players = Array.isArray(read.players) ? read.players : [];
     const readNames = players.map(p => String(p.name || '').trim()).filter(Boolean);
@@ -299,7 +299,7 @@ function validate(read, names, guest) {
     // 그러면 각 줄의 합계는 다 맞아 앞의 검산을 통과해 버린다 —
     // 실제로 게스트(100타)가 박승수로 기록된 적이 있어 넣은 검사다.
     if (read.playerCount !== players.length) {
-        throw new Error(`사진에는 ${read.playerCount}명이 있는데 ${players.length}명이 읽혔습니다. `
+        throw new Error(`사진에는 ${read.playerCount}명이나 ${players.length}명만 판독되었습니다. `
             + `읽은 이름: ${readNames.join(', ') || '없음'}`);
     }
 
@@ -323,17 +323,17 @@ function validate(read, names, guest) {
         if (!name) return;
         const strokes = p.strokes;
         if (!Array.isArray(strokes) || strokes.length !== HOLES) throw new Error(`${name}: ${Array.isArray(strokes) ? strokes.length : 0}홀만 읽혔습니다.`);
-        if (strokes.some(s => !Number.isInteger(s) || s < 1 || s > 15)) throw new Error(`${name}: 타수에 이상한 값이 있습니다.`);
+        if (strokes.some(s => !Number.isInteger(s) || s < 1 || s > 15)) throw new Error(`${name}: 타수 값에 오류가 있습니다.`);
         const sum = strokes.reduce((a, b) => a + b, 0);
-        if (sum !== p.total) throw new Error(`${name}: 18홀 합 ${sum}타인데 카드에 적힌 합계는 ${p.total}타입니다.`);
-        if (sum < 50 || sum > 160) throw new Error(`${name}: 합계가 ${sum}타입니다. 판독이 어긋난 것 같습니다.`);
+        if (sum !== p.total) throw new Error(`${name}: 18홀 합계 ${sum}타가 카드 기재 합계 ${p.total}타와 다릅니다.`);
+        if (sum < 50 || sum > 160) throw new Error(`${name}: 합계가 ${sum}타입니다. 판독 오류로 보입니다.`);
         rel[name] = strokes.map((s, i) => s - par[i]);
     });
 
     // 못 찾았을 땐 사진에서 뭐라고 읽혔는지 같이 알려 준다. 이게 없으면 원인을 못 찾는다.
     const missing = names.filter(n => !rel[n]);
     if (missing.length) {
-        throw new Error(`${missing.join(', ')}의 기록을 못 찾았습니다. `
+        throw new Error(`${missing.join(', ')}의 기록을 찾을 수 없습니다. `
             + `사진에서 읽은 이름: ${readNames.length ? readNames.join(', ') : '없음'}`);
     }
 
@@ -428,7 +428,7 @@ function removeRoundBlock(source, round) {
     const body = source.slice(objOpen + 1, objClose);
     const keyRe = new RegExp(`\\n[ \\t]*"${round}"\\s*:\\s*\\{`);
     const hit = keyRe.exec(body);
-    if (!hit) throw new Error(`${round}차 홀 기록이 없습니다. 지울 게 없습니다.`);
+    if (!hit) throw new Error(`${round}차 홀 기록이 없어 삭제할 대상이 없습니다.`);
 
     const blockOpen = body.indexOf('{', hit.index + hit[0].length - 1);
     const blockClose = matchBrace(body, blockOpen);
@@ -468,13 +468,13 @@ function upsertRound(source, round, block) {
 }
 
 async function processOne(req, names) {
-    if (!Number.isInteger(req.round) || req.round < 1 || req.round > 99) throw new Error(`차수(${req.round})가 이상합니다.`);
+    if (!Number.isInteger(req.round) || req.round < 1 || req.round > 99) throw new Error(`차수(${req.round})가 올바르지 않습니다.`);
 
     // 삭제 요청은 사진도 판독도 없다. 그 차수 블록만 걷어낸다.
     if (req.action === '삭제') return removeOne(req);
 
     console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
-    if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 이상합니다.');
+    if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 올바르지 않습니다.');
     // 게스트 참여를 체크했을 때만 온다. 버디·파는 동타일 때 쓰는 보조값이라 없을 수 있다.
     const num = (v) => Number.isInteger(v) ? v : null;
     const guest = Number.isInteger(req.guestTotal)
@@ -510,7 +510,7 @@ async function processOne(req, names) {
         execFileSync(process.execPath, ['--check', STATS_FILE], { stdio: 'pipe' });
     } catch (err) {
         fs.writeFileSync(STATS_FILE, before);
-        throw new Error('stats.js를 쓰다가 형식이 깨져 되돌렸습니다.');
+        throw new Error('stats.js 기록 중 형식 오류가 발생해 원복했습니다.');
     }
 
     return { totals, skipped: data.skipped, records, written: true };
@@ -529,11 +529,11 @@ function removeOne(req) {
         execFileSync(process.execPath, ['--check', STATS_FILE], { stdio: 'pipe' });
     } catch (err) {
         fs.writeFileSync(STATS_FILE, before);
-        throw new Error('stats.js를 지우다가 형식이 깨져 되돌렸습니다.');
+        throw new Error('stats.js 삭제 중 형식 오류가 발생해 원복했습니다.');
     }
     console.log(`  ${req.round}차 블록을 걷어냈습니다.`);
     return {
-        totals: `${req.round}차 홀 기록을 지웠습니다. 표의 타수 칸이 다시 열립니다.`,
+        totals: `${req.round}차 홀 기록을 삭제했습니다. 스코어표 타수 칸 잠금이 해제됩니다.`,
         skipped: [], records: [], written: true
     };
 }
@@ -575,7 +575,7 @@ async function main() {
             console.error('푸시 실패:', err.message);
             targets.forEach(req => {
                 const r = results.get(req.id);
-                if (r && r.status === '완료') results.set(req.id, { status: '실패', note: '판독은 됐지만 저장에 실패했습니다. 다시 올려주세요.' });
+                if (r && r.status === '완료') results.set(req.id, { status: '실패', note: '판독은 완료되었으나 저장에 실패했습니다. 다시 업로드해 주세요.' });
             });
         }
     }
@@ -602,7 +602,7 @@ async function notify(targets, results) {
         try {
             await sendPush({
                 supabaseUrl: SUPABASE_URL, headers, env,
-                title: ok ? `⛳ ${req.round}차 스코어가 등록됐습니다` : `⚠️ ${req.round}차 스코어 판독 실패`,
+                title: ok ? `⛳ ${req.round}차 스코어가 등록되었습니다` : `⚠️ ${req.round}차 스코어 판독 실패`,
                 body: r.note,
                 tag: `score-${req.round}`,
                 onlyName: ok ? null : (req.by || SCORE_OWNER_FALLBACK),

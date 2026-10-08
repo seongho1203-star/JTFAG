@@ -139,7 +139,7 @@ async function remindTrips(payload, today, daysBefore, ranks) {
             const fill = makeFill(ranks, {});
             await push(
                 `🧳 ${ddayLabel(until)} ${name}`,
-                (sub) => fill(`{호칭} ${span}${course ? ` · 첫날 ${course}` : ''}${clean(first.tee) ? ` ${clean(first.tee)}` : ''}`, sub),
+                (sub) => fill(`{호칭} ${span}${course ? ` · 1일차 ${course}` : ''}${clean(first.tee) ? ` ${clean(first.tee)}` : ''}`, sub),
                 `trip-${trip.id}`);
             continue;
         }

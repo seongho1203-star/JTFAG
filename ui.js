@@ -94,8 +94,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                     <span style="font-size:0.72rem; font-weight:800; color:#3a3f44; background:#f2f2ee; border-radius:5px; padding:2px 6px; white-space:nowrap;">${log.time}</span>
                     <span style="font-size:0.75rem; color:#2b5394; font-weight:700;">${escapeHtml(log.name || '')}</span>
-                    <button type="button" onclick="editFundLog(${i})" title="내역 고치기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✎</button>
-                    <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
+                    <button type="button" onclick="editFundLog(${i})" title="내역 수정" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✎</button>
+                    <button type="button" onclick="removeFundLog(${i})" title="기록 삭제" style="flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
                 </div>
                 <div style="color:#6b7075; font-size:0.82rem; white-space:nowrap;">${formatNumber(log.before)}원 ➔ <b style="color:#16181a;">${formatNumber(log.after)}원</b></div>
                 ${moveHtml}
@@ -132,44 +132,44 @@ window.addEventListener('DOMContentLoaded', () => {
         const memo = await showMemoPrompt(picked);
         if (memo === null) return;                       // 취소
         const at = findFundLog(picked);
-        if (at < 0) { showToast("그 사이 지워진 기록입니다."); renderFundLogs(); return; }
+        if (at < 0) { showToast("이미 삭제된 기록입니다."); renderFundLogs(); return; }
         const log = appData.fundLogs[at];
         if (memo === (log.memo || '')) return;           // 그대로면 저장하지 않는다
         saveState();
         if (memo) log.memo = memo; else delete log.memo; // 비우면 아예 없앤다(옛 기록과 같은 모양)
         syncToSupabase(appData);
         renderFundLogs();
-        showToast(memo ? "✏️ 내역을 고쳤습니다." : "✏️ 내역을 지웠습니다.");
+        showToast(memo ? "✏️ 내역을 수정했습니다." : "✏️ 내역을 삭제했습니다.");
     };
 
     window.removeFundLog = async (idx) => {
         const log = (appData.fundLogs || [])[idx];
         if (!log) return;
         const ok = await showConfirmPrompt(
-            `이 기록을 지울까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">${log.time} · ${escapeHtml(log.name || '')}</span>`,
-            '지우기');
+            `이 기록을 삭제할까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">${log.time} · ${escapeHtml(log.name || '')}</span>`,
+            '삭제');
         if (!ok) return;
         const at = findFundLog(log);
-        if (at < 0) { showToast("이미 지워진 기록입니다."); renderFundLogs(); return; }
+        if (at < 0) { showToast("이미 삭제된 기록입니다."); renderFundLogs(); return; }
         saveState();
         appData.fundLogs.splice(at, 1);
         syncToSupabase(appData);
         renderFundLogs();
-        showToast("🗑️ 기록 1건을 지웠습니다.");
+        showToast("🗑️ 기록 1건을 삭제했습니다.");
     };
 
     window.clearFundLogs = async () => {
         const n = (appData.fundLogs || []).length;
         if (n === 0) return;
         const ok = await showConfirmPrompt(
-            `기록 ${n}건을 모두 지울까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">공금 잔액은 그대로입니다.</span>`,
-            '모두 지우기');
+            `기록 ${n}건을 모두 삭제할까요?<br><span style="font-size:0.78rem; color:#cbd5e1;">공금 잔액은 변경되지 않습니다.</span>`,
+            '전체 삭제');
         if (!ok) return;
         saveState();
         appData.fundLogs = [];
         syncToSupabase(appData);
         renderFundLogs();
-        showToast(`🗑️ 기록 ${n}건을 모두 지웠습니다.`);
+        showToast(`🗑️ 기록 ${n}건을 모두 삭제했습니다.`);
     };
 
 });
@@ -272,7 +272,7 @@ function showNameSelectionPrompt(message) {
         });
 
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = "다음에 하기";
+        cancelBtn.textContent = "나중에";
         cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer;";
         cancelBtn.onclick = () => cleanup(null);
         
@@ -358,7 +358,7 @@ function showMemoPrompt(log) {
             : `${diff > 0 ? '적립' : '사용'} ${formatNumber(Math.abs(diff))}원`;
 
         const msgEl = document.createElement('div');
-        msgEl.innerHTML = `내역 고치기<br>`
+        msgEl.innerHTML = `내역 수정<br>`
             + `<span style="font-size:0.74rem; font-weight:700; color:#94a3b8;">${escapeHtml(log.time || '')} · ${escapeHtml(log.name || '')}</span><br>`
             + `<span style="font-size:0.78rem; font-weight:800; color:${diff < 0 ? '#c0392b' : diff > 0 ? '#1f6b45' : '#94a3b8'};">${moveText}</span>`;
         msgEl.style.cssText = "color:#16181a; font-size:0.9rem; margin-bottom:14px; font-weight:800; line-height:1.6;";
@@ -404,7 +404,7 @@ function showMemoPrompt(log) {
 async function authenticateAdmin() {
     if (isFundUnlocked) return true;
     const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
-    const pwd = await showPasswordPrompt("🔒 시스템 관리 비밀번호를<br>입력해주세요");
+    const pwd = await showPasswordPrompt("🔒 시스템 관리 비밀번호를<br>입력해 주세요");
     
     if (pwd === null) return false; 
     if (pwd === correctPwd) { 
@@ -420,11 +420,11 @@ async function authenticateAdmin() {
 
 async function changeAdminPassword() {
     const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
-    const oldPwd = await showPasswordPrompt("현재 사용 중인<br>비밀번호를 입력해주세요");
+    const oldPwd = await showPasswordPrompt("현재 사용 중인<br>비밀번호를 입력해 주세요");
     
     if (oldPwd === null) return;
     if (oldPwd === correctPwd) {
-        const newPwd = await showPasswordPrompt("새로운 비밀번호를 입력해주세요<br><span style='font-size:0.75rem; font-weight:400; color:#6b7075;'>(이 비번으로 모두가 시스템을 관리합니다)</span>");
+        const newPwd = await showPasswordPrompt("새로운 비밀번호를 입력해 주세요<br><span style='font-size:0.75rem; font-weight:400; color:#6b7075;'>(모든 관리자가 이 비밀번호를 사용합니다)</span>");
         if (newPwd !== null && newPwd.trim() !== "") {
             saveState();
             appData.adminPassword = newPwd.trim();
@@ -445,7 +445,7 @@ async function changeAdminPassword() {
 const FUND_MODES = {
     add:    { tab: "➕ 적립", label: "적립할 금액", memo: "예) 6월 회비 4명", sign: 1 },
     use:    { tab: "➖ 사용", label: "사용한 금액", memo: "예) 5차 그늘집 결제", sign: -1 },
-    direct: { tab: "✏️ 직접", label: "고쳐 쓸 잔액", memo: "예) 잔액 정정", sign: 0 }
+    direct: { tab: "✏️ 직접", label: "정정할 잔액", memo: "예) 잔액 정정", sign: 0 }
 };
 
 function showFundPrompt(before) {
@@ -520,7 +520,7 @@ function showFundPrompt(before) {
                 : `${sign > 0 ? '+' : '−'} ${formatNumber(amount)}원 =`;
             preview.innerHTML = `<span style="color:#64748b;">${formatNumber(before)}원 ${arrow}</span> ` +
                 `<span style="color:${after < 0 ? '#c0392b' : '#1f6b45'};">${formatFundString(after)}</span>` +
-                (after < 0 ? `<div style="color:#c0392b; font-size:0.68rem; font-weight:700; margin-top:2px;">잔액이 마이너스가 됩니다</div>` : "");
+                (after < 0 ? `<div style="color:#c0392b; font-size:0.68rem; font-weight:700; margin-top:2px;">잔액이 0원 미만이 됩니다</div>` : "");
         }
 
         function setMode(key) {
@@ -918,7 +918,7 @@ function searchCourses(query) {
     const recent = (appData.customCourses || []).slice().reverse();
     const mine = [...recent, ...BASE_COURSES.filter(c => !recent.includes(c))];
 
-    if (!q) return { group: '자주 가는 곳', list: mine.slice(0, COURSE_RESULT_LIMIT) };
+    if (!q) return { group: '자주 이용하는 골프장', list: mine.slice(0, COURSE_RESULT_LIMIT) };
 
     const names = [...mine, ...allCourses().map(c => c.name)];
     const seen = new Set();
@@ -944,7 +944,7 @@ function renderCourseResults(browse) {
 
     let html = `<div class="course-group">${group}</div>`;
     if (!list.length) {
-        html += `<div class="course-empty">찾는 곳이 없으면 이름을 그대로 쓰면 됩니다.</div>`;
+        html += `<div class="course-empty">검색 결과가 없으면 골프장명을 직접 입력하세요.</div>`;
     } else {
         html += list.map(name => {
             const geo = courseGeo(name);
@@ -1210,7 +1210,7 @@ function resolveRoundDate(month, day) {
 function saveSchedule() {
     const search = document.getElementById('schCourseSearch');
     const course = search.value.trim();
-    if (!course) { showToast("⚠️ 골프장을 고르거나 이름을 입력해주세요!"); search.focus(); return; }
+    if (!course) { showToast("⚠️ 골프장을 선택하거나 직접 입력해 주세요."); search.focus(); return; }
     saveState();
     // 목록에 없어 직접 친 곳은 남겨 둔다. 다음부터는 검색창을 열면 맨 위에 뜬다.
     if (!courseGeo(course)) rememberCourse(course);
@@ -1240,8 +1240,8 @@ function saveSchedule() {
 
     syncToSupabase(appData); renderNoticeArea(); renderAll(); closeScheduleModal();
     showToast(roundNo <= appData.totalRounds
-        ? `✅ ${roundNo}차 일정 저장 · 표의 골프장도 채웠습니다.`
-        : `✅ ${roundNo}차 일정을 저장했습니다. 차수를 만들면 골프장이 자동으로 들어갑니다.`);
+        ? `✅ ${roundNo}차 일정을 저장했습니다. 스코어표 골프장도 반영했습니다.`
+        : `✅ ${roundNo}차 일정을 저장했습니다. 차수 생성 시 골프장이 자동 반영됩니다.`);
 }
 
 function renderAll() {
@@ -1552,8 +1552,8 @@ function resetEffectSeen() {
     }
     keys.forEach(k => localStorage.removeItem(k));
     showToast(keys.length
-        ? `🎬 연출 표시 ${keys.length}개를 지웠습니다. 새로고침하면 다시 나옵니다.`
-        : "🎬 지울 표시가 없습니다. 새로고침하면 나옵니다.");
+        ? `🎬 연출 기록 ${keys.length}개를 초기화했습니다. 새로고침하면 다시 재생됩니다.`
+        : "🎬 초기화할 연출 기록이 없습니다.");
 }
 
 /* 연속수에 따라 축포도 등급이 갈린다 — 뱃지(금 → 불꽃 → 전설)와 같은 언어다.
@@ -1833,7 +1833,7 @@ function finishMoneyInput() {
     const el = document.activeElement;
     const before = lastMoneySavedAt;
     if (isMoneyField(el)) el.blur();              // change → updateMoney → 토스트
-    if (lastMoneySavedAt === before) showToast('✔️ 바뀐 금액이 없습니다.');
+    if (lastMoneySavedAt === before) showToast('✔️ 변경된 금액이 없습니다.');
     showMoneyDoneBar(false);
 }
 
@@ -2030,7 +2030,7 @@ function paintNearCheck(left) {
 
     if (!entered) {
         badge.className = 'near-check none';
-        badge.textContent = '입력 전';
+        badge.textContent = '미입력';
         return;
     }
 
@@ -2076,7 +2076,7 @@ function moneyLockNotice(name) {
     const me = myGolferName();
     showToast(me
         ? `🔒 ${name}님 칸은 본인만 입력할 수 있습니다.`
-        : `🔒 먼저 본인 이름을 정해주세요. (설정 → 내 이름)`);
+        : `🔒 먼저 사용자 이름을 등록해 주세요.`);
 }
 
 function toggleMoneyEdit() {
@@ -2084,8 +2084,8 @@ function toggleMoneyEdit() {
     renderMoneyTable();
     renderAdminModal();
     showToast(isMoneyUnlocked
-        ? "💰 정산 금액 칸을 모두 열었습니다."
-        : "🔒 정산 금액은 다시 본인 칸만 열립니다.");
+        ? "💰 정산 금액 전체 수정을 활성화했습니다."
+        : "🔒 정산 금액 수정을 본인 항목으로 제한했습니다.");
 }
 
 /* ── 내가 방금 적은 금액은 들어오는 payload에 덮이지 않는다 ───────
@@ -2258,8 +2258,8 @@ function toggleScoreEdit() {
     renderTable();
     renderAdminModal();
     showToast(isScoreUnlocked
-        ? "✏️ 타수 칸을 열었습니다. 홀 기록이 있는 차수는 그대로 잠깁니다."
-        : "🔒 타수 칸을 다시 잠갔습니다.");
+        ? "✏️ 타수 직접 수정을 활성화했습니다. 홀 기록이 있는 차수는 제외됩니다."
+        : "🔒 타수 수정을 잠갔습니다.");
 }
 
 /* ── 독수리 3연속 명예 표식 ────────────────────────────────────────
@@ -2419,13 +2419,13 @@ async function removeRound() {
     if (course) parts.push(escapeHtml(course));
     if (scored) parts.push(`타수 ${scored}명`);
     if (photos) parts.push(`<b style="color:#fca5a5;">사진 ${photos}장</b>`);
-    const detail = parts.length ? parts.join(' · ') : '아직 아무것도 없음';
+    const detail = parts.length ? parts.join(' · ') : '입력된 데이터 없음';
 
     const ok = await showConfirmPrompt(
-        `${r + 1}차전을 지울까요?<br>` +
+        `${r + 1}차전을 삭제할까요?<br>` +
         `<span style="font-size:0.78rem; font-weight:600; color:#cbd5e1;">${detail}</span>` +
-        (photos ? `<br><span style="font-size:0.72rem; font-weight:600; color:#94a3b8;">되돌리기가 실시간 갱신에 밀리면 목록이 사라질 수 있습니다.</span>` : ''),
-        "지우기");
+        (photos ? `<br><span style="font-size:0.72rem; font-weight:600; color:#94a3b8;">실시간 동기화 상황에 따라 되돌리기 시 사진 목록이 복구되지 않을 수 있습니다.</span>` : ''),
+        "삭제");
     if (!ok) return;
 
     saveState(); appData.totalRounds--;
@@ -2436,7 +2436,7 @@ async function removeRound() {
     if (selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
     const moved = carryScheduleAfterRemove(r + 1);
     syncToSupabase(appData); renderAll();
-    showToast(`➖ ${r + 1}차전 데이터가 삭제되었습니다.` + (moved ? ` 일정은 ${appData.totalRounds}차로 옮겼습니다.` : ''));
+    showToast(`➖ ${r + 1}차전 데이터가 삭제되었습니다.` + (moved ? ` 일정은 ${appData.totalRounds}차로 이동했습니다.` : ''));
 }
 
 /* 지운 차수에 일정이 붙어 있었다면 어디로 가야 하나.
@@ -2540,14 +2540,14 @@ function renderPushSubs() {
     if (!content) return;
 
     if (pushSubsCache.length === 0) {
-        content.innerHTML = `<div class="subs-empty">알림을 받는 기기가 없습니다.<br>공지 카드의 🔔 버튼으로 켤 수 있습니다.</div>`;
+        content.innerHTML = `<div class="subs-empty">알림 수신 기기가 없습니다.<br>상단 🔔 버튼으로 활성화할 수 있습니다.</div>`;
         return;
     }
 
     // 사람별로 묶어 보여 준다. 이름을 안 남긴 구독은 맨 뒤로.
     const byName = {};
     pushSubsCache.forEach((s, i) => {
-        const key = s.name || '이름 없음';
+        const key = s.name || '이름 미등록';
         (byName[key] = byName[key] || []).push({ sub: s, idx: i });
     });
     const order = golfers.filter(n => byName[n]).concat(Object.keys(byName).filter(n => !golfers.includes(n)));
@@ -2562,12 +2562,12 @@ function renderPushSubs() {
                     return `<div class="subs-device${me ? ' me' : ''}">
                         <span class="subs-device-name">${escapeHtml(pushEndpointLabel(sub.endpoint))}</span>
                         ${me ? '<span class="subs-me-tag">이 기기</span>' : ''}
-                        <button type="button" class="subs-del" onclick="removePushSub(${idx})" title="이 기기 알림 끄기">✕</button>
+                        <button type="button" class="subs-del" onclick="removePushSub(${idx})" title="알림 해제">✕</button>
                     </div>`;
                 }).join('')}
             </div>`).join('') +
-        `<div class="subs-note">✕를 누르면 그 기기는 알림을 더 받지 않습니다. 본인이 다시 켜면 되살아납니다.<br>
-         기기를 바꾸거나 앱을 지워 못 쓰게 된 구독은, 다음 알림을 보낼 때 확인되면 저절로 정리됩니다.</div>`;
+        `<div class="subs-note">✕를 누르면 해당 기기의 알림 수신이 해제됩니다. 사용자가 다시 활성화하면 복구됩니다.<br>
+         기기 변경·앱 삭제로 만료된 구독은 다음 발송 시 자동으로 정리됩니다.</div>`;
 }
 
 // 남의 기기를 지우면 그 사람은 이유도 모른 채 알림이 끊긴다. 그래서 한 번 더 묻는다.
@@ -2575,13 +2575,13 @@ async function removePushSub(idx) {
     const sub = pushSubsCache[idx];
     if (!sub) return;
     const me = sub.endpoint === pushSubsMine;
-    const who = sub.name || '이름 없음';
+    const who = sub.name || '이름 미등록';
 
     const ok = await showConfirmPrompt(
-        `${escapeHtml(who)}님의 <b>${escapeHtml(pushEndpointLabel(sub.endpoint))}</b>에 알림을 끊을까요?` +
+        `${escapeHtml(who)}님의 <b>${escapeHtml(pushEndpointLabel(sub.endpoint))}</b> 알림을 해제할까요?` +
         `<br><span style="font-size:0.8rem; font-weight:400; color:#94a3b8;">` +
-        (me ? '이 기기입니다. 🔔 버튼으로 다시 켤 수 있습니다.'
-            : '본인이 그 기기에서 🔔 버튼을 누르면 다시 켜집니다.') + '</span>', '알림 끄기');
+        (me ? '현재 사용 중인 기기입니다. 🔔 버튼으로 다시 활성화할 수 있습니다.'
+            : '해당 기기에서 🔔 버튼을 누르면 다시 활성화됩니다.') + '</span>', '알림 해제');
     if (!ok) return;
 
     try {
@@ -2596,7 +2596,7 @@ async function removePushSub(idx) {
     pushSubsCache.splice(idx, 1);
     renderPushSubs();
     if (me) updateAlarmUI();
-    showToast("🔕 알림을 껐습니다.");
+    showToast("🔕 알림을 해제했습니다.");
 }
 
 /* ── 스코어카드 등록 ──────────────────────────────────────────────
@@ -2671,20 +2671,20 @@ function renderScoreRequestModal() {
     pickBtn.textContent = selectedScorecardRound === -1
         ? "먼저 차수를 선택하세요"
         : (hasHoleRecord(selectedScorecardRound)
-            ? `📷 ${selectedScorecardRound + 1}차 스코어카드 다시 올리기`
-            : `📷 ${selectedScorecardRound + 1}차 스코어카드 사진 올리기`);
+            ? `📷 ${selectedScorecardRound + 1}차 스코어카드 재업로드`
+            : `📷 ${selectedScorecardRound + 1}차 스코어카드 사진 업로드`);
 
     // 지울 게 있을 때만 보여 준다 — 홀 기록이 없는 차수에 뜨면 누를 이유가 없다.
     const delBtn = document.getElementById('scorecardDelBtn');
     if (delBtn) {
         const can = selectedScorecardRound !== -1 && hasHoleRecord(selectedScorecardRound);
         delBtn.style.display = can ? '' : 'none';
-        if (can) delBtn.textContent = `🗑️ ${selectedScorecardRound + 1}차 홀 기록 지우기`;
+        if (can) delBtn.textContent = `🗑️ ${selectedScorecardRound + 1}차 홀 기록 삭제`;
     }
 
     const list = (appData.scoreRequests || []).slice().reverse();
     if (list.length === 0) {
-        log.innerHTML = `<div class="scorecard-log-empty">아직 등록한 스코어카드가 없습니다.</div>`;
+        log.innerHTML = `<div class="scorecard-log-empty">등록된 스코어카드가 없습니다.</div>`;
         return;
     }
     log.innerHTML = list.map(req => {
@@ -2707,7 +2707,7 @@ function renderScoreRequestModal() {
    **이 길이 없으면 막다른 길이 된다** — 홀 기록이 있는 차수는 타수 칸이 잠겨
    관리자 메뉴로도 못 고친다. 8차 카드가 9차로 잘못 올라갔을 때 실제로 그랬다. */
 async function requestHoleDelete() {
-    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해주세요."); return; }
+    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해 주세요."); return; }
     const round = selectedScorecardRound;
     if (!hasHoleRecord(round)) { showToast(`${round + 1}차는 홀 기록이 없습니다.`); return; }
 
@@ -2716,13 +2716,13 @@ async function requestHoleDelete() {
         return `${g} ${v || '-'}타`;
     }).join(' · ');
     const okGo = await showConfirmPrompt(
-        `🗑️ <b>${round + 1}차</b> 홀 기록을 지울까요?` +
+        `🗑️ <b>${round + 1}차</b> 홀 기록을 삭제할까요?` +
         `<div style="font-size:0.76rem; font-weight:600; color:#cbd5e1; margin-top:10px; line-height:1.6;">` +
-        `지금 기록<br>${escapeHtml(scores)}</div>` +
+        `현재 기록<br>${escapeHtml(scores)}</div>` +
         `<div style="font-size:0.74rem; font-weight:600; color:#94a3b8; margin-top:10px; line-height:1.6;">` +
-        `지우면 타수 칸이 다시 열려 올바른 사진을 올리거나 직접 고칠 수 있습니다.<br>` +
-        `<span style="color:#fbbf24;">표의 타수는 바로 안 사라집니다 — 지운 뒤 직접 고쳐주세요.</span></div>`,
-        "지우기");
+        `삭제하면 타수 칸 잠금이 해제되어 올바른 사진을 재업로드하거나 직접 수정할 수 있습니다.<br>` +
+        `<span style="color:#fbbf24;">스코어표의 타수는 자동으로 삭제되지 않습니다. 삭제 후 직접 수정해 주세요.</span></div>`,
+        "삭제");
     if (!okGo) return;
 
     const now = new Date();
@@ -2753,7 +2753,7 @@ async function handleScorecardUpload(event) {
     const file = (input.files || [])[0];
     input.value = '';
     if (!file) return;
-    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해주세요."); return; }
+    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해 주세요."); return; }
     const round = selectedScorecardRound;
 
     // 게스트는 이름이 아니라 타수로 지목한다. 스코어카드가 이름을 가려 보여줘도,
@@ -2763,14 +2763,14 @@ async function handleScorecardUpload(event) {
     if (document.getElementById('scorecardHasGuest').checked) {
         guestTotal = parseNumber(document.getElementById('scorecardGuestTotal').value);
         if (!Number.isInteger(guestTotal) || guestTotal < 50 || guestTotal > 200) {
-            showToast("⚠️ 게스트 타수를 정확히 입력해주세요. (예: 100)");
+            showToast("⚠️ 게스트 타수를 정확히 입력해 주세요. (예: 100)");
             return;
         }
         const optional = (id, label) => {
             const raw = document.getElementById(id).value.trim();
             if (raw === '') return null;
             const n = parseNumber(raw);
-            if (!Number.isInteger(n) || n < 0 || n > 18) { showToast(`⚠️ 게스트 ${label} 개수가 이상합니다. (0~18)`); return false; }
+            if (!Number.isInteger(n) || n < 0 || n > 18) { showToast(`⚠️ 게스트 ${label} 개수가 올바르지 않습니다. (0~18)`); return false; }
             return n;
         };
         guestBirdies = optional('scorecardGuestBirdie', '버디');
@@ -2779,13 +2779,13 @@ async function handleScorecardUpload(event) {
         if (guestPars === false) return;
     }
 
-    showToast("⏳ 스코어카드를 올리는 중입니다...");
+    showToast("⏳ 스코어카드를 업로드 중입니다...");
     let url;
     try {
         url = await uploadPhotoBlob(await compressImageToBlob(file, SCORECARD_MAX_PX, SCORECARD_QUALITY), round);
     } catch (err) {
         console.error("스코어카드 업로드 실패:", err);
-        showToast("⚠️ 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        showToast("⚠️ 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.");
         return;
     }
 
@@ -2811,13 +2811,13 @@ async function handleScorecardUpload(event) {
     await syncToSupabase(appData);
     renderScoreRequestModal();
     showToast(guestTotal === null
-        ? `✅ ${round + 1}차 스코어카드 등록! 판독이 끝나면 타수가 자동으로 채워집니다.`
-        : `✅ ${round + 1}차 등록! ${guestTotal}타(게스트)는 빼고 기록됩니다.`);
+        ? `✅ ${round + 1}차 스코어카드를 등록했습니다. 판독 완료 후 타수가 자동 반영됩니다.`
+        : `✅ ${round + 1}차 스코어카드를 등록했습니다. 게스트(${guestTotal}타)는 제외하고 기록됩니다.`);
 
     // 예약 실행을 기다리지 않고 지금 판독을 시작시킨다.
     // 실패해도 등록은 이미 끝났고 예약 실행이 그물로 남아 있으므로 조용히 넘어간다.
     if (await kickScorecardWorkflow()) {
-        showToast("🚀 판독을 시작했습니다. 1~2분 뒤 새로고침하면 타수가 채워집니다.");
+        showToast("🚀 판독을 시작했습니다. 1~2분 뒤 새로고침하면 타수가 반영됩니다.");
     }
 }
 
@@ -2882,13 +2882,13 @@ async function handleRoundPhotoUpload(event) {
        **스코어카드는 그대로 1600px로 줄인다**(`SCORECARD_MAX_PX`) — 판독에 그 이상은
        필요 없고, 크게 보내면 판독만 느려지고 비싸진다. */
     showToast(files.length > 1
-        ? `⏳ 사진 ${files.length}장을 원본 그대로 올리는 중입니다...`
-        : "⏳ 사진을 원본 그대로 올리는 중입니다...");
+        ? `⏳ 사진 ${files.length}장을 원본으로 업로드 중입니다...`
+        : "⏳ 사진을 원본으로 업로드 중입니다...");
     const urls = [];
     let failed = 0;
     for (let i = 0; i < files.length; i++) {
         try {
-            if (files.length > 1) showToast(`⏳ ${i + 1}/${files.length}장 올리는 중... (원본)`);
+            if (files.length > 1) showToast(`⏳ ${i + 1}/${files.length}장 업로드 중... (원본)`);
             // File은 Blob이라 그대로 올라간다 — 다시 그리지 않으므로 화질이 그대로다.
             urls.push(await uploadPhotoBlob(files[i], round));
         } catch (err) { console.error("사진 업로드 실패:", err); failed++; }
@@ -2896,10 +2896,10 @@ async function handleRoundPhotoUpload(event) {
     input.value = '';
 
     // 한 장이라도 올라갔으면 그만큼만 반영한다. 전부 실패하면 상태를 건드리지 않는다.
-    if (urls.length === 0) { showToast("⚠️ 사진 업로드에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
+    if (urls.length === 0) { showToast("⚠️ 사진 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요."); return; }
     // 올리는 사이 실시간 갱신으로 appData가 통째로 바뀌었을 수 있어 지금 것에 다시 붙인다.
     // 그사이 그 차수가 지워졌으면 붙일 곳이 없다 — 파일은 Storage에 남아 있다.
-    if (round >= appData.totalRounds) { showToast("⚠️ 올리는 사이 그 차수가 지워져 사진을 붙이지 못했습니다."); return; }
+    if (round >= appData.totalRounds) { showToast("⚠️ 업로드 중 해당 차수가 삭제되어 사진을 등록하지 못했습니다."); return; }
     if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
     if (!appData.roundPhotos[round]) appData.roundPhotos[round] = [];
     saveState();
@@ -3159,7 +3159,7 @@ function isTouchDevice() {
 
 async function downloadCurrentPhoto() {
     if (!document.getElementById('fullImageView').src) return;
-    if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡에선 저장이 제한됩니다. 우측 하단 탭에서 '다른 브라우저로 열기'를 하시거나 사진을 꾹 눌러주세요!"); return; }
+    if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡 인앱 브라우저에서는 저장이 제한됩니다. '다른 브라우저로 열기'를 이용하거나 사진을 길게 눌러 저장하세요."); return; }
     try {
         const blob = await currentPhotoBlob();
         if (!blob) return;
@@ -3167,7 +3167,7 @@ async function downloadCurrentPhoto() {
 
         if (isTouchDevice() && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file], title: 'JTFAG 사진 저장' });
-            showToast("📷 '이미지 저장' 또는 갤러리를 고르면 저장됩니다.");
+            showToast("📷 '이미지 저장' 또는 갤러리를 선택하면 저장됩니다.");
             return;
         }
         const blobUrl = window.URL.createObjectURL(blob);
@@ -3176,7 +3176,7 @@ async function downloadCurrentPhoto() {
         showToast("💾 기기에 저장했습니다.");
     } catch (error) {
         if (error && error.name === 'AbortError') return;   // 시트를 그냥 닫은 것
-        console.error("다운로드 에러:", error); showToast("⚠️ 저장 실패! 사진을 꾹~ 눌러서 '이미지 저장'을 선택해주세요.");
+        console.error("다운로드 에러:", error); showToast("⚠️ 저장에 실패했습니다. 사진을 길게 눌러 '이미지 저장'을 선택해 주세요.");
     }
 }
 
@@ -3219,7 +3219,7 @@ function renderCourseWinRate(name) {
     const list = courseWinRateOptions(name);
     if (list.length === 0) {
         sel.style.display = 'none';
-        box.innerHTML = "<div style='text-align:center; color:#94a3b8;'>아직 골프장별로 볼 만한 기록이 없습니다.</div>";
+        box.innerHTML = "<div style='text-align:center; color:#94a3b8;'>골프장별 승률을 산출할 기록이 없습니다.</div>";
         return;
     }
     sel.style.display = '';
@@ -3232,12 +3232,12 @@ function renderCourseWinRate(name) {
 
     sel.innerHTML = list.map(c => {
         const key = c.label.replace(/\s+/g, '');
-        return `<option value="${escapeHtml(key)}"${key === h2hCourseKey ? ' selected' : ''}>${escapeHtml(c.label)} (${c.played}판)</option>`;
+        return `<option value="${escapeHtml(key)}"${key === h2hCourseKey ? ' selected' : ''}>${escapeHtml(c.label)} (${c.played}경기)</option>`;
     }).join('');
     sel.value = h2hCourseKey;
 
     box.innerHTML = winRateListHtml(cur.rec)
-        + `<div class="winrate-note">핸디캡은 직전 두 차수로 내므로 1·2차전은 승부에서 빠집니다.</div>`;
+        + `<div class="winrate-note">핸디캡은 직전 2개 차수 기준으로 산출되므로 1·2차전은 집계에서 제외됩니다.</div>`;
 }
 
 function selectCourseWinRate(key, name) {
@@ -3377,7 +3377,7 @@ function toggleNotifyDay(d) {
     const i = notifyDaysDraft.indexOf(d);
     if (i >= 0) notifyDaysDraft.splice(i, 1);
     else {
-        if (notifyDaysDraft.length >= MAX_NOTIFY_DAYS) { showToast(`⚠️ 최대 ${MAX_NOTIFY_DAYS}개까지 고를 수 있습니다.`); return; }
+        if (notifyDaysDraft.length >= MAX_NOTIFY_DAYS) { showToast(`⚠️ 최대 ${MAX_NOTIFY_DAYS}개까지 선택할 수 있습니다.`); return; }
         notifyDaysDraft.push(d);
     }
     notifyDaysDraft = normalizeDaysBefore(notifyDaysDraft);
@@ -3406,7 +3406,7 @@ function renderNotifyPreview() {
 
     if (notifyDaysDraft.length === 0) {
         box.innerHTML = `<div class="notify-preview-label">미리보기</div>
-            <div class="notify-preview-empty">알릴 날을 하나 이상 골라주세요.</div>`;
+            <div class="notify-preview-empty">알림 시점을 1개 이상 선택해 주세요.</div>`;
         return;
     }
     // 고른 날마다 실제로 어떤 문구가 나가는지 따로 보여준다.
@@ -3437,15 +3437,15 @@ function saveNotifySettings() {
     const title = document.getElementById('notifyTitle').value.trim();
     const body = document.getElementById('notifyBody').value.trim();
 
-    if (days.length === 0) { showToast("⚠️ 알릴 날을 하나 이상 골라주세요."); return; }
-    if (!title) { showToast("⚠️ 알림 제목을 입력해주세요."); return; }
+    if (days.length === 0) { showToast("⚠️ 알림 시점을 1개 이상 선택해 주세요."); return; }
+    if (!title) { showToast("⚠️ 알림 제목을 입력해 주세요."); return; }
 
     saveState();
     appData.notifySettings = { daysBefore: days, title: title, body: body || '{일정}' };
     syncToSupabase(appData);
     closeNotifySettings();
     renderAdminModal();
-    showToast(`🔔 ${days.map(notifyDayName).join(' · ')}에 알리도록 저장했습니다.`);
+    showToast(`🔔 알림 시점을 저장했습니다. (${days.map(notifyDayName).join(' · ')})`);
 }
 
 async function openAdminModal() {
@@ -3478,7 +3478,7 @@ function renderAdminModal() {
 
     status.innerHTML = `<div class="admin-state on">
             <span>🔓 관리자 권한 활성</span>
-            <button type="button" class="admin-state-btn" onclick="adminLock()">잠그기</button>
+            <button type="button" class="admin-state-btn" onclick="adminLock()">잠금</button>
         </div>`;
 
     const legacy = countLegacyPhotos();
@@ -3486,9 +3486,9 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
-        <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 칸 잠그기' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '열림' : '홀 기록 없는 차수만'}</span></button>
-        <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 잠그기' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전원 열림' : '평소엔 본인 칸만'}</span></button>
-        <button type="button" class="admin-btn" onclick="resetEffectSeen()">🎬 연출 다시 보기 <span class="admin-btn-sub">이 기기에서 본 표시만 지움</span></button>
+        <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 수정 잠금' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만'}</span></button>
+        <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 수정 잠금' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만'}</span></button>
+        <button type="button" class="admin-btn" onclick="resetEffectSeen()">🎬 연출 다시 보기 <span class="admin-btn-sub">이 기기의 연출 기록만 초기화</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
     if (legacy > 0) {
@@ -3537,13 +3537,13 @@ function buildAnalysisHtml(name) {
         }).join('');
         html += `<div class="report-section"><div class="report-title">🕳️ 파 종류별 강약</div>
             <div class="stat-grid" style="grid-template-columns: repeat(${pars.length}, 1fr);">${parCells}</div>
-            <div class="analysis-note">${meaningful ? '막대가 짧을수록 잘 치는 홀입니다.' : '파 종류별 차이가 거의 없습니다.'}</div></div>`;
+            <div class="analysis-note">${meaningful ? '막대가 짧을수록 성적이 좋은 홀 유형입니다.' : '파 유형별 편차가 거의 없습니다.'}</div></div>`;
 
         // ② 전반 / 후반
         const diff = a.back - a.front;
-        let comment = "전반과 후반이 고릅니다.";
-        if (diff >= 5) comment = `후반에 ${diff}타를 더 잃습니다.`;
-        else if (diff <= -5) comment = `후반에 ${Math.abs(diff)}타를 더 줄입니다.`;
+        let comment = "전·후반 편차가 크지 않습니다.";
+        if (diff >= 5) comment = `후반 스코어가 평균 ${diff}타 높습니다.`;
+        else if (diff <= -5) comment = `후반 스코어가 평균 ${Math.abs(diff)}타 낮습니다.`;
         // 두 칸이 같은 함수를 쓴다. 예전에는 전반만 등호(<=)가 붙어 있어,
         // 전후반이 같은 값일 때 전반은 초록·후반은 빨강으로 갈렸다.
         const halfColor = (mine, other) => mine === other ? '#475569' : (mine < other ? '#059669' : '#dc2626');
@@ -3622,10 +3622,10 @@ function renderInstallBanner() {
     const action = document.getElementById('installAction');
 
     if (deferredInstallPrompt) {
-        desc.textContent = '홈 화면에 앱으로 추가하고 라운드 알림을 받아보세요.';
-        action.innerHTML = `<button type="button" class="install-btn" onclick="runInstall()">📲 설치하기</button>`;
+        desc.textContent = '홈 화면에 앱을 설치하고 라운드 알림을 받아 보세요.';
+        action.innerHTML = `<button type="button" class="install-btn" onclick="runInstall()">📲 설치</button>`;
     } else if (isIOS()) {
-        desc.textContent = '앱처럼 쓰고 라운드 알림을 받으려면 홈 화면에 추가하세요.';
+        desc.textContent = '앱으로 이용하고 라운드 알림을 받으려면 홈 화면에 추가하세요.';
         action.innerHTML = `<div class="install-steps">
             <span><b>1</b> 아래 <b>공유</b> <span class="ios-share">⬆︎</span> 를 누르고</span>
             <span><b>2</b> <b>‘홈 화면에 추가’</b> 를 선택하세요</span>
@@ -3671,23 +3671,23 @@ async function updateAlarmUI() {
     const sub = await getPushSubscription();
     const on = !!sub && Notification.permission === 'granted';
     btn.textContent = on ? '🔔' : '🔕';
-    btn.title = on ? '라운드 알림 켜짐 — 눌러서 끄기' : '라운드 알림 받기';
+    btn.title = on ? '라운드 알림 사용 중 — 눌러서 해제' : '라운드 알림 설정';
 }
 
 async function toggleRoundAlarm() {
     if (!pushSupported()) {
-        showToast("⚠️ 이 브라우저는 알림을 지원하지 않습니다. 홈 화면에 추가한 앱에서 열어주세요.");
+        showToast("⚠️ 이 브라우저는 알림을 지원하지 않습니다. 홈 화면에 추가한 앱에서 열어 주세요.");
         return;
     }
     if (Notification.permission === 'denied') {
-        showToast("⚠️ 알림이 차단돼 있습니다. 기기 설정에서 이 앱의 알림을 허용해주세요.");
+        showToast("⚠️ 알림이 차단되어 있습니다. 기기 설정에서 이 앱의 알림을 허용해 주세요.");
         return;
     }
 
     const existing = await getPushSubscription();
     if (existing && Notification.permission === 'granted') {
-        if (!(await showConfirmPrompt("라운드 알림을 끌까요?<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>이 기기로 알림이 오지 않습니다.</span>", "끄기"))) return;
-        try { await unsubscribeFromPush(); showToast("🔕 라운드 알림을 껐습니다."); }
+        if (!(await showConfirmPrompt("라운드 알림을 해제할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>이 기기에서 더 이상 알림을 수신하지 않습니다.</span>", "해제"))) return;
+        try { await unsubscribeFromPush(); showToast("🔕 라운드 알림을 해제했습니다."); }
         catch (err) { console.error(err); showToast("⚠️ 알림 해제에 실패했습니다."); }
         updateAlarmUI();
         return;
@@ -3698,7 +3698,7 @@ async function toggleRoundAlarm() {
 
     try {
         await subscribeToPush(localStorage.getItem('jtfag_my_name'));
-        showToast("🔔 라운드 알림을 켰습니다! 라운드 2일 전에 알려드립니다.");
+        showToast(`🔔 라운드 알림을 설정했습니다. (${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')})`);
     } catch (err) {
         console.error("구독 실패:", err);
         showToast(`⚠️ 알림 등록 실패 — ${(err && err.message) ? err.message : err}`, 9000);
@@ -3716,7 +3716,7 @@ async function checkAndGreetUser() {
     if (!myName || !golfers.includes(myName)) {
         hasGreeted = true; 
         setTimeout(async () => {
-            myName = await showNameSelectionPrompt("👋 환영합니다!<br>본인의 이름을 선택해주세요.");
+            myName = await showNameSelectionPrompt("👋 환영합니다!<br>본인의 이름을 선택해 주세요.");
             if (myName && golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
                 updateScoreRequestBtn();
