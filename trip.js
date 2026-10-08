@@ -2,7 +2,9 @@
 //
 // 값은 payload.trips에 둔다 — 여행 하나가
 //   {id, title, kind:'domestic'|'japan'|'abroad', base:{name,lat,lon}?, memo,
-//    days:[{date, course, area, tee, stay, memo, lat?, lon?, gora?:{id,url}}]}
+//    days:[{date, course, area, tee, stay, memo, lat?, lon?, gora?:{id,url}}],
+//    travel?:{flightOut, flightBack, flightRef, car:'yes'|'no', carCo, carPick, carDrop, carRef, stayInfo}}
+//   travel은 여행 전체에 한 벌(항공·렌트카·숙소 예약) — 적은 칸만 남고, 다 비우면 키째 지운다.
 // 고치는 차례는 다른 곳과 같다: saveState() → appData 수정 → syncToSupabase(appData).
 // **고칠 때는 순번이 아니라 id·날짜로 다시 찾는다** — 창이 떠 있는 사이 남의 저장이 들어오면
 // appData가 통째로 바뀌어 순번이 밀릴 수 있다(공금 로그·사진에서 겪은 그 자리다).
@@ -335,7 +337,7 @@ function newTripHtml() {
                 <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 입력</b>으로 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
+            <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 입력</b>으로, 항공·렌트카는 <b>🧭 교통·숙소</b>에 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
                 <button type="button" class="trip-btn primary" onclick="createTrip()">만들기</button>
@@ -505,6 +507,115 @@ function tripCourseHide() {
     setTimeout(() => { const box = document.getElementById('tripCourseResults'); if (box) box.style.display = 'none'; }, 200);
 }
 
+// ─── 교통·숙소 (여행 전체에 한 벌) ───
+// 사용자 요청 — `렌트카 사용 여부나 숙소, 항공 정보도 입력`. 날마다 다른 것(골프장·티오프·묵는 곳)은
+// 날짜 칸에, 여행 내내 하나인 것(항공편·렌트카·숙소 예약번호)은 여기에 둔다.
+// 숙소 이름은 날짜 칸의 `stay`가 원본이다 — 여기서는 그걸 묶어 보여 주기만 하고(`stayRuns()`),
+// 체크인 시각·연락처·예약번호 같은 덧붙일 말만 `stayInfo`에 적는다. 두 곳에 같은 이름을 적게 하지 말 것.
+const TRAVEL_KEYS = ['flightOut', 'flightBack', 'flightRef', 'car', 'carCo', 'carPick', 'carDrop', 'carRef', 'stayInfo'];
+const TRAVEL_CAR = { '': '미정', yes: '🚗 빌린다', no: '안 빌린다' };
+function tripTravel(trip) {
+    const t = trip && trip.travel && typeof trip.travel === 'object' ? trip.travel : {};
+    const out = {};
+    TRAVEL_KEYS.forEach(k => { out[k] = typeof t[k] === 'string' ? t[k] : ''; });
+    if (!TRAVEL_CAR[out.car]) out.car = '';
+    return out;
+}
+// 같은 숙소가 이어지는 날을 한 줄로 묶는다 — `1~2일차 디오션 리조트`
+function stayRuns(trip) {
+    const days = tripDays(trip), runs = [];
+    days.forEach((d, i) => {
+        const name = (d.stay || '').trim();
+        if (!name) return;
+        const last = runs[runs.length - 1];
+        if (last && last.name === name && last.to === i - 1) last.to = i;
+        else runs.push({ name, from: i, to: i });
+    });
+    return runs.map(r => `${r.from === r.to ? r.from + 1 : `${r.from + 1}~${r.to + 1}`}일차 ${r.name}`);
+}
+function travelRow(k, v, empty) {
+    return `<div class="trip-row"><span class="k">${k}</span><span class="v${v ? '' : ' empty'}">${v ? escapeHtml(v) : empty}</span></div>`;
+}
+function travelHtml(trip) {
+    const t = tripTravel(trip);
+    const kind = tripKind(trip);
+    if (tripEditing === 'travel') {
+        const f = (id, label, v, max = 60) => `<label class="trip-field">${label}<input type="text" id="${id}" maxlength="${max}" autocomplete="off" value="${escapeHtml(v)}"></label>`;
+        return `
+        <div class="trip-day editing">
+            <div class="trip-day-head">🧭 교통·숙소</div>
+            <div class="trip-sub">✈️ 항공</div>
+            ${f('tripTvFlightOut', '가는 편 (편명·출발 시각)', t.flightOut)}
+            ${f('tripTvFlightBack', '오는 편 (편명·출발 시각)', t.flightBack)}
+            ${f('tripTvFlightRef', '항공 예약번호', t.flightRef, 40)}
+            <div class="trip-sub">🚗 렌트카</div>
+            <div class="trip-kind-row">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label class="trip-kind"><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
+            <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
+                ${f('tripTvCarCo', '업체·차종', t.carCo)}
+                ${f('tripTvCarPick', '받는 곳·시각', t.carPick)}
+                ${f('tripTvCarDrop', '반납 곳·시각', t.carDrop)}
+                ${f('tripTvCarRef', '렌트 예약번호', t.carRef, 40)}
+            </div>
+            <div class="trip-sub">🏨 숙소</div>
+            <div class="trip-hint" style="margin-top:2px;">숙소 이름은 날짜마다 <b>✏️ 입력</b>의 숙소 칸에 적습니다. 여기는 체크인 시각·연락처·예약번호 같은 덧붙일 말을 적으세요.</div>
+            <label class="trip-field">숙소 예약 정보<textarea id="tripTvStayInfo" rows="2" maxlength="200">${escapeHtml(t.stayInfo)}</textarea></label>
+            <div class="trip-actions">
+                <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
+                <button type="button" class="trip-btn primary" onclick="saveTripTravel()">저장</button>
+            </div>
+        </div>`;
+    }
+    // 국내 여행은 비행기를 안 타는 일이 많아, 적은 게 없으면 항공 줄을 아예 안 보인다(제주라면 적으면 나온다).
+    const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef) ? `
+            ${travelRow('✈️ 가는 편', t.flightOut, '미정')}
+            ${travelRow('✈️ 오는 편', t.flightBack, '미정')}
+            ${t.flightRef ? travelRow('🎫 예약번호', t.flightRef, '') : ''}` : '';
+    const car = t.car === 'yes' ? `
+            ${travelRow('🚗 렌트카', t.carCo || '빌린다', '')}
+            ${t.carPick ? travelRow('↳ 받는 곳', t.carPick, '') : ''}
+            ${t.carDrop ? travelRow('↳ 반납', t.carDrop, '') : ''}
+            ${t.carRef ? travelRow('🎫 예약번호', t.carRef, '') : ''}` : travelRow('🚗 렌트카', t.car === 'no' ? '안 빌린다' : '', '미정');
+    const runs = stayRuns(trip);
+    const stay = runs.length ? runs.map((r, i) => travelRow(i ? '' : '🏨 숙소', r, '')).join('') : travelRow('🏨 숙소', '', '날짜마다 적으면 여기 모입니다');
+    return `
+        <div class="trip-day trip-travel">
+            <div class="trip-day-head">🧭 교통·숙소</div>
+            ${flight}
+            ${car}
+            ${stay}
+            ${t.stayInfo ? `<div class="trip-memo">${escapeHtml(t.stayInfo)}</div>` : ''}
+            <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripTravel()">✏️ 입력</button></div>
+        </div>`;
+}
+function tripCarChanged() {
+    const el = document.querySelector('input[name="tripTvCar"]:checked');
+    const box = document.getElementById('tripTvCarBox');
+    if (box) box.style.display = el && el.value === 'yes' ? '' : 'none';
+}
+function editTripTravel() { tripEditing = 'travel'; renderTripModal(); }
+function saveTripTravel() {
+    const val = id => ((document.getElementById(id) || {}).value || '').trim();
+    const carEl = document.querySelector('input[name="tripTvCar"]:checked');
+    const car = carEl && TRAVEL_CAR[carEl.value] !== undefined ? carEl.value : '';
+    const next = {
+        flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), flightRef: val('tripTvFlightRef'),
+        car, stayInfo: val('tripTvStayInfo'),
+        // 안 빌리면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
+        carCo: car === 'yes' ? val('tripTvCarCo') : '', carPick: car === 'yes' ? val('tripTvCarPick') : '',
+        carDrop: car === 'yes' ? val('tripTvCarDrop') : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
+    };
+    const trip = findTrip(tripOpenId);
+    tripEditing = null;
+    if (!trip) { renderTripModal(); return; }
+    const cur = tripTravel(trip);
+    if (TRAVEL_KEYS.some(k => cur[k] !== next[k])) editTrip(t => {
+        const clean = {};
+        TRAVEL_KEYS.forEach(k => { if (next[k]) clean[k] = next[k]; });
+        if (Object.keys(clean).length) t.travel = clean; else delete t.travel;
+    }, '✅ 교통·숙소를 저장했습니다.');
+    renderTripModal();
+}
+
 function tripDayHtml(trip, d, i, today) {
     const isToday = d.date === today;
     const past = d.date < today;
@@ -587,11 +698,11 @@ function renderTripModal() {
         </div>` : `
         <div class="trip-day">
             <div class="trip-day-head">📋 공통 메모</div>
-            <div class="trip-memo${trip.memo ? '' : ' empty'}">${trip.memo ? escapeHtml(trip.memo) : '준비물·정산 방법·항공편 등을 적어 두세요.'}</div>
+            <div class="trip-memo${trip.memo ? '' : ' empty'}">${trip.memo ? escapeHtml(trip.memo) : '준비물·정산 방법 등을 적어 두세요.'}</div>
             <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripMemo()">✏️ 입력</button></div>
         </div>`;
 
-    setTripBody(body, tripChipsHtml() + head + settings + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo);
+    setTripBody(body, tripChipsHtml() + head + settings + travelHtml(trip) + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo);
     days.forEach(d => { if (d.date >= today && d.course) loadTripWeather(d); });
 }
 
