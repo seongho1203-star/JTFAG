@@ -209,9 +209,15 @@ function openTripMap(kind, date) {
 
 // ─── 일정 창 ───
 function tripChipsHtml() {
-    const list = allTrips().map(t => ({ t, days: tripDays(t) }))
-        .sort((a, b) => (b.days[0] || {}).date > (a.days[0] || {}).date ? 1 : -1);
+    // 다가오는(진행 중 포함) 여행을 출발이 이른 순으로 앞에, 끝난 여행은 그 뒤에 최근 것부터(사용자 제보 —
+    // 늦은 날짜 여행이 앞에 서 있었다). 끝난 것까지 이른 순으로 두면 쌓일수록 다가오는 여행이 오른쪽으로 밀려난다.
     const today = kstToday();
+    const first = x => (x.days[0] || {}).date || '9999-99-99';
+    const done = x => x.days.length > 0 && x.days[x.days.length - 1].date < today;
+    const list = allTrips().map(t => ({ t, days: tripDays(t) }))
+        .sort((a, b) => done(a) !== done(b) ? (done(a) ? 1 : -1)
+            : done(a) ? (first(a) < first(b) ? 1 : first(a) > first(b) ? -1 : 0)
+            : (first(a) < first(b) ? -1 : first(a) > first(b) ? 1 : 0));
     const chips = list.map(({ t, days }) => {
         const past = days.length && days[days.length - 1].date < today;
         return `<button type="button" class="trip-chip${t.id === tripOpenId && tripEditing !== 'new' ? ' on' : ''}${past ? ' past' : ''}" onclick="switchTrip('${t.id}')">${escapeHtml(t.title || '여행')}${days.length ? ` <small>${isoLabel(days[0].date, true)}</small>` : ''}</button>`;
