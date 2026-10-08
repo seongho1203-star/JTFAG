@@ -1219,6 +1219,9 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .greet-poster { position: fixed; inset: 0; z-index: 9999; overflow: hidden; color: #ffffff; background: linear-gradient(160deg, var(--g1), var(--g2)); display: flex; flex-direction: column; justify-content: flex-end; padding: 32px 26px calc(56px + env(safe-area-inset-bottom)); opacity: 0; transition: opacity 0.35s ease; cursor: pointer; }
 .greet-poster.show { opacity: 1; }
 .greet-poster.hide { opacity: 0; transition-duration: 0.4s; }
+/* 홈보다 먼저 그리는 인사말(index.html 맨 앞)은 서서히 나타나지 않고 첫 프레임부터 화면을 덮는다 — 그래야 홈이 안 비친다. */
+.greet-poster.early { opacity: 1; transition: none; }
+.greet-poster.early.hide { opacity: 0; transition: opacity 0.4s ease; }
 /* 계급 그림은 바탕이 투명한 이모티콘 그대로, 오리지 않고 통째로 크게 띄운다(사용자 요청 — 동그라미로 오렸다가 되돌렸다). */
 .greet-pic { position: absolute; right: 4vw; top: calc(10vh + env(safe-area-inset-top)); width: min(70vw, 320px); height: auto; object-fit: contain; transform: translateX(70px) scale(0.92); opacity: 0; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease; pointer-events: none; }
 .greet-poster.show .greet-pic { transform: none; opacity: 1; }

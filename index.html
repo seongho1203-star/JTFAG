@@ -22,6 +22,42 @@
     </script>
 </head>
 <body ontouchstart="">
+<script>
+    // 입장 인사말을 홈보다 먼저 덮는다(사용자 요청 — 홈이 잠깐 보였다가 인사말이 뜨던 순서를 뒤집었다).
+    // 지난 접속 때 showGreeting()이 남겨 둔 값(jtfag_greet)으로 데이터를 받기 전에 바로 그린다.
+    // 데이터가 오면 showGreeting()이 이 창을 이어받아(early) 계급이 바뀌었으면 고쳐 쓰고 닫는 시각을 정한다.
+    // 이름은 사용자가 고른 글이라 textContent로만 넣는다.
+    (function () {
+        try {
+            var n = localStorage.getItem('jtfag_my_name');
+            var g = JSON.parse(localStorage.getItem('jtfag_greet') || 'null');
+            if (!n || !g || g.name !== n) return;
+            var el = document.createElement('div');
+            el.className = 'greet-overlay greet-poster early';
+            el.style.setProperty('--g1', g.from); el.style.setProperty('--g2', g.to);
+            el.innerHTML = '<img class="greet-pic" alt=""><div class="greet-text"><div class="greet-kick"></div>'
+                + '<div class="greet-name"><span class="greet-rank"></span>등급<br><span class="greet-who"></span>님</div>'
+                + '<div class="greet-msg">입장하였습니다 · 화면을 누르면 넘어갑니다</div></div>';
+            var pic = el.querySelector('.greet-pic');
+            if (g.pic) pic.src = g.pic; else pic.remove();
+            el.querySelector('.greet-kick').textContent = g.phrase;
+            el.querySelector('.greet-rank').textContent = g.rankName;
+            el.querySelector('.greet-who').textContent = n;
+            el.dataset.at = Date.now();
+            // 데이터가 오기 전에 눌러 넘기거나, 끝내 안 오면(8초) 스스로 걷힌다. 이어받으면 showGreeting()의 것으로 바뀐다.
+            var gone = function () {
+                if (el.dataset.adopted) return;
+                window.__greetEarlyDone = true;
+                el.classList.remove('show'); el.classList.add('hide');
+                setTimeout(function () { el.remove(); }, 450);
+            };
+            el.onclick = gone;
+            el.dataset.fallback = setTimeout(gone, 8000);
+            document.body.appendChild(el);
+            requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('show'); }); });
+        } catch (e) {}
+    })();
+</script>
 
 <div class="container" id="appContainer" data-page="home">
     <!-- 디자인 1 · 클린 화이트 — 왼쪽에 이름, 오른쪽에 알림·관리자 단추 -->

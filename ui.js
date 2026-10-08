@@ -3728,8 +3728,10 @@ async function checkAndGreetUser() {
         return;
     }
 
-    showGreeting(myName);
     hasGreeted = true;
+    // 먼저 그려 둔 인사말을 데이터가 오기 전에 눌러 넘겼으면 다시 띄우지 않고 연출로 넘어간다.
+    if (window.__greetEarlyDone) { runEntranceEffects(); return; }
+    showGreeting(myName);
 }
 
 async function deleteMyName() {
@@ -3773,25 +3775,52 @@ function showGreeting(myName) {
     ];
     const g = GREET[myRankIdx] || GREET[3];
     const m = /src="([^"]+)"/.exec(rankInfo.icon || '');
-    const pic = m ? `<img class="greet-pic" src="${m[1]}" alt="">` : '';
+    const picSrc = m ? m[1] : '';
+
+    // 다음 접속 때 index.html 맨 앞의 줄이 데이터를 기다리지 않고 이 값으로 먼저 그린다(홈보다 인사말이 먼저).
+    try {
+        localStorage.setItem('jtfag_greet', JSON.stringify({
+            name: myName, rankName: rankInfo.name, phrase: g.phrase, from: g.from, to: g.to, pic: picSrc
+        }));
+    } catch (e) {}
 
     // 덮는 창 하나다 — 화면 전체·position:fixed·입력을 받으므로 watchOverlays()가 뒷배경을 잠근다.
     // greet-overlay 표식은 연출(카운트업·결과 발표)이 이게 사라질 때까지 기다리게 하는 데 쓴다.
     // transform·opacity만 움직인다(blur·filter는 안드로이드에서 끊긴다).
-    const overlay = document.createElement('div');
-    overlay.className = 'greet-overlay greet-poster';
+    // 먼저 그려 둔 창(early)이 있으면 새로 만들지 않고 이어받는다 — 계급이 바뀌었으면 그 자리에서 고쳐 쓴다.
+    let overlay = document.querySelector('.greet-poster.early:not(.hide)');
+    let shown = 0;
+    if (overlay) {
+        overlay.dataset.adopted = '1';
+        clearTimeout(Number(overlay.dataset.fallback));
+        shown = Date.now() - Number(overlay.dataset.at || Date.now());
+    } else {
+        overlay = document.createElement('div');
+        overlay.className = 'greet-overlay greet-poster';
+        overlay.innerHTML = `<img class="greet-pic" alt="">
+            <div class="greet-text">
+                <div class="greet-kick"></div>
+                <div class="greet-name"><span class="greet-rank"></span>등급<br><span class="greet-who"></span>님</div>
+                <div class="greet-msg">입장하였습니다 · 화면을 누르면 넘어갑니다</div>
+            </div>`;
+    }
     overlay.style.setProperty('--g1', g.from);
     overlay.style.setProperty('--g2', g.to);
-    overlay.innerHTML = `${pic}
-        <div class="greet-text">
-            <div class="greet-kick">${g.phrase}</div>
-            <div class="greet-name">${escapeHtml(rankInfo.name)}등급<br>${escapeHtml(myName)}님</div>
-            <div class="greet-msg">입장하였습니다 · 화면을 누르면 넘어갑니다</div>
-        </div>`;
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('show')));
+    overlay.querySelector('.greet-kick').textContent = g.phrase;
+    overlay.querySelector('.greet-rank').textContent = rankInfo.name;
+    overlay.querySelector('.greet-who').textContent = myName;
+    let pic = overlay.querySelector('.greet-pic');
+    if (picSrc) {
+        if (!pic) { pic = document.createElement('img'); pic.className = 'greet-pic'; pic.alt = ''; overlay.prepend(pic); }
+        if (pic.getAttribute('src') !== picSrc) pic.src = picSrc;
+    } else if (pic) pic.remove();
+    if (!overlay.isConnected) {
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('show')));
+    }
 
     // 3초를 채우든 눌러서 넘기든 한 번만 사라지게 한다.
+    // 먼저 그려 둔 창은 이미 떠 있던 만큼 빼고, 홈이 다 그려진 뒤 잠깐은 더 둔다.
     let gone = false;
     const dismiss = () => {
         if (gone) return;
@@ -3802,7 +3831,7 @@ function showGreeting(myName) {
         // 인사말이 완전히 걷힌 뒤에 연출을 시작한다 — 안 그러면 뒤에서 혼자 끝나 버린다.
         setTimeout(() => { overlay.remove(); runEntranceEffects(); }, 450);
     };
-    const timer = setTimeout(dismiss, 3000);
+    const timer = setTimeout(dismiss, Math.max(600, 3000 - shown));
     overlay.onclick = dismiss;
 }
 
