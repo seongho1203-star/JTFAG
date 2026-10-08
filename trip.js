@@ -593,7 +593,7 @@ async function loadTripWeather(d) {
 
 // ═══ 일본 골프장 찾기 (라쿠텐 GORA) ═══════════════════════════════
 // 흐름: 기준 위치(숙소·역 이름을 찾거나 지도를 눌러 고른다) → 범위·최대 금액 → GORA에 그날 예약 가능한
-// 플랜을 묻는다 → 지도와 목록(가까운 순)에 펼친다 → `이 날로 정하기`가 그 날짜의 골프장으로 넣는다.
+// 플랜을 묻는다 → 지도와 목록(가까운 순)에 펼친다 → `날짜 선택 완료`가 그 날짜의 골프장으로 넣는다.
 // **예약·결제는 앱이 못 한다** — 라쿠텐이 예약 API를 열어 두지 않았다. 그래서 그 골프장의 GORA 예약
 // 페이지를 열어 주고(원문 / 구글 번역으로 한국어), 사람이 거기서 예약한다.
 // 라쿠텐에 묻는 일은 Supabase 함수 `gora`가 한다(열쇠를 앱에 둘 수 없다 — 공개 저장소).
@@ -653,7 +653,10 @@ function goraHour(v) {
     return h >= 4 && h <= 19 ? h : undefined;
 }
 // 플랜 이름에 자주 나오는 말만 한글로 바꾼다(나머지는 일본어 그대로 — 예약 화면과 맞춰 보는 데 쓴다).
-const PLAN_WORDS = [['2サム保証', '2인 확약'], ['２サム保証', '2인 확약'], ['2サム', '2인'], ['昼食付き', '점심 포함'], ['昼食付', '점심 포함'], ['昼食', '점심'], ['乗用カート', '카트'], ['カート付', '카트 포함'],
+const PLAN_WORDS = [['割増無し', '할증 없음'], ['割増なし', '할증 없음'], ['割増無', '할증 없음'], ['割増', '할증'], ['期間限定', '기간 한정'], ['時間限定', '시간 한정'], ['枠限定', '수량 한정'],
+    ['イチオシ', '추천'], ['タイムサービス', '타임 서비스'], ['レギュラー', '레귤러'], ['キャンペーン', '캠페인'], ['昼補助', '점심 지원'], ['補助', '지원'], ['料金', '요금'],
+    ['乗用', '승용'], ['保証', '확약'], ['先着', '선착순'], ['休日', '휴일'], ['祝日', '공휴일'], ['朝食', '아침 식사'], ['無料', '무료'], ['送迎', '송영'], ['込み', ' 포함'], ['コンペ', '단체 경기'],
+    ['2サム保証', '2인 확약'], ['２サム保証', '2인 확약'], ['2サム', '2인'], ['昼食付き', '점심 포함'], ['昼食付', '점심 포함'], ['昼食', '점심'], ['乗用カート', '카트'], ['カート付', '카트 포함'],
     ['キャディ付き', '캐디 포함'], ['キャディ付', '캐디 포함'], ['キャディ', '캐디'], ['セルフ', '셀프'], ['スループレー', '스루 플레이'], ['ハーフラウンド', '9홀 라운드'], ['ハーフプレー', '9홀 플레이'], ['ハーフ休憩あり', '9홀 후 휴식'], ['ハーフ休憩', '9홀 후 휴식'], ['休憩', '휴식'], ['ハーフ', '하프'], ['1ドリンク', '음료 1잔'], ['ドリンク', '음료'],
     ['平日', '평일'], ['土日祝', '주말·공휴일'], ['土日', '주말'], ['早朝', '이른 아침'], ['午前', '오전'], ['午後', '오후'], ['薄暮', '해질녘'], ['限定', '한정'], ['割引', '할인'], ['特典', '혜택'],
     ['お得', '알뜰'], ['プラン', '플랜'], ['ポイント', '포인트'], ['付き', ' 포함'], ['付', ' 포함']];
@@ -661,6 +664,63 @@ function koPlan(name) {
     let s = String(name || '').normalize('NFKC');
     for (const [ja, ko] of PLAN_WORDS) s = s.split(ja.normalize('NFKC')).join(ko);
     return s.replace(/【/g, '[').replace(/】/g, '] ').replace(/\s+/g, ' ').trim();
+}
+// ─── 플랜 이름 기계 번역 ───
+// koPlan()은 흔한 말만 바꿔 한자가 반쯤 남는다(사용자 제보 — `일부만 한글`). 그래서 찾은 뒤에
+// 구글 번역(키가 필요 없는 공개 주소)으로 일본어 원문을 통째로 옮겨 갈아 끼운다.
+// 못 받으면(막혔거나 끊김) koPlan() 결과가 그대로 남는다 — 번역은 덤이라 실패해도 알리지 않는다.
+// 한 번 옮긴 것은 이 폰에 기억한다(`jtfag_gora_tr`) — 같은 골프장을 다시 찾으면 곧바로 한글이다.
+const GORA_TR_KEY = 'jtfag_gora_tr', GORA_TR_MAX = 600, GORA_TR_CHUNK = 500;
+let goraTr = (() => { try { return JSON.parse(localStorage.getItem(GORA_TR_KEY)) || {}; } catch (e) { return {}; } })();
+const planKey = name => String(name || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+// 골프 말은 번역기가 엉뚱하게 옮겨서(2サム → 2섬) 보내기 전에 먼저 바꿔 둔다.
+const PLAN_PRE = [[/[2２]サム保証/g, '2인 확약'], [/[2２]サム/g, '2인'], [/(\d)サム/g, '$1인'], [/(\d)B(?![a-zA-Z])/g, '$1인'],
+    [/ハーフ休憩(あり)?/g, '9홀 후 휴식'], [/スループレ[ーイ]/g, '스루 플레이'], [/コンペ/g, '단체 경기'], [/割増(無し|なし|無)/g, '할증 없음'], [/セルフ/g, '셀프']];
+function goraPlanKo(name) {
+    const k = planKey(name);
+    return goraTr[k] || koPlan(name);
+}
+const JA_LEFT = /[぀-ヿ]/;   // 가나가 남았으면 덜 옮긴 것
+async function goraTranslateBatch(list) {
+    const src = list.map(k => PLAN_PRE.reduce((t, [re, ko]) => t.replace(re, ko), k).replace(/\n/g, ' '));
+    const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q=' + encodeURIComponent(src.join('\n')));
+    if (!res.ok) throw new Error('번역 ' + res.status);
+    const data = await res.json();
+    const out = (Array.isArray(data && data[0]) ? data[0] : []).map(seg => (seg && seg[0]) || '').join('').split('\n').map(t => t.trim());
+    if (out.length !== list.length) throw new Error('번역 줄 수가 다름');
+    return out;
+}
+async function goraTranslatePlans(seq) {
+    // 보이는 플랜부터(골프장마다 셋), 그다음 나머지 — 조건을 바꾸면 다른 플랜이 보이므로 다 옮겨 둔다.
+    const order = [...gora.items.flatMap(it => (it.fit || it.plans).slice(0, 3)), ...gora.all.flatMap(it => it.plans)];
+    const want = [...new Set(order.map(p => planKey(p.name)))].filter(k => k && !goraTr[k] && /[぀-ヿ一-鿿]/.test(k)).slice(0, 200);
+    let done = 0;
+    for (let i = 0; i < want.length;) {
+        const chunk = [];
+        let len = 0;
+        while (i < want.length && (chunk.length === 0 || len + want[i].length < GORA_TR_CHUNK)) { len += want[i].length + 1; chunk.push(want[i++]); }
+        let got = null;
+        try { got = await goraTranslateBatch(chunk); }
+        catch (e) {
+            if (/줄 수/.test(e.message)) {   // 묶음이 어긋나면 하나씩 다시
+                got = [];
+                for (const k of chunk) { try { got.push((await goraTranslateBatch([k]))[0]); } catch (e2) { got.push(''); } }
+            } else { console.warn('[GORA] 플랜 번역 실패:', e.message); break; }
+        }
+        if (seq !== gora.seq) return;   // 그사이 새로 찾았으면 버린다
+        chunk.forEach((k, j) => {
+            let t = got[j] || '';
+            if (!t) return;
+            if (JA_LEFT.test(t)) t = koPlan(t);
+            goraTr[k] = t.replace(/【/g, '[').replace(/】/g, '] ').replace(/\s+/g, ' ').trim();
+            done++;
+        });
+        if (done) renderGoraResult();
+    }
+    if (!done) return;
+    const keys = Object.keys(goraTr);
+    if (keys.length > GORA_TR_MAX) keys.slice(0, keys.length - GORA_TR_MAX).forEach(k => delete goraTr[k]);
+    try { localStorage.setItem(GORA_TR_KEY, JSON.stringify(goraTr)); } catch (e) {}
 }
 function goraPlanTags(p) {
     return [p.hour !== undefined ? `${p.hour}시대` : '', p.half ? '9홀' : '', p.two ? '2인' : '', p.lunch ? '점심' : ''].filter(Boolean);
@@ -698,7 +758,7 @@ function goraRefilter() {
 function openGora(date) {
     const trip = findTrip(tripOpenId);
     if (!trip) return;
-    gora.date = date;
+    gora.date = date; gora.seq = (gora.seq || 0) + 1;
     gora.items = []; gora.all = [];
     gora.places = [];
     gora.error = null; gora._searched = false;
@@ -1105,7 +1165,7 @@ async function basePref(base) {
 async function searchGora() {
     if (!gora.base) { showToast('⚠️ 먼저 기준 위치를 골라 주세요.'); return; }
     if (gora.busy) return;
-    gora.busy = true; gora.items = []; gora.all = []; gora.note = ''; gora.error = null; gora._searched = true; gora.raw = {};
+    gora.busy = true; gora.seq = (gora.seq || 0) + 1; gora.items = []; gora.all = []; gora.note = ''; gora.error = null; gora._searched = true; gora.raw = {};
     gora.progress = 0;
     renderGora();
     const tick = () => { gora.progress++; const el = document.getElementById('goraProgress'); if (el) el.textContent = `라쿠텐 GORA에 묻는 중… (${gora.progress})`; };
@@ -1158,6 +1218,7 @@ async function searchGora() {
         renderGora();
         paintGoraMap();
     }
+    if (gora.all.length) goraTranslatePlans(gora.seq);
 }
 
 function toggleGoraRaw() {
@@ -1204,7 +1265,7 @@ function renderGoraResult() {
             ${it.address ? `<div class="gora-item-meta addr">${escapeHtml(koAddress(it.address))}</div>` : ''}
             <div class="trip-actions">
                 <a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
-                <button type="button" class="trip-btn primary" onclick="pickGoraCourse(${i})">이 날로 정하기</button>
+                <button type="button" class="trip-btn primary" onclick="pickGoraCourse(${i})">날짜 선택 완료</button>
             </div>
         </div>`;
     }).join('') + rawLink;
@@ -1218,7 +1279,7 @@ function goraPlanHtml(p, it) {
         + `<span class="gora-plan-price">${p.price ? '¥' + p.price.toLocaleString() : ''}</span>`
         + goraPlanTags(p).map(t => `<span class="gora-tag">${escapeHtml(t)}</span>`).join('')
         + `<span class="gora-plan-go">${p.url ? '이 플랜 예약' : '예약 달력'} ›</span>`
-        + `<small>${escapeHtml(koPlan(p.name))}</small></a>`;
+        + `<small>${escapeHtml(goraPlanKo(p.name))}</small></a>`;
 }
 
 function pickGoraCourse(i) {
