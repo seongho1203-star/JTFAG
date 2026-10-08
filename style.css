@@ -1175,7 +1175,7 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .trip-link + .trip-link { border-left: 1px solid var(--line); border-radius: 0; }
 .trip-link:active { opacity: 0.6; transform: none !important; }
 
-/* 입력 칸을 한 줄로 — 칸 이름 왼쪽 · 입력란 오른쪽(사용자 제보 — `칸들이 너무 커`).
+/* 입력 칸을 한 줄로 — 칸 이름 왼쪽 · 입력란 오른쪽(사용자 제보 — `칸들이 너무 커`). 글자 크기는 아래 14px 규칙이 정한다.
    글자는 16px 그대로다(그 아래면 아이폰이 입력할 때 화면을 확대한다). 줄이는 건 여백과 칸 이름 줄이다. */
 .trip-field { margin-top: 6px; }
 .trip-field input, .trip-field textarea, .trip-field select { padding: 6px 9px; border-radius: 7px; font-weight: 500; }
@@ -1187,3 +1187,6 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .trip-sub-note { color: var(--text-sub); font-size: 0.68rem; font-weight: 600; }
 .trip-day.editing .trip-actions .trip-btn { min-height: 34px; }
 .trip-day.editing .course-results { margin-left: 64px; width: auto; }
+/* 여행 창 입력 글자 — 16px에서 한 단계 내린다(사용자 요청). viewport가 maximum-scale=1이라 아이폰이 확대하지 않는다
+   (정산 금액 칸은 이미 11px 남짓이다). */
+.trip-field input, .trip-field textarea, .trip-field select { font-size: 14px; }

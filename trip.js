@@ -3,7 +3,7 @@
 // 값은 payload.trips에 둔다 — 여행 하나가
 //   {id, title, kind:'domestic'|'japan'|'abroad', base:{name,lat,lon}?, memo,
 //    days:[{date, course, area, tee, stay, memo, lat?, lon?, gora?:{id,url}}],
-//    travel?:{flightOut, flightBack, flightRef, car:'yes'|'no', carCo, carPick, carDrop, carRef, stayInfo}}
+//    travel?:{flightOut, flightBack, flightRef, car:'yes'|'no', carCo, carPick, carDrop, carRef}}
 //   travel은 여행 전체에 한 벌(항공·렌트카·숙소 예약) — 적은 칸만 남고, 다 비우면 키째 지운다.
 // 고치는 차례는 다른 곳과 같다: saveState() → appData 수정 → syncToSupabase(appData).
 // **고칠 때는 순번이 아니라 id·날짜로 다시 찾는다** — 창이 떠 있는 사이 남의 저장이 들어오면
@@ -512,8 +512,9 @@ function tripCourseHide() {
 // 사용자 요청 — `렌트카 사용 여부나 숙소, 항공 정보도 입력`. 날마다 다른 것(골프장·티오프·묵는 곳)은
 // 날짜 칸에, 여행 내내 하나인 것(항공편·렌트카·숙소 예약번호)은 여기에 둔다.
 // 숙소 이름은 날짜 칸의 `stay`가 원본이다 — 여기서는 그걸 묶어 보여 주기만 하고(`stayRuns()`),
-// 체크인 시각·연락처·예약번호 같은 덧붙일 말만 `stayInfo`에 적는다. 두 곳에 같은 이름을 적게 하지 말 것.
-const TRAVEL_KEYS = ['flightOut', 'flightBack', 'flightRef', 'car', 'carCo', 'carPick', 'carDrop', 'carRef', 'stayInfo'];
+// 예전에 있던 `숙소 정보`(stayInfo — 체크인 시각·연락처 따위)는 쓰임이 모호하다는 사용자 말로 걷어냈다.
+// 키에서 빠졌으므로 다음 저장 때 옛 값도 함께 걷힌다. 되살리지 말 것.
+const TRAVEL_KEYS = ['flightOut', 'flightBack', 'flightRef', 'car', 'carCo', 'carPick', 'carDrop', 'carRef'];
 const TRAVEL_CAR = { '': '미정', yes: '사용', no: '미사용' };
 function tripTravel(trip) {
     const t = trip && trip.travel && typeof trip.travel === 'object' ? trip.travel : {};
@@ -558,9 +559,7 @@ function travelHtml(trip) {
                 ${f('tripTvCarDrop', '반납', t.carDrop)}
                 ${f('tripTvCarRef', '렌트 예약', t.carRef, 40)}
             </div>
-            <div class="trip-sub">숙소</div>
-            <div class="trip-hint" style="margin-top:2px;">숙소명은 일자별 <b>입력</b>의 숙소 항목에 기재합니다. 이곳에는 체크인 시각·연락처·예약번호 등 부가 정보를 기재하세요.</div>
-            <label class="trip-field row"><span>숙소 정보</span><textarea id="tripTvStayInfo" rows="2" maxlength="200">${escapeHtml(t.stayInfo)}</textarea></label>
+            <div class="trip-hint">숙소는 일자별 <b>입력</b>의 숙소 항목에 기재합니다.</div>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripTravel()">저장</button>
@@ -585,7 +584,6 @@ function travelHtml(trip) {
             ${flight}
             ${car}
             ${stay}
-            ${t.stayInfo ? `<div class="trip-memo">${escapeHtml(t.stayInfo)}</div>` : ''}
             <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripTravel()">입력</button></div>
         </div>`;
 }
@@ -601,7 +599,7 @@ function saveTripTravel() {
     const car = carEl && TRAVEL_CAR[carEl.value] !== undefined ? carEl.value : '';
     const next = {
         flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), flightRef: val('tripTvFlightRef'),
-        car, stayInfo: val('tripTvStayInfo'),
+        car,
         // 미사용이면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
         carCo: car === 'yes' ? val('tripTvCarCo') : '', carPick: car === 'yes' ? val('tripTvCarPick') : '',
         carDrop: car === 'yes' ? val('tripTvCarDrop') : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
