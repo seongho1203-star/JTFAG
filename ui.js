@@ -3762,50 +3762,48 @@ function showGreeting(myName) {
     }
 
     const rankInfo = RANK_CONFIG[myRankIdx];
-    const iconHtml = rankInfo.icon;
 
-    let greetMsg = "";
-    if (myRankIdx === 0) greetMsg = `✨ 황제 귀환!<br><span style="color:#fef08a;">독수리등급 ${myName}님</span>이 입장하였습니다.`;
-    else if (myRankIdx === 1) greetMsg = `⚔️ 맹수의 발톱!<br><span style="color:#0ea5e9;">매등급 ${myName}님</span>이 입장하였습니다.`;
-    else if (myRankIdx === 2) greetMsg = `🦢 우아한 날개짓!<br><span style="color:#a855f7;">학등급 ${myName}님</span>이 입장하였습니다.`;
-    else greetMsg = `💦 앗!<br><span style="color:#94a3b8;">참새등급 ${myName}님</span>이 입장하였습니다.`;
+    // 포스터 — 화면 전체를 계급 색으로 칠하고 이름을 크게 쓴다(사용자가 시안 여덟 개 중 F를 골랐다).
+    // 문구(`⚔️ 맹수의 발톱!`)는 분위기를 내는 연출 글이라 그대로 둔다.
+    const GREET = [
+        { phrase: '✨ 황제 귀환!', from: '#d4a62a', to: '#7a4e12' },
+        { phrase: '⚔️ 맹수의 발톱!', from: '#1196d8', to: '#1c4f9a' },
+        { phrase: '🦢 우아한 날개짓!', from: '#a35ae6', to: '#5b3aa8' },
+        { phrase: '💦 앗!', from: '#8592a0', to: '#46505c' }
+    ];
+    const g = GREET[myRankIdx] || GREET[3];
+    const m = /src="([^"]+)"/.exec(rankInfo.icon || '');
+    const pic = m ? `<img class="greet-pic" src="${m[1]}" alt="">` : '';
 
-    const overlay = document.createElement('div');
-    // 다른 창과 똑같이 입력을 받는다 — 그래야 watchOverlays()가 뒷배경을 잠근다.
-    // 대신 3초를 억지로 기다리지 않도록 눌러서 넘길 수 있게 해 뒀다(아래 dismiss).
-    // 전체화면 blur은 안드로이드에서 값이 비싸다(화면이 끊긴다). 어두운 막만으로 충분하다.
+    // 덮는 창 하나다 — 화면 전체·position:fixed·입력을 받으므로 watchOverlays()가 뒷배경을 잠근다.
     // greet-overlay 표식은 연출(카운트업·결과 발표)이 이게 사라질 때까지 기다리게 하는 데 쓴다.
-    overlay.className = 'greet-overlay';
-    overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.62); z-index:9999; opacity:0; transition:opacity 0.4s ease;";
-    
-    const toast = document.createElement('div');
-    toast.innerHTML = `<div style="font-size: 2.5rem; margin-bottom: 12px; display:flex; justify-content:center;">${iconHtml}</div><div style="font-size: 0.95rem; line-height:1.5; word-break:keep-all;">${greetMsg}</div>`;
-    toast.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0.7); opacity:0; width: 85%; max-width: 320px; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid #d4af37; color:#fff; padding:24px 16px; border-radius:16px; text-align:center; font-weight:800; z-index:10000; box-shadow:0 15px 40px rgba(0,0,0,0.6); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
-    
+    // transform·opacity만 움직인다(blur·filter는 안드로이드에서 끊긴다).
+    const overlay = document.createElement('div');
+    overlay.className = 'greet-overlay greet-poster';
+    overlay.style.setProperty('--g1', g.from);
+    overlay.style.setProperty('--g2', g.to);
+    overlay.innerHTML = `${pic}
+        <div class="greet-text">
+            <div class="greet-kick">${g.phrase}</div>
+            <div class="greet-name">${escapeHtml(rankInfo.name)}등급<br>${escapeHtml(myName)}님</div>
+            <div class="greet-msg">입장하였습니다 · 화면을 누르면 넘어갑니다</div>
+        </div>`;
     document.body.appendChild(overlay);
-    document.body.appendChild(toast);
-    
-    setTimeout(() => { 
-        overlay.style.opacity = "1";
-        toast.style.transform = "translate(-50%, -50%) scale(1)"; 
-        toast.style.opacity = "1";
-    }, 50);
-    
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('show')));
+
     // 3초를 채우든 눌러서 넘기든 한 번만 사라지게 한다.
     let gone = false;
     const dismiss = () => {
         if (gone) return;
         gone = true;
         clearTimeout(timer);
-        toast.style.transform = "translate(-50%, -50%) scale(0.8)";
-        toast.style.opacity = "0";
-        overlay.style.opacity = "0";
+        overlay.classList.remove('show');
+        overlay.classList.add('hide');
         // 인사말이 완전히 걷힌 뒤에 연출을 시작한다 — 안 그러면 뒤에서 혼자 끝나 버린다.
-        setTimeout(() => { toast.remove(); overlay.remove(); runEntranceEffects(); }, 500);
+        setTimeout(() => { overlay.remove(); runEntranceEffects(); }, 450);
     };
     const timer = setTimeout(dismiss, 3000);
     overlay.onclick = dismiss;
-    toast.onclick = dismiss;
 }
 
 // 통합 정산 요약의 뱃지 칩 높이를 네 칸 모두 같게 맞춘다.
