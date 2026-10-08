@@ -364,6 +364,12 @@ scripts/fetch-courses.js  →  courses.js를 커밋
   안드로이드 `intent://…;package=net.daum.android.map;S.browser_fallback_url=…`), 해외는 카카오맵이 안 되므로
   아이폰 `maps://`(애플 지도 — 늘 깔려 있다) · 안드로이드 구글 지도 intent. PC만 웹 지도를 새 탭으로 연다.
   시험에서 갈아 끼우게 이동은 `tripGo()` 한 곳으로 모았다.
+  - **국내 길찾기는 앱을 고르게 한다**(`showRoutePicker()` · 사용자 요청 — `티맵으로는 안 되나` → `깔려있는 앱을 먼저 보여주고 고르게`).
+    **웹 페이지는 폰에 어떤 앱이 깔려 있는지 알 수 없다**(브라우저가 막는다) — 그래서 티맵·카카오맵·네이버 지도 셋을 늘 띄우고,
+    지난번에 고른 것을 맨 위에 `지난번`으로 둔다(`jtfag_route_app`). 없는 앱을 고르면 카카오맵 웹 길찾기로 물러난다
+    (아이폰 1.5초 · 안드로이드 `browser_fallback_url`). 앱별 주소는 `routeApps()` 한 곳이다 — 티맵 `tmap://route?goalname=&goalx=경도&goaly=위도`
+    (안드로이드 패키지 `com.skt.tmap.ku`) · 네이버 `nmap://route/car?dlat=&dlng=&dname=&appname=jtfag`. **티맵은 x가 경도다.**
+    `지도` 단추와 해외 여행은 예전 그대로다. PC는 고르지 않고 웹 지도를 새 탭으로 연다.
 
 #### 일본 골프장 찾기 (라쿠텐 GORA · `openGora()`)
 

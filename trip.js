@@ -196,7 +196,9 @@ function mapTargets(day, kind) {
     if (kind === 'domestic') {
         if (geo) return {
             map: { web: `https://map.kakao.com/link/map/${n},${geo.lat},${geo.lon}`, app: `kakaomap://look?p=${geo.lat},${geo.lon}`, intent: `look?p=${geo.lat},${geo.lon}` },
-            route: { web: `https://map.kakao.com/link/to/${n},${geo.lat},${geo.lon}`, app: `kakaomap://route?ep=${geo.lat},${geo.lon}&by=CAR`, intent: `route?ep=${geo.lat},${geo.lon}&by=CAR` }
+            // 길찾기는 앱을 고르게 한다(사용자 요청 — 티맵·카카오맵·네이버 지도). routeApps()가 앱별 주소를 만든다.
+            route: { web: `https://map.kakao.com/link/to/${n},${geo.lat},${geo.lon}`, app: `kakaomap://route?ep=${geo.lat},${geo.lon}&by=CAR`, intent: `route?ep=${geo.lat},${geo.lon}&by=CAR`,
+                     pick: { name, lat: geo.lat, lon: geo.lon } }
         };
         if (!name) return {};
         return { map: { web: `https://map.kakao.com/link/search/${n}`, app: `kakaomap://search?q=${n}`, intent: `search?q=${n}` } };
@@ -227,10 +229,15 @@ function openTripMap(kind, date) {
         tripGo(android ? t.gmaps : t.apple);
         return;
     }
+    if (t.pick) { showRoutePicker(t); return; }
     if (android) {
         tripGo(`intent://${t.intent}#Intent;scheme=kakaomap;package=net.daum.android.map;S.browser_fallback_url=${encodeURIComponent(t.web)};end`);
         return;
     }
+    tryTripApp(t.app, t.web);
+}
+// 아이폰은 앱이 없으면 아무 일도 안 일어난다 — 1.5초 안에 앱으로 안 넘어가면 웹 지도로 연다.
+function tryTripApp(app, web) {
     let left = false;
     const away = () => { if (document.hidden) left = true; };
     document.addEventListener('visibilitychange', away);
@@ -238,9 +245,59 @@ function openTripMap(kind, date) {
     setTimeout(() => {
         document.removeEventListener('visibilitychange', away);
         window.removeEventListener('pagehide', away);
-        if (!left && !document.hidden) tripGo(t.web);   // 앱이 없다 — 웹 지도로
+        if (!left && !document.hidden) tripGo(web);
     }, 1500);
-    tripGo(t.app);
+    tripGo(app);
+}
+
+// ─── 길찾기 앱 고르기 ───
+// 웹 페이지는 폰에 어떤 앱이 깔려 있는지 알 수 없다(브라우저가 막아 둔다). 그래서 셋을 늘 보여 주고
+// 고르게 한다. 깔려 있지 않은 앱을 고르면 카카오맵 웹 길찾기로 물러난다. 지난번에 고른 앱이 맨 위에 온다.
+const ROUTE_APP_KEY = 'jtfag_route_app';
+function routeApps(p) {
+    const n = encodeURIComponent(p.name), web = `https://map.kakao.com/link/to/${n},${p.lat},${p.lon}`;
+    const fb = `;S.browser_fallback_url=${encodeURIComponent(web)};end`;
+    return [
+        { id: 'tmap', label: '🚘 티맵', ios: `tmap://route?goalname=${n}&goalx=${p.lon}&goaly=${p.lat}`,
+          android: `intent://route?goalname=${n}&goalx=${p.lon}&goaly=${p.lat}#Intent;scheme=tmap;package=com.skt.tmap.ku${fb}` },
+        { id: 'kakao', label: '🟡 카카오맵', ios: `kakaomap://route?ep=${p.lat},${p.lon}&by=CAR`,
+          android: `intent://route?ep=${p.lat},${p.lon}&by=CAR#Intent;scheme=kakaomap;package=net.daum.android.map${fb}` },
+        { id: 'naver', label: '🟢 네이버 지도', ios: `nmap://route/car?dlat=${p.lat}&dlng=${p.lon}&dname=${n}&appname=jtfag`,
+          android: `intent://route/car?dlat=${p.lat}&dlng=${p.lon}&dname=${n}&appname=jtfag#Intent;scheme=nmap;package=com.nhn.android.nmap${fb}` }
+    ].map(a => ({ ...a, web }));
+}
+let routePickTarget = null;
+function showRoutePicker(t) {
+    closeRoutePicker();
+    routePickTarget = t;
+    let last = '';
+    try { last = localStorage.getItem(ROUTE_APP_KEY) || ''; } catch (e) {}
+    const apps = routeApps(t.pick).sort((a, b) => (b.id === last) - (a.id === last));
+    const el = document.createElement('div');
+    el.id = 'routePicker';
+    el.className = 'route-picker';
+    el.onclick = e => { if (e.target === el) closeRoutePicker(); };
+    el.innerHTML = `<div class="route-sheet">
+        <div class="route-title">🚗 ${escapeHtml(t.pick.name || '목적지')} 길찾기</div>
+        ${apps.map(a => `<button type="button" class="route-app" onclick="pickRouteApp('${a.id}')">${a.label}${a.id === last ? ' <small>지난번</small>' : ''}</button>`).join('')}
+        <div class="route-note">폰에 없는 앱을 고르면 카카오맵 웹으로 열려요</div>
+        <button type="button" class="route-app cancel" onclick="closeRoutePicker()">취소</button>
+    </div>`;
+    document.body.appendChild(el);
+}
+function closeRoutePicker() {
+    const el = document.getElementById('routePicker');
+    if (el) el.remove();
+}
+function pickRouteApp(id) {
+    const t = routePickTarget;
+    closeRoutePicker();
+    if (!t) return;
+    const a = routeApps(t.pick).find(x => x.id === id);
+    if (!a) return;
+    try { localStorage.setItem(ROUTE_APP_KEY, id); } catch (e) {}
+    if (/Android/i.test(navigator.userAgent)) tripGo(a.android);
+    else tryTripApp(a.ios, a.web);
 }
 
 // ─── 일정 창 ───
