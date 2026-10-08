@@ -395,6 +395,11 @@ scripts/fetch-courses.js  →  courses.js를 커밋
   - **`gr.g.rakuten.co.jp`로 시작하는 주소는 폰에서 안 열린다**(플랜의 `reservePageUrl`이 그랬다 — DNS 실패).
     `goraUrl()`이 그 주소를 건너뛰고 골프장 검색의 `reserveCalUrl`·`golfCourseDetailUrl`을 먼저 쓴다.
     다 없으면 `楽天GORA 이름` 구글 검색 주소로 물러난다(`goraSearchUrl()` — 이건 저장하지 않는다).
+  - **플랜 한 줄을 누르면 그날 그 플랜의 예약 페이지로 간다**(`goraPlanHtml()` · 사용자 요청). 주소는 플랜 검색 답의
+    `callInfo`(그 날짜 · 그 플랜)에서 오고, `goraUnwrap()`이 `gr.g.rakuten.co.jp` 주소면 **쿼리에 실린 진짜 주소를 꺼내** 쓰고
+    라쿠텐 주소의 `http`는 `https`로 올린다(사파리로 바로 여는 길이 https만 받는다). 플랜 주소가 없으면 `예약 달력 ›`으로
+    골프장 예약 달력에 물러난다. **실제 답의 칸 모양은 이 환경에서 못 봤다** — 플랜이 엉뚱한 데로 가면 `원본 답 보기`의
+    `callInfo`부터 볼 것.
 - **라쿠텐에 묻는 일은 Supabase 함수 `gora`가 한다**(`supabase/functions/gora/index.ts`) —
   열쇠(`RAKUTEN_APP_ID`·`RAKUTEN_ACCESS_KEY`)를 공개 저장소의 앱에 둘 수 없다. 켜는 법은 `docs/일본골프장찾기.md`.
   **그 함수는 일부러 얇다** — 정해 둔 칸 이름(`PARAMS`)만 골라 넘기고 답을 그대로 돌려준다.

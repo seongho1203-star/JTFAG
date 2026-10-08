@@ -947,8 +947,22 @@ function goraGeoOf(raw) {
     return lat !== null && lon !== null ? { lat, lon } : null;
 }
 // 예약 주소. `gr.g.rakuten.co.jp`(라쿠텐 안쪽 주소)는 폰에서 안 열려(사용자 제보) 건너뛴다.
+// 그 안쪽 주소가 가야 할 곳을 쿼리에 싣고 있으면 그것을 꺼내 쓴다. 라쿠텐 주소의 http는 https로 올린다
+// (아이폰에서 사파리로 바로 여는 길(openGoraLink)이 https만 받는다).
+const GR_INNER = /\/\/gr\.g\.rakuten\.co\.jp/;
+function goraUnwrap(u) {
+    if (typeof u !== 'string' || !/^https?:\/\//.test(u)) return '';
+    if (GR_INNER.test(u)) {
+        try {
+            for (const v of new URL(u).searchParams.values()) if (/^https?:\/\//.test(v) && !GR_INNER.test(v)) return goraUnwrap(v);
+        } catch (e) { /* 모양이 틀린 주소는 버린다 */ }
+        return '';
+    }
+    return u.replace(/^http:\/\/([\w.-]*rakuten\.co\.jp)/, 'https://$1');
+}
 function goraUrl(...cands) {
-    return cands.find(u => typeof u === 'string' && /^https?:\/\//.test(u) && !/\/\/gr\.g\.rakuten\.co\.jp/.test(u)) || '';
+    for (const u of cands) { const v = goraUnwrap(u); if (v) return v; }
+    return '';
 }
 // 마지막 그물 — 이름으로 GORA를 찾는 검색 주소는 늘 열린다.
 function goraSearchUrl(name) {
@@ -1186,7 +1200,7 @@ function renderGoraResult() {
                 ${it.km !== null ? `📍 직선 ${it.km.toFixed(0)}km · 차로 약 ${driveMinutes(it.km)}분` : '📍 거리 모름'}
                 ${low ? ` · 💴 ¥${low.price.toLocaleString()}~` : ''}${plans.length ? ` · 플랜 ${plans.length}개` : ''}${it.rating ? ` · ⭐${it.rating.toFixed(1)}` : ''}
             </div>
-            ${shown.length ? `<div class="gora-plans">${shown.map(p => `<div class="gora-plan"><span class="gora-plan-price">${p.price ? '¥' + p.price.toLocaleString() : ''}</span>${goraPlanTags(p).map(t => `<span class="gora-tag">${escapeHtml(t)}</span>`).join('')}<small>${escapeHtml(koPlan(p.name))}</small></div>`).join('')}${plans.length > shown.length ? `<div class="gora-plan more">외 ${plans.length - shown.length}개 플랜 — GORA에서 볼 수 있어요</div>` : ''}</div>` : ''}
+            ${shown.length ? `<div class="gora-plans">${shown.map(p => goraPlanHtml(p, it)).join('')}${plans.length > shown.length ? `<a class="gora-plan more" href="${escapeHtml(it.url || goraSearchUrl(it.name))}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">외 ${plans.length - shown.length}개 플랜 — GORA에서 보기 ›</a>` : ''}</div>` : ''}
             ${it.address ? `<div class="gora-item-meta addr">${escapeHtml(koAddress(it.address))}</div>` : ''}
             <div class="trip-actions">
                 <a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
@@ -1194,6 +1208,17 @@ function renderGoraResult() {
             </div>
         </div>`;
     }).join('') + rawLink;
+}
+
+// 플랜 한 줄을 누르면 그 날짜·그 플랜의 GORA 예약 페이지로 간다(사용자 요청).
+// 주소는 라쿠텐 플랜 검색 답의 callInfo(그날 그 플랜)에서 온다 — 없으면 골프장 예약 달력으로 물러난다.
+function goraPlanHtml(p, it) {
+    const url = p.url || it.url || goraSearchUrl(it.name);
+    return `<a class="gora-plan" href="${escapeHtml(url)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">`
+        + `<span class="gora-plan-price">${p.price ? '¥' + p.price.toLocaleString() : ''}</span>`
+        + goraPlanTags(p).map(t => `<span class="gora-tag">${escapeHtml(t)}</span>`).join('')
+        + `<span class="gora-plan-go">${p.url ? '이 플랜 예약' : '예약 달력'} ›</span>`
+        + `<small>${escapeHtml(koPlan(p.name))}</small></a>`;
 }
 
 function pickGoraCourse(i) {
