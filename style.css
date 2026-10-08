@@ -873,6 +873,12 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .trip-kind span { display: flex; align-items: center; justify-content: center; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; font-size: 0.78rem; font-weight: 800; color: #334155; cursor: pointer; }
 .trip-kind input:checked + span { background: #0f766e; border-color: #0f766e; color: #fff; }
 .trip-sub { margin-top: 12px; font-size: 0.8rem; font-weight: 800; color: var(--text-main); }
+.trip-sub-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.trip-seg { display: inline-flex; padding: 2px; background: #ececea; border-radius: 8px; }
+.trip-seg label { position: relative; }
+.trip-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.trip-seg span { display: block; min-width: 46px; padding: 5px 9px; border-radius: 6px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #6b7075; cursor: pointer; }
+.trip-seg input:checked + span { background: #ffffff; color: var(--primary-gold); box-shadow: 0 1px 2px rgba(22, 24, 26, 0.14); }
 .trip-two { display: flex; gap: 8px; }
 .trip-two > * { flex: 1 1 0; min-width: 0; }
 .trip-field select { display: block; width: 100%; margin-top: 3px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a; font-size: 16px; font-weight: 600; }

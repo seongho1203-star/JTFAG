@@ -337,7 +337,7 @@ function newTripHtml() {
                 <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 입력</b>으로, 항공·렌트카는 <b>🧭 교통·숙소</b>에 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
+            <div class="trip-hint">일자별 골프장·티오프·숙소는 생성 후 <b>✏️ 입력</b>에서, 항공·렌트카는 <b>🧭 교통·숙소</b>에서 입력합니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
                 <button type="button" class="trip-btn primary" onclick="createTrip()">만들기</button>
@@ -513,7 +513,7 @@ function tripCourseHide() {
 // 숙소 이름은 날짜 칸의 `stay`가 원본이다 — 여기서는 그걸 묶어 보여 주기만 하고(`stayRuns()`),
 // 체크인 시각·연락처·예약번호 같은 덧붙일 말만 `stayInfo`에 적는다. 두 곳에 같은 이름을 적게 하지 말 것.
 const TRAVEL_KEYS = ['flightOut', 'flightBack', 'flightRef', 'car', 'carCo', 'carPick', 'carDrop', 'carRef', 'stayInfo'];
-const TRAVEL_CAR = { '': '미정', yes: '🚗 빌린다', no: '안 빌린다' };
+const TRAVEL_CAR = { '': '미정', yes: '사용', no: '미사용' };
 function tripTravel(trip) {
     const t = trip && trip.travel && typeof trip.travel === 'object' ? trip.travel : {};
     const out = {};
@@ -545,19 +545,20 @@ function travelHtml(trip) {
         <div class="trip-day editing">
             <div class="trip-day-head">🧭 교통·숙소</div>
             <div class="trip-sub">✈️ 항공</div>
-            ${f('tripTvFlightOut', '가는 편 (편명·출발 시각)', t.flightOut)}
-            ${f('tripTvFlightBack', '오는 편 (편명·출발 시각)', t.flightBack)}
+            ${f('tripTvFlightOut', '출발편 (편명·출발 시각)', t.flightOut)}
+            ${f('tripTvFlightBack', '복귀편 (편명·출발 시각)', t.flightBack)}
             ${f('tripTvFlightRef', '항공 예약번호', t.flightRef, 40)}
-            <div class="trip-sub">🚗 렌트카</div>
-            <div class="trip-kind-row">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label class="trip-kind"><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
+            <div class="trip-sub trip-sub-row">🚗 렌트카
+                <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
+            </div>
             <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
                 ${f('tripTvCarCo', '업체·차종', t.carCo)}
-                ${f('tripTvCarPick', '받는 곳·시각', t.carPick)}
-                ${f('tripTvCarDrop', '반납 곳·시각', t.carDrop)}
-                ${f('tripTvCarRef', '렌트 예약번호', t.carRef, 40)}
+                ${f('tripTvCarPick', '인수 장소·시각', t.carPick)}
+                ${f('tripTvCarDrop', '반납 장소·시각', t.carDrop)}
+                ${f('tripTvCarRef', '렌트카 예약번호', t.carRef, 40)}
             </div>
             <div class="trip-sub">🏨 숙소</div>
-            <div class="trip-hint" style="margin-top:2px;">숙소 이름은 날짜마다 <b>✏️ 입력</b>의 숙소 칸에 적습니다. 여기는 체크인 시각·연락처·예약번호 같은 덧붙일 말을 적으세요.</div>
+            <div class="trip-hint" style="margin-top:2px;">숙소명은 일자별 <b>✏️ 입력</b>의 숙소 항목에 기재합니다. 이곳에는 체크인 시각·연락처·예약번호 등 부가 정보를 기재하세요.</div>
             <label class="trip-field">숙소 예약 정보<textarea id="tripTvStayInfo" rows="2" maxlength="200">${escapeHtml(t.stayInfo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
@@ -567,16 +568,16 @@ function travelHtml(trip) {
     }
     // 국내 여행은 비행기를 안 타는 일이 많아, 적은 게 없으면 항공 줄을 아예 안 보인다(제주라면 적으면 나온다).
     const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef) ? `
-            ${travelRow('✈️ 가는 편', t.flightOut, '미정')}
-            ${travelRow('✈️ 오는 편', t.flightBack, '미정')}
+            ${travelRow('✈️ 출발편', t.flightOut, '미정')}
+            ${travelRow('✈️ 복귀편', t.flightBack, '미정')}
             ${t.flightRef ? travelRow('🎫 예약번호', t.flightRef, '') : ''}` : '';
     const car = t.car === 'yes' ? `
-            ${travelRow('🚗 렌트카', t.carCo || '빌린다', '')}
-            ${t.carPick ? travelRow('↳ 받는 곳', t.carPick, '') : ''}
+            ${travelRow('🚗 렌트카', t.carCo || '사용', '')}
+            ${t.carPick ? travelRow('↳ 인수', t.carPick, '') : ''}
             ${t.carDrop ? travelRow('↳ 반납', t.carDrop, '') : ''}
-            ${t.carRef ? travelRow('🎫 예약번호', t.carRef, '') : ''}` : travelRow('🚗 렌트카', t.car === 'no' ? '안 빌린다' : '', '미정');
+            ${t.carRef ? travelRow('🎫 예약번호', t.carRef, '') : ''}` : travelRow('🚗 렌트카', t.car === 'no' ? '미사용' : '', '미정');
     const runs = stayRuns(trip);
-    const stay = runs.length ? runs.map((r, i) => travelRow(i ? '' : '🏨 숙소', r, '')).join('') : travelRow('🏨 숙소', '', '날짜마다 적으면 여기 모입니다');
+    const stay = runs.length ? runs.map((r, i) => travelRow(i ? '' : '🏨 숙소', r, '')).join('') : travelRow('🏨 숙소', '', '일자별 숙소를 입력하면 이곳에 표시됩니다');
     return `
         <div class="trip-day trip-travel">
             <div class="trip-day-head">🧭 교통·숙소</div>
@@ -600,7 +601,7 @@ function saveTripTravel() {
     const next = {
         flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), flightRef: val('tripTvFlightRef'),
         car, stayInfo: val('tripTvStayInfo'),
-        // 안 빌리면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
+        // 미사용이면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
         carCo: car === 'yes' ? val('tripTvCarCo') : '', carPick: car === 'yes' ? val('tripTvCarPick') : '',
         carDrop: car === 'yes' ? val('tripTvCarDrop') : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
     };
