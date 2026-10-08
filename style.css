@@ -1044,6 +1044,12 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 .money-input { background-color: var(--input-bg) !important; border-color: var(--card-border) !important; border-radius: 8px !important; }
 .donate-row { border-top: 1px solid var(--line); }
 .donate-cell, .near-box { background: var(--input-bg); border-color: var(--line); }
+/* 내가 적을 수 있는 찬조 칸은 남의 칸과 달라 보여야 한다(사용자 제보 — 색이 같아 입력이 안 될 것 같았다).
+   칸은 옅은 남색, 입력란은 흰 바탕 + 남색 테두리, 비어 있으면 `금액 입력`이 보인다. */
+.donate-cell.mine { background: var(--gold-light); border-color: var(--accent-line); }
+.donate-cell.mine .donate-name { color: var(--primary-gold); }
+.donate-cell.mine .donate-input { background: #ffffff; border: 1.5px solid var(--primary-gold); color: var(--text-main); }
+.donate-cell.mine .donate-input::placeholder { color: #8a9ab8; font-weight: 600; }
 .info-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 8px 12px; }
 .action-btn { padding: 8px 11px; border-radius: 10px; font-weight: 700; background: #ffffff; color: var(--text-main); border: 1px solid var(--card-border); }
 .add-btn { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
