@@ -621,11 +621,11 @@ function saveTripTravel() {
     renderTripModal();
 }
 
-// ─── 여행 경비 · 준비물 · 공유 글 ───
+// ─── 여행 경비 · 준비물 ───
 // 사용자 요청 — 일본 여행은 총무(사용자)가 항공·렌트카·숙소·골프장을 모두 예약·선결제하고, 그 내용을
 // 카톡에 손으로 길게 적어 공유했다(`일일이 다 적어서 카톡으로 공유했는데 힘들었어`).
-// 그래서 ① 항목을 적으면 1인 분담금·결제 상태·송금 현황이 저절로 계산되어 보이고 ② 준비물 목록을 두고
-// ③ 그 전부를 예전 카톡 글 모양으로 한 번에 만들어 공유한다(`tripShareText()`).
+// 그래서 ① 항목을 적으면 1인 분담금·결제 상태·송금 현황이 저절로 계산되어 보이고 ② 준비물 목록을 둔다.
+// 동반자도 앱을 같이 쓰므로 카톡에 옮길 글은 만들지 않는다(한때 넣었다가 사용자 요청으로 뺐다).
 //   trip.costs  = [{id, cat, title, amt, cur:'KRW'|'JPY', unit:'person'|'total', status:'paid'|'local'|'plan'}]
 //   trip.people = 인원(분담 기준, 기본 4) · trip.fx = 100엔당 원 · trip.payer = 총무 이름
 //   trip.account = 송금 계좌 · trip.paid = {이름: true} · trip.fund = [{title, amt, cur}] · trip.pack = [문자열]
@@ -942,59 +942,6 @@ function saveTripPack() {
     renderTripModal();
 }
 
-// ─── 공유 글 — 예전에 카톡에 손으로 적던 모양 그대로 ───
-const TRIP_APP_URL = 'https://seongho1203-star.github.io/JTFAG/';
-function tripShareText(trip) {
-    const days = tripDays(trip);
-    const t = tripTravel(trip);
-    const s = costSummary(trip);
-    const L = [];
-    const sec = (head, lines) => { const ls = lines.filter(Boolean); if (ls.length) { L.push('', head); ls.forEach(x => L.push(`•${x}`)); } };
-    const full = iso => { const [y, m, d] = iso.split('-').map(Number); return `${y}년 ${m}월 ${d}일(${isoWeekday(iso)})`; };
-    L.push(`[${trip.title || '여행'}]`);
-    const areas = [...new Set(days.map(d => (d.area || '').trim()).filter(Boolean))];
-    sec('📆 일정', days.length ? [
-        `기간: ${full(days[0].date)} ~ ${full(days[days.length - 1].date)}`,
-        `형태: ${days.length > 1 ? `${days.length - 1}박${days.length}일 ` : ''}${TRIP_KINDS[tripKind(trip)].replace(/^\S+\s/, '')} 골프여행`,
-        `인원: ${s.people}인`,
-        areas.length ? `지역: ${areas.join(' · ')}` : ''
-    ] : []);
-    sec('✈️ 항공', [t.flightOut && `출발편: ${t.flightOut}`, t.flightBack && `복귀편: ${t.flightBack}`, t.flightRef && `예약: ${t.flightRef}`]);
-    sec('🏌️‍♂️ 골프 라운딩', days.filter(d => d.course || d.tee || d.memo).map(d => {
-        const i = days.indexOf(d);
-        return `${i + 1}일차 ${isoLabel(d.date, true)}: ${[d.course || '골프장 미정', d.tee && `티오프 ${d.tee}`, d.memo].filter(Boolean).join(', ')}`;
-    }));
-    sec('🏨 숙소', stayRuns(trip));
-    if (t.car === 'yes') sec('🚘 렌트카', [t.carCo || '사용', t.carPick && `인수: ${t.carPick}`, t.carDrop && `반납: ${t.carDrop}`, t.carRef && `예약: ${t.carRef}`]);
-    sec('🧳 준비물', tripPack(trip));
-    const items = tripCosts(trip);
-    if (items.length) {
-        sec(`💰 예상 비용 (1인 기준${s.fx ? ` · 100엔=${formatNumber(s.fx)}원` : ''})`, [
-            ...items.map(c => `${costLabel(c)}: ${moneyText(costShare(c, s.people), 0)} (${COST_STATUS[c.status]})`),
-            `1인 예상 총액: ${moneyText(s.total, s.fx)}`,
-            ...Object.entries(COST_STATUS).filter(([k]) => s.byStatus[k].krw || s.byStatus[k].jpy).map(([k, v]) => `${v}: ${moneyText(s.byStatus[k], s.fx)}`)
-        ]);
-    }
-    sec('💴 현지 공금', tripFund(trip).filter(f => f.title || f.amt).map(f => `${f.title || '공금'}: ${(f.cur === 'JPY' ? yenText : wonText)(f.amt)}`));
-    const send = s.byStatus.paid;
-    if (send.krw || send.jpy) sec('💳 송금 안내', [
-        `1인 ${moneyText(send, s.fx)}${golfers.includes(trip.payer) ? ` → 총무 ${trip.payer}` : ''}`,
-        trip.account
-    ]);
-    if (trip.memo) sec('📋 메모', [trip.memo]);
-    L.push('', `📱 JTFAG 앱 → 여행에서 상세 내용을 확인할 수 있습니다.`, TRIP_APP_URL);
-    return L.join('\n');
-}
-async function shareTripText() {
-    const trip = findTrip(tripOpenId);
-    if (!trip) return;
-    const text = tripShareText(trip);
-    if (isTouchDevice() && navigator.share) {
-        try { await navigator.share({ text }); return; }
-        catch (e) { if (e && e.name === 'AbortError') return; }
-    }
-    showToast(await copyText(text) ? '📋 공유용 글을 복사했습니다. 카카오톡에 붙여넣기 하세요.' : '⚠️ 복사하지 못했습니다.', 3500);
-}
 
 function tripDayHtml(trip, d, i, today) {
     const isToday = d.date === today;
@@ -1065,7 +1012,6 @@ function renderTripModal() {
             <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''}</div>
             <div class="trip-summary-sub">${tripNotifyText()}</div>
             ${tripCosts(trip).length ? `<button type="button" class="trip-summary-cost" onclick="document.getElementById('tripCostCard').scrollIntoView({behavior:'smooth', block:'start'})">1인 예상 경비 <b>${moneyText(costSummary(trip).total, tripFx(trip))}</b> ›</button>` : ''}
-            <div class="trip-actions"><button type="button" class="trip-btn share" onclick="shareTripText()">📤 카카오톡 공유용 글 만들기</button></div>
         </div>` : '';
     const settings = tripEditing === 'settings' ? settingsHtml(trip) : '';
 

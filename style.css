@@ -1241,9 +1241,7 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .header-tools .bell-btn { color: #9aa0a8; }
 .header-tools .bell-btn.on { color: #2b5394; background: var(--gold-light); border-color: var(--accent-line); }
 
-/* ─── 여행 경비 · 준비물 · 공유 (trip.js '여행 경비' 꼭지) ─── */
-.trip-summary .trip-actions { margin-top: 8px; }
-.trip-btn.share { background: #fee500; border-color: #f2d900; color: #191600; }
+/* ─── 여행 경비 · 준비물 (trip.js '여행 경비' 꼭지) ─── */
 .trip-summary-cost { display: block; width: 100%; margin-top: 6px; padding: 0; border: none; background: none; text-align: left; font-family: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-main); cursor: pointer; }
 .trip-summary-cost b { color: var(--primary-gold); font-weight: 800; }
 .cost-total { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--gold-light); }
