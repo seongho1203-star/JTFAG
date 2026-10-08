@@ -1174,3 +1174,16 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .trip-link { border: none; background: none; padding: 6px 8px; min-height: 30px; color: var(--primary-gold); font-family: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; }
 .trip-link + .trip-link { border-left: 1px solid var(--line); border-radius: 0; }
 .trip-link:active { opacity: 0.6; transform: none !important; }
+
+/* 입력 칸을 한 줄로 — 칸 이름 왼쪽 · 입력란 오른쪽(사용자 제보 — `칸들이 너무 커`).
+   글자는 16px 그대로다(그 아래면 아이폰이 입력할 때 화면을 확대한다). 줄이는 건 여백과 칸 이름 줄이다. */
+.trip-field { margin-top: 6px; }
+.trip-field input, .trip-field textarea, .trip-field select { padding: 6px 9px; border-radius: 7px; font-weight: 500; }
+.trip-field.row { display: flex; align-items: center; gap: 8px; }
+.trip-field.row > span { flex: 0 0 56px; color: var(--text-sub); font-size: 0.74rem; font-weight: 700; }
+.trip-field.row > input, .trip-field.row > textarea { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+.trip-field.row:has(textarea) { align-items: flex-start; }
+.trip-field.row:has(textarea) > span { padding-top: 8px; }
+.trip-sub-note { color: var(--text-sub); font-size: 0.68rem; font-weight: 600; }
+.trip-day.editing .trip-actions .trip-btn { min-height: 34px; }
+.trip-day.editing .course-results { margin-left: 64px; width: auto; }

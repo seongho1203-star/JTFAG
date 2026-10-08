@@ -541,26 +541,26 @@ function travelHtml(trip) {
     const t = tripTravel(trip);
     const kind = tripKind(trip);
     if (tripEditing === 'travel') {
-        const f = (id, label, v, max = 60) => `<label class="trip-field">${label}<input type="text" id="${id}" maxlength="${max}" autocomplete="off" value="${escapeHtml(v)}"></label>`;
+        const f = (id, label, v, max = 60) => `<label class="trip-field row"><span>${label}</span><input type="text" id="${id}" maxlength="${max}" autocomplete="off" value="${escapeHtml(v)}"></label>`;
         return `
         <div class="trip-day editing">
             <div class="trip-day-head">🧭 교통·숙소</div>
-            <div class="trip-sub">항공</div>
-            ${f('tripTvFlightOut', '출발편 (편명·출발 시각)', t.flightOut)}
-            ${f('tripTvFlightBack', '복귀편 (편명·출발 시각)', t.flightBack)}
-            ${f('tripTvFlightRef', '항공 예약번호', t.flightRef, 40)}
+            <div class="trip-sub">항공 <small class="trip-sub-note">편명·출발 시각</small></div>
+            ${f('tripTvFlightOut', '출발편', t.flightOut)}
+            ${f('tripTvFlightBack', '복귀편', t.flightBack)}
+            ${f('tripTvFlightRef', '항공 예약', t.flightRef, 40)}
             <div class="trip-sub trip-sub-row">렌트카
                 <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
             </div>
             <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
                 ${f('tripTvCarCo', '업체·차종', t.carCo)}
-                ${f('tripTvCarPick', '인수 장소·시각', t.carPick)}
-                ${f('tripTvCarDrop', '반납 장소·시각', t.carDrop)}
-                ${f('tripTvCarRef', '렌트카 예약번호', t.carRef, 40)}
+                ${f('tripTvCarPick', '인수', t.carPick)}
+                ${f('tripTvCarDrop', '반납', t.carDrop)}
+                ${f('tripTvCarRef', '렌트 예약', t.carRef, 40)}
             </div>
             <div class="trip-sub">숙소</div>
             <div class="trip-hint" style="margin-top:2px;">숙소명은 일자별 <b>입력</b>의 숙소 항목에 기재합니다. 이곳에는 체크인 시각·연락처·예약번호 등 부가 정보를 기재하세요.</div>
-            <label class="trip-field">숙소 예약 정보<textarea id="tripTvStayInfo" rows="2" maxlength="200">${escapeHtml(t.stayInfo)}</textarea></label>
+            <label class="trip-field row"><span>숙소 정보</span><textarea id="tripTvStayInfo" rows="2" maxlength="200">${escapeHtml(t.stayInfo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripTravel()">저장</button>
@@ -627,12 +627,12 @@ function tripDayHtml(trip, d, i, today) {
         return `
         <div class="trip-day editing">
             <div class="trip-day-head"><span class="trip-day-no">${i + 1}일차</span> ${isoLabel(d.date)}</div>
-            <label class="trip-field">골프장<input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
+            <label class="trip-field row"><span>골프장</span><input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
             ${kind === 'domestic' ? '<div id="tripCourseResults" class="course-results" style="display:none;"></div>' : ''}
-            <label class="trip-field">지역<input type="text" id="tripEdArea" maxlength="20" value="${escapeHtml(d.area)}"></label>
-            <label class="trip-field">티오프<input type="text" id="tripEdTee" maxlength="20" value="${escapeHtml(d.tee)}"></label>
-            <label class="trip-field">숙소<input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>
-            <label class="trip-field">메모<textarea id="tripEdMemo" rows="2" maxlength="200">${escapeHtml(d.memo)}</textarea></label>
+            <label class="trip-field row"><span>지역</span><input type="text" id="tripEdArea" maxlength="20" value="${escapeHtml(d.area)}"></label>
+            <label class="trip-field row"><span>티오프</span><input type="text" id="tripEdTee" maxlength="20" value="${escapeHtml(d.tee)}"></label>
+            <label class="trip-field row"><span>숙소</span><input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>
+            <label class="trip-field row"><span>메모</span><textarea id="tripEdMemo" rows="2" maxlength="200">${escapeHtml(d.memo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripDay('${dateId}')">저장</button>
