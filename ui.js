@@ -3823,19 +3823,26 @@ let equalizeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(equalizeTimer); equalizeTimer = setTimeout(equalizeSummaryBadges, 150); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equalizeSummaryBadges());
 
-// ─── 화면 둘: 홈 / 정산·스코어 ───
-// 사용자 요청 — `통합정산요약까지 1화면, 나머지 2화면`. 홈이 폰 두 장 남짓으로 길어서 나눴다.
+// ─── 화면 둘: 홈 / 정산·스코어 — 좌우로 밀어서 넘긴다 ───
+// 사용자 요청 — `통합정산요약까지 1화면, 나머지 2화면` → `탭 모양이 너무 안예뻐. 좌우 슬라이드방식으로`.
 // 숨긴 쪽은 display:none일 뿐 그대로 그려진다(renderAll은 손대지 않는다).
 // 표는 숨어 있는 동안 폭이 0이라 jumpToLatestRound()가 오른쪽 끝으로 못 보낸다 —
 // 처음 정산·스코어로 넘어올 때 다시 부른다(그 함수는 한 번만 보낸다).
-function showPage(name) {
+// top: 넘어간 뒤 놓을 스크롤 자리(안 주면 맨 위).
+function showPage(name, top) {
     const box = document.getElementById('appContainer');
     if (!box || (name !== 'home' && name !== 'detail')) return;
     const same = box.dataset.page === name;
     box.dataset.page = name;
-    document.querySelectorAll('.page-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    document.querySelectorAll('.page-tab').forEach(b => {
+        const on = b.dataset.tab === name;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    const sw = document.getElementById('pageSwitch');
+    if (sw) sw.style.setProperty('--seg', name === 'detail' ? 1 : 0);
     try { sessionStorage.setItem('jtfag_page', name); } catch (e) {}
-    window.scrollTo(0, 0);
+    window.scrollTo(0, typeof top === 'number' ? top : 0);
     if (!same && name === 'detail') {
         requestAnimationFrame(() => { if (typeof jumpToLatestRound === 'function') jumpToLatestRound(); forceTableReflow(); });
     }
@@ -3843,13 +3850,137 @@ function showPage(name) {
 // 새로고침해도 보던 화면에 남는다(앱을 새로 켜면 홈부터).
 try { const p = sessionStorage.getItem('jtfag_page'); if (p === 'detail') document.addEventListener('DOMContentLoaded', () => showPage('detail')); } catch (e) {}
 
-// 글을 적는 동안은 탭바를 숨긴다 — 아이폰은 키보드 위로 따라 올라와 칸을 가리고, 금액의 `✓ 입력 완료`와도 겹친다.
-document.addEventListener('focusin', e => {
-    if (e.target && e.target.matches && e.target.matches('input, textarea')) document.body.classList.add('typing');
-});
-document.addEventListener('focusout', () => {
-    setTimeout(() => {
-        const a = document.activeElement;
-        if (!(a && a.matches && a.matches('input, textarea'))) document.body.classList.remove('typing');
-    }, 50);
-});
+// 미는 동안만 두 화면을 나란히 펴고(.swiping) .pager를 옆으로 옮긴다.
+// - 들어오는 화면은 지금 보이는 자리(스크롤)에 맞춰 내려 둔다 — 정산·스코어 아래쪽에서 밀어도
+//   홈이 빈자리 없이 손을 따라 나온다. 넘어간 뒤 그만큼 스크롤을 옮겨 한 픽셀도 안 튄다.
+// - 가로로 굴러가는 칸(타수 표 등)과 입력칸에서 시작한 손짓은 안 받는다 — 표는 표대로 민다.
+const pagerSwipe = (() => {
+    const EASE_MS = 320;
+    const PAGE_GAP = 16;    // 두 화면 사이 틈 — style.css의 .pager gap과 같아야 한다
+    let st = null;          // 손짓 하나의 상태
+    let busy = false;       // 넘어가는 움직임이 도는 중
+    const el = id => document.getElementById(id);
+    const order = n => (n === 'detail' ? 1 : 0);
+    const reduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function taken(t, clip) {
+        if (!t || !t.closest) return true;
+        if (t.closest('input, textarea, select, [contenteditable="true"]')) return true;
+        for (let n = t; n && n !== clip; n = n.parentElement) {
+            if (n.scrollWidth > n.clientWidth + 1) {
+                const ox = getComputedStyle(n).overflowX;
+                if (ox === 'auto' || ox === 'scroll') return true;
+            }
+        }
+        return false;
+    }
+
+    // 두 화면을 펴고 들어올 화면을 지금 보는 높이에 맞춘다
+    function open(from, to) {
+        const box = el('appContainer'), clip = el('pagerClip'), pager = el('pager');
+        const W = clip.clientWidth + PAGE_GAP;   // 한 화면 + 사이 틈
+        const P = clip.getBoundingClientRect().top + window.scrollY;
+        const off = Math.max(0, window.scrollY - P);
+        box.classList.add('swiping');
+        const incoming = box.querySelector(to === 'home' ? '.page-home' : '.page-detail');
+        if (incoming && off) incoming.style.transform = `translateY(${off}px)`;
+        pager.style.transform = `translateX(${-order(from) * W}px)`;
+        return { box, clip, pager, W, P, off, incoming, from, to };
+    }
+
+    function paint(s, x) {
+        s.pager.style.transform = `translateX(${x}px)`;
+        const sw = el('pageSwitch');
+        if (sw) sw.style.setProperty('--seg', Math.min(1, Math.max(0, -x / s.W)));
+    }
+
+    // 넘어가거나(commit) 제자리로 돌아간 뒤 정리한다
+    function settle(s, commit) {
+        busy = true;
+        const sw = el('pageSwitch');
+        if (sw) { sw.classList.remove('drag'); sw.style.setProperty('--seg', order(commit ? s.to : s.from)); }
+        s.pager.classList.add('anim');
+        s.pager.style.transform = `translateX(${-order(commit ? s.to : s.from) * s.W}px)`;
+        let done = false;
+        const end = () => {
+            if (done) return; done = true;
+            const keep = window.scrollY;
+            s.pager.classList.remove('anim');
+            s.pager.style.transform = '';
+            if (s.incoming) s.incoming.style.transform = '';
+            s.box.classList.remove('swiping');
+            if (commit) showPage(s.to, s.off ? s.P : keep);
+            busy = false;
+        };
+        s.pager.addEventListener('transitionend', end, { once: true });
+        setTimeout(end, EASE_MS + 120);   // transitionend가 안 오는 판(앱을 덮어 둔 때 등)의 그물
+    }
+
+    function slideTo(name) {
+        const box = el('appContainer');
+        if (!box || busy || st) return;
+        const from = box.dataset.page || 'home';
+        if (from === name) return;
+        if (reduce()) { showPage(name); return; }
+        const s = open(from, name);
+        void s.pager.offsetWidth;   // 출발 자리를 한 번 그려 두고 움직인다
+        settle(s, true);
+    }
+
+    function start(e) {
+        if (busy || e.touches.length !== 1) { st = null; return; }
+        const clip = el('pagerClip');
+        const t = e.touches[0];
+        st = { x: t.clientX, y: t.clientY, own: false, dead: taken(e.target, clip), dx: 0, hist: [[t.clientX, Date.now()]] };
+    }
+
+    function move(e) {
+        if (!st || st.dead) return;
+        const t = e.touches[0];
+        const dx = t.clientX - st.x, dy = t.clientY - st.y;
+        if (!st.own) {
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+            if (Math.abs(dx) < Math.abs(dy) * 1.2) { st.dead = true; return; }   // 세로로 굴리는 손짓
+            const from = el('appContainer').dataset.page || 'home';
+            const to = from === 'home' ? 'detail' : 'home';
+            st.own = true; st.x = t.clientX;   // 여기서부터 손을 따라간다(처음 10px은 버린다)
+            st.s = open(from, to);
+            const sw = el('pageSwitch'); if (sw) sw.classList.add('drag');
+        }
+        e.preventDefault();
+        const s = st.s;
+        let d = t.clientX - st.x;
+        // 갈 데가 없는 쪽으로 밀면 살짝만 따라온다
+        if ((s.from === 'home' && d > 0) || (s.from === 'detail' && d < 0)) d *= 0.2;
+        d = Math.max(-s.W, Math.min(s.W, d));
+        st.dx = d;
+        st.hist.push([t.clientX, Date.now()]);
+        if (st.hist.length > 5) st.hist.shift();
+        paint(s, -order(s.from) * s.W + d);
+    }
+
+    function end() {
+        if (!st) return;
+        const cur = st; st = null;
+        if (!cur.own) return;
+        const s = cur.s;
+        const h = cur.hist, a = h[0], b = h[h.length - 1];
+        const dt = b[1] - a[1];
+        const v = dt > 0 && Date.now() - b[1] < 120 ? (b[0] - a[0]) / dt : 0;   // px/ms, 멈췄다 놓으면 0
+        const dir = s.from === 'home' ? -1 : 1;   // 넘어가려면 이쪽으로 밀어야 한다
+        const go = cur.dx * dir > s.W * 0.3 || (v * dir > 0.5 && cur.dx * dir > 20);
+        settle(s, go);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const clip = el('pagerClip');
+        if (!clip) return;
+        clip.addEventListener('touchstart', start, { passive: true });
+        clip.addEventListener('touchmove', move, { passive: false });   // 가로로 미는 동안만 세로 굴림을 막는다
+        clip.addEventListener('touchend', end);
+        clip.addEventListener('touchcancel', end);
+    });
+
+    return { slideTo };
+})();
+function slideToPage(name) { pagerSwipe.slideTo(name); }
