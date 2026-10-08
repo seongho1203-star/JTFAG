@@ -1219,8 +1219,8 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .greet-poster { position: fixed; inset: 0; z-index: 9999; overflow: hidden; color: #ffffff; background: linear-gradient(160deg, var(--g1), var(--g2)); display: flex; flex-direction: column; justify-content: flex-end; padding: 32px 26px calc(56px + env(safe-area-inset-bottom)); opacity: 0; transition: opacity 0.35s ease; cursor: pointer; }
 .greet-poster.show { opacity: 1; }
 .greet-poster.hide { opacity: 0; transition-duration: 0.4s; }
-/* 계급 그림은 바탕이 칠해진 정사각 그림이라 동그라미로 오린다(앱의 계급 동그라미와 같은 모양). 흰 테두리로 색 위에 띄운다. */
-.greet-pic { position: absolute; right: 7vw; top: calc(13vh + env(safe-area-inset-top)); width: min(54vw, 240px); height: min(54vw, 240px); object-fit: cover; border-radius: 50%; border: 5px solid rgba(255, 255, 255, 0.9); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28); background: #ffffff; transform: translateX(70px) scale(0.92); opacity: 0; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease; pointer-events: none; }
+/* 계급 그림은 바탕이 투명한 이모티콘 그대로, 오리지 않고 통째로 크게 띄운다(사용자 요청 — 동그라미로 오렸다가 되돌렸다). */
+.greet-pic { position: absolute; right: 4vw; top: calc(10vh + env(safe-area-inset-top)); width: min(70vw, 320px); height: auto; object-fit: contain; transform: translateX(70px) scale(0.92); opacity: 0; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease; pointer-events: none; }
 .greet-poster.show .greet-pic { transform: none; opacity: 1; }
 .greet-text { position: relative; }
 .greet-kick, .greet-name, .greet-msg { transform: translateY(16px); opacity: 0; transition: transform 0.5s ease, opacity 0.5s ease; }
