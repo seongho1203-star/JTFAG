@@ -1240,3 +1240,60 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .header-tools .hd-ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .header-tools .bell-btn { color: #9aa0a8; }
 .header-tools .bell-btn.on { color: #2b5394; background: var(--gold-light); border-color: var(--accent-line); }
+
+/* ─── 여행 경비 · 준비물 · 공유 (trip.js '여행 경비' 꼭지) ─── */
+.trip-summary .trip-actions { margin-top: 8px; }
+.trip-btn.share { background: #fee500; border-color: #f2d900; color: #191600; }
+.trip-summary-cost { display: block; width: 100%; margin-top: 6px; padding: 0; border: none; background: none; text-align: left; font-family: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-main); cursor: pointer; }
+.trip-summary-cost b { color: var(--primary-gold); font-weight: 800; }
+.cost-total { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--gold-light); }
+.cost-total-k { flex: 1 0 100%; font-size: 0.72rem; font-weight: 700; color: var(--text-sub); }
+.cost-total-v { font-size: 1.32rem; font-weight: 900; color: var(--primary-gold); letter-spacing: -0.4px; }
+.cost-total-sub { font-size: 0.72rem; font-weight: 600; color: var(--text-sub); }
+.cost-stats { display: flex; gap: 6px; margin-top: 8px; }
+.cost-stat { flex: 1 1 0; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.cost-stat span { display: block; font-size: 0.66rem; font-weight: 700; color: var(--text-sub); }
+.cost-stat b { display: block; font-size: 0.8rem; font-weight: 800; color: var(--text-main); word-break: keep-all; overflow-wrap: anywhere; }
+.cost-stat.paid b { color: var(--accent-green, #1f6b45); }
+.cost-stat.plan b { color: #b45309; }
+.cost-list { margin-top: 8px; }
+.cost-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); }
+.cost-row:first-child { border-top: none; }
+.cost-cat-tag { flex: 0 0 auto; min-width: 40px; padding: 2px 6px; border-radius: 6px; background: #f1f2ef; color: var(--text-sub); font-size: 0.66rem; font-weight: 800; text-align: center; }
+.cost-main { flex: 1 1 auto; min-width: 0; }
+.cost-name { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); word-break: keep-all; overflow-wrap: anywhere; }
+.cost-detail { display: block; font-size: 0.68rem; color: var(--text-sub); }
+.cost-right { flex: 0 0 auto; text-align: right; }
+.cost-right b { display: block; font-size: 0.82rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+.cost-badge { display: inline-block; margin-top: 2px; padding: 1px 6px; border-radius: 5px; font-size: 0.62rem; font-weight: 800; }
+.cost-badge.paid { background: #e8f5ee; color: var(--accent-green, #1f6b45); }
+.cost-badge.local { background: var(--gold-light); color: var(--primary-gold); }
+.cost-badge.plan { background: #fff4e5; color: #b45309; }
+.cost-send { margin-top: 4px; font-size: 0.8rem; color: var(--text-main); line-height: 1.5; }
+.cost-send small { color: var(--text-sub); font-size: 0.68rem; }
+.cost-account { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; padding: 4px 4px 4px 10px; border-radius: 8px; background: #f6f6f3; font-weight: 700; word-break: keep-all; overflow-wrap: anywhere; }
+.cost-paid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cost-paid-chip { padding: 5px 10px; border: 1px solid var(--line); border-radius: 16px; background: #fff; font-family: inherit; font-size: 0.76rem; font-weight: 700; color: var(--text-main); cursor: pointer; }
+.cost-paid-chip small { color: #b45309; font-weight: 700; }
+.cost-paid-chip.on { border-color: #bfe3cd; background: #e8f5ee; }
+.cost-paid-chip.on small { color: var(--accent-green, #1f6b45); }
+.cost-edit { margin-top: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.cost-edit-line { display: flex; gap: 5px; align-items: center; }
+.cost-edit-line + .cost-edit-line { margin-top: 5px; }
+.cost-edit-line input, .cost-edit-line select { min-width: 0; padding: 6px 7px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #0f172a; font-family: inherit; font-size: 14px; font-weight: 500; }
+.cost-edit-line input:focus, .cost-edit-line select:focus { outline: none; border-color: var(--primary-gold); }
+.cost-edit-line select { -webkit-appearance: none; appearance: none; padding: 6px 4px; background: #f3f5f9; border-color: #d9dee8; text-align: center; text-align-last: center; font-size: 13px; font-weight: 700; color: var(--primary-gold); }
+.cost-edit-line .cost-cat { flex: 0 0 64px; }
+.cost-edit-line .cost-title, .cost-edit-line .fund-title { flex: 1 1 auto; }
+.cost-edit-line .cost-amt { flex: 1 1 auto; text-align: right; }
+.cost-edit-line .fund-amt { flex: 0 0 96px; text-align: right; }
+.cost-edit-line .cost-cur, .cost-edit-line .fund-cur { flex: 0 0 36px; }
+.cost-edit-line .cost-unit { flex: 0 0 44px; }
+.cost-edit-line .cost-status { flex: 0 0 74px; }
+.cost-fund-row { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; font-size: 0.8rem; color: var(--text-main); }
+.cost-fund-row span { min-width: 0; color: var(--text-sub); font-weight: 700; word-break: keep-all; overflow-wrap: anywhere; }
+.cost-fund-row b { flex: 0 0 auto; font-weight: 800; }
+.fund-edit { margin-top: 6px; }
+.cost-x { flex: 0 0 28px; height: 30px; border: none; background: none; color: #9aa0a8; font-size: 0.8rem; cursor: pointer; }
+.trip-btn.cost-add { width: 100%; margin-top: 6px; border-style: dashed; color: var(--primary-gold); }
+.trip-pack { margin: 2px 0 0; padding-left: 18px; font-size: 0.8rem; font-weight: 600; color: var(--text-main); line-height: 1.7; }

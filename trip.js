@@ -3,7 +3,8 @@
 // 값은 payload.trips에 둔다 — 여행 하나가
 //   {id, title, kind:'domestic'|'japan'|'abroad', base:{name,lat,lon}?, memo,
 //    days:[{date, course, area, tee, stay, memo, lat?, lon?, gora?:{id,url}}],
-//    travel?:{flightOut, flightBack, flightRef, car:'yes'|'no', carCo, carPick, carDrop, carRef}}
+//    travel?:{flightOut, flightBack, flightRef, car:'yes'|'no', carCo, carPick, carDrop, carRef},
+//    costs?, fund?, people?, fx?, payer?, account?, paid?, pack? — 여행 경비·준비물(아래 '여행 경비' 꼭지)}
 //   travel은 여행 전체에 한 벌(항공·렌트카·숙소 예약) — 적은 칸만 남고, 다 비우면 키째 지운다.
 // 고치는 차례는 다른 곳과 같다: saveState() → appData 수정 → syncToSupabase(appData).
 // **고칠 때는 순번이 아니라 id·날짜로 다시 찾는다** — 창이 떠 있는 사이 남의 저장이 들어오면
@@ -620,6 +621,381 @@ function saveTripTravel() {
     renderTripModal();
 }
 
+// ─── 여행 경비 · 준비물 · 공유 글 ───
+// 사용자 요청 — 일본 여행은 총무(사용자)가 항공·렌트카·숙소·골프장을 모두 예약·선결제하고, 그 내용을
+// 카톡에 손으로 길게 적어 공유했다(`일일이 다 적어서 카톡으로 공유했는데 힘들었어`).
+// 그래서 ① 항목을 적으면 1인 분담금·결제 상태·송금 현황이 저절로 계산되어 보이고 ② 준비물 목록을 두고
+// ③ 그 전부를 예전 카톡 글 모양으로 한 번에 만들어 공유한다(`tripShareText()`).
+//   trip.costs  = [{id, cat, title, amt, cur:'KRW'|'JPY', unit:'person'|'total', status:'paid'|'local'|'plan'}]
+//   trip.people = 인원(분담 기준, 기본 4) · trip.fx = 100엔당 원 · trip.payer = 총무 이름
+//   trip.account = 송금 계좌 · trip.paid = {이름: true} · trip.fund = [{title, amt, cur}] · trip.pack = [문자열]
+// **금액은 원·엔을 섞어 적는다** — 일본 현지 결제(그린피·식사)는 엔으로, 선결제는 원으로 정해진다.
+// 환율은 자동으로 받지 않는다 — 카드사·환전소마다 달라 총무가 실제로 바꾼 값을 적는 편이 정산과 맞는다.
+const COST_CATS = { air: '항공', stay: '숙소', car: '렌트카', golf: '그린피', meal: '식사', move: '교통', etc: '기타' };
+const COST_STATUS = { paid: '결제 완료', local: '현지 결제', plan: '예약 예정' };
+const COST_UNITS = { person: '1인', total: '전체' };
+const COST_CURS = { KRW: '원', JPY: '엔' };
+const PACK_JAPAN = ['여권(유효기간 6개월 이상)', '국제운전면허증', '110V 변환 어댑터', '개인 상비약', '골프용품', '엔화·해외 결제 카드'];
+const PACK_DOMESTIC = ['골프용품', '개인 상비약', '신분증'];
+
+const costNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isFinite(n) && n > 0 ? n : 0; };
+function tripPeople(trip) { const n = parseInt(trip && trip.people, 10); return n >= 1 && n <= 20 ? n : golfers.length; }
+function tripFx(trip) { const n = costNum(trip && trip.fx); return n > 0 && n < 100000 ? n : 0; }
+function tripCosts(trip) {
+    return (Array.isArray(trip && trip.costs) ? trip.costs : []).filter(c => c && typeof c === 'object').map(c => ({
+        id: ID_RE.test(c.id || '') ? c.id : '',
+        cat: COST_CATS[c.cat] ? c.cat : 'etc',
+        title: typeof c.title === 'string' ? c.title : '',
+        amt: costNum(c.amt),
+        cur: COST_CURS[c.cur] ? c.cur : 'KRW',
+        unit: COST_UNITS[c.unit] ? c.unit : 'person',
+        status: COST_STATUS[c.status] ? c.status : 'paid'
+    }));
+}
+function tripFund(trip) {
+    return (Array.isArray(trip && trip.fund) ? trip.fund : []).filter(f => f && typeof f === 'object').map(f => ({
+        title: typeof f.title === 'string' ? f.title : '', amt: costNum(f.amt), cur: COST_CURS[f.cur] ? f.cur : 'JPY'
+    }));
+}
+function tripPack(trip) { return (Array.isArray(trip && trip.pack) ? trip.pack : []).filter(s => typeof s === 'string' && s.trim()); }
+
+// 1인 몫 — {krw, jpy}. 전체 금액은 인원으로 나눈다.
+function costShare(c, people) {
+    const v = c.unit === 'total' ? c.amt / people : c.amt;
+    return c.cur === 'JPY' ? { krw: 0, jpy: v } : { krw: v, jpy: 0 };
+}
+const wonText = v => `${formatNumber(Math.round(v))}원`;
+const yenText = v => `¥${formatNumber(Math.round(v))}`;
+// 원·엔이 섞이면 환율이 있을 때 원으로 합쳐 `약`을 붙이고, 없으면 둘을 나란히 적는다.
+function moneyText(m, fx) {
+    if (m.jpy > 0 && fx) return `${m.krw > 0 || m.jpy > 0 ? '약 ' : ''}${wonText(m.krw + m.jpy * fx / 100)}`;
+    const parts = [];
+    if (m.krw > 0 || !m.jpy) parts.push(wonText(m.krw));
+    if (m.jpy > 0) parts.push(yenText(m.jpy));
+    return parts.join(' + ');
+}
+function costSummary(trip) {
+    const people = tripPeople(trip), fx = tripFx(trip);
+    const add = (a, b) => ({ krw: a.krw + b.krw, jpy: a.jpy + b.jpy });
+    const zero = () => ({ krw: 0, jpy: 0 });
+    const total = zero(), byStatus = { paid: zero(), local: zero(), plan: zero() }, byCat = {};
+    tripCosts(trip).forEach(c => {
+        const s = costShare(c, people);
+        Object.assign(total, add(total, s));
+        byStatus[c.status] = add(byStatus[c.status], s);
+        byCat[c.cat] = add(byCat[c.cat] || zero(), s);
+    });
+    return { people, fx, total, byStatus, byCat };
+}
+
+// 내역 앞에 구분을 붙이되, 내역이 이미 그 말로 시작하면 두 번 적지 않는다(`그린피 그린피 54홀`).
+function costLabel(c) { const cat = COST_CATS[c.cat]; return !c.title ? cat : c.title.startsWith(cat) ? c.title : `${cat} ${c.title}`; }
+let costDraft = null;   // 입력하는 동안의 사본 — 항목을 늘리고 줄여도 적던 값이 안 날아간다
+function costEditRow(c, i) {
+    const opt = (map, cur) => Object.entries(map).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${v}</option>`).join('');
+    return `
+        <div class="cost-edit" data-i="${i}">
+            <div class="cost-edit-line">
+                <select class="cost-cat">${opt(COST_CATS, c.cat)}</select>
+                <input type="text" class="cost-title" maxlength="40" autocomplete="off" value="${escapeHtml(c.title)}" aria-label="내역">
+                <button type="button" class="cost-x" onclick="removeCostRow(${i})" aria-label="항목 삭제">✕</button>
+            </div>
+            <div class="cost-edit-line">
+                <input type="text" class="cost-amt" inputmode="numeric" autocomplete="off" value="${c.amt ? formatNumber(c.amt) : ''}" onblur="costAmtTidy(this)" aria-label="금액">
+                <select class="cost-cur">${opt(COST_CURS, c.cur)}</select>
+                <select class="cost-unit">${opt(COST_UNITS, c.unit)}</select>
+                <select class="cost-status">${opt(COST_STATUS, c.status)}</select>
+            </div>
+        </div>`;
+}
+function fundEditRow(f, i) {
+    return `
+        <div class="cost-edit-line fund-edit" data-i="${i}">
+            <input type="text" class="fund-title" maxlength="30" autocomplete="off" value="${escapeHtml(f.title)}" aria-label="공금 내역">
+            <input type="text" class="fund-amt" inputmode="numeric" autocomplete="off" value="${f.amt ? formatNumber(f.amt) : ''}" onblur="costAmtTidy(this)" aria-label="금액">
+            <select class="fund-cur">${Object.entries(COST_CURS).map(([k, v]) => `<option value="${k}"${k === f.cur ? ' selected' : ''}>${v}</option>`).join('')}</select>
+            <button type="button" class="cost-x" onclick="removeFundRow(${i})" aria-label="공금 항목 삭제">✕</button>
+        </div>`;
+}
+function costAmtTidy(el) { const n = costNum(el.value); el.value = n ? formatNumber(n) : ''; }
+
+function costHtml(trip) {
+    if (tripEditing === 'costs' && costDraft) {
+        const d = costDraft;
+        return `
+        <div class="trip-day editing" id="tripCostCard">
+            <div class="trip-day-head">💰 여행 경비</div>
+            <div class="trip-two">
+                <label class="trip-field row"><span>인원</span><input type="number" id="costPeople" min="1" max="20" inputmode="numeric" value="${d.people}"></label>
+                <label class="trip-field row"><span>100엔</span><input type="text" id="costFx" inputmode="decimal" autocomplete="off" value="${d.fx || ''}" aria-label="100엔당 원화"></label>
+            </div>
+            <div class="trip-hint">환율은 <b>100엔당 원화</b>로 입력합니다(예: 920). 엔화 항목을 원화로 환산할 때 사용합니다.</div>
+            <div class="trip-sub">경비 항목 <small class="trip-sub-note">구분 · 내역 / 금액 · 통화 · 기준 · 상태</small></div>
+            <div id="costRows">${d.items.map(costEditRow).join('')}</div>
+            <button type="button" class="trip-btn cost-add" onclick="addCostRow()">＋ 항목 추가</button>
+            <div class="trip-hint"><b>1인</b>은 1인 금액, <b>전체</b>는 총액을 입력하면 인원수로 나눕니다.</div>
+            <div class="trip-sub">현지 공금 <small class="trip-sub-note">남은 잔액·찬조</small></div>
+            <div id="fundRows">${d.fund.map(fundEditRow).join('')}</div>
+            <button type="button" class="trip-btn cost-add" onclick="addFundRow()">＋ 공금 항목 추가</button>
+            <div class="trip-sub">송금 안내</div>
+            <label class="trip-field row"><span>총무</span><select id="costPayer"><option value="">미지정</option>${golfers.map(n => `<option value="${escapeHtml(n)}"${n === d.payer ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select></label>
+            <label class="trip-field row"><span>계좌</span><input type="text" id="costAccount" maxlength="60" autocomplete="off" value="${escapeHtml(d.account)}"></label>
+            <div class="trip-hint">동반자는 <b>결제 완료</b> 항목의 1인 금액을 총무에게 송금합니다. 앱 데이터는 주소를 아는 사람이 열람할 수 있으므로 계좌 정보는 필요한 만큼만 입력합니다.</div>
+            <div class="trip-actions">
+                <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
+                <button type="button" class="trip-btn primary" onclick="saveTripCosts()">저장</button>
+            </div>
+        </div>`;
+    }
+    const items = tripCosts(trip);
+    const fund = tripFund(trip).filter(f => f.title || f.amt);
+    const s = costSummary(trip);
+    if (!items.length && !fund.length) return `
+        <div class="trip-day" id="tripCostCard">
+            <div class="trip-day-head">💰 여행 경비</div>
+            <div class="trip-memo empty">항공·숙소·렌트카·그린피 등의 금액을 입력하면 1인 분담금과 결제 현황이 자동으로 계산됩니다.</div>
+            <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripCosts()">입력</button></div>
+        </div>`;
+    const statusRow = Object.entries(COST_STATUS).filter(([k]) => s.byStatus[k].krw || s.byStatus[k].jpy)
+        .map(([k, v]) => `<div class="cost-stat ${k}"><span>${v}</span><b>${moneyText(s.byStatus[k], s.fx)}</b></div>`).join('');
+    const rows = items.map(c => {
+        const share = costShare(c, s.people);
+        const amt = c.cur === 'JPY' ? yenText : wonText;
+        const detail = c.unit === 'total' ? `전체 ${amt(c.amt)} ÷ ${s.people}명` : '';
+        return `
+            <div class="cost-row">
+                <span class="cost-cat-tag">${COST_CATS[c.cat]}</span>
+                <span class="cost-main"><span class="cost-name">${c.title ? escapeHtml(c.title) : COST_CATS[c.cat]}</span>${detail ? `<span class="cost-detail">${detail}</span>` : ''}</span>
+                <span class="cost-right"><b>${moneyText(share, 0)}</b><span class="cost-badge ${c.status}">${COST_STATUS[c.status]}</span></span>
+            </div>`;
+    }).join('');
+    const fundSum = fund.reduce((a, f) => f.cur === 'JPY' ? { krw: a.krw, jpy: a.jpy + f.amt } : { krw: a.krw + f.amt, jpy: a.jpy }, { krw: 0, jpy: 0 });
+    const fundHtml = fund.length ? `
+            <div class="trip-sub">현지 공금</div>
+            ${fund.map(f => `<div class="cost-fund-row"><span>${escapeHtml(f.title) || '공금'}</span><b>${(f.cur === 'JPY' ? yenText : wonText)(f.amt)}</b></div>`).join('')}
+            ${fund.length > 1 ? `<div class="cost-fund-row"><span>합계</span><b>${moneyText(fundSum, 0)}</b></div>` : ''}` : '';
+    const send = s.byStatus.paid;
+    const sendKrw = send.krw + (s.fx ? send.jpy * s.fx / 100 : 0);
+    const payer = golfers.includes(trip.payer) ? trip.payer : '';
+    const paid = trip.paid && typeof trip.paid === 'object' ? trip.paid : {};
+    const mates = golfers.filter(n => n !== payer);
+    const sendHtml = (send.krw || send.jpy) ? `
+            <div class="trip-sub">송금 안내</div>
+            <div class="cost-send">
+                <div>${payer ? `총무 <b>${escapeHtml(payer)}</b>에게 ` : ''}1인 <b>${moneyText(send, s.fx)}</b> 송금 <small>(결제 완료 항목)</small></div>
+                ${trip.account ? `<div class="cost-account"><span>${escapeHtml(trip.account)}</span><button type="button" class="trip-link" onclick="copyTripAccount()">복사</button></div>` : ''}
+                <div class="cost-paid">${mates.map(n => `<button type="button" class="cost-paid-chip${paid[n] ? ' on' : ''}" onclick="toggleTripPaid('${escapeHtml(n)}')">${escapeHtml(n)} <small>${paid[n] ? '입금 완료' : '입금 대기'}</small></button>`).join('')}</div>
+            </div>` : '';
+    return `
+        <div class="trip-day trip-cost" id="tripCostCard">
+            <div class="trip-day-head">💰 여행 경비</div>
+            <div class="cost-total">
+                <span class="cost-total-k">1인 예상 총액</span>
+                <span class="cost-total-v">${moneyText(s.total, s.fx)}</span>
+                <span class="cost-total-sub">인원 ${s.people}명${s.fx ? ` · 100엔 = ${formatNumber(s.fx)}원` : ''}</span>
+            </div>
+            ${statusRow ? `<div class="cost-stats">${statusRow}</div>` : ''}
+            <div class="cost-list">${rows}</div>
+            ${fundHtml}
+            ${sendHtml}
+            <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripCosts()">입력</button></div>
+        </div>`;
+}
+function editTripCosts() {
+    const trip = findTrip(tripOpenId);
+    if (!trip) return;
+    const items = tripCosts(trip);
+    const fund = tripFund(trip);
+    costDraft = {
+        people: tripPeople(trip), fx: tripFx(trip), payer: golfers.includes(trip.payer) ? trip.payer : '',
+        account: typeof trip.account === 'string' ? trip.account : '',
+        items: items.length ? items : [{ id: '', cat: 'air', title: '', amt: 0, cur: 'KRW', unit: 'person', status: 'paid' }],
+        fund
+    };
+    tripEditing = 'costs';
+    renderTripModal();
+    const card = document.getElementById('tripCostCard');
+    if (card) card.scrollIntoView({ block: 'start' });
+}
+// 화면의 칸을 사본으로 읽어 온다 — 줄을 더하거나 뺄 때·저장할 때 같은 길을 쓴다.
+function readCostForm() {
+    if (!costDraft) return null;
+    const val = id => ((document.getElementById(id) || {}).value || '').trim();
+    costDraft.people = Math.min(20, Math.max(1, parseInt(val('costPeople'), 10) || golfers.length));
+    costDraft.fx = costNum(val('costFx'));
+    costDraft.payer = golfers.includes(val('costPayer')) ? val('costPayer') : '';
+    costDraft.account = val('costAccount');
+    costDraft.items = [...document.querySelectorAll('#costRows .cost-edit')].map(el => {
+        const q = s => el.querySelector(s).value;
+        const prev = costDraft.items[+el.dataset.i] || {};
+        return { id: prev.id || '', cat: q('.cost-cat'), title: q('.cost-title').trim(), amt: costNum(q('.cost-amt')), cur: q('.cost-cur'), unit: q('.cost-unit'), status: q('.cost-status') };
+    });
+    costDraft.fund = [...document.querySelectorAll('#fundRows .fund-edit')].map(el => ({
+        title: el.querySelector('.fund-title').value.trim(), amt: costNum(el.querySelector('.fund-amt').value), cur: el.querySelector('.fund-cur').value
+    }));
+    return costDraft;
+}
+function addCostRow() {
+    const d = readCostForm(); if (!d) return;
+    const last = d.items[d.items.length - 1];
+    d.items.push({ id: '', cat: 'etc', title: '', amt: 0, cur: last ? last.cur : 'KRW', unit: 'person', status: last ? last.status : 'paid' });
+    renderTripModal();
+    const rows = document.querySelectorAll('#costRows .cost-title');
+    if (rows.length) rows[rows.length - 1].focus();
+}
+function removeCostRow(i) { const d = readCostForm(); if (!d) return; d.items.splice(i, 1); renderTripModal(); }
+function addFundRow() {
+    const d = readCostForm(); if (!d) return;
+    d.fund.push({ title: '', amt: 0, cur: 'JPY' });
+    renderTripModal();
+    const rows = document.querySelectorAll('#fundRows .fund-title');
+    if (rows.length) rows[rows.length - 1].focus();
+}
+function removeFundRow(i) { const d = readCostForm(); if (!d) return; d.fund.splice(i, 1); renderTripModal(); }
+function saveTripCosts() {
+    const d = readCostForm();
+    if (!d) return;
+    const items = d.items.filter(c => c.title || c.amt).map((c, i) => ({
+        id: c.id || `c${Date.now().toString(36)}${i}`, cat: COST_CATS[c.cat] ? c.cat : 'etc', title: c.title, amt: c.amt,
+        cur: COST_CURS[c.cur] ? c.cur : 'KRW', unit: COST_UNITS[c.unit] ? c.unit : 'person', status: COST_STATUS[c.status] ? c.status : 'paid'
+    }));
+    const fund = d.fund.filter(f => f.title || f.amt).map(f => ({ title: f.title, amt: f.amt, cur: COST_CURS[f.cur] ? f.cur : 'JPY' }));
+    const trip = findTrip(tripOpenId);
+    costDraft = null;
+    tripEditing = null;
+    if (!trip) { renderTripModal(); return; }
+    const before = JSON.stringify([tripCosts(trip).map(c => [c.id, c.cat, c.title, c.amt, c.cur, c.unit, c.status]), tripFund(trip).map(f => [f.title, f.amt, f.cur]), tripPeople(trip), tripFx(trip), trip.payer || '', trip.account || '']);
+    const after = JSON.stringify([items.map(c => [c.id, c.cat, c.title, c.amt, c.cur, c.unit, c.status]), fund.map(f => [f.title, f.amt, f.cur]), d.people, d.fx, d.payer, d.account]);
+    // 비교는 내가 만든 배열끼리다(payload의 키 순서와 무관하다).
+    if (before !== after) editTrip(t => {
+        const set = (k, v, keep) => { if (keep) t[k] = v; else delete t[k]; };
+        set('costs', items, items.length);
+        set('fund', fund, fund.length);
+        set('people', d.people, d.people !== golfers.length);
+        set('fx', d.fx, d.fx > 0);
+        set('payer', d.payer, d.payer);
+        set('account', d.account, d.account);
+    }, '✅ 여행 경비를 저장했습니다.');
+    renderTripModal();
+}
+function toggleTripPaid(name) {
+    if (!golfers.includes(name)) return;
+    const trip = findTrip(tripOpenId);
+    if (!trip) return;
+    const on = !(trip.paid && trip.paid[name]);
+    editTrip(t => {
+        const p = t.paid && typeof t.paid === 'object' ? { ...t.paid } : {};
+        if (on) p[name] = true; else delete p[name];
+        if (Object.keys(p).length) t.paid = p; else delete t.paid;
+    }, on ? `✅ ${name} 입금 완료로 표시했습니다.` : `↩️ ${name} 입금 대기로 되돌렸습니다.`);
+    renderTripModal();
+}
+async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch (e) { return false; }
+}
+async function copyTripAccount() {
+    const trip = findTrip(tripOpenId);
+    if (trip && trip.account && await copyText(trip.account)) showToast('📋 계좌를 복사했습니다.');
+}
+
+// 준비물 — 줄마다 하나. 일본 여행이면 기본 목록을 한 번에 넣을 수 있다.
+function packHtml(trip) {
+    const list = tripPack(trip);
+    if (tripEditing === 'pack') return `
+        <div class="trip-day editing" id="tripPackCard">
+            <div class="trip-day-head">🧳 준비물</div>
+            <label class="trip-field"><textarea id="tripEdPack" rows="6" maxlength="600" aria-label="준비물 (한 줄에 하나)">${escapeHtml(list.join('\n'))}</textarea></label>
+            <div class="trip-hint">한 줄에 한 항목씩 입력합니다. 담당자가 있으면 <b>국제운전면허증 (신성호·박승수)</b>처럼 함께 적습니다.</div>
+            <div class="trip-actions"><button type="button" class="trip-btn" onclick="fillTripPack()">기본 항목 추가</button></div>
+            <div class="trip-actions">
+                <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
+                <button type="button" class="trip-btn primary" onclick="saveTripPack()">저장</button>
+            </div>
+        </div>`;
+    return `
+        <div class="trip-day" id="tripPackCard">
+            <div class="trip-day-head">🧳 준비물</div>
+            ${list.length ? `<ul class="trip-pack">${list.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>` : '<div class="trip-memo empty">여권·국제운전면허증·변환 어댑터 등 준비물을 입력합니다.</div>'}
+            <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripPack()">입력</button></div>
+        </div>`;
+}
+function editTripPack() { tripEditing = 'pack'; renderTripModal(); }
+function fillTripPack() {
+    const ta = document.getElementById('tripEdPack');
+    const trip = findTrip(tripOpenId);
+    if (!ta || !trip) return;
+    const have = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
+    const add = (tripKind(trip) === 'domestic' ? PACK_DOMESTIC : PACK_JAPAN).filter(s => !have.includes(s));
+    ta.value = have.concat(add).join('\n');
+}
+function saveTripPack() {
+    const list = ((document.getElementById('tripEdPack') || {}).value || '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 40);
+    const trip = findTrip(tripOpenId);
+    tripEditing = null;
+    if (trip && tripPack(trip).join('\n') !== list.join('\n')) editTrip(t => { if (list.length) t.pack = list; else delete t.pack; }, '✅ 준비물을 저장했습니다.');
+    renderTripModal();
+}
+
+// ─── 공유 글 — 예전에 카톡에 손으로 적던 모양 그대로 ───
+const TRIP_APP_URL = 'https://seongho1203-star.github.io/JTFAG/';
+function tripShareText(trip) {
+    const days = tripDays(trip);
+    const t = tripTravel(trip);
+    const s = costSummary(trip);
+    const L = [];
+    const sec = (head, lines) => { const ls = lines.filter(Boolean); if (ls.length) { L.push('', head); ls.forEach(x => L.push(`•${x}`)); } };
+    const full = iso => { const [y, m, d] = iso.split('-').map(Number); return `${y}년 ${m}월 ${d}일(${isoWeekday(iso)})`; };
+    L.push(`[${trip.title || '여행'}]`);
+    const areas = [...new Set(days.map(d => (d.area || '').trim()).filter(Boolean))];
+    sec('📆 일정', days.length ? [
+        `기간: ${full(days[0].date)} ~ ${full(days[days.length - 1].date)}`,
+        `형태: ${days.length > 1 ? `${days.length - 1}박${days.length}일 ` : ''}${TRIP_KINDS[tripKind(trip)].replace(/^\S+\s/, '')} 골프여행`,
+        `인원: ${s.people}인`,
+        areas.length ? `지역: ${areas.join(' · ')}` : ''
+    ] : []);
+    sec('✈️ 항공', [t.flightOut && `출발편: ${t.flightOut}`, t.flightBack && `복귀편: ${t.flightBack}`, t.flightRef && `예약: ${t.flightRef}`]);
+    sec('🏌️‍♂️ 골프 라운딩', days.filter(d => d.course || d.tee || d.memo).map(d => {
+        const i = days.indexOf(d);
+        return `${i + 1}일차 ${isoLabel(d.date, true)}: ${[d.course || '골프장 미정', d.tee && `티오프 ${d.tee}`, d.memo].filter(Boolean).join(', ')}`;
+    }));
+    sec('🏨 숙소', stayRuns(trip));
+    if (t.car === 'yes') sec('🚘 렌트카', [t.carCo || '사용', t.carPick && `인수: ${t.carPick}`, t.carDrop && `반납: ${t.carDrop}`, t.carRef && `예약: ${t.carRef}`]);
+    sec('🧳 준비물', tripPack(trip));
+    const items = tripCosts(trip);
+    if (items.length) {
+        sec(`💰 예상 비용 (1인 기준${s.fx ? ` · 100엔=${formatNumber(s.fx)}원` : ''})`, [
+            ...items.map(c => `${costLabel(c)}: ${moneyText(costShare(c, s.people), 0)} (${COST_STATUS[c.status]})`),
+            `1인 예상 총액: ${moneyText(s.total, s.fx)}`,
+            ...Object.entries(COST_STATUS).filter(([k]) => s.byStatus[k].krw || s.byStatus[k].jpy).map(([k, v]) => `${v}: ${moneyText(s.byStatus[k], s.fx)}`)
+        ]);
+    }
+    sec('💴 현지 공금', tripFund(trip).filter(f => f.title || f.amt).map(f => `${f.title || '공금'}: ${(f.cur === 'JPY' ? yenText : wonText)(f.amt)}`));
+    const send = s.byStatus.paid;
+    if (send.krw || send.jpy) sec('💳 송금 안내', [
+        `1인 ${moneyText(send, s.fx)}${golfers.includes(trip.payer) ? ` → 총무 ${trip.payer}` : ''}`,
+        trip.account
+    ]);
+    if (trip.memo) sec('📋 메모', [trip.memo]);
+    L.push('', `📱 JTFAG 앱 → 여행에서 상세 내용을 확인할 수 있습니다.`, TRIP_APP_URL);
+    return L.join('\n');
+}
+async function shareTripText() {
+    const trip = findTrip(tripOpenId);
+    if (!trip) return;
+    const text = tripShareText(trip);
+    if (isTouchDevice() && navigator.share) {
+        try { await navigator.share({ text }); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    showToast(await copyText(text) ? '📋 공유용 글을 복사했습니다. 카카오톡에 붙여넣기 하세요.' : '⚠️ 복사하지 못했습니다.', 3500);
+}
+
 function tripDayHtml(trip, d, i, today) {
     const isToday = d.date === today;
     const past = d.date < today;
@@ -688,6 +1064,8 @@ function renderTripModal() {
             <div class="trip-summary-top"><b>${isoLabel(days[0].date)} ~ ${isoLabel(days[days.length - 1].date)}</b><button type="button" class="trip-gear" onclick="editTripSettings()" title="여행 수정">⚙️</button></div>
             <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''}</div>
             <div class="trip-summary-sub">${tripNotifyText()}</div>
+            ${tripCosts(trip).length ? `<button type="button" class="trip-summary-cost" onclick="document.getElementById('tripCostCard').scrollIntoView({behavior:'smooth', block:'start'})">1인 예상 경비 <b>${moneyText(costSummary(trip).total, tripFx(trip))}</b> ›</button>` : ''}
+            <div class="trip-actions"><button type="button" class="trip-btn share" onclick="shareTripText()">📤 카카오톡 공유용 글 만들기</button></div>
         </div>` : '';
     const settings = tripEditing === 'settings' ? settingsHtml(trip) : '';
 
@@ -706,14 +1084,14 @@ function renderTripModal() {
             <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripMemo()">입력</button></div>
         </div>`;
 
-    setTripBody(body, tripChipsHtml() + head + settings + travelHtml(trip) + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo);
+    setTripBody(body, tripChipsHtml() + head + settings + travelHtml(trip) + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + costHtml(trip) + packHtml(trip) + memo);
     days.forEach(d => { if (d.date >= today && d.course) loadTripWeather(d); });
 }
 
 function editTripDay(date) { tripEditing = date; renderTripModal(); }
 function editTripMemo() { tripEditing = 'memo'; renderTripModal(); }
 function editTripSettings() { tripEditing = tripEditing === 'settings' ? null : 'settings'; renderTripModal(); }
-function cancelTripEdit() { tripEditing = null; renderTripModal(); }
+function cancelTripEdit() { tripEditing = null; costDraft = null; renderTripModal(); }
 
 function saveTripDay(date) {
     const val = id => (document.getElementById(id) || {}).value || '';
