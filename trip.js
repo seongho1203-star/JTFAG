@@ -489,7 +489,7 @@ function renderTripModal() {
     const head = days.length ? `
         <div class="trip-summary">
             <div class="trip-summary-top"><b>${isoLabel(days[0].date)} ~ ${isoLabel(days[days.length - 1].date)}</b><button type="button" class="trip-gear" onclick="editTripSettings()" title="여행 고치기">⚙️</button></div>
-            <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''} · 넷 모두 고칠 수 있어요</div>
+            <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''}</div>
             <div class="trip-summary-sub">${tripNotifyText()}</div>
         </div>` : '';
     const settings = tripEditing === 'settings' ? settingsHtml(trip) : '';
@@ -843,8 +843,12 @@ function paintGoraMap() {
     gora.items.forEach((it, i) => {
         if (!it.geo) return;
         const m = L.marker([it.geo.lat, it.geo.lon], { icon: L.divIcon({ className: 'gora-pin', html: `<b>${i + 1}</b>`, iconSize: [24, 24] }) }).addTo(gora.layer);
-        m.bindTooltip(escapeHtml(`${i + 1}. ${it.ko || it.name}`), { direction: 'top', offset: [0, -10] });
-        m.on('click', ev => { if (ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent); goraJumpTo(i); });
+        // 번호를 누르면 이름이 뜨고, 그 이름을 누르면 목록의 그 골프장으로 간다(사용자 요청).
+        // 예전엔 이름이 툴팁이라 눌리지 않아, 이름을 누르면 지도 누르기로 잡혀 `여기를 기준 위치로`가 떴다.
+        // 팝업은 누른 것이 지도로 번지지 않는다(Leaflet이 막아 준다).
+        m.bindPopup(`<button type="button" class="gora-pin-pop" onclick="goraJumpTo(${i})"><b>${i + 1}. ${escapeHtml(it.ko || it.name)}</b><small>목록에서 보기 ›</small></button>`,
+            { className: 'gora-here-pop', offset: [0, -8], closeButton: false, autoPanPadding: [12, 12] });
+        m.on('click', ev => { if (ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent); });
         gora.markers[i] = m;
         pts.push([it.geo.lat, it.geo.lon]);
     });
@@ -863,7 +867,7 @@ function onGoraMapClick(e) {
         const d = gora.map.latLngToContainerPoint(m.getLatLng()).distanceTo(e.containerPoint);
         if (d <= GORA_PIN_REACH && (!best || d < best.d)) best = { i, d };
     });
-    if (best) { goraJumpTo(best.i); return; }
+    if (best) { gora.markers[best.i].openPopup(); return; }
     const lat = +e.latlng.lat.toFixed(5), lon = +e.latlng.lng.toFixed(5);
     if (!gora.base) { goraBaseHere(lat, lon); return; }
     L.popup({ className: 'gora-here-pop', offset: [0, -4] }).setLatLng(e.latlng)
@@ -878,6 +882,7 @@ function goraBaseHere(lat, lon) {
 function goraJumpTo(i) {
     const row = document.getElementById('goraItem' + i);
     if (!row) return;
+    if (gora.map) gora.map.closePopup();
     row.scrollIntoView({ block: 'start' });
     row.classList.remove('flash');
     void row.offsetWidth;
@@ -892,7 +897,7 @@ function goraShowOnMap(i) {
     if (!m || !gora.map || !box) return;
     box.scrollIntoView({ block: 'start' });
     gora.map.setView(m.getLatLng(), Math.max(gora.map.getZoom(), 11));
-    m.openTooltip();
+    m.openPopup();
 }
 // GORA 예약 페이지는 아이폰이면 **사파리로** 바로 연다. 새 창(target=_blank)으로 열면 앱 안 브라우저가 떠
 // 번역이 없고, 사파리 단추를 한 번 더 눌러야 했다(사용자 제보). `x-safari-https://`는 iOS 17부터 사파리를 직접 연다.

@@ -888,6 +888,9 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .gora-pin { display: flex !important; align-items: center; justify-content: center; border-radius: 50%; background: #0f766e; color: #fff; font-size: 11px; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.35); }
 .gora-here { border: 0; background: #0f766e; color: #fff; font-weight: 800; font-size: 0.8rem; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .gora-here-pop .leaflet-popup-content { margin: 8px; }
+.gora-pin-pop { border: 0; background: #0f766e; color: #fff; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; text-align: left; display: flex; flex-direction: column; gap: 2px; max-width: 220px; }
+.gora-pin-pop b { font-size: 0.82rem; font-weight: 800; word-break: keep-all; }
+.gora-pin-pop small { font-size: 0.68rem; opacity: 0.85; }
 .gora-pin.base { background: #ffffff; font-size: 15px; border-color: #0f766e; }
 .gora-setup { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fff7ed; border: 1px solid #fdba74; color: #7c2d12; font-size: 0.78rem; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
 .gora-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 9px 11px; margin-top: 8px; background: #fff; transition: box-shadow 0.3s; }
