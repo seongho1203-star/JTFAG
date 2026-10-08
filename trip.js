@@ -238,8 +238,8 @@ function newTripHtml() {
                 <div class="trip-kind-row">${Object.entries(TRIP_KINDS).map(([k, v], i) => `<label class="trip-kind"><input type="radio" name="tripNewKind" value="${k}"${i === 0 ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>
             </div>
             <div class="trip-two">
-                <label class="trip-field">첫날<input type="date" id="tripNewStart" value="${start}" onchange="tripNewDatesChanged('start')"></label>
-                <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripNewDatesChanged('end')"></label>
+                <label class="trip-field">첫날<input type="date" id="tripNewStart" value="${start}" onchange="tripDatesChanged('start')"></label>
+                <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
             <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 고치기</b>로 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
@@ -258,8 +258,9 @@ function tripSpanText(start, end) {
     return n >= 1 ? `${n - 1}박 ${n}일 · ${isoLabel(start, true)} ~ ${isoLabel(end, true)}` : '';
 }
 // 첫날을 옮기면 마지막날이 따라간다(날수 그대로). 마지막날은 첫날 앞으로도, 14일 넘게도 못 간다.
-function tripNewDatesChanged(which) {
-    const s = document.getElementById('tripNewStart'), e = document.getElementById('tripNewEnd');
+// 새 여행(`tripNew…`)과 여행 고치기(`tripSet…`)가 같이 쓴다.
+function tripDatesChanged(which, pre = 'tripNew') {
+    const s = document.getElementById(pre + 'Start'), e = document.getElementById(pre + 'End');
     if (!s || !e || !ISO_RE.test(s.value)) return;
     if (which === 'start') {
         const keep = ISO_RE.test(e.dataset.prevStart || '') && ISO_RE.test(e.value) ? isoDiff(e.dataset.prevStart, e.value) : 2;
@@ -269,7 +270,7 @@ function tripNewDatesChanged(which) {
     if (isoDiff(s.value, e.value) > TRIP_MAX_DAYS - 1) e.value = isoAdd(s.value, TRIP_MAX_DAYS - 1);
     e.min = s.value; e.max = isoAdd(s.value, TRIP_MAX_DAYS - 1);
     e.dataset.prevStart = s.value;
-    const span = document.getElementById('tripNewSpan');
+    const span = document.getElementById(pre + 'Span');
     if (span) span.textContent = tripSpanText(s.value, e.value);
 }
 
@@ -303,6 +304,8 @@ function createTrip() {
 
 function settingsHtml(trip) {
     const days = tripDays(trip);
+    const start = days.length ? days[0].date : isoAdd(kstToday(), 14);
+    const end = days.length ? days[days.length - 1].date : start;
     return `
         <div class="trip-day editing">
             <div class="trip-day-head">⚙️ 여행 고치기</div>
@@ -310,13 +313,15 @@ function settingsHtml(trip) {
             <div class="trip-field">어디로?
                 <div class="trip-kind-row">${Object.entries(TRIP_KINDS).map(([k, v]) => `<label class="trip-kind"><input type="radio" name="tripSetKind" value="${k}"${tripKind(trip) === k ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>
             </div>
+            <div class="trip-two">
+                <label class="trip-field">첫날<input type="date" id="tripSetStart" value="${start}" onchange="tripDatesChanged('start', 'tripSet')"></label>
+                <label class="trip-field">마지막날<input type="date" id="tripSetEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" data-prev-start="${start}" onchange="tripDatesChanged('end', 'tripSet')"></label>
+            </div>
+            <div class="trip-hint" id="tripSetSpan">${tripSpanText(start, end)}</div>
+            <div class="trip-hint">날짜를 옮기면 날마다 적어 둔 골프장·티오프·숙소는 <b>1일차부터 차례대로</b> 따라갑니다.</div>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripSettings()">저장</button>
-            </div>
-            <div class="trip-actions">
-                <button type="button" class="trip-btn" onclick="addTripDay()"${days.length >= TRIP_MAX_DAYS ? ' disabled' : ''}>＋ 하루 늘리기</button>
-                <button type="button" class="trip-btn" onclick="removeTripDay()"${days.length <= 1 ? ' disabled' : ''}>－ 마지막 날 빼기</button>
             </div>
             <div class="trip-actions"><button type="button" class="trip-btn danger" onclick="deleteTrip()">🗑️ 이 여행 지우기</button></div>
         </div>`;
@@ -333,32 +338,36 @@ function editTrip(mutate, msg) {
     return true;
 }
 
-function saveTripSettings() {
+const dayFilled = d => !!(d && (d.course || d.tee || d.stay || d.memo || d.area));
+// 날짜를 바꾸면 날마다 적어 둔 것은 **순서대로** 새 날짜에 붙는다(1일차 → 새 1일차). 여행을 미루는 일이 대부분이라
+// 그게 맞고, 끝을 늘리거나 줄이는 것도 같은 규칙으로 된다. 줄어서 빠지는 날에 적어 둔 게 있으면 한 번 더 묻는다.
+async function saveTripSettings() {
     const title = (document.getElementById('tripSetTitle').value || '').trim();
     const kindEl = document.querySelector('input[name="tripSetKind"]:checked');
     const kind = kindEl && TRIP_KINDS[kindEl.value] ? kindEl.value : 'domestic';
+    const start = (document.getElementById('tripSetStart') || {}).value || '';
+    const end = (document.getElementById('tripSetEnd') || {}).value || '';
     if (!title) { showToast('⚠️ 여행 이름을 적어 주세요.'); return; }
+    if (!ISO_RE.test(start) || !ISO_RE.test(end)) { showToast('⚠️ 첫날과 마지막날을 골라 주세요.'); return; }
+    if (end < start) { showToast('⚠️ 마지막날이 첫날보다 앞입니다.'); return; }
+    const n = isoDiff(start, end) + 1;
+    if (n > TRIP_MAX_DAYS) { showToast(`⚠️ 여행은 ${TRIP_MAX_DAYS}일까지 만들 수 있어요.`); return; }
     const trip = findTrip(tripOpenId);
-    if (trip && (trip.title !== title || tripKind(trip) !== kind)) editTrip(t => { t.title = title; t.kind = kind; }, '✅ 저장했습니다.');
+    if (!trip) return;
+    const old = tripDays(trip);
+    const datesChanged = !old.length || old[0].date !== start || old.length !== n;
+    const dropped = old.slice(n).filter(dayFilled);
+    if (datesChanged && dropped.length && !await showConfirmPrompt(`날짜가 줄어 <b>${dropped.map(d => `${old.indexOf(d) + 1}일차`).join(', ')}</b> 일정이 빠집니다.<br><span style="font-weight:500;color:#cbd5e1;">적어 둔 골프장·메모도 함께 사라집니다.</span>`, '바꾸기')) return;
+    if (trip.title !== title || tripKind(trip) !== kind || datesChanged) {
+        editTrip(t => {
+            t.title = title; t.kind = kind;
+            if (datesChanged) {
+                const cur = tripDays(t);   // 묻는 사이 남이 고쳤을 수 있어 지금 것을 다시 읽는다
+                t.days = Array.from({ length: n }, (_, i) => ({ ...(cur[i] || { course: '', area: '', tee: '', stay: '', memo: '' }), date: isoAdd(start, i) }));
+            }
+        }, datesChanged ? `✅ ${tripSpanText(start, end)}로 바꿨습니다.` : '✅ 저장했습니다.');
+    }
     tripEditing = null; renderTripModal(); renderTripCard();
-}
-function addTripDay() {
-    editTrip(t => {
-        const days = tripDays(t);
-        if (!days.length || days.length >= TRIP_MAX_DAYS) return false;
-        t.days.push({ date: isoAdd(days[days.length - 1].date, 1), course: '', area: '', tee: '', stay: '', memo: '' });
-    }, '✅ 하루를 늘렸습니다.');
-    renderTripModal(); renderTripCard();
-}
-async function removeTripDay() {
-    const trip = findTrip(tripOpenId);
-    const days = tripDays(trip);
-    if (days.length <= 1) return;
-    const last = days[days.length - 1];
-    const filled = last.course || last.tee || last.stay || last.memo;
-    if (filled && !await showConfirmPrompt(`${isoLabel(last.date)} 일정을 뺄까요?<br><span style="font-weight:500;color:#cbd5e1;">적어 둔 골프장·메모도 함께 사라집니다.</span>`, '빼기')) return;
-    editTrip(t => { t.days = t.days.filter(d => d.date !== last.date); }, '✅ 마지막 날을 뺐습니다.');
-    renderTripModal(); renderTripCard();
 }
 async function deleteTrip() {
     const trip = findTrip(tripOpenId);
