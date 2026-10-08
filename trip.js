@@ -450,7 +450,7 @@ async function saveTripSettings() {
     const old = tripDays(trip);
     const datesChanged = !old.length || old[0].date !== start || old.length !== n;
     const dropped = old.slice(n).filter(dayFilled);
-    if (datesChanged && dropped.length && !await showConfirmPrompt(`날짜가 줄어 <b>${dropped.map(d => `${old.indexOf(d) + 1}일차`).join(', ')}</b> 일정이 빠집니다.<br><span style="font-weight:500;color:#cbd5e1;">적어 둔 골프장·메모도 함께 사라집니다.</span>`, '바꾸기')) return;
+    if (datesChanged && dropped.length && !await showConfirmPrompt(`날짜가 줄어 <b>${dropped.map(d => `${old.indexOf(d) + 1}일차`).join(', ')}</b> 일정이 빠집니다.<br><span style="font-weight:500;color:#6b7075;">적어 둔 골프장·메모도 함께 사라집니다.</span>`, '바꾸기')) return;
     if (trip.title !== title || tripKind(trip) !== kind || datesChanged) {
         editTrip(t => {
             t.title = title; t.kind = kind;
@@ -465,7 +465,7 @@ async function saveTripSettings() {
 async function deleteTrip() {
     const trip = findTrip(tripOpenId);
     if (!trip) return;
-    if (!await showConfirmPrompt(`<b>${escapeHtml(trip.title)}</b>을(를) 지울까요?<br><span style="font-weight:500;color:#cbd5e1;">일정·메모가 모두 사라집니다. 바로 뒤라면 ↩️ 되돌리기로 살릴 수 있습니다.</span>`, '지우기')) return;
+    if (!await showConfirmPrompt(`<b>${escapeHtml(trip.title)}</b>을(를) 지울까요?<br><span style="font-weight:500;color:#6b7075;">일정·메모가 모두 사라집니다. 바로 뒤라면 ↩️ 되돌리기로 살릴 수 있습니다.</span>`, '지우기')) return;
     const id = trip.id;
     if (!findTrip(id)) return;
     saveState();

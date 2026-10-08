@@ -52,12 +52,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // 카드는 세로 3단이다 — 머리말·목록·버튼. 가운데만 스크롤되므로
     // 기록이 아무리 쌓여도 '닫기'가 화면 밖으로 밀려나지 않는다.
     fundLogModal.innerHTML = `
-        <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; width:85%; max-width:320px; max-height:70vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.3s;">
-            <h3 style="margin:0 0 12px 0; color:#d4af37; font-size:1rem; text-align:center; flex-shrink:0;">📜 공금 수정 로그</h3>
-            <div id="fundLogContent" style="font-size:0.8rem; color:#94a3b8; text-align:left; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-bottom:12px;"></div>
+        <div style="background:#ffffff; border:1px solid #e6e6e2; border-radius:12px; padding:20px; width:85%; max-width:320px; max-height:70vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.3s;">
+            <h3 style="margin:0 0 12px 0; color:#16181a; font-size:1rem; text-align:center; flex-shrink:0;">📜 공금 수정 로그</h3>
+            <div id="fundLogContent" style="font-size:0.8rem; color:#6b7075; text-align:left; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-bottom:12px;"></div>
             <div style="display:flex; gap:8px; flex-shrink:0;">
-                <button type="button" id="fundLogClearBtn" onclick="clearFundLogs()" style="flex:0 0 auto; padding:10px 12px; background:#7f1d1d; border:none; border-radius:6px; color:#fecaca; font-weight:700; cursor:pointer; font-family:inherit; font-size:0.8rem;">전체 삭제</button>
-                <button type="button" onclick="closeFundLogModal()" style="flex:1; padding:10px; background:#334155; border:none; border-radius:6px; color:#fff; font-weight:700; cursor:pointer; font-family:inherit;">닫기</button>
+                <button type="button" id="fundLogClearBtn" onclick="clearFundLogs()" style="flex:0 0 auto; padding:10px 12px; background:#fdecec; border:none; border-radius:6px; color:#c0392b; font-weight:700; cursor:pointer; font-family:inherit; font-size:0.8rem;">전체 삭제</button>
+                <button type="button" onclick="closeFundLogModal()" style="flex:1; padding:10px; background:#f2f2ee; border:none; border-radius:6px; color:#3a3f44; font-weight:700; cursor:pointer; font-family:inherit;">닫기</button>
             </div>
         </div>
     `;
@@ -80,24 +80,24 @@ window.addEventListener('DOMContentLoaded', () => {
             // 떨어져 읽기 나빴다. 줄을 나누면 자릿수가 늘어도 모양이 안 무너진다.
             const diff = (log.after || 0) - (log.before || 0);
             // 적립인지 사용인지는 부호로 안다 — 그래서 로그에 따로 안 담는다.
-            const move = diff > 0 ? { word: '적립', color: '#4ade80' }
-                       : diff < 0 ? { word: '사용', color: '#f87171' }
+            const move = diff > 0 ? { word: '적립', color: '#1f6b45' }
+                       : diff < 0 ? { word: '사용', color: '#c0392b' }
                                   : { word: '변동 없음', color: '#94a3b8' };
             const moveHtml = diff === 0
                 ? `<div style="margin-top:3px; color:#94a3b8; font-size:0.8rem; font-weight:700;">변동 없음</div>`
                 : `<div style="margin-top:3px; font-size:0.8rem; font-weight:800; color:${move.color};">${move.word} ${formatNumber(Math.abs(diff))}원</div>`;
             // 예전 기록에는 memo가 없다. 있을 때만 줄을 만든다.
             const memoHtml = log.memo
-                ? `<div style="margin-top:5px; color:#cbd5e1; font-size:0.78rem; background:rgba(212,175,55,0.1); border-left:2px solid #d4af37; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
+                ? `<div style="margin-top:5px; color:#3a3f44; font-size:0.78rem; background:#f7f7f5; border-left:2px solid #1f6b45; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
                 : "";
-            return `<div style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+            return `<div style="padding:10px 0; border-bottom:1px solid #eeeeea;">
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                    <span style="font-size:0.72rem; font-weight:800; color:#e2e8f0; background:rgba(255,255,255,0.08); border-radius:5px; padding:2px 6px; white-space:nowrap;">${log.time}</span>
-                    <span style="font-size:0.75rem; color:#fef08a; font-weight:700;">${escapeHtml(log.name || '')}</span>
-                    <button type="button" onclick="editFundLog(${i})" title="내역 고치기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✎</button>
-                    <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #475569; border-radius:5px; color:#94a3b8; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
+                    <span style="font-size:0.72rem; font-weight:800; color:#3a3f44; background:#f2f2ee; border-radius:5px; padding:2px 6px; white-space:nowrap;">${log.time}</span>
+                    <span style="font-size:0.75rem; color:#1f6b45; font-weight:700;">${escapeHtml(log.name || '')}</span>
+                    <button type="button" onclick="editFundLog(${i})" title="내역 고치기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✎</button>
+                    <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
                 </div>
-                <div style="color:#cbd5e1; font-size:0.82rem; white-space:nowrap;">${formatNumber(log.before)}원 ➔ <b style="color:#e2e8f0;">${formatNumber(log.after)}원</b></div>
+                <div style="color:#6b7075; font-size:0.82rem; white-space:nowrap;">${formatNumber(log.before)}원 ➔ <b style="color:#16181a;">${formatNumber(log.after)}원</b></div>
                 ${moveHtml}
                 ${memoHtml}
              </div>`;
@@ -187,28 +187,28 @@ function showPasswordPrompt(message) {
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
         
         const box = document.createElement('div');
-        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        box.style.cssText = "background:#ffffff; border:1px solid #e6e6e2; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.2); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.4;";
+        msgEl.style.cssText = "color:#16181a; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.4;";
         
         const inputEl = document.createElement('input');
         inputEl.type = "password";      
         inputEl.inputMode = "numeric";  
         inputEl.pattern = "[0-9]*";
-        inputEl.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:1.2rem; text-align:center; margin-bottom:15px; letter-spacing:6px; box-sizing:border-box; outline:none;";
+        inputEl.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #e6e6e2; background:#f7f7f5; color:#16181a; font-size:1.2rem; text-align:center; margin-bottom:15px; letter-spacing:6px; box-sizing:border-box; outline:none;";
         
         const btnRow = document.createElement('div');
         btnRow.style.cssText = "display:flex; gap:8px;";
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer;";
         
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = "확인";
-        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#0f172a; font-size:0.85rem; font-weight:800; cursor:pointer;";
+        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#1f6b45; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer;";
         
         btnRow.appendChild(cancelBtn);
         btnRow.appendChild(confirmBtn);
@@ -245,11 +245,11 @@ function showNameSelectionPrompt(message) {
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
         
         const box = document.createElement('div');
-        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.8); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        box.style.cssText = "background:#ffffff; border:1px solid #e6e6e2; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.2); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:0.95rem; margin-bottom:15px; font-weight:800; word-break:keep-all; line-height:1.4;";
+        msgEl.style.cssText = "color:#16181a; font-size:0.95rem; margin-bottom:15px; font-weight:800; word-break:keep-all; line-height:1.4;";
         
         const btnContainer = document.createElement('div');
         btnContainer.style.cssText = "display:flex; flex-direction:column; gap:8px; margin-bottom:15px;";
@@ -266,14 +266,14 @@ function showNameSelectionPrompt(message) {
         golfers.forEach(name => {
             const btn = document.createElement('button');
             btn.textContent = name;
-            btn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.95rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
+            btn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:1px solid #e6e6e2; background:#f7f7f5; color:#16181a; font-size:0.95rem; font-weight:700; cursor:pointer; transition:background 0.2s;";
             btn.onclick = () => cleanup(name);
             btnContainer.appendChild(btn);
         });
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "다음에 하기";
-        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "width:100%; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer;";
         cancelBtn.onclick = () => cleanup(null);
         
         box.appendChild(cancelBtn);
@@ -295,18 +295,18 @@ function showConfirmPrompt(message, confirmLabel, accent) {
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
 
         const box = document.createElement('div');
-        box.style.cssText = `background:#1e293b; border:1px solid ${color}; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;`;
+        box.style.cssText = `background:#ffffff; border:1px solid ${color}; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.2); transform:scale(0.9); transition:transform 0.2s; text-align:center;`;
         
         const msgEl = document.createElement('div');
         msgEl.innerHTML = message;
-        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.5;";
+        msgEl.style.cssText = "color:#16181a; font-size:0.9rem; margin-bottom:15px; font-weight:700; word-break:keep-all; line-height:1.5;";
         
         const btnRow = document.createElement('div');
         btnRow.style.cssText = "display:flex; gap:8px;";
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer;";
         
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = confirmLabel || "삭제";
@@ -351,7 +351,7 @@ function showMemoPrompt(log) {
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10001; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
 
         const box = document.createElement('div');
-        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:300px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        box.style.cssText = "background:#ffffff; border:1px solid #e6e6e2; border-radius:12px; padding:20px; width:100%; max-width:300px; box-shadow:0 15px 40px rgba(0,0,0,0.2); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
 
         const diff = (log.after || 0) - (log.before || 0);
         const moveText = diff === 0 ? '변동 없음'
@@ -360,22 +360,22 @@ function showMemoPrompt(log) {
         const msgEl = document.createElement('div');
         msgEl.innerHTML = `내역 고치기<br>`
             + `<span style="font-size:0.74rem; font-weight:700; color:#94a3b8;">${escapeHtml(log.time || '')} · ${escapeHtml(log.name || '')}</span><br>`
-            + `<span style="font-size:0.78rem; font-weight:800; color:${diff < 0 ? '#f87171' : diff > 0 ? '#4ade80' : '#94a3b8'};">${moveText}</span>`;
-        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:14px; font-weight:800; line-height:1.6;";
+            + `<span style="font-size:0.78rem; font-weight:800; color:${diff < 0 ? '#c0392b' : diff > 0 ? '#1f6b45' : '#94a3b8'};">${moveText}</span>`;
+        msgEl.style.cssText = "color:#16181a; font-size:0.9rem; margin-bottom:14px; font-weight:800; line-height:1.6;";
 
         const input = document.createElement('input');
         input.type = "text"; input.maxLength = 40;
         input.value = log.memo || '';
         input.placeholder = "예: 박승수 9월회비";
-        input.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
+        input.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #e6e6e2; background:#f7f7f5; color:#16181a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
 
         const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
         const okBtn = document.createElement('button');
         okBtn.textContent = "저장";
-        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#1e293b; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#1f6b45; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
         row.appendChild(cancelBtn); row.appendChild(okBtn);
 
         box.appendChild(msgEl); box.appendChild(input); box.appendChild(row);
@@ -424,7 +424,7 @@ async function changeAdminPassword() {
     
     if (oldPwd === null) return;
     if (oldPwd === correctPwd) {
-        const newPwd = await showPasswordPrompt("새로운 비밀번호를 입력해주세요<br><span style='font-size:0.75rem; font-weight:400; color:#94a3b8;'>(이 비번으로 모두가 시스템을 관리합니다)</span>");
+        const newPwd = await showPasswordPrompt("새로운 비밀번호를 입력해주세요<br><span style='font-size:0.75rem; font-weight:400; color:#6b7075;'>(이 비번으로 모두가 시스템을 관리합니다)</span>");
         if (newPwd !== null && newPwd.trim() !== "") {
             saveState();
             appData.adminPassword = newPwd.trim();
@@ -455,10 +455,10 @@ function showFundPrompt(before) {
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
         const box = document.createElement('div');
-        box.style.cssText = "background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.6); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        box.style.cssText = "background:#ffffff; border:1px solid #e6e6e2; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.2); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
         const msgEl = document.createElement('div');
         msgEl.innerHTML = `💰 공금 수정<div style="color:#94a3b8; font-size:0.72rem; font-weight:700; margin-top:3px;">현재 ${formatFundString(before)}</div>`;
-        msgEl.style.cssText = "color:#f8fafc; font-size:0.9rem; margin-bottom:12px; font-weight:800; word-break:keep-all;";
+        msgEl.style.cssText = "color:#16181a; font-size:0.9rem; margin-bottom:12px; font-weight:800; word-break:keep-all;";
 
         const tabRow = document.createElement('div');
         tabRow.style.cssText = "display:flex; gap:5px; margin-bottom:12px;";
@@ -466,7 +466,7 @@ function showFundPrompt(before) {
         Object.keys(FUND_MODES).forEach(key => {
             const btn = document.createElement('button');
             btn.type = "button"; btn.textContent = FUND_MODES[key].tab;
-            btn.style.cssText = "flex:1; padding:7px 0; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#94a3b8; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:inherit;";
+            btn.style.cssText = "flex:1; padding:7px 0; border-radius:6px; border:1px solid #e6e6e2; background:#ffffff; color:#6b7075; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:inherit;";
             btn.onclick = () => setMode(key);
             tabs[key] = btn; tabRow.appendChild(btn);
         });
@@ -476,7 +476,7 @@ function showFundPrompt(before) {
         const amountInput = document.createElement('input');
         amountInput.type = "text"; amountInput.inputMode = "numeric";
         amountInput.placeholder = "0";
-        amountInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none; font-family:inherit;";
+        amountInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #e6e6e2; background:#f7f7f5; color:#16181a; font-size:1rem; font-weight:800; text-align:center; outline:none; font-family:inherit;";
 
         // 저장하면 잔액이 얼마가 되는지 치는 대로 보여 준다.
         const preview = document.createElement('div');
@@ -487,15 +487,15 @@ function showFundPrompt(before) {
         memoLabel.style.cssText = "color:#94a3b8; font-size:0.72rem; font-weight:700; text-align:left; margin-bottom:4px;";
         const memoInput = document.createElement('input');
         memoInput.type = "text"; memoInput.maxLength = 40;
-        memoInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fef08a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
+        memoInput.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #e6e6e2; background:#f7f7f5; color:#16181a; font-size:0.85rem; font-weight:700; text-align:center; outline:none; margin-bottom:12px; font-family:inherit;";
 
         const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "취소";
-        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#475569; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
         const okBtn = document.createElement('button');
         okBtn.textContent = "저장";
-        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#d4af37; color:#1e293b; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#1f6b45; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
         row.appendChild(cancelBtn); row.appendChild(okBtn);
 
         box.appendChild(msgEl); box.appendChild(tabRow);
@@ -519,17 +519,17 @@ function showFundPrompt(before) {
             const arrow = sign === 0 ? "➔"
                 : `${sign > 0 ? '+' : '−'} ${formatNumber(amount)}원 =`;
             preview.innerHTML = `<span style="color:#64748b;">${formatNumber(before)}원 ${arrow}</span> ` +
-                `<span style="color:${after < 0 ? '#f87171' : '#4ade80'};">${formatFundString(after)}</span>` +
-                (after < 0 ? `<div style="color:#f87171; font-size:0.68rem; font-weight:700; margin-top:2px;">잔액이 마이너스가 됩니다</div>` : "");
+                `<span style="color:${after < 0 ? '#c0392b' : '#1f6b45'};">${formatFundString(after)}</span>` +
+                (after < 0 ? `<div style="color:#c0392b; font-size:0.68rem; font-weight:700; margin-top:2px;">잔액이 마이너스가 됩니다</div>` : "");
         }
 
         function setMode(key) {
             mode = key;
             Object.keys(tabs).forEach(k => {
                 const on = k === key;
-                tabs[k].style.background = on ? "#d4af37" : "#0f172a";
-                tabs[k].style.color = on ? "#1e293b" : "#94a3b8";
-                tabs[k].style.borderColor = on ? "#d4af37" : "#475569";
+                tabs[k].style.background = on ? "#1f6b45" : "#ffffff";
+                tabs[k].style.color = on ? "#ffffff" : "#6b7075";
+                tabs[k].style.borderColor = on ? "#1f6b45" : "#e6e6e2";
             });
             amountLabel.textContent = FUND_MODES[key].label;
             memoInput.placeholder = FUND_MODES[key].memo;
@@ -1311,7 +1311,7 @@ function animateFinalTotals() {
             const target = parseFloat(el.getAttribute('data-final')) || 0;
             // 만 원 단위로 끊어 올린다 — 1원 단위로 굴리면 글자가 정신없다.
             const v = Math.round(target * eased / 10000) * 10000;
-            el.textContent = `합산: ${formatFinalBalance(t < 1 ? v : target)}`;
+            el.textContent = formatFinalBalance(t < 1 ? v : target);   // '합산' 글자는 위 줄(.final-label)에 따로 있다
         });
         if (t < 1) requestAnimationFrame(step);
     };
@@ -1350,8 +1350,9 @@ function checkRankChange() {
     }
 
     Object.keys(pendingRankBump).forEach(name => {
+        // 이름 칸에는 ⭐(독수리 명예 표식)이 붙을 수 있어 첫 글자 마디(이름 자체)로 견준다.
         const card = [...document.querySelectorAll('.summary-item')]
-            .find(el => (el.querySelector('.name') || {}).textContent === name);
+            .find(el => { const n = el.querySelector('.name'); return n && n.firstChild && n.firstChild.textContent === name; });
         const badge = card && card.querySelector('.rank-badge');
         if (badge && !badge.classList.contains(pendingRankBump[name])) {
             badge.classList.add(pendingRankBump[name]);
@@ -2906,7 +2907,7 @@ async function migratePhotosToStorage() {
         if (typeof src === 'string' && src.startsWith('data:')) targetCount++;
     }));
     if (targetCount === 0) { showToast("✅ 이전할 사진이 없습니다. 이미 모두 Storage에 있습니다."); return; }
-    if (!(await showConfirmPrompt(`사진 ${targetCount}장을 Storage로 옮깁니다.<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>되돌릴 수 없습니다.</span>`, "이전하기", "#d4af37"))) return;
+    if (!(await showConfirmPrompt(`사진 ${targetCount}장을 Storage로 옮깁니다.<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>되돌릴 수 없습니다.</span>`, "이전하기", "#d4af37"))) return;
 
     showToast(`⏳ 사진 ${targetCount}장 이전 중...`);
     saveState();
@@ -2933,7 +2934,7 @@ async function deleteRoundPhoto(photoIdx) {
     const round = selectedPhotoRoundIdx;
     const removed = ((appData.roundPhotos || [])[round] || [])[photoIdx];
     if (!removed) return;
-    if (!(await showConfirmPrompt("이 사진을 삭제할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>되돌릴 수 없습니다.</span>"))) return;
+    if (!(await showConfirmPrompt("이 사진을 삭제할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>되돌릴 수 없습니다.</span>"))) return;
     const list = (appData.roundPhotos || [])[round] || [];
     const idx = list.indexOf(removed);
     if (idx < 0) { showToast("이미 삭제된 사진입니다."); renderRoundPhotos(); return; }
@@ -3245,7 +3246,7 @@ function openPersonalReport(name) {
         } catch(e) {}
     }
 
-    document.getElementById('reportTitle').innerHTML = `✨ <span style="color:#fef08a;">${name}</span> 명예의 전당 ✨`;
+    document.getElementById('reportTitle').innerHTML = `✨ <span style="color:var(--primary-gold);">${name}</span> 명예의 전당 ✨`;
     const validScores = (appData.scores && appData.scores[name]) ? appData.scores[name].filter((s) => s !== "" && !isNaN(parseFloat(s))).map(s => parseFloat(s)) : [];
     let maxStr = "-", minStr = "-", avgStr = "-";
     
@@ -3576,7 +3577,7 @@ function closePersonalReport() { document.getElementById('personalReportModal').
 
 async function resetAllData() {
     if (!(await authenticateAdmin())) return;
-    if (!(await showConfirmPrompt("정말로 모든 데이터를<br>초기화할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>스코어·정산·사진이 모두 사라집니다.</span>", "초기화"))) return;
+    if (!(await showConfirmPrompt("정말로 모든 데이터를<br>초기화할까요?<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>스코어·정산·사진이 모두 사라집니다.</span>", "초기화"))) return;
     saveState(); appData = getDefaultData(); selectedMoneyRoundIdx = appData.totalRounds - 1; syncToSupabase(appData);
     closeAdminModal();
     renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
@@ -3675,7 +3676,7 @@ async function toggleRoundAlarm() {
 
     const existing = await getPushSubscription();
     if (existing && Notification.permission === 'granted') {
-        if (!(await showConfirmPrompt("라운드 알림을 끌까요?<br><span style='font-size:0.78rem; font-weight:600; color:#94a3b8;'>이 기기로 알림이 오지 않습니다.</span>", "끄기"))) return;
+        if (!(await showConfirmPrompt("라운드 알림을 끌까요?<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>이 기기로 알림이 오지 않습니다.</span>", "끄기"))) return;
         try { await unsubscribeFromPush(); showToast("🔕 라운드 알림을 껐습니다."); }
         catch (err) { console.error(err); showToast("⚠️ 알림 해제에 실패했습니다."); }
         updateAlarmUI();
@@ -3729,7 +3730,7 @@ async function deleteMyName() {
         return;
     }
     
-    const isConfirmed = await showConfirmPrompt("기기에 저장된 이름을 삭제하시겠습니까?<br><span style='font-size:0.8rem; font-weight:400; color:#94a3b8;'>삭제 후 다음 접속 시 다시 등록할 수 있습니다.</span>");
+    const isConfirmed = await showConfirmPrompt("기기에 저장된 이름을 삭제하시겠습니까?<br><span style='font-size:0.8rem; font-weight:400; color:#6b7075;'>삭제 후 다음 접속 시 다시 등록할 수 있습니다.</span>");
     
     if (isConfirmed) {
         localStorage.removeItem('jtfag_my_name');

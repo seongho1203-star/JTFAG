@@ -1,16 +1,21 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
+/* 디자인 1 · 클린 화이트 (사용자가 시안 넷 중 고른 것).
+   흰 바탕 + 초록 하나만 포인트. 예전 이름(--primary-gold 등)은 그대로 두고 값만 바꿨다 —
+   이 변수를 쓰는 곳이 백 군데가 넘어 이름을 바꾸면 반드시 빠뜨린다.
+   '금색'이라는 이름이지만 지금은 포인트 초록이다. 덮어쓰는 규칙은 파일 맨 아래 블록에 모아 두었다. */
 :root {
-    --bg-main: #f4f6f8;
+    --bg-main: #f7f7f5;
     --card-bg: #ffffff;
-    --card-border: rgba(212, 175, 55, 0.35);
-    --primary-gold: #b8860b;
-    --gold-light: #fef9e7;
-    --accent-green: #15803d;
-    --accent-red: #dc2626;
-    --text-main: #1e293b;
-    --text-sub: #64748b;
-    --input-bg: #f8fafc;
+    --card-border: #e6e6e2;
+    --primary-gold: #1f6b45;
+    --gold-light: #e8f2ec;
+    --accent-green: #1f6b45;
+    --accent-red: #c0392b;
+    --text-main: #16181a;
+    --text-sub: #6b7075;
+    --input-bg: #f7f7f5;
+    --line: #eeeeea;
 }
 
 * {
@@ -933,3 +938,174 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .route-app small { margin-left: 6px; font-size: 0.7rem; font-weight: 700; color: #0f766e; background: #ccfbf1; padding: 2px 6px; border-radius: 999px; }
 .route-app.cancel { background: #f1f5f9; border-color: #e2e8f0; color: #475569; }
 .route-note { font-size: 0.72rem; color: #64748b; text-align: center; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   디자인 1 · 클린 화이트 — 사용자가 시안 넷 중 고른 것 (2026-10-08)
+   흰 카드 · 가는 회색 선 · 포인트 초록 하나. 그라데이션·3D 단추는 걷어냈다.
+   위쪽의 옛 규칙은 그대로 두고 여기서 덮어쓴다(지우면 연출 규칙까지 같이 건드리게 된다).
+   **독수리 연속 뱃지(.badge-eagle-3)와 축포·결과 발표 연출은 손대지 않았다** —
+   모임에서 크게 축하하기로 한 것이라 일부러 튀게 둔 자리다.
+   ═══════════════════════════════════════════════════════════════════ */
+body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-inset-bottom)) 8px; }
+
+/* 머리말: 왼쪽 이름, 오른쪽 알림·관리자 단추 */
+.header-area { display: flex; align-items: center; justify-content: space-between; text-align: left; padding: 6px 4px 12px 4px; }
+.header-area h1 { background: none; -webkit-text-fill-color: currentColor; color: var(--text-main); font-size: clamp(1.35rem, 5.6vw, 1.55rem); font-weight: 900; letter-spacing: -0.6px; }
+.header-area p.subtitle { color: var(--text-sub); font-size: clamp(0.68rem, 2.8vw, 0.76rem); font-weight: 600; letter-spacing: 0; margin-top: 1px; }
+.header-tools { display: flex; gap: 8px; flex-shrink: 0; }
+.header-tools button { width: 42px; height: 42px; border-radius: 21px; background: #ffffff; border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; font-size: 1.05rem; }
+/* 종이 4초마다 흔들리던 무한 애니메이션 — 늘 켜져 있는 그리기 비용이라 이참에 뺐다. */
+.header-tools .bell-btn { animation: none; }
+
+/* 다음 라운드 카드 */
+.notice-card { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--card-border); border-radius: 18px; padding: 16px; box-shadow: none; }
+.notice-box { background: none; border: none; border-radius: 0; padding: 0; }
+.notice-box label { color: var(--text-sub); font-size: clamp(0.7rem, 2.8vw, 0.76rem); font-weight: 600; margin-bottom: 6px; }
+.notice-next { justify-content: flex-start; }
+.notice-next #nextRoundDisplay { color: var(--text-main); font-size: clamp(1rem, 4.4vw, 1.18rem); font-weight: 800; letter-spacing: -0.3px; line-height: 1.4; }
+#weatherWidget { margin-top: 8px; padding: 0; background: none; border: none; justify-content: flex-start; gap: 6px; color: var(--text-sub); font-size: clamp(0.7rem, 2.9vw, 0.78rem); line-height: 1.4; }
+#weatherWidget b { color: var(--text-main); font-weight: 700; }
+.notice-fund { flex-direction: row; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.notice-fund label { margin: 0; }
+.notice-fund #clubFundInput { width: auto; text-align: right; color: var(--text-main); font-size: clamp(0.92rem, 3.8vw, 1.02rem); font-weight: 800; }
+.dday-badge { padding: 2px 8px; border-radius: 999px; font-size: clamp(0.62rem, 2.5vw, 0.72rem); font-weight: 800; vertical-align: 2px; letter-spacing: 0; }
+.dday-far   { background: var(--gold-light); color: var(--primary-gold); }
+.dday-soon  { background: #fff1e0; color: #b45309; }
+.dday-today { background: var(--accent-red); color: #ffffff; box-shadow: none; }
+
+/* 여행 카드 */
+.trip-card { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--card-border); border-radius: 18px; padding: 14px 16px; box-shadow: none; }
+.trip-card-title { color: var(--text-main); font-weight: 800; }
+.trip-card-when { color: var(--text-main); font-weight: 700; }
+.trip-card-sub { color: var(--text-sub); }
+.trip-card-more { color: var(--primary-gold); font-weight: 700; }
+
+/* ── 통합 정산 요약 ──
+   네 칸을 가는 세로선으로 나누고, 칸마다 이름 → 계급 그림 → 계급·타수·찬조 → 뱃지 둘 → 합산.
+   **줄 높이를 칸끼리 맞춘다** — 뱃지 글자가 길어 두 줄로 접히는 칸과 한 줄인 칸이 섞이면
+   그 아래 합산이 칸마다 들쭉날쭉해졌다(시안에서 실제로 그랬다). 그래서 뱃지 한 개의 높이를
+   늘 두 줄 자리로 못박고(.sum-badges .season-badge), 뱃지가 하나뿐인 사람도 두 개 자리를 비운다. */
+.total-summary-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 14px 6px 14px 6px; box-shadow: none; }
+.total-summary-card h2 { text-align: left; color: var(--text-main); font-size: clamp(0.9rem, 3.8vw, 1rem); font-weight: 800; margin: 0 8px 12px 8px; }
+.summary-grid { gap: 0; }
+.summary-item { background: none; border: none; border-right: 1px solid var(--line); border-radius: 0; padding: 0 5px; display: flex; flex-direction: column; justify-content: flex-start; gap: 10px; min-width: 0; }
+.summary-item:last-child { border-right: none; }
+.summary-item .name { background: none; padding: 2px 0; margin: 0; font-size: clamp(0.8rem, 3.4vw, 0.92rem); font-weight: 800; text-align: center; }
+.summary-item .name:hover { background: none; color: var(--primary-gold); }
+.sum-rank { display: flex; justify-content: center; }
+.summary-item .sum-rank .rank-badge { background: none !important; border: none !important; box-shadow: none; text-shadow: none; flex-direction: column; gap: 5px; width: auto; padding: 0 !important; font-size: clamp(0.66rem, 2.7vw, 0.76rem); font-weight: 800; letter-spacing: 0; }
+.summary-item .sum-rank .rank-badge img { width: 46px !important; height: 46px !important; margin: 0 !important; padding: 5px; box-sizing: border-box; border-radius: 50%; object-fit: contain; filter: none; background: #f2f2ee; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #a3a8af; }
+.summary-item .sum-rank .rank-eagle   { color: #8a6a12; }
+.summary-item .sum-rank .rank-hawk    { color: #1f5fa8; }
+.summary-item .sum-rank .rank-crane   { color: #6d3fb0; }
+.summary-item .sum-rank .rank-sparrow { color: #5b6168; }
+.summary-item .sum-rank .rank-eagle img   { background: #fbf4e0; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #d9b65a; }
+.summary-item .sum-rank .rank-hawk img    { background: #e6f0fa; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #5b94d6; }
+.summary-item .sum-rank .rank-crane img   { background: #f1eafb; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #a57fe0; }
+.summary-item .sum-rank .rank-sparrow img { background: #eff0f2; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #a3a8af; }
+.sum-details { display: flex; flex-direction: column; gap: 5px; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.summary-item .detail-line { background: none; margin: 0; padding: 0 1px; border-radius: 0; font-size: clamp(0.62rem, 2.6vw, 0.74rem); }
+.summary-item .detail-line .label { color: var(--text-sub); font-weight: 500; }
+.summary-item .detail-line .val { color: var(--text-main); font-weight: 700; }
+.summary-item .detail-line .val.donate { color: #7a3fa8; }
+.sum-badges { display: flex; flex-direction: column; gap: 5px; font-size: clamp(0.56rem, 2.4vw, 0.66rem); min-height: calc(2 * (2.7em + 10px) + 5px); }
+.sum-badges .season-badge { margin: 0; font-size: 1em; height: calc(2.7em + 10px); padding: 0 3px; display: flex; align-items: center; justify-content: center; text-align: center; white-space: normal; word-break: keep-all; line-height: 1.35; letter-spacing: -0.2px; border-radius: 10px; }
+.final-label { margin-top: auto; text-align: center; font-size: clamp(0.6rem, 2.4vw, 0.68rem); color: var(--text-sub); font-weight: 500; }
+.summary-item .final-total { margin: -8px 0 0 0; padding: 0; border: none; text-align: center; font-size: clamp(0.88rem, 3.8vw, 1.05rem); font-weight: 800; letter-spacing: -0.4px; }
+.summary-item.skeleton { border-radius: 10px; }
+
+/* 시즌 뱃지 — 독수리 연속(2·3연속 이상)만 빼고 모두 차분한 회색 칩. 무엇인지는 그림문자와 글이 말해 준다. */
+.season-badge:not(.badge-eagle-3):not(.badge-eagle-2) { background: #f2f2ee; color: #3a3f44; border: 1px solid transparent; text-shadow: none; box-shadow: none; font-weight: 700; }
+.badge-eagle-2 { background: #fbf4e0; color: #6e5410; border-color: #e9d9a6; box-shadow: none; }
+
+/* 계급 뱃지(표·이력) — 그라데이션 대신 옅은 칠 */
+.rank-badge { box-shadow: none; }
+.rank-eagle   { background: #fbf4e0; color: #6e5410; border: 1px solid #e9d9a6; }
+.rank-hawk    { background: #e6f0fa; color: #1f5fa8; border: 1px solid #c3d8ef; }
+.rank-crane   { background: #f1eafb; color: #6d3fb0; border: 1px solid #dccdf2; }
+.rank-sparrow { background: #eff0f2; color: #5b6168; border: 1px solid #d9dce0; }
+
+/* 차수별 정산 · 안내 줄 · 단추 */
+.money-card { border: 1px solid var(--card-border); border-radius: 18px; padding: 14px 10px; }
+.money-card h3 { font-size: clamp(0.88rem, 3.6vw, 0.98rem); }
+.round-select-badge, .course-wr-select { border-color: #cfe3d6;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%231f6b45' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E"); }
+.money-table th { border-bottom-color: var(--line); }
+.money-input { background-color: var(--input-bg) !important; border-color: var(--card-border) !important; border-radius: 8px !important; }
+.donate-row { border-top: 1px solid var(--line); }
+.donate-cell, .near-box { background: var(--input-bg); border-color: var(--line); }
+.info-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 8px 12px; }
+.action-btn { padding: 8px 11px; border-radius: 10px; font-weight: 700; background: #ffffff; color: var(--text-main); border: 1px solid var(--card-border); }
+.add-btn { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
+.remove-btn { color: var(--accent-red); }
+.scorecard-btn { background: var(--gold-light); border-color: #cfe3d6; color: var(--primary-gold); }
+
+/* 타수 표 */
+.table-wrapper { border: 1px solid var(--card-border); border-radius: 16px; }
+th, td { border-bottom-color: var(--line); }
+th { background-color: #fafaf8; }
+.sticky-col-1 { background-color: #fafaf8 !important; }
+.sticky-col-2 { background-color: #ffffff !important; }
+input.course-input { background-color: var(--input-bg); border-color: var(--card-border); }
+.course-slot:active input.course-input.locked { background-color: var(--gold-light); }
+.photo-btn { border-color: var(--card-border); }
+.photo-btn:hover { background: var(--gold-light); }
+.avg-cell, th#avgHeaderTitle { border-left: 2px solid #cfe3d6 !important; }
+.avg-cell .avg-pill { background: var(--gold-light); border: 1px solid #cfe3d6; color: var(--primary-gold); }
+
+/* 핸디캡 · 이력 단추 */
+.match-card, .history-card { border: 1px solid var(--card-border); border-radius: 16px; padding: 12px 10px; }
+.match-card h3, .history-card h3 { color: var(--text-main); }
+.match-item { background: var(--input-bg); border-color: var(--line); }
+.open-history-btn { background: #ffffff; color: var(--text-main); border: 1px solid var(--card-border); box-shadow: none; font-weight: 700; }
+
+/* 창(모달) — 남색 머리말을 흰 바탕으로 */
+.modal-content { border: 1px solid var(--card-border); border-radius: 18px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
+.modal-header { background: #ffffff; color: var(--text-main); border-bottom: 1px solid var(--line); }
+.modal-header h3 { color: var(--text-main); }
+.close-btn { color: var(--text-sub); }
+.history-item { background: var(--input-bg); border-color: var(--line); }
+.history-header { color: var(--primary-gold); background: var(--gold-light); }
+.history-member { border-color: var(--card-border); }
+
+/* 개인 리포트 — 돌아가던 금테(무한 애니메이션)를 걷어냈다 */
+#personalReportModal .modal-content { background: #ffffff; border: 1px solid var(--card-border); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
+#personalReportModal .modal-content::after, #personalReportModal .modal-content::before { display: none; }
+#personalReportModal .modal-header { background: #ffffff; border-bottom: 1px solid var(--line); }
+#personalReportModal .modal-header h3 { color: var(--text-main); text-shadow: none; }
+#personalReportModal .close-btn { color: var(--text-sub); }
+#personalReportModal .report-section { border: 1px solid var(--card-border); box-shadow: none; }
+#personalReportModal .report-title { color: var(--text-main); border-bottom-color: var(--line); }
+#personalReportModal .stat-box { background: var(--input-bg); border-color: var(--line); }
+#personalReportModal .badge-desc-item { background: #ffffff; border-color: var(--line); }
+#personalReportModal .winrate-list div { border-bottom-color: var(--line); }
+
+/* 알림 미리보기 · 설치 배너 · 결과 발표 단추 */
+.notify-preview { background: var(--input-bg); border: 1px solid var(--card-border); }
+.notify-preview-title { color: var(--text-main); }
+.notify-preview-body { color: var(--text-sub); }
+.notify-preview-card + .notify-preview-card { border-top-color: var(--line); }
+#installBanner { background: #ffffff; color: var(--text-main); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
+.install-title { color: var(--text-main); }
+.install-desc { color: var(--text-sub); }
+.install-steps { border-top-color: var(--line); }
+.install-steps span { color: var(--text-main); }
+.install-steps b { color: var(--primary-gold); }
+.install-btn { background: var(--primary-gold); color: #ffffff; }
+.reveal-close { color: #ffffff; }
+
+/* 여행 창 — 청록을 포인트 초록으로 맞춘다 (라쿠텐 지도·목록은 그대로) */
+.trip-summary { background: var(--gold-light); border-color: #cfe3d6; color: var(--text-main); }
+.trip-summary-sub { color: var(--primary-gold); }
+.trip-gear { border-color: #cfe3d6; }
+.trip-chip.on, .trip-kind input:checked + span, .trip-btn.primary { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
+.trip-chip.add { color: var(--primary-gold); }
+.trip-chip.add.on { color: #ffffff; }
+.trip-day { border-color: var(--card-border); border-radius: 14px; }
+.trip-day.today, .trip-day.editing { border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(31, 107, 69, 0.14); }
+.trip-day.editing { background: #f7faf8; }
+.trip-day-no { background: var(--gold-light); color: var(--primary-gold); }
+.trip-area { background: var(--gold-light); color: var(--primary-gold); }
+.trip-today { background: var(--primary-gold); }
+.trip-field input:focus, .trip-field textarea:focus { border-color: var(--primary-gold); }
+.route-app small { color: var(--primary-gold); background: var(--gold-light); }

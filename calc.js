@@ -565,42 +565,27 @@ function processAllRoundSettlements() {
             const strokeProfitText = totalPureStrokeProfit === 0 ? "0원" : (totalPureStrokeProfit / 10000).toFixed(1) + "만";
             const donationText = donation === 0 ? "0원" : "-" + (donation / 10000).toFixed(1) + "만";
             
-            let finalColor = "#64748b";
+            let finalColor = "#6b7075";
             let finalText = formatFinalBalance(finalBalance);
-            if (finalBalance > 0) finalColor = "#16a34a";
-            if (finalBalance < 0) finalColor = "#dc2626";
+            if (finalBalance > 0) finalColor = "#1f6b45";
+            if (finalBalance < 0) finalColor = "#c0392b";
 
             const ranks = golferRankHistory[g] || [];
             const currentRankIdx = ranks.length > 0 ? ranks[ranks.length - 1] : 3; 
             const currentRankInfo = RANK_CONFIG[currentRankIdx];
 
-            // 🔥 후광 효과(box-shadow) 제거, 테두리(border)만 색상별로 깔끔하게 적용 🔥
-            let badgeGlowStyle = "";
-            if (currentRankIdx === 0) {
-                badgeGlowStyle = "border: 2px solid #f59e0b;"; // 독수리: 황금 테두리
-            } else if (currentRankIdx === 1) {
-                badgeGlowStyle = "border: 2px solid #0ea5e9;"; // 매: 파란 테두리
-            } else if (currentRankIdx === 2) {
-                badgeGlowStyle = "border: 2px solid #a855f7;"; // 학: 보라 테두리
-            } else {
-                badgeGlowStyle = "border: 2px solid #94a3b8;"; // 참새: 회색 테두리
-            }
-
             summaryGrid.innerHTML += `
-                <div class="summary-item" style="height: 100%; justify-content: flex-start;">
-                    <div>
-                        <div class="name" onclick="openPersonalReport('${g}')">${g}<span class="eagle-honor off" data-crown="${g}" onclick="event.stopPropagation(); eagleHonorNotice('${g}')"></span></div>
-                        <div style="margin-top:2px; margin-bottom: 6px;">
-                            <span class="rank-badge ${currentRankInfo.class}" style="width:100%; padding:3px 0; border-radius:6px; ${badgeGlowStyle}">${currentRankInfo.icon} ${currentRankInfo.name}</span>
-                        </div>
+                <div class="summary-item">
+                    <div class="name" onclick="openPersonalReport('${g}')">${g}<span class="eagle-honor off" data-crown="${g}" onclick="event.stopPropagation(); eagleHonorNotice('${g}')"></span></div>
+                    <div class="sum-rank"><span class="rank-badge ${currentRankInfo.class}">${currentRankInfo.icon}<span class="rank-name">${currentRankInfo.name}</span></span></div>
+                    <div class="sum-details">
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                         <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
                         <div class="detail-line"><span class="label">찬조</span> <span class="val${donation ? ' donate' : ''}">${donationText}</span></div>
                     </div>
-                    <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; margin-top: 4px;">
-                        ${summaryBadgesHtml}
-                    </div>
-                    <div class="final-total" data-final="${finalBalance}" style="color: ${finalColor}; margin-top: auto;">합산: ${finalText}</div>
+                    <div class="sum-badges">${summaryBadgesHtml}</div>
+                    <div class="final-label">합산</div>
+                    <div class="final-total" data-final="${finalBalance}" style="color: ${finalColor};">${finalText}</div>
                 </div>
             `;
         });
