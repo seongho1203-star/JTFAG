@@ -137,9 +137,34 @@ function closeTripModal() {
 }
 
 // 남이 고쳐서 렌더가 돌 때 — 창이 열려 있고 내가 안 고치는 중이면 다시 그린다.
+// 손가락으로 미는 중이거나 미끄러지는 중(관성)이면 다시 그리지 않고 멈춘 뒤로 미룬다.
+// 미는 도중에 창 안을 통째로 갈아 끼우면 손가락 아래 요소가 사라져 **아이폰이 그 스크롤을 놓는다** —
+// '위아래로 스크롤이 안 될 때가 있다'(사용자 제보)의 정체다. 남의 저장·접속 때 다시 읽기마다 이 함수가 돈다.
+let tripTouching = false, tripScrollAt = 0, tripRefreshTimer = 0;
+function tripBusyScrolling() { return tripTouching || Date.now() - tripScrollAt < 400; }
+function watchTripScroll() {
+    const body = document.getElementById('tripBody');
+    if (!body || body._watched) return;
+    body._watched = true;
+    body.addEventListener('touchstart', () => { tripTouching = true; }, { passive: true });
+    const up = () => { tripTouching = false; tripScrollAt = Date.now(); };
+    body.addEventListener('touchend', up, { passive: true });
+    body.addEventListener('touchcancel', up, { passive: true });
+    body.addEventListener('scroll', () => { tripScrollAt = Date.now(); }, { passive: true });
+}
 function refreshTripModal() {
     const modal = document.getElementById('tripModal');
-    if (modal && modal.classList.contains('active') && !tripEditing) renderTripModal();
+    if (!modal || !modal.classList.contains('active') || tripEditing) return;
+    clearTimeout(tripRefreshTimer);
+    if (tripBusyScrolling()) { tripRefreshTimer = setTimeout(refreshTripModal, 450); return; }
+    renderTripModal();
+}
+// 같은 내용이면 갈아 끼우지 않는다 — 다시 그릴 일이 없는데 DOM을 바꾸면 스크롤만 끊긴다.
+function setTripBody(body, html) {
+    watchTripScroll();
+    if (body._html === html) return;
+    body.innerHTML = html;
+    body._html = html;
 }
 
 // ─── 위치 ───
@@ -478,7 +503,7 @@ function renderTripModal() {
     if (tripEditing === 'new' || !trip) {
         if (!trip) tripOpenId = null;
         title.textContent = '🧳 여행';
-        body.innerHTML = tripChipsHtml() + newTripHtml();
+        setTripBody(body, tripChipsHtml() + newTripHtml());
         return;
     }
     const days = tripDays(trip);
@@ -509,7 +534,7 @@ function renderTripModal() {
             <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripMemo()">✏️ 입력</button></div>
         </div>`;
 
-    body.innerHTML = tripChipsHtml() + head + settings + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo;
+    setTripBody(body, tripChipsHtml() + head + settings + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo);
     days.forEach(d => { if (d.date >= today && d.course) loadTripWeather(d); });
 }
 

@@ -571,6 +571,8 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .modal-header h3 { margin: 0; font-size: clamp(0.85rem, 3.2vw, 0.95rem); color: #fef08a; font-weight: 800; }
 .close-btn { background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; font-weight: 700; padding: 0 5px; }
 .modal-body { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* 여행 창은 끝에 닿아도 뒤(잠긴 화면)로 미는 힘이 새지 않게 — 새면 아이폰이 그 손짓을 뒤에 넘겨 창이 안 밀렸다 */
+#tripModal .modal-body, #goraModal .modal-body { overscroll-behavior: contain; }
 
 .history-list { display: flex; flex-direction: column; gap: 10px; }
 .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; }

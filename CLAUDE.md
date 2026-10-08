@@ -343,6 +343,11 @@ scripts/fetch-courses.js  →  courses.js를 커밋
 - **알림은 라운드 알림과 같이 간다** — 위 '라운드 알림 (푸시)'의 여행 줄을 볼 것.
 - **고치는 동안(`tripEditing`)은 창을 다시 그리지 않는다** — 남의 저장이 들어와도 적던 글이 안 날아간다.
   안 고치는 중이면 `renderAll()`이 `refreshTripModal()`로 바로 갈아 그린다.
+  - **미는 동안·관성으로 미끄러지는 동안(손 뗀 뒤 0.4초)은 갈아 그리지 않고 멈춘 뒤로 미룬다**(`tripBusyScrolling()`) —
+    `위아래로 스크롤이 안 될 때가 있다`(사용자 제보)의 정체다. 남의 저장·앱으로 돌아올 때 다시 읽기마다 `renderAll()`이 돌아
+    창 안을 통째로 갈아 끼웠고, **손가락 아래 요소가 사라지면 아이폰이 그 스크롤을 놓는다.**
+  - **내용이 같으면 아예 안 갈아 끼운다**(`setTripBody()` — 지난번 그린 글과 견준다). 창 안에 `innerHTML`을 직접 넣지 말 것.
+  - 창 끝에서 미는 힘이 뒤(잠긴 화면)로 새지 않게 `#tripModal`·`#goraModal`의 `.modal-body`에 `overscroll-behavior: contain`.
 - **입력칸에 예시 글(`placeholder`)을 넣지 않는다**(사용자 요청 — `예제 글 모두 삭제`). 되살리지 말 것.
 - **onclick 속성에 여행 id·날짜를 그대로 넣으므로** `allTrips()`가 `ID_RE`(영숫자·`-`·`_`)에 맞는 id만,
   `tripDays()`가 `YYYY-MM-DD`만 받는다. 이름·메모 같은 글은 늘 `escapeHtml()`을 거친다.
