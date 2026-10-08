@@ -58,6 +58,17 @@ function tripDays(trip) {
     return (trip && Array.isArray(trip.days) ? trip.days : []).filter(d => d && ISO_RE.test(d.date))
         .slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 }
+// 여행 알림은 라운드 알림 설정(관리자 메뉴 → 알림 설정)을 같이 쓴다.
+// 보내는 것은 scripts/send-reminder.js의 remindTrips — 규칙을 바꾸면 이 문구도 함께 고칠 것.
+function tripNotifyText() {
+    const days = normalizeDaysBefore((appData.notifySettings || {}).daysBefore);
+    const list = days.length ? days : DEFAULT_NOTIFY_SETTINGS.daysBefore;
+    const before = list.filter(n => n > 0).map(n => `${n}일 전`);
+    const parts = [];
+    if (before.length) parts.push(`출발 ${before.join('·')}`);
+    if (list.includes(0)) parts.push('여행 중 매일');
+    return `🔔 알림: ${parts.join(' · ')} 아침`;
+}
 function findTrip(id) { return allTrips().find(t => t.id === id) || null; }
 
 // 아직 안 끝난 여행, 가까운 순.
@@ -479,6 +490,7 @@ function renderTripModal() {
         <div class="trip-summary">
             <div class="trip-summary-top"><b>${isoLabel(days[0].date)} ~ ${isoLabel(days[days.length - 1].date)}</b><button type="button" class="trip-gear" onclick="editTripSettings()" title="여행 고치기">⚙️</button></div>
             <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''} · 넷 모두 고칠 수 있어요</div>
+            <div class="trip-summary-sub">${tripNotifyText()}</div>
         </div>` : '';
     const settings = tripEditing === 'settings' ? settingsHtml(trip) : '';
 
