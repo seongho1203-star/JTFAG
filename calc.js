@@ -592,6 +592,7 @@ function processAllRoundSettlements() {
 
         // 이름 옆 명예 표식. 표와 요약 카드가 같은 함수를 쓴다 — 여기서 한 번에 채운다.
         if (typeof paintEagleCrowns === 'function') paintEagleCrowns();
+        if (typeof equalizeSummaryBadges === 'function') equalizeSummaryBadges();
         rememberCurrentRanks();
     }
 }

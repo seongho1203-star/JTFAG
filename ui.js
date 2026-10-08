@@ -88,12 +88,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 : `<div style="margin-top:3px; font-size:0.8rem; font-weight:800; color:${move.color};">${move.word} ${formatNumber(Math.abs(diff))}원</div>`;
             // 예전 기록에는 memo가 없다. 있을 때만 줄을 만든다.
             const memoHtml = log.memo
-                ? `<div style="margin-top:5px; color:#3a3f44; font-size:0.78rem; background:#f7f7f5; border-left:2px solid #1f6b45; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
+                ? `<div style="margin-top:5px; color:#3a3f44; font-size:0.78rem; background:#f7f7f5; border-left:2px solid #2b5394; border-radius:0 4px 4px 0; padding:4px 7px; word-break:keep-all;">📝 ${escapeHtml(log.memo)}</div>`
                 : "";
             return `<div style="padding:10px 0; border-bottom:1px solid #eeeeea;">
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                     <span style="font-size:0.72rem; font-weight:800; color:#3a3f44; background:#f2f2ee; border-radius:5px; padding:2px 6px; white-space:nowrap;">${log.time}</span>
-                    <span style="font-size:0.75rem; color:#1f6b45; font-weight:700;">${escapeHtml(log.name || '')}</span>
+                    <span style="font-size:0.75rem; color:#2b5394; font-weight:700;">${escapeHtml(log.name || '')}</span>
                     <button type="button" onclick="editFundLog(${i})" title="내역 고치기" style="margin-left:auto; flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✎</button>
                     <button type="button" onclick="removeFundLog(${i})" title="이 기록 지우기" style="flex-shrink:0; width:22px; height:22px; line-height:1; padding:0; background:transparent; border:1px solid #e6e6e2; border-radius:5px; color:#6b7075; font-size:0.7rem; cursor:pointer; font-family:inherit;">✕</button>
                 </div>
@@ -208,7 +208,7 @@ function showPasswordPrompt(message) {
         
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = "확인";
-        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#1f6b45; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer;";
+        confirmBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#2b5394; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer;";
         
         btnRow.appendChild(cancelBtn);
         btnRow.appendChild(confirmBtn);
@@ -375,7 +375,7 @@ function showMemoPrompt(log) {
         cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
         const okBtn = document.createElement('button');
         okBtn.textContent = "저장";
-        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#1f6b45; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#2b5394; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
         row.appendChild(cancelBtn); row.appendChild(okBtn);
 
         box.appendChild(msgEl); box.appendChild(input); box.appendChild(row);
@@ -495,7 +495,7 @@ function showFundPrompt(before) {
         cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
         const okBtn = document.createElement('button');
         okBtn.textContent = "저장";
-        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#1f6b45; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#2b5394; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
         row.appendChild(cancelBtn); row.appendChild(okBtn);
 
         box.appendChild(msgEl); box.appendChild(tabRow);
@@ -527,9 +527,9 @@ function showFundPrompt(before) {
             mode = key;
             Object.keys(tabs).forEach(k => {
                 const on = k === key;
-                tabs[k].style.background = on ? "#1f6b45" : "#ffffff";
+                tabs[k].style.background = on ? "#2b5394" : "#ffffff";
                 tabs[k].style.color = on ? "#ffffff" : "#6b7075";
-                tabs[k].style.borderColor = on ? "#1f6b45" : "#e6e6e2";
+                tabs[k].style.borderColor = on ? "#2b5394" : "#e6e6e2";
             });
             amountLabel.textContent = FUND_MODES[key].label;
             memoInput.placeholder = FUND_MODES[key].memo;
@@ -709,9 +709,19 @@ function scheduleHtml(text) {
         .replace(/\([^()]*\)\s*$/, m => `<span class="nowrap">${m}</span>`);   // 끝의 코스 `(정-남)` — 하이픈에서 갈렸다
 }
 
+// 공지 카드: 날짜·시각 한 줄, 골프장(코스 괄호까지)은 다음 줄 (사용자 요청 — `일정과 골프장과 줄바꿈해줘`).
+// 시각을 못 찾는 예전 문구는 예전처럼 한 덩어리로 그린다.
+function noticeScheduleHtml(text) {
+    const m = text.match(/(?:(?:오전|오후)\s*)?\d{1,2}:\d{2}/);
+    if (!m) return scheduleHtml(text);
+    const cut = m.index + m[0].length;
+    const head = text.slice(0, cut), tail = text.slice(cut).trim();
+    return scheduleHtml(head) + (tail ? `<span class="sched-course">${scheduleHtml(tail)}</span>` : '');
+}
+
 function renderNoticeArea() {
     const dateDisplay = document.getElementById('nextRoundDisplay');
-    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + scheduleHtml(withWeekday(appData.nextRoundDate))) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
+    if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + noticeScheduleHtml(withWeekday(appData.nextRoundDate))) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
     updateLockUI();
 }
 
@@ -3797,3 +3807,18 @@ function showGreeting(myName) {
     overlay.onclick = dismiss;
     toast.onclick = dismiss;
 }
+
+// 통합 정산 요약의 뱃지 칩 높이를 네 칸 모두 같게 맞춘다.
+// 다 한 줄이면 한 줄 높이로 낮게, 하나라도 두 줄로 접히면 모두 두 줄 높이로 — 그래야 합산이 같은 높이에 선다.
+// (예전엔 늘 두 줄 자리로 못박아 한 줄짜리 칩이 헐렁했다 — 사용자 요청 `뱃지높이를 좀만 줄여줘`.)
+function equalizeSummaryBadges() {
+    const grid = document.getElementById('summaryGrid');
+    if (!grid) return;
+    grid.style.removeProperty('--chip-h');
+    let h = 0;
+    grid.querySelectorAll('.sum-badges .season-badge').forEach(c => { h = Math.max(h, c.offsetHeight); });
+    if (h) grid.style.setProperty('--chip-h', h + 'px');
+}
+let equalizeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(equalizeTimer); equalizeTimer = setTimeout(equalizeSummaryBadges, 150); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equalizeSummaryBadges());

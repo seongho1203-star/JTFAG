@@ -1,15 +1,16 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 /* 디자인 1 · 클린 화이트 (사용자가 시안 넷 중 고른 것).
-   흰 바탕 + 초록 하나만 포인트. 예전 이름(--primary-gold 등)은 그대로 두고 값만 바꿨다 —
+   흰 바탕 + 포인트 색 하나(처음엔 초록, 사용자 요청으로 남색). 예전 이름(--primary-gold 등)은 그대로 두고 값만 바꿨다 —
    이 변수를 쓰는 곳이 백 군데가 넘어 이름을 바꾸면 반드시 빠뜨린다.
-   '금색'이라는 이름이지만 지금은 포인트 초록이다. 덮어쓰는 규칙은 파일 맨 아래 블록에 모아 두었다. */
+   '금색'이라는 이름이지만 지금은 포인트 남색이다. 덮어쓰는 규칙은 파일 맨 아래 블록에 모아 두었다. */
 :root {
     --bg-main: #f7f7f5;
     --card-bg: #ffffff;
     --card-border: #e6e6e2;
-    --primary-gold: #1f6b45;
-    --gold-light: #e8f2ec;
+    --primary-gold: #2b5394;
+    --gold-light: #eaf0f8;
+    --accent-line: #ccd9ec;
     --accent-green: #1f6b45;
     --accent-red: #c0392b;
     --text-main: #16181a;
@@ -962,6 +963,7 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 .notice-box { background: none; border: none; border-radius: 0; padding: 0; }
 .notice-box label { color: var(--text-sub); font-size: clamp(0.7rem, 2.8vw, 0.76rem); font-weight: 600; margin-bottom: 6px; }
 .notice-next { justify-content: flex-start; }
+.notice-next .sched-course { display: block; }
 .notice-next #nextRoundDisplay { color: var(--text-main); font-size: clamp(1rem, 4.4vw, 1.18rem); font-weight: 800; letter-spacing: -0.3px; line-height: 1.4; }
 #weatherWidget { margin-top: 8px; padding: 0; background: none; border: none; justify-content: flex-start; gap: 6px; color: var(--text-sub); font-size: clamp(0.7rem, 2.9vw, 0.78rem); line-height: 1.4; }
 #weatherWidget b { color: var(--text-main); font-weight: 700; }
@@ -983,8 +985,9 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 /* ── 통합 정산 요약 ──
    네 칸을 가는 세로선으로 나누고, 칸마다 이름 → 계급 그림 → 계급·타수·찬조 → 뱃지 둘 → 합산.
    **줄 높이를 칸끼리 맞춘다** — 뱃지 글자가 길어 두 줄로 접히는 칸과 한 줄인 칸이 섞이면
-   그 아래 합산이 칸마다 들쭉날쭉해졌다(시안에서 실제로 그랬다). 그래서 뱃지 한 개의 높이를
-   늘 두 줄 자리로 못박고(.sum-badges .season-badge), 뱃지가 하나뿐인 사람도 두 개 자리를 비운다. */
+   그 아래 합산이 칸마다 들쭉날쭉해졌다(시안에서 실제로 그랬다). 그래서 칩 높이를 네 칸 모두
+   같은 값(--chip-h)으로 맞춘다 — equalizeSummaryBadges()(ui.js)가 가장 높은 칩을 재서 넣는다.
+   다 한 줄이면 낮게, 하나라도 접히면 모두 두 줄 높이. 뱃지가 하나뿐인 사람도 두 개 자리를 비운다. */
 .total-summary-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 14px 6px 14px 6px; box-shadow: none; }
 .total-summary-card h2 { text-align: left; color: var(--text-main); font-size: clamp(0.9rem, 3.8vw, 1rem); font-weight: 800; margin: 0 8px 12px 8px; }
 .summary-grid { gap: 0; }
@@ -1008,8 +1011,8 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 .summary-item .detail-line .label { color: var(--text-sub); font-weight: 500; }
 .summary-item .detail-line .val { color: var(--text-main); font-weight: 700; }
 .summary-item .detail-line .val.donate { color: #7a3fa8; }
-.sum-badges { display: flex; flex-direction: column; gap: 5px; font-size: clamp(0.56rem, 2.4vw, 0.66rem); min-height: calc(2 * (2.7em + 10px) + 5px); }
-.sum-badges .season-badge { margin: 0; font-size: 1em; height: calc(2.7em + 10px); padding: 0 3px; display: flex; align-items: center; justify-content: center; text-align: center; white-space: normal; word-break: keep-all; line-height: 1.35; letter-spacing: -0.2px; border-radius: 10px; }
+.sum-badges { display: flex; flex-direction: column; gap: 5px; font-size: clamp(0.56rem, 2.4vw, 0.66rem); min-height: calc(2 * var(--chip-h, 1.35em + 12px) + 5px); }
+.sum-badges .season-badge { margin: 0; font-size: 1em; height: var(--chip-h, auto); padding: 6px 3px; display: flex; align-items: center; justify-content: center; text-align: center; white-space: normal; word-break: keep-all; line-height: 1.35; letter-spacing: -0.2px; border-radius: 10px; }
 .final-label { margin-top: auto; text-align: center; font-size: clamp(0.6rem, 2.4vw, 0.68rem); color: var(--text-sub); font-weight: 500; }
 .summary-item .final-total { margin: -8px 0 0 0; padding: 0; border: none; text-align: center; font-size: clamp(0.88rem, 3.8vw, 1.05rem); font-weight: 800; letter-spacing: -0.4px; }
 .summary-item.skeleton { border-radius: 10px; }
@@ -1028,8 +1031,8 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 /* 차수별 정산 · 안내 줄 · 단추 */
 .money-card { border: 1px solid var(--card-border); border-radius: 18px; padding: 14px 10px; }
 .money-card h3 { font-size: clamp(0.88rem, 3.6vw, 0.98rem); }
-.round-select-badge, .course-wr-select { border-color: #cfe3d6;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%231f6b45' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E"); }
+.round-select-badge, .course-wr-select { border-color: var(--accent-line);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%232b5394' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E"); }
 .money-table th { border-bottom-color: var(--line); }
 .money-input { background-color: var(--input-bg) !important; border-color: var(--card-border) !important; border-radius: 8px !important; }
 .donate-row { border-top: 1px solid var(--line); }
@@ -1038,7 +1041,7 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 .action-btn { padding: 8px 11px; border-radius: 10px; font-weight: 700; background: #ffffff; color: var(--text-main); border: 1px solid var(--card-border); }
 .add-btn { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
 .remove-btn { color: var(--accent-red); }
-.scorecard-btn { background: var(--gold-light); border-color: #cfe3d6; color: var(--primary-gold); }
+.scorecard-btn { background: var(--gold-light); border-color: var(--accent-line); color: var(--primary-gold); }
 
 /* 타수 표 */
 .table-wrapper { border: 1px solid var(--card-border); border-radius: 16px; }
@@ -1050,8 +1053,8 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .course-slot:active input.course-input.locked { background-color: var(--gold-light); }
 .photo-btn { border-color: var(--card-border); }
 .photo-btn:hover { background: var(--gold-light); }
-.avg-cell, th#avgHeaderTitle { border-left: 2px solid #cfe3d6 !important; }
-.avg-cell .avg-pill { background: var(--gold-light); border: 1px solid #cfe3d6; color: var(--primary-gold); }
+.avg-cell, th#avgHeaderTitle { border-left: 2px solid var(--accent-line) !important; }
+.avg-cell .avg-pill { background: var(--gold-light); border: 1px solid var(--accent-line); color: var(--primary-gold); }
 
 /* 핸디캡 · 이력 단추 */
 .match-card, .history-card { border: 1px solid var(--card-border); border-radius: 16px; padding: 12px 10px; }
@@ -1095,15 +1098,15 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .reveal-close { color: #ffffff; }
 
 /* 여행 창 — 청록을 포인트 초록으로 맞춘다 (라쿠텐 지도·목록은 그대로) */
-.trip-summary { background: var(--gold-light); border-color: #cfe3d6; color: var(--text-main); }
+.trip-summary { background: var(--gold-light); border-color: var(--accent-line); color: var(--text-main); }
 .trip-summary-sub { color: var(--primary-gold); }
-.trip-gear { border-color: #cfe3d6; }
+.trip-gear { border-color: var(--accent-line); }
 .trip-chip.on, .trip-kind input:checked + span, .trip-btn.primary { background: var(--primary-gold); border-color: var(--primary-gold); color: #ffffff; }
 .trip-chip.add { color: var(--primary-gold); }
 .trip-chip.add.on { color: #ffffff; }
 .trip-day { border-color: var(--card-border); border-radius: 14px; }
-.trip-day.today, .trip-day.editing { border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(31, 107, 69, 0.14); }
-.trip-day.editing { background: #f7faf8; }
+.trip-day.today, .trip-day.editing { border-color: var(--primary-gold); box-shadow: 0 0 0 2px rgba(43, 83, 148, 0.14); }
+.trip-day.editing { background: #f6f8fc; }
 .trip-day-no { background: var(--gold-light); color: var(--primary-gold); }
 .trip-area { background: var(--gold-light); color: var(--primary-gold); }
 .trip-today { background: var(--primary-gold); }
