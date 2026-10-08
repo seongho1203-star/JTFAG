@@ -626,58 +626,69 @@ function saveTripTravel() {
 // 카톡에 손으로 길게 적어 공유했다(`일일이 다 적어서 카톡으로 공유했는데 힘들었어`).
 // 그래서 ① 항목을 적으면 1인 분담금·결제 상태·송금 현황이 저절로 계산되어 보이고 ② 준비물 목록을 둔다.
 // 동반자도 앱을 같이 쓰므로 카톡에 옮길 글은 만들지 않는다(한때 넣었다가 사용자 요청으로 뺐다).
-//   trip.costs  = [{id, cat, title, amt, cur:'KRW'|'JPY', unit:'person'|'total', status:'paid'|'local'|'plan'}]
-//   trip.people = 인원(분담 기준, 기본 4) · trip.fx = 100엔당 원 · trip.payer = 총무 이름
+//   trip.costs  = [{id, cat, title, amt, cur:'KRW'|현지 통화 코드, unit:'person'|'total', status:'paid'|'local'|'plan'}]
+//   trip.people = 인원(분담 기준, 기본 4) · trip.curr = 현지 통화(JPY·USD… / 'KRW'=원화만) · trip.fx = 현지 통화 기준 단위당 원
+//   trip.payer = 총무 이름
 //   trip.account = 송금 계좌 · trip.paid = {이름: true} · trip.fund = [{title, amt, cur}] · trip.pack = [문자열]
-// **금액은 원·엔을 섞어 적는다** — 일본 현지 결제(그린피·식사)는 엔으로, 선결제는 원으로 정해진다.
+// **금액은 원과 현지 통화를 섞어 적는다** — 일본 현지 결제(그린피·식사)는 엔으로, 선결제는 원으로 정해진다.
+// 현지 통화는 여행마다 하나다(`tripCur()` — 정하지 않았으면 일본 여행은 엔, 나머지는 원화만). 국내 여행은 원화만이라
+// 통화·환율 칸이 아예 안 나온다(사용자 제보 — `국내여행인경우도있고 다른 나라일경우도있는데 엔으로만 표시`).
+// 안에서는 항목의 통화를 'KRW'/'F'(현지 통화)로만 다루고, 저장할 때 'F'를 그 여행의 통화 코드로 적는다.
 // 환율은 자동으로 받지 않는다 — 카드사·환전소마다 달라 총무가 실제로 바꾼 값을 적는 편이 정산과 맞는다.
 const COST_CATS = { air: '항공', stay: '숙소', car: '렌트카', golf: '그린피', meal: '식사', move: '교통', etc: '기타' };
 const COST_STATUS = { paid: '결제 완료', local: '현지 결제', plan: '예약 예정' };
 const COST_UNITS = { person: '1인', total: '전체' };
-const COST_CURS = { KRW: '원', JPY: '엔' };
+// base = 환율을 적는 단위(100엔 = 920원처럼 단위가 작은 통화는 100).
+const FX_CURS = { JPY: { name: '엔', base: 100 }, USD: { name: '달러', base: 1 }, EUR: { name: '유로', base: 1 }, CNY: { name: '위안', base: 1 },
+    TWD: { name: '대만달러', base: 1 }, THB: { name: '바트', base: 1 }, VND: { name: '동', base: 100 }, PHP: { name: '페소', base: 1 } };
+const curDefault = trip => tripKind(trip) === 'japan' ? 'JPY' : '';
+function tripCur(trip) { const c = trip && trip.curr; return c === 'KRW' ? '' : FX_CURS[c] ? c : curDefault(trip); }
 const PACK_JAPAN = ['여권(유효기간 6개월 이상)', '국제운전면허증', '110V 변환 어댑터', '개인 상비약', '골프용품', '엔화·해외 결제 카드'];
 const PACK_DOMESTIC = ['골프용품', '개인 상비약', '신분증'];
 
 const costNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isFinite(n) && n > 0 ? n : 0; };
 function tripPeople(trip) { const n = parseInt(trip && trip.people, 10); return n >= 1 && n <= 20 ? n : golfers.length; }
-function tripFx(trip) { const n = costNum(trip && trip.fx); return n > 0 && n < 100000 ? n : 0; }
+function tripFx(trip) { const n = costNum(trip && trip.fx); return tripCur(trip) && n > 0 && n < 100000 ? n : 0; }
 function tripCosts(trip) {
     return (Array.isArray(trip && trip.costs) ? trip.costs : []).filter(c => c && typeof c === 'object').map(c => ({
         id: ID_RE.test(c.id || '') ? c.id : '',
         cat: COST_CATS[c.cat] ? c.cat : 'etc',
         title: typeof c.title === 'string' ? c.title : '',
         amt: costNum(c.amt),
-        cur: COST_CURS[c.cur] ? c.cur : 'KRW',
+        cur: c.cur && c.cur !== 'KRW' && tripCur(trip) ? 'F' : 'KRW',
         unit: COST_UNITS[c.unit] ? c.unit : 'person',
         status: COST_STATUS[c.status] ? c.status : 'paid'
     }));
 }
 function tripFund(trip) {
     return (Array.isArray(trip && trip.fund) ? trip.fund : []).filter(f => f && typeof f === 'object').map(f => ({
-        title: typeof f.title === 'string' ? f.title : '', amt: costNum(f.amt), cur: COST_CURS[f.cur] ? f.cur : 'JPY'
+        title: typeof f.title === 'string' ? f.title : '', amt: costNum(f.amt), cur: f.cur !== 'KRW' && tripCur(trip) ? 'F' : 'KRW'
     }));
 }
 function tripPack(trip) { return (Array.isArray(trip && trip.pack) ? trip.pack : []).filter(s => typeof s === 'string' && s.trim()); }
 
-// 1인 몫 — {krw, jpy}. 전체 금액은 인원으로 나눈다.
+// 1인 몫 — {krw, f}(f = 현지 통화). 전체 금액은 인원으로 나눈다.
 function costShare(c, people) {
     const v = c.unit === 'total' ? c.amt / people : c.amt;
-    return c.cur === 'JPY' ? { krw: 0, jpy: v } : { krw: v, jpy: 0 };
+    return c.cur === 'F' ? { krw: 0, f: v } : { krw: v, f: 0 };
 }
 const wonText = v => `${formatNumber(Math.round(v))}원`;
-const yenText = v => `¥${formatNumber(Math.round(v))}`;
-// 원·엔이 섞이면 환율이 있을 때 원으로 합쳐 `약`을 붙이고, 없으면 둘을 나란히 적는다.
-function moneyText(m, fx) {
-    if (m.jpy > 0 && fx) return `${m.krw > 0 || m.jpy > 0 ? '약 ' : ''}${wonText(m.krw + m.jpy * fx / 100)}`;
+const fText = (v, cur) => `${formatNumber(Math.round(v))}${(FX_CURS[cur] || FX_CURS.JPY).name}`;
+const amtText = (v, isF, cur) => isF ? fText(v, cur) : wonText(v);
+// 원·현지 통화가 섞이면 환율이 있을 때 원으로 합쳐 `약`을 붙이고, 없으면 둘을 나란히 적는다.
+// ctx = {cur, fx} — costSummary()가 돌려주는 것을 그대로 넘긴다.
+function moneyText(m, ctx) {
+    const cur = ctx && ctx.cur, fx = ctx && ctx.fx;
+    if (m.f > 0 && fx && cur) return `약 ${wonText(m.krw + m.f * fx / FX_CURS[cur].base)}`;
     const parts = [];
-    if (m.krw > 0 || !m.jpy) parts.push(wonText(m.krw));
-    if (m.jpy > 0) parts.push(yenText(m.jpy));
+    if (m.krw > 0 || !m.f) parts.push(wonText(m.krw));
+    if (m.f > 0) parts.push(fText(m.f, cur));
     return parts.join(' + ');
 }
 function costSummary(trip) {
-    const people = tripPeople(trip), fx = tripFx(trip);
-    const add = (a, b) => ({ krw: a.krw + b.krw, jpy: a.jpy + b.jpy });
-    const zero = () => ({ krw: 0, jpy: 0 });
+    const people = tripPeople(trip), fx = tripFx(trip), cur = tripCur(trip);
+    const add = (a, b) => ({ krw: a.krw + b.krw, f: a.f + b.f });
+    const zero = () => ({ krw: 0, f: 0 });
     const total = zero(), byStatus = { paid: zero(), local: zero(), plan: zero() }, byCat = {};
     tripCosts(trip).forEach(c => {
         const s = costShare(c, people);
@@ -685,14 +696,17 @@ function costSummary(trip) {
         byStatus[c.status] = add(byStatus[c.status], s);
         byCat[c.cat] = add(byCat[c.cat] || zero(), s);
     });
-    return { people, fx, total, byStatus, byCat };
+    return { people, fx, cur, total, byStatus, byCat };
 }
 
 // 내역 앞에 구분을 붙이되, 내역이 이미 그 말로 시작하면 두 번 적지 않는다(`그린피 그린피 54홀`).
 function costLabel(c) { const cat = COST_CATS[c.cat]; return !c.title ? cat : c.title.startsWith(cat) ? c.title : `${cat} ${c.title}`; }
 let costDraft = null;   // 입력하는 동안의 사본 — 항목을 늘리고 줄여도 적던 값이 안 날아간다
-function costEditRow(c, i) {
-    const opt = (map, cur) => Object.entries(map).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${v}</option>`).join('');
+const costOpt = (map, cur) => Object.entries(map).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${v}</option>`).join('');
+// 현지 통화가 없는 여행(국내·원화만)이면 통화 칸을 아예 안 그린다.
+function curSelect(cls, cur, v) { return cur ? `<select class="${cls}">${costOpt({ KRW: '원', F: FX_CURS[cur].name }, v)}</select>` : ''; }
+function costEditRow(c, i, cur) {
+    const opt = costOpt;
     return `
         <div class="cost-edit" data-i="${i}">
             <div class="cost-edit-line">
@@ -702,18 +716,18 @@ function costEditRow(c, i) {
             </div>
             <div class="cost-edit-line">
                 <input type="text" class="cost-amt" inputmode="numeric" autocomplete="off" value="${c.amt ? formatNumber(c.amt) : ''}" onblur="costAmtTidy(this)" aria-label="금액">
-                <select class="cost-cur">${opt(COST_CURS, c.cur)}</select>
+                ${curSelect('cost-cur', cur, c.cur)}
                 <select class="cost-unit">${opt(COST_UNITS, c.unit)}</select>
                 <select class="cost-status">${opt(COST_STATUS, c.status)}</select>
             </div>
         </div>`;
 }
-function fundEditRow(f, i) {
+function fundEditRow(f, i, cur) {
     return `
         <div class="cost-edit-line fund-edit" data-i="${i}">
             <input type="text" class="fund-title" maxlength="30" autocomplete="off" value="${escapeHtml(f.title)}" aria-label="공금 내역">
             <input type="text" class="fund-amt" inputmode="numeric" autocomplete="off" value="${f.amt ? formatNumber(f.amt) : ''}" onblur="costAmtTidy(this)" aria-label="금액">
-            <select class="fund-cur">${Object.entries(COST_CURS).map(([k, v]) => `<option value="${k}"${k === f.cur ? ' selected' : ''}>${v}</option>`).join('')}</select>
+            ${curSelect('fund-cur', cur, f.cur)}
             <button type="button" class="cost-x" onclick="removeFundRow(${i})" aria-label="공금 항목 삭제">✕</button>
         </div>`;
 }
@@ -725,17 +739,19 @@ function costHtml(trip) {
         return `
         <div class="trip-day editing" id="tripCostCard">
             <div class="trip-day-head">💰 여행 경비</div>
-            <div class="trip-two">
-                <label class="trip-field row"><span>인원</span><input type="number" id="costPeople" min="1" max="20" inputmode="numeric" value="${d.people}"></label>
-                <label class="trip-field row"><span>100엔</span><input type="text" id="costFx" inputmode="decimal" autocomplete="off" value="${d.fx || ''}" aria-label="100엔당 원화"></label>
+            <div class="cost-head">
+                <label class="cost-head-item">인원 <input type="number" id="costPeople" class="cost-num" min="1" max="20" inputmode="numeric" value="${d.people}"> 명</label>
+                <label class="cost-head-item">현지 통화 <select id="costCur" onchange="costCurChanged()">${costOpt({ '': '원화만', ...Object.fromEntries(Object.entries(FX_CURS).map(([k, v]) => [k, `${v.name}(${k})`])) }, d.cur)}</select></label>
             </div>
-            <div class="trip-hint">환율은 <b>100엔당 원화</b>로 입력합니다(예: 920). 엔화 항목을 원화로 환산할 때 사용합니다.</div>
-            <div class="trip-sub">경비 항목 <small class="trip-sub-note">구분 · 내역 / 금액 · 통화 · 기준 · 상태</small></div>
-            <div id="costRows">${d.items.map(costEditRow).join('')}</div>
+            ${d.cur ? `<div class="cost-head">
+                <label class="cost-head-item">환율 ${FX_CURS[d.cur].base === 100 ? '100' : '1'}${FX_CURS[d.cur].name} = <input type="text" id="costFx" class="cost-num wide" inputmode="decimal" autocomplete="off" value="${d.fx || ''}" aria-label="환율"> 원</label>
+            </div>` : ''}
+            <div class="trip-sub">경비 항목 <small class="trip-sub-note">구분 · 내역 / 금액 · ${d.cur ? '통화 · ' : ''}기준 · 상태</small></div>
+            <div id="costRows">${d.items.map((c, i) => costEditRow(c, i, d.cur)).join('')}</div>
             <button type="button" class="trip-btn cost-add" onclick="addCostRow()">＋ 항목 추가</button>
             <div class="trip-hint"><b>1인</b>은 1인 금액, <b>전체</b>는 총액을 입력하면 인원수로 나눕니다.</div>
             <div class="trip-sub">현지 공금 <small class="trip-sub-note">남은 잔액·찬조</small></div>
-            <div id="fundRows">${d.fund.map(fundEditRow).join('')}</div>
+            <div id="fundRows">${d.fund.map((f, i) => fundEditRow(f, i, d.cur)).join('')}</div>
             <button type="button" class="trip-btn cost-add" onclick="addFundRow()">＋ 공금 항목 추가</button>
             <div class="trip-sub">송금 안내</div>
             <label class="trip-field row"><span>총무</span><select id="costPayer"><option value="">미지정</option>${golfers.map(n => `<option value="${escapeHtml(n)}"${n === d.payer ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select></label>
@@ -756,33 +772,31 @@ function costHtml(trip) {
             <div class="trip-memo empty">항공·숙소·렌트카·그린피 등의 금액을 입력하면 1인 분담금과 결제 현황이 자동으로 계산됩니다.</div>
             <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripCosts()">입력</button></div>
         </div>`;
-    const statusRow = Object.entries(COST_STATUS).filter(([k]) => s.byStatus[k].krw || s.byStatus[k].jpy)
-        .map(([k, v]) => `<div class="cost-stat ${k}"><span>${v}</span><b>${moneyText(s.byStatus[k], s.fx)}</b></div>`).join('');
+    const statusRow = Object.entries(COST_STATUS).filter(([k]) => s.byStatus[k].krw || s.byStatus[k].f)
+        .map(([k, v]) => `<div class="cost-stat ${k}"><span>${v}</span><b>${moneyText(s.byStatus[k], s)}</b></div>`).join('');
     const rows = items.map(c => {
         const share = costShare(c, s.people);
-        const amt = c.cur === 'JPY' ? yenText : wonText;
-        const detail = c.unit === 'total' ? `전체 ${amt(c.amt)} ÷ ${s.people}명` : '';
+        const detail = c.unit === 'total' ? `전체 ${amtText(c.amt, c.cur === 'F', s.cur)} ÷ ${s.people}명` : '';
         return `
             <div class="cost-row">
                 <span class="cost-cat-tag">${COST_CATS[c.cat]}</span>
                 <span class="cost-main"><span class="cost-name">${c.title ? escapeHtml(c.title) : COST_CATS[c.cat]}</span>${detail ? `<span class="cost-detail">${detail}</span>` : ''}</span>
-                <span class="cost-right"><b>${moneyText(share, 0)}</b><span class="cost-badge ${c.status}">${COST_STATUS[c.status]}</span></span>
+                <span class="cost-right"><b>${moneyText(share, { cur: s.cur })}</b><span class="cost-badge ${c.status}">${COST_STATUS[c.status]}</span></span>
             </div>`;
     }).join('');
-    const fundSum = fund.reduce((a, f) => f.cur === 'JPY' ? { krw: a.krw, jpy: a.jpy + f.amt } : { krw: a.krw + f.amt, jpy: a.jpy }, { krw: 0, jpy: 0 });
+    const fundSum = fund.reduce((a, f) => f.cur === 'F' ? { krw: a.krw, f: a.f + f.amt } : { krw: a.krw + f.amt, f: a.f }, { krw: 0, f: 0 });
     const fundHtml = fund.length ? `
             <div class="trip-sub">현지 공금</div>
-            ${fund.map(f => `<div class="cost-fund-row"><span>${escapeHtml(f.title) || '공금'}</span><b>${(f.cur === 'JPY' ? yenText : wonText)(f.amt)}</b></div>`).join('')}
-            ${fund.length > 1 ? `<div class="cost-fund-row"><span>합계</span><b>${moneyText(fundSum, 0)}</b></div>` : ''}` : '';
+            ${fund.map(f => `<div class="cost-fund-row"><span>${escapeHtml(f.title) || '공금'}</span><b>${amtText(f.amt, f.cur === 'F', s.cur)}</b></div>`).join('')}
+            ${fund.length > 1 ? `<div class="cost-fund-row"><span>합계</span><b>${moneyText(fundSum, { cur: s.cur })}</b></div>` : ''}` : '';
     const send = s.byStatus.paid;
-    const sendKrw = send.krw + (s.fx ? send.jpy * s.fx / 100 : 0);
     const payer = golfers.includes(trip.payer) ? trip.payer : '';
     const paid = trip.paid && typeof trip.paid === 'object' ? trip.paid : {};
     const mates = golfers.filter(n => n !== payer);
-    const sendHtml = (send.krw || send.jpy) ? `
+    const sendHtml = (send.krw || send.f) ? `
             <div class="trip-sub">송금 안내</div>
             <div class="cost-send">
-                <div>${payer ? `총무 <b>${escapeHtml(payer)}</b>에게 ` : ''}1인 <b>${moneyText(send, s.fx)}</b> 송금 <small>(결제 완료 항목)</small></div>
+                <div>${payer ? `총무 <b>${escapeHtml(payer)}</b>에게 ` : ''}1인 <b>${moneyText(send, s)}</b> 송금 <small>(결제 완료 항목)</small></div>
                 ${trip.account ? `<div class="cost-account"><span>${escapeHtml(trip.account)}</span><button type="button" class="trip-link" onclick="copyTripAccount()">복사</button></div>` : ''}
                 <div class="cost-paid">${mates.map(n => `<button type="button" class="cost-paid-chip${paid[n] ? ' on' : ''}" onclick="toggleTripPaid('${escapeHtml(n)}')">${escapeHtml(n)} <small>${paid[n] ? '입금 완료' : '입금 대기'}</small></button>`).join('')}</div>
             </div>` : '';
@@ -791,8 +805,8 @@ function costHtml(trip) {
             <div class="trip-day-head">💰 여행 경비</div>
             <div class="cost-total">
                 <span class="cost-total-k">1인 예상 총액</span>
-                <span class="cost-total-v">${moneyText(s.total, s.fx)}</span>
-                <span class="cost-total-sub">인원 ${s.people}명${s.fx ? ` · 100엔 = ${formatNumber(s.fx)}원` : ''}</span>
+                <span class="cost-total-v">${moneyText(s.total, s)}</span>
+                <span class="cost-total-sub">인원 ${s.people}명${s.fx ? ` · ${FX_CURS[s.cur].base === 100 ? '100' : '1'}${FX_CURS[s.cur].name} = ${formatNumber(s.fx)}원` : ''}</span>
             </div>
             ${statusRow ? `<div class="cost-stats">${statusRow}</div>` : ''}
             <div class="cost-list">${rows}</div>
@@ -807,7 +821,7 @@ function editTripCosts() {
     const items = tripCosts(trip);
     const fund = tripFund(trip);
     costDraft = {
-        people: tripPeople(trip), fx: tripFx(trip), payer: golfers.includes(trip.payer) ? trip.payer : '',
+        people: tripPeople(trip), cur: tripCur(trip), fx: tripFx(trip), payer: golfers.includes(trip.payer) ? trip.payer : '',
         account: typeof trip.account === 'string' ? trip.account : '',
         items: items.length ? items : [{ id: '', cat: 'air', title: '', amt: 0, cur: 'KRW', unit: 'person', status: 'paid' }],
         fund
@@ -822,16 +836,18 @@ function readCostForm() {
     if (!costDraft) return null;
     const val = id => ((document.getElementById(id) || {}).value || '').trim();
     costDraft.people = Math.min(20, Math.max(1, parseInt(val('costPeople'), 10) || golfers.length));
-    costDraft.fx = costNum(val('costFx'));
+    if (document.getElementById('costCur')) costDraft.cur = FX_CURS[val('costCur')] ? val('costCur') : '';
+    if (document.getElementById('costFx')) costDraft.fx = costNum(val('costFx'));
     costDraft.payer = golfers.includes(val('costPayer')) ? val('costPayer') : '';
     costDraft.account = val('costAccount');
     costDraft.items = [...document.querySelectorAll('#costRows .cost-edit')].map(el => {
         const q = s => el.querySelector(s).value;
         const prev = costDraft.items[+el.dataset.i] || {};
-        return { id: prev.id || '', cat: q('.cost-cat'), title: q('.cost-title').trim(), amt: costNum(q('.cost-amt')), cur: q('.cost-cur'), unit: q('.cost-unit'), status: q('.cost-status') };
+        const curEl = el.querySelector('.cost-cur');
+        return { id: prev.id || '', cat: q('.cost-cat'), title: q('.cost-title').trim(), amt: costNum(q('.cost-amt')), cur: curEl ? curEl.value : 'KRW', unit: q('.cost-unit'), status: q('.cost-status') };
     });
     costDraft.fund = [...document.querySelectorAll('#fundRows .fund-edit')].map(el => ({
-        title: el.querySelector('.fund-title').value.trim(), amt: costNum(el.querySelector('.fund-amt').value), cur: el.querySelector('.fund-cur').value
+        title: el.querySelector('.fund-title').value.trim(), amt: costNum(el.querySelector('.fund-amt').value), cur: el.querySelector('.fund-cur') ? el.querySelector('.fund-cur').value : 'KRW'
     }));
     return costDraft;
 }
@@ -846,33 +862,38 @@ function addCostRow() {
 function removeCostRow(i) { const d = readCostForm(); if (!d) return; d.items.splice(i, 1); renderTripModal(); }
 function addFundRow() {
     const d = readCostForm(); if (!d) return;
-    d.fund.push({ title: '', amt: 0, cur: 'JPY' });
+    d.fund.push({ title: '', amt: 0, cur: d.cur ? 'F' : 'KRW' });
     renderTripModal();
     const rows = document.querySelectorAll('#fundRows .fund-title');
     if (rows.length) rows[rows.length - 1].focus();
 }
+// 현지 통화를 바꾸면 통화·환율 칸이 생기거나 사라지므로 다시 그린다(적던 값은 사본에 먼저 담는다).
+function costCurChanged() { const d = readCostForm(); if (!d) return; if (!d.cur) d.fx = 0; renderTripModal(); }
 function removeFundRow(i) { const d = readCostForm(); if (!d) return; d.fund.splice(i, 1); renderTripModal(); }
 function saveTripCosts() {
     const d = readCostForm();
     if (!d) return;
     const items = d.items.filter(c => c.title || c.amt).map((c, i) => ({
         id: c.id || `c${Date.now().toString(36)}${i}`, cat: COST_CATS[c.cat] ? c.cat : 'etc', title: c.title, amt: c.amt,
-        cur: COST_CURS[c.cur] ? c.cur : 'KRW', unit: COST_UNITS[c.unit] ? c.unit : 'person', status: COST_STATUS[c.status] ? c.status : 'paid'
+        cur: d.cur && c.cur === 'F' ? d.cur : 'KRW', unit: COST_UNITS[c.unit] ? c.unit : 'person', status: COST_STATUS[c.status] ? c.status : 'paid'
     }));
-    const fund = d.fund.filter(f => f.title || f.amt).map(f => ({ title: f.title, amt: f.amt, cur: COST_CURS[f.cur] ? f.cur : 'JPY' }));
+    const fund = d.fund.filter(f => f.title || f.amt).map(f => ({ title: f.title, amt: f.amt, cur: d.cur && f.cur === 'F' ? d.cur : 'KRW' }));
     const trip = findTrip(tripOpenId);
     costDraft = null;
     tripEditing = null;
     if (!trip) { renderTripModal(); return; }
-    const before = JSON.stringify([tripCosts(trip).map(c => [c.id, c.cat, c.title, c.amt, c.cur, c.unit, c.status]), tripFund(trip).map(f => [f.title, f.amt, f.cur]), tripPeople(trip), tripFx(trip), trip.payer || '', trip.account || '']);
-    const after = JSON.stringify([items.map(c => [c.id, c.cat, c.title, c.amt, c.cur, c.unit, c.status]), fund.map(f => [f.title, f.amt, f.cur]), d.people, d.fx, d.payer, d.account]);
+    const oc = tripCur(trip), code = x => x === 'F' ? oc : x;
+    const before = JSON.stringify([tripCosts(trip).map(c => [c.id, c.cat, c.title, c.amt, code(c.cur), c.unit, c.status]), tripFund(trip).map(f => [f.title, f.amt, code(f.cur)]), tripPeople(trip), oc, tripFx(trip), trip.payer || '', trip.account || '']);
+    const after = JSON.stringify([items.map(c => [c.id, c.cat, c.title, c.amt, c.cur, c.unit, c.status]), fund.map(f => [f.title, f.amt, f.cur]), d.people, d.cur, d.cur ? d.fx : 0, d.payer, d.account]);
     // 비교는 내가 만든 배열끼리다(payload의 키 순서와 무관하다).
     if (before !== after) editTrip(t => {
         const set = (k, v, keep) => { if (keep) t[k] = v; else delete t[k]; };
         set('costs', items, items.length);
         set('fund', fund, fund.length);
         set('people', d.people, d.people !== golfers.length);
-        set('fx', d.fx, d.fx > 0);
+        // 기본 통화(일본=엔, 그 밖=원화만)와 같으면 안 적는다. '원화만'을 고르면 'KRW'로 적어 기본값을 누른다.
+        set('curr', d.cur || 'KRW', d.cur !== curDefault(t));
+        set('fx', d.fx, d.cur && d.fx > 0);
         set('payer', d.payer, d.payer);
         set('account', d.account, d.account);
     }, '✅ 여행 경비를 저장했습니다.');
@@ -1011,7 +1032,7 @@ function renderTripModal() {
             <div class="trip-summary-top"><b>${isoLabel(days[0].date)} ~ ${isoLabel(days[days.length - 1].date)}</b><button type="button" class="trip-gear" onclick="editTripSettings()" title="여행 수정">⚙️</button></div>
             <div class="trip-summary-sub">${TRIP_KINDS[tripKind(trip)]} · ${days.length > 1 ? `${days.length - 1}박 ${days.length}일 · ` : ''}${days.filter(d => d.course).length}라운드${left > 0 ? ` · 출발까지 ${left}일` : ''}</div>
             <div class="trip-summary-sub">${tripNotifyText()}</div>
-            ${tripCosts(trip).length ? `<button type="button" class="trip-summary-cost" onclick="document.getElementById('tripCostCard').scrollIntoView({behavior:'smooth', block:'start'})">1인 예상 경비 <b>${moneyText(costSummary(trip).total, tripFx(trip))}</b> ›</button>` : ''}
+            ${tripCosts(trip).length ? `<button type="button" class="trip-summary-cost" onclick="document.getElementById('tripCostCard').scrollIntoView({behavior:'smooth', block:'start'})">1인 예상 경비 <b>${moneyText(costSummary(trip).total, costSummary(trip))}</b> ›</button>` : ''}
         </div>` : '';
     const settings = tripEditing === 'settings' ? settingsHtml(trip) : '';
 

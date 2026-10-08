@@ -1295,3 +1295,10 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .cost-x { flex: 0 0 28px; height: 30px; border: none; background: none; color: #9aa0a8; font-size: 0.8rem; cursor: pointer; }
 .trip-btn.cost-add { width: 100%; margin-top: 6px; border-style: dashed; color: var(--primary-gold); }
 .trip-pack { margin: 2px 0 0; padding-left: 18px; font-size: 0.8rem; font-weight: 600; color: var(--text-main); line-height: 1.7; }
+/* 경비 입력 머리 — 칸 이름 바로 옆에 작은 칸(사용자 제보 — `칸이 너무 떨어져 있다`). */
+.cost-head { display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; row-gap: 6px; margin-top: 6px; }
+.cost-head-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: var(--text-sub); white-space: nowrap; }
+.cost-head-item input, .cost-head-item select { padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #0f172a; font-family: inherit; font-size: 14px; font-weight: 600; }
+.cost-head-item input:focus, .cost-head-item select:focus { outline: none; border-color: var(--primary-gold); }
+.cost-num { width: 48px; text-align: center; }
+.cost-num.wide { width: 88px; text-align: right; }
