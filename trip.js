@@ -242,7 +242,7 @@ function newTripHtml() {
                 <label class="trip-field">마지막날<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 고치기</b>로 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
+            <div class="trip-hint">날짜마다 골프장·티오프·숙소는 만든 뒤 <b>✏️ 입력</b>으로 적습니다. 일본이면 날마다 <b>🔎 일본 골프장 찾기</b>가 생깁니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
                 <button type="button" class="trip-btn primary" onclick="createTrip()">만들기</button>
@@ -454,7 +454,7 @@ function tripDayHtml(trip, d, i, today) {
             <div class="trip-actions">
                 ${targets.map ? `<button type="button" class="trip-btn" onclick="openTripMap('map', '${dateId}')">🗺️ 지도</button>` : ''}
                 ${targets.route ? `<button type="button" class="trip-btn" onclick="openTripMap('route', '${dateId}')">🚗 길찾기</button>` : ''}
-                <button type="button" class="trip-btn ghost" onclick="editTripDay('${dateId}')">✏️ 고치기</button>
+                <button type="button" class="trip-btn ghost" onclick="editTripDay('${dateId}')">✏️ 입력</button>
             </div>
         </div>`;
 }
@@ -494,7 +494,7 @@ function renderTripModal() {
         <div class="trip-day">
             <div class="trip-day-head">📋 공통 메모</div>
             <div class="trip-memo${trip.memo ? '' : ' empty'}">${trip.memo ? escapeHtml(trip.memo) : '준비물·정산 방법·항공편 등을 적어 두세요.'}</div>
-            <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripMemo()">✏️ 고치기</button></div>
+            <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripMemo()">✏️ 입력</button></div>
         </div>`;
 
     body.innerHTML = tripChipsHtml() + head + settings + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo;
