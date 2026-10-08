@@ -1957,9 +1957,9 @@ function renderDonateRow() {
             <div class="donate-grid">` + golfers.map(g => {
                 const v = valueOf(g);
                 const editable = canEditMoney(g);
-                return `<label class="donate-cell${editable ? ' mine' : ''}"><span class="donate-name">${g}${editable ? ' ✏️' : ''}</span>
+                return `<label class="donate-cell"><span class="donate-name">${g}</span>
                     <input type="text" id="money_donate_${g}" inputmode="numeric" pattern="[0-9]*"
-                        class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="${editable ? '금액 입력' : '0'}"
+                        class="donate-input${editable ? '' : ' locked'}" value="${v ? formatNumber(v) : ''}" placeholder="0"
                         ${editable ? '' : 'readonly '}onfocus="this.select()"
                         ${editable
                             ? `onchange="updateMoney('${g}', 'donate', this.value, ${selectedMoneyRoundIdx})" onkeydown="moneyKeydown(event)"`
