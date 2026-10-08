@@ -1112,3 +1112,31 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .trip-today { background: var(--primary-gold); }
 .trip-field input:focus, .trip-field textarea:focus { border-color: var(--primary-gold); }
 .route-app small { color: var(--primary-gold); background: var(--gold-light); }
+
+/* ─── 화면 둘(홈 / 정산·스코어)과 아래 탭바 ───
+   통합 정산 요약까지가 폰 한 화면에 들어오게 홈 쪽 여백을 조금 줄였다. */
+.container[data-page="home"] .page-detail,
+.container[data-page="detail"] .page-home { display: none; }
+body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+.page-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 800; display: flex; justify-content: center; gap: 0; background: rgba(255, 255, 255, 0.97); border-top: 1px solid var(--card-border); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); }
+.page-tab { flex: 1 1 0; max-width: 240px; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; color: #8a8f94; font-size: 0.72rem; font-weight: 700; font-family: inherit; padding: 0; }
+.page-tab.on { color: var(--primary-gold); }
+.page-tab svg { display: block; }
+body.typing .page-tabs { display: none; }
+#customToast { bottom: calc(76px + env(safe-area-inset-bottom)); }
+#installBanner { bottom: calc(72px + env(safe-area-inset-bottom)); }
+
+/* 홈 한 화면에 맞추기 — 여백만 조금씩 */
+.header-area { padding: 2px 4px 8px 4px; }
+.notice-card { padding: 14px 16px; }
+.notice-box label { margin-bottom: 4px; }
+#weatherWidget { margin-top: 5px; }
+.notice-fund { margin-top: 10px; padding-top: 10px; }
+.trip-card { padding: 12px 16px; }
+.trip-card-more { margin-top: 2px; }
+.total-summary-card { padding: 12px 6px 12px 6px; }
+.total-summary-card h2 { margin-bottom: 10px; }
+.summary-item { gap: 8px; }
+.summary-item .sum-rank .rank-badge img { width: 42px !important; height: 42px !important; }
+.sum-details { padding: 6px 0; gap: 4px; }
+.summary-item .final-total { margin-top: -6px; }

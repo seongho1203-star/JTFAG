@@ -3822,3 +3822,34 @@ function equalizeSummaryBadges() {
 let equalizeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(equalizeTimer); equalizeTimer = setTimeout(equalizeSummaryBadges, 150); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equalizeSummaryBadges());
+
+// ─── 화면 둘: 홈 / 정산·스코어 ───
+// 사용자 요청 — `통합정산요약까지 1화면, 나머지 2화면`. 홈이 폰 두 장 남짓으로 길어서 나눴다.
+// 숨긴 쪽은 display:none일 뿐 그대로 그려진다(renderAll은 손대지 않는다).
+// 표는 숨어 있는 동안 폭이 0이라 jumpToLatestRound()가 오른쪽 끝으로 못 보낸다 —
+// 처음 정산·스코어로 넘어올 때 다시 부른다(그 함수는 한 번만 보낸다).
+function showPage(name) {
+    const box = document.getElementById('appContainer');
+    if (!box || (name !== 'home' && name !== 'detail')) return;
+    const same = box.dataset.page === name;
+    box.dataset.page = name;
+    document.querySelectorAll('.page-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    try { sessionStorage.setItem('jtfag_page', name); } catch (e) {}
+    window.scrollTo(0, 0);
+    if (!same && name === 'detail') {
+        requestAnimationFrame(() => { if (typeof jumpToLatestRound === 'function') jumpToLatestRound(); forceTableReflow(); });
+    }
+}
+// 새로고침해도 보던 화면에 남는다(앱을 새로 켜면 홈부터).
+try { const p = sessionStorage.getItem('jtfag_page'); if (p === 'detail') document.addEventListener('DOMContentLoaded', () => showPage('detail')); } catch (e) {}
+
+// 글을 적는 동안은 탭바를 숨긴다 — 아이폰은 키보드 위로 따라 올라와 칸을 가리고, 금액의 `✓ 입력 완료`와도 겹친다.
+document.addEventListener('focusin', e => {
+    if (e.target && e.target.matches && e.target.matches('input, textarea')) document.body.classList.add('typing');
+});
+document.addEventListener('focusout', () => {
+    setTimeout(() => {
+        const a = document.activeElement;
+        if (!(a && a.matches && a.matches('input, textarea'))) document.body.classList.remove('typing');
+    }, 50);
+});
