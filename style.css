@@ -1156,3 +1156,21 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .summary-item .sum-rank .rank-badge img { width: 42px !important; height: 42px !important; }
 .sum-details { padding: 6px 0; gap: 4px; }
 .summary-item .final-total { margin-top: -6px; }
+
+/* ── 마무리 손질 (사용자 요청 — `99% 맘에 드는데 1% 부족`) ──
+   ① 홈 카드 제목을 한 모양으로 — `다음 라운드` · `여행` · `통합 정산 요약`이 크기·굵기·색이 제각각이었다.
+      모두 작은 회색 머리말(.card-label)이고, 그 아래 내용(일정·여행명·요약)이 주인공이다.
+   ② 여행 창의 줄마다 붙던 그림문자를 걷고 카드 제목에만 남긴다.
+   ③ 날마다 놓인 큰 단추(지도·길찾기·입력)를 오른쪽 끝의 작은 글자 단추로 줄인다. */
+.notice-box label, .card-label, .total-summary-card h2 { color: var(--text-sub); font-size: clamp(0.72rem, 2.9vw, 0.78rem); font-weight: 700; letter-spacing: 0; }
+.notice-next > label, .total-summary-card h2 { margin-bottom: 6px; }
+.total-summary-card h2 { margin-left: 10px; margin-right: 10px; }
+.trip-card-top { min-height: 20px; }
+.trip-card-title { display: block; margin-top: 2px; color: var(--text-main); font-size: clamp(1rem, 4.4vw, 1.12rem); font-weight: 800; letter-spacing: -0.3px; line-height: 1.35; word-break: keep-all; }
+.trip-card-when { margin-top: 3px; color: var(--text-main); font-size: clamp(0.76rem, 3.1vw, 0.82rem); font-weight: 700; }
+.trip-wx { display: flex; margin-top: 3px; padding: 0; background: none; border-radius: 0; font-size: 0.8rem; }
+.trip-wx .v { font-weight: 600; }
+.trip-actions.light { justify-content: flex-end; gap: 2px; margin-top: 6px; }
+.trip-link { border: none; background: none; padding: 6px 8px; min-height: 30px; color: var(--primary-gold); font-family: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; }
+.trip-link + .trip-link { border-left: 1px solid var(--line); border-radius: 0; }
+.trip-link:active { opacity: 0.6; transform: none !important; }

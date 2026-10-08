@@ -96,7 +96,7 @@ function renderTripCard() {
     const trip = up[0];
     if (!trip) {
         card.classList.add('slim');
-        card.innerHTML = `<div class="trip-card-top"><span class="trip-card-title">🧳 여행</span><span class="trip-card-more">＋ 새 여행 등록 ›</span></div>`;
+        card.innerHTML = `<div class="trip-card-top"><span class="card-label">여행</span><span class="trip-card-more">＋ 새 여행 등록 ›</span></div>`;
         card.onclick = () => openTripModal(null, 'new');
         return;
     }
@@ -111,16 +111,17 @@ function renderTripCard() {
     let sub;
     if (nowDay >= 0) {
         const d = days[nowDay];
-        sub = `<b>${nowDay + 1}일차</b> · 오늘 ⛳ ${escapeHtml(d.course || '골프장 미정')}${d.tee ? ' · ' + escapeHtml(d.tee) : ''}`;
+        sub = `<b>${nowDay + 1}일차</b> · 오늘 ${escapeHtml(d.course || '골프장 미정')}${d.tee ? ' · ' + escapeHtml(d.tee) : ''}`;
     } else {
-        sub = days.map(d => escapeHtml(d.area || d.course || '미정')).join(' → ') + ' → 🏠';
+        sub = days.map(d => escapeHtml(d.area || d.course || '미정')).join(' → ') + ' → 귀가';
     }
     const rounds = days.filter(d => d.course).length;
     card.innerHTML = `
         <div class="trip-card-top">
-            <span class="trip-card-title">🧳 ${escapeHtml(trip.title || '여행')}</span>
+            <span class="card-label">여행</span>
             ${badge}
         </div>
+        <div class="trip-card-title">${escapeHtml(trip.title || '여행')}</div>
         <div class="trip-card-when">${isoLabel(days[0].date, true)} ~ ${isoLabel(days[days.length - 1].date, true)} · ${rounds}라운드</div>
         <div class="trip-card-sub">${sub}</div>
         <div class="trip-card-more">${up.length > 1 ? `다른 여행 ${up.length - 1}개 · ` : ''}일정 보기 ›</div>`;
@@ -337,7 +338,7 @@ function newTripHtml() {
                 <label class="trip-field">종료일<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">일자별 골프장·티오프·숙소는 등록 후 <b>✏️ 입력</b>에서, 항공·렌트카는 <b>🧭 교통·숙소</b>에서 입력합니다. 일본 여행은 일자별로 <b>🔎 일본 골프장 찾기</b>가 제공됩니다.</div>
+            <div class="trip-hint">일자별 골프장·티오프·숙소는 등록 후 <b>입력</b>에서, 항공·렌트카는 <b>🧭 교통·숙소</b>에서 입력합니다. 일본 여행은 일자별로 <b>🔎 일본 골프장 찾기</b>가 제공됩니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
                 <button type="button" class="trip-btn primary" onclick="createTrip()">등록</button>
@@ -544,11 +545,11 @@ function travelHtml(trip) {
         return `
         <div class="trip-day editing">
             <div class="trip-day-head">🧭 교통·숙소</div>
-            <div class="trip-sub">✈️ 항공</div>
+            <div class="trip-sub">항공</div>
             ${f('tripTvFlightOut', '출발편 (편명·출발 시각)', t.flightOut)}
             ${f('tripTvFlightBack', '복귀편 (편명·출발 시각)', t.flightBack)}
             ${f('tripTvFlightRef', '항공 예약번호', t.flightRef, 40)}
-            <div class="trip-sub trip-sub-row">🚗 렌트카
+            <div class="trip-sub trip-sub-row">렌트카
                 <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
             </div>
             <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
@@ -557,8 +558,8 @@ function travelHtml(trip) {
                 ${f('tripTvCarDrop', '반납 장소·시각', t.carDrop)}
                 ${f('tripTvCarRef', '렌트카 예약번호', t.carRef, 40)}
             </div>
-            <div class="trip-sub">🏨 숙소</div>
-            <div class="trip-hint" style="margin-top:2px;">숙소명은 일자별 <b>✏️ 입력</b>의 숙소 항목에 기재합니다. 이곳에는 체크인 시각·연락처·예약번호 등 부가 정보를 기재하세요.</div>
+            <div class="trip-sub">숙소</div>
+            <div class="trip-hint" style="margin-top:2px;">숙소명은 일자별 <b>입력</b>의 숙소 항목에 기재합니다. 이곳에는 체크인 시각·연락처·예약번호 등 부가 정보를 기재하세요.</div>
             <label class="trip-field">숙소 예약 정보<textarea id="tripTvStayInfo" rows="2" maxlength="200">${escapeHtml(t.stayInfo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
@@ -568,16 +569,16 @@ function travelHtml(trip) {
     }
     // 국내 여행은 비행기를 안 타는 일이 많아, 적은 게 없으면 항공 줄을 아예 안 보인다(제주라면 적으면 나온다).
     const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef) ? `
-            ${travelRow('✈️ 출발편', t.flightOut, '미정')}
-            ${travelRow('✈️ 복귀편', t.flightBack, '미정')}
-            ${t.flightRef ? travelRow('🎫 예약번호', t.flightRef, '') : ''}` : '';
+            ${travelRow('출발편', t.flightOut, '미정')}
+            ${travelRow('복귀편', t.flightBack, '미정')}
+            ${t.flightRef ? travelRow('항공 예약', t.flightRef, '') : ''}` : '';
     const car = t.car === 'yes' ? `
-            ${travelRow('🚗 렌트카', t.carCo || '사용', '')}
-            ${t.carPick ? travelRow('↳ 인수', t.carPick, '') : ''}
-            ${t.carDrop ? travelRow('↳ 반납', t.carDrop, '') : ''}
-            ${t.carRef ? travelRow('🎫 예약번호', t.carRef, '') : ''}` : travelRow('🚗 렌트카', t.car === 'no' ? '미사용' : '', '미정');
+            ${travelRow('렌트카', t.carCo || '사용', '')}
+            ${t.carPick ? travelRow('인수', t.carPick, '') : ''}
+            ${t.carDrop ? travelRow('반납', t.carDrop, '') : ''}
+            ${t.carRef ? travelRow('렌트 예약', t.carRef, '') : ''}` : travelRow('렌트카', t.car === 'no' ? '미사용' : '', '미정');
     const runs = stayRuns(trip);
-    const stay = runs.length ? runs.map((r, i) => travelRow(i ? '' : '🏨 숙소', r, '')).join('') : travelRow('🏨 숙소', '', '일자별 숙소를 입력하면 이곳에 표시됩니다');
+    const stay = runs.length ? runs.map((r, i) => travelRow(i ? '' : '숙소', r, '')).join('') : travelRow('숙소', '', '일자별 숙소를 입력하면 이곳에 표시됩니다');
     return `
         <div class="trip-day trip-travel">
             <div class="trip-day-head">🧭 교통·숙소</div>
@@ -585,7 +586,7 @@ function travelHtml(trip) {
             ${car}
             ${stay}
             ${t.stayInfo ? `<div class="trip-memo">${escapeHtml(t.stayInfo)}</div>` : ''}
-            <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripTravel()">✏️ 입력</button></div>
+            <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripTravel()">입력</button></div>
         </div>`;
 }
 function tripCarChanged() {
@@ -626,12 +627,12 @@ function tripDayHtml(trip, d, i, today) {
         return `
         <div class="trip-day editing">
             <div class="trip-day-head"><span class="trip-day-no">${i + 1}일차</span> ${isoLabel(d.date)}</div>
-            <label class="trip-field">⛳ 골프장<input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
+            <label class="trip-field">골프장<input type="text" id="tripEdCourse" maxlength="60" autocomplete="off" value="${escapeHtml(d.course)}"${kind === 'domestic' ? ' onfocus="this.select(); tripCourseSuggest(true)" oninput="tripCourseSuggest()" onblur="tripCourseHide()"' : ''}></label>
             ${kind === 'domestic' ? '<div id="tripCourseResults" class="course-results" style="display:none;"></div>' : ''}
-            <label class="trip-field">📍 지역<input type="text" id="tripEdArea" maxlength="20" value="${escapeHtml(d.area)}"></label>
-            <label class="trip-field">🕐 티오프<input type="text" id="tripEdTee" maxlength="20" value="${escapeHtml(d.tee)}"></label>
-            <label class="trip-field">🏨 숙소<input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>
-            <label class="trip-field">📝 메모<textarea id="tripEdMemo" rows="2" maxlength="200">${escapeHtml(d.memo)}</textarea></label>
+            <label class="trip-field">지역<input type="text" id="tripEdArea" maxlength="20" value="${escapeHtml(d.area)}"></label>
+            <label class="trip-field">티오프<input type="text" id="tripEdTee" maxlength="20" value="${escapeHtml(d.tee)}"></label>
+            <label class="trip-field">숙소<input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>
+            <label class="trip-field">메모<textarea id="tripEdMemo" rows="2" maxlength="200">${escapeHtml(d.memo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripDay('${dateId}')">저장</button>
@@ -639,7 +640,7 @@ function tripDayHtml(trip, d, i, today) {
         </div>`;
     }
     const targets = mapTargets(d, kind);
-    const wx = past ? '' : `<div class="trip-row trip-wx" id="tripWx-${dateId}">${tripWeatherHtml(d)}</div>`;
+    const wx = past ? '' : `<div class="trip-row trip-wx"><span class="k">날씨</span><span class="v" id="tripWx-${dateId}">${tripWeatherHtml(d)}</span></div>`;
     const gora = d.gora ? goraUrl(d.gora.url) || (d.course ? goraSearchUrl(d.gora.ja || d.course) : '') : '';
     return `
         <div class="trip-day${isToday ? ' today' : ''}${past ? ' past' : ''}">
@@ -647,19 +648,19 @@ function tripDayHtml(trip, d, i, today) {
                 <span class="trip-day-no">${i + 1}일차</span> ${isoLabel(d.date)}
                 ${isToday ? '<span class="trip-today">오늘</span>' : ''}
             </div>
-            <div class="trip-course">⛳ ${d.course ? escapeHtml(d.course) : '<span class="empty">골프장 미정</span>'}${d.area ? ` <span class="trip-area">${escapeHtml(d.area)}</span>` : ''}</div>
-            <div class="trip-row"><span class="k">🕐 티오프</span><span class="v${d.tee ? '' : ' empty'}">${d.tee ? escapeHtml(d.tee) : '미정'}</span></div>
-            <div class="trip-row"><span class="k">🏨 숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}</span></div>
+            <div class="trip-course">${d.course ? escapeHtml(d.course) : '<span class="empty">골프장 미정</span>'}${d.area ? ` <span class="trip-area">${escapeHtml(d.area)}</span>` : ''}</div>
+            <div class="trip-row"><span class="k">티오프</span><span class="v${d.tee ? '' : ' empty'}">${d.tee ? escapeHtml(d.tee) : '미정'}</span></div>
+            <div class="trip-row"><span class="k">숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}</span></div>
             ${d.memo ? `<div class="trip-memo">${escapeHtml(d.memo)}</div>` : ''}
             ${d.course ? wx : ''}
             ${kind === 'japan' && !past ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (변경)' : ''}</button></div>` : ''}
             ${gora ? `<div class="trip-actions">
                 <a class="trip-btn" href="${escapeHtml(gora)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
             </div>` : ''}
-            <div class="trip-actions">
-                ${targets.map ? `<button type="button" class="trip-btn" onclick="openTripMap('map', '${dateId}')">🗺️ 지도</button>` : ''}
-                ${targets.route ? `<button type="button" class="trip-btn" onclick="openTripMap('route', '${dateId}')">🚗 길찾기</button>` : ''}
-                <button type="button" class="trip-btn ghost" onclick="editTripDay('${dateId}')">✏️ 입력</button>
+            <div class="trip-actions light">
+                ${targets.map ? `<button type="button" class="trip-link" onclick="openTripMap('map', '${dateId}')">지도</button>` : ''}
+                ${targets.route ? `<button type="button" class="trip-link" onclick="openTripMap('route', '${dateId}')">길찾기</button>` : ''}
+                <button type="button" class="trip-link" onclick="editTripDay('${dateId}')">입력</button>
             </div>
         </div>`;
 }
@@ -700,7 +701,7 @@ function renderTripModal() {
         <div class="trip-day">
             <div class="trip-day-head">📋 공통 메모</div>
             <div class="trip-memo${trip.memo ? '' : ' empty'}">${trip.memo ? escapeHtml(trip.memo) : '준비물·정산 방법 등을 입력하세요.'}</div>
-            <div class="trip-actions"><button type="button" class="trip-btn ghost" onclick="editTripMemo()">✏️ 입력</button></div>
+            <div class="trip-actions light"><button type="button" class="trip-link" onclick="editTripMemo()">입력</button></div>
         </div>`;
 
     setTripBody(body, tripChipsHtml() + head + settings + travelHtml(trip) + days.map((d, i) => tripDayHtml(trip, d, i, today)).join('') + memo);
@@ -746,11 +747,11 @@ const tripWeatherBusy = {};
 
 function tripWeatherHtml(d) {
     const geo = dayGeo(d);
-    if (!geo) return `🌤️ 날씨: 골프장 위치 정보가 없어 예보를 조회할 수 없습니다`;
+    if (!geo) return `골프장 위치 정보가 없어 예보를 조회할 수 없습니다`;
     const left = isoDiff(kstToday(), d.date);
-    if (left > 15) return `🌤️ 날씨: 예보는 ${isoLabel(isoAdd(d.date, -15))}부터 조회됩니다`;
+    if (left > 15) return `예보는 ${isoLabel(isoAdd(d.date, -15))}부터 조회됩니다`;
     const hit = tripWeather[`${geo.lat},${geo.lon}|${d.date}`];
-    return hit ? hit.html : `🌤️ 날씨 조회 중...`;
+    return hit ? hit.html : `조회 중...`;
 }
 
 async function loadTripWeather(d) {
@@ -767,19 +768,19 @@ async function loadTripWeather(d) {
         const res = await fetch(url);
         if (!res.ok) {
             if (res.status === 429) weatherBlockedUntil = Date.now() + WEATHER_COOLDOWN;
-            paint('🌤️ 날씨 정보를 불러오지 못했습니다.');
+            paint('조회하지 못했습니다');
             return;
         }
         const data = await res.json();
         const idx = data.daily && data.daily.time ? data.daily.time.indexOf(d.date) : -1;
-        if (idx < 0) { paint('🌤️ 날씨 정보를 불러오지 못했습니다.'); return; }
+        if (idx < 0) { paint('조회하지 못했습니다'); return; }
         const info = weatherIcon(data.daily.weathercode[idx]);
         const rain = data.daily.precipitation_probability_max ? data.daily.precipitation_probability_max[idx] : null;
         const html = `${info.i} ${info.d} · ${Math.round(data.daily.temperature_2m_min[idx])}°~${Math.round(data.daily.temperature_2m_max[idx])}°${rain != null ? ` · 강수 ${rain}%` : ''}`;
         tripWeather[key] = { html, at: Date.now() };
         paint(html);
     } catch (e) {
-        paint('🌤️ 날씨 정보를 불러오지 못했습니다.');
+        paint('조회하지 못했습니다');
     } finally {
         delete tripWeatherBusy[key];
     }
