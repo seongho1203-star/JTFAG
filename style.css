@@ -1234,3 +1234,9 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .greet-poster.show .greet-name { transform: none; opacity: 1; transition-delay: 0.3s; }
 .greet-poster.show .greet-msg { transform: none; opacity: 0.85; transition-delay: 0.4s; }
 @media (prefers-reduced-motion: reduce) { .greet-pic, .greet-kick, .greet-name, .greet-msg { transition: none; } }
+
+/* 머리말 🔔·⚙️ — 그림문자 대신 선 그림(사용자 요청). 알림 사용 중이면 남색 칠 · 해제면 흐린 회색. */
+.header-tools button { color: #3d4450; }
+.header-tools .hd-ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.header-tools .bell-btn { color: #9aa0a8; }
+.header-tools .bell-btn.on { color: #2b5394; background: var(--gold-light); border-color: var(--accent-line); }

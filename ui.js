@@ -3664,13 +3664,17 @@ window.addEventListener('appinstalled', () => {
 
 // ─── 라운드 알림 구독 ───
 // 실제 발송은 GitHub Actions가 한다. 여기서는 각자 기기의 구독을 켜고 끈다.
+// 머리말 단추의 그림 — 그림문자(🔔·🔕)는 기기마다 모양이 달라 선 그림으로 바꿨다(사용자 요청).
+const BELL_ICON = '<svg class="hd-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/></svg>';
+const BELL_OFF_ICON = '<svg class="hd-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.67C4.59 13.96 6 12.5 6 8a6 6 0 0 1 .26-1.74"/><path d="M8.67 3.24A6 6 0 0 1 18 8c0 2.5.44 4.07 1 5.16"/><path d="m2 2 20 20"/></svg>';
 async function updateAlarmUI() {
     const btn = document.getElementById('alarmToggleBtn');
     if (!btn) return;
-    if (!pushSupported()) { btn.textContent = '🔕'; btn.title = '이 브라우저는 알림을 지원하지 않습니다'; return; }
+    if (!pushSupported()) { btn.innerHTML = BELL_OFF_ICON; btn.classList.remove('on'); btn.title = '이 브라우저는 알림을 지원하지 않습니다'; return; }
     const sub = await getPushSubscription();
     const on = !!sub && Notification.permission === 'granted';
-    btn.textContent = on ? '🔔' : '🔕';
+    btn.innerHTML = on ? BELL_ICON : BELL_OFF_ICON;
+    btn.classList.toggle('on', on);
     btn.title = on ? '라운드 알림 사용 중 — 눌러서 해제' : '라운드 알림 설정';
 }
 
