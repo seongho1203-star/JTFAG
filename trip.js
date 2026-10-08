@@ -261,11 +261,11 @@ function routeApps(p) {
     const n = encodeURIComponent(p.name), web = `https://map.kakao.com/link/to/${n},${p.lat},${p.lon}`;
     const fb = `;S.browser_fallback_url=${encodeURIComponent(web)};end`;
     return [
-        { id: 'tmap', label: '🚘 티맵', ios: `tmap://route?goalname=${n}&goalx=${p.lon}&goaly=${p.lat}`,
+        { id: 'tmap', label: '티맵', mark: 'T', ios: `tmap://route?goalname=${n}&goalx=${p.lon}&goaly=${p.lat}`,
           android: `intent://route?goalname=${n}&goalx=${p.lon}&goaly=${p.lat}#Intent;scheme=tmap;package=com.skt.tmap.ku${fb}` },
-        { id: 'kakao', label: '🟡 카카오맵', ios: `kakaomap://route?ep=${p.lat},${p.lon}&by=CAR`,
+        { id: 'kakao', label: '카카오맵', mark: 'K', ios: `kakaomap://route?ep=${p.lat},${p.lon}&by=CAR`,
           android: `intent://route?ep=${p.lat},${p.lon}&by=CAR#Intent;scheme=kakaomap;package=net.daum.android.map${fb}` },
-        { id: 'naver', label: '🟢 네이버 지도', ios: `nmap://route/car?dlat=${p.lat}&dlng=${p.lon}&dname=${n}&appname=jtfag`,
+        { id: 'naver', label: '네이버 지도', mark: 'N', ios: `nmap://route/car?dlat=${p.lat}&dlng=${p.lon}&dname=${n}&appname=jtfag`,
           android: `intent://route/car?dlat=${p.lat}&dlng=${p.lon}&dname=${n}&appname=jtfag#Intent;scheme=nmap;package=com.nhn.android.nmap${fb}` }
     ].map(a => ({ ...a, web }));
 }
@@ -280,11 +280,15 @@ function showRoutePicker(t) {
     el.id = 'routePicker';
     el.className = 'route-picker';
     el.onclick = e => { if (e.target === el) closeRoutePicker(); };
+    // 생김새는 아이폰 동작 시트를 따른다 — 카드 하나에 앱 줄을 선으로 가르고 취소는 따로 아래 카드(사용자 요청 — `너무 안예뻐`).
+    // 앱 표시는 그림문자가 아니라 앱 색의 둥근 네모 글자표다(🟡🟢는 기기마다 모양이 달랐다).
     el.innerHTML = `<div class="route-sheet">
-        <div class="route-title">🚗 ${escapeHtml(t.pick.name || '목적지')} 길찾기</div>
-        ${apps.map(a => `<button type="button" class="route-app" onclick="pickRouteApp('${a.id}')">${a.label}${a.id === last ? ' <small>지난번</small>' : ''}</button>`).join('')}
-        <div class="route-note">설치되지 않은 앱을 선택하면 카카오맵 웹으로 연결됩니다</div>
-        <button type="button" class="route-app cancel" onclick="closeRoutePicker()">취소</button>
+        <div class="route-card">
+            <div class="route-head"><div class="route-kicker">길찾기</div><div class="route-title">${escapeHtml(t.pick.name || '목적지')}</div></div>
+            ${apps.map(a => `<button type="button" class="route-app" onclick="pickRouteApp('${a.id}')"><span class="route-mark ${a.id}">${a.mark}</span><span class="route-name">${a.label}</span>${a.id === last ? '<small>최근 사용</small>' : ''}<span class="route-chev">›</span></button>`).join('')}
+            <div class="route-note">설치되지 않은 앱은 카카오맵 웹으로 연결됩니다</div>
+        </div>
+        <button type="button" class="route-cancel" onclick="closeRoutePicker()">취소</button>
     </div>`;
     document.body.appendChild(el);
 }

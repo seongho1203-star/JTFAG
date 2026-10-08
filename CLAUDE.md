@@ -399,6 +399,9 @@ scripts/fetch-courses.js  →  courses.js를 커밋
     (아이폰 1.5초 · 안드로이드 `browser_fallback_url`). 앱별 주소는 `routeApps()` 한 곳이다 — 티맵 `tmap://route?goalname=&goalx=경도&goaly=위도`
     (안드로이드 패키지 `com.skt.tmap.ku`) · 네이버 `nmap://route/car?dlat=&dlng=&dname=&appname=jtfag`. **티맵은 x가 경도다.**
     `지도` 단추와 해외 여행은 예전 그대로다. PC는 고르지 않고 웹 지도를 새 탭으로 연다.
+    **생김새는 아이폰 동작 시트다**(사용자 요청 — `너무 안예뻐`) — 흰 카드 하나에 `길찾기` 머리말 + 목적지,
+    앱 줄(둥근 네모 글자표 `T`·`K`·`N` · 앱 이름 · `최근 사용` · `›`)을 가는 선으로 가르고, `취소`는 아래 따로 뜬 카드다.
+    **앱 표시를 그림문자(🚘🟡🟢)로 되돌리지 말 것** — 기기마다 모양이 달라 어수선했다. 글자표 색이 곧 앱 색이다.
 
 #### 일본 골프장 찾기 (라쿠텐 GORA · `openGora()`)
 
