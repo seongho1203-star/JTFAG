@@ -359,7 +359,7 @@ function newTripHtml() {
                 <label class="trip-field">종료일<input type="date" id="tripNewEnd" value="${end}" min="${start}" max="${isoAdd(start, TRIP_MAX_DAYS - 1)}" onchange="tripDatesChanged('end')"></label>
             </div>
             <div class="trip-hint" id="tripNewSpan">${tripSpanText(start, end)}</div>
-            <div class="trip-hint">일자별 골프장·티오프·숙소는 등록 후 <b>입력</b>에서, 항공·렌트카는 <b>🧭 교통·숙소</b>에서 입력합니다. 일본 여행은 일자별로 <b>🔎 일본 골프장 찾기</b>가 제공됩니다.</div>
+            <div class="trip-hint">일자별 골프장·티오프·숙소는 등록 후 <b>입력</b>에서, 항공·렌트카는 <b>🧭 여행 기본 정보</b>에서 입력합니다. 일본 여행은 일자별로 <b>🔎 일본 골프장 찾기</b>가 제공됩니다.</div>
             <div class="trip-actions">
                 ${tripOpenId ? `<button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>` : ''}
                 <button type="button" class="trip-btn primary" onclick="createTrip()">등록</button>
@@ -529,20 +529,37 @@ function tripCourseHide() {
     setTimeout(() => { const box = document.getElementById('tripCourseResults'); if (box) box.style.display = 'none'; }, 200);
 }
 
-// ─── 교통·숙소 (여행 전체에 한 벌) ───
+// ─── 여행 기본 정보 (여행 전체에 한 벌 · 예전 이름 `교통·숙소`) ───
 // 사용자 요청 — `렌트카 사용 여부나 숙소, 항공 정보도 입력`. 날마다 다른 것(골프장·티오프·묵는 곳)은
 // 날짜 칸에, 여행 내내 하나인 것(항공편·렌트카·숙소 예약번호)은 여기에 둔다.
 // 숙소 이름은 날짜 칸의 `stay`가 원본이다 — 여기서는 그걸 묶어 보여 주기만 하고(`stayRuns()`),
 // 예전에 있던 `숙소 정보`(stayInfo — 체크인 시각·연락처 따위)는 쓰임이 모호하다는 사용자 말로 걷어냈다.
 // 키에서 빠졌으므로 다음 저장 때 옛 값도 함께 걷힌다. 되살리지 말 것.
-const TRAVEL_KEYS = ['flightOut', 'flightBack', 'flightRef', 'car', 'carCo', 'carPick', 'carDrop', 'carRef'];
+// 사용자 요청(10/09) — 예약 칸 이름은 `예약번호` · 렌트 인수·반납은 한 칸(`carPlace`) · 렌트 보험(`carIns`) ·
+// 항공 수하물(`bag`). 예전의 `carPick`/`carDrop`은 읽을 때 한 칸으로 합쳐 보이고, 다음 저장 때 `carPlace`로 옮겨진다.
+const TRAVEL_KEYS = ['flightOut', 'flightBack', 'bag', 'flightRef', 'car', 'carCo', 'carPlace', 'carIns', 'carRef'];
 const TRAVEL_CAR = { '': '미정', yes: '사용', no: '미사용' };
+const TRAVEL_INS = { '': '미정', yes: '가입', no: '미가입' };
+const DAY_BF = { '': '미정', yes: '포함', no: '불포함' };   // 일자별 숙소의 조식 (day.bf)
 function tripTravel(trip) {
     const t = trip && trip.travel && typeof trip.travel === 'object' ? trip.travel : {};
     const out = {};
     TRAVEL_KEYS.forEach(k => { out[k] = typeof t[k] === 'string' ? t[k] : ''; });
     if (!TRAVEL_CAR[out.car]) out.car = '';
+    if (!TRAVEL_INS[out.carIns]) out.carIns = '';
+    if (!out.carPlace) {   // 예전 두 칸(인수·반납)을 한 칸으로
+        const pick = typeof t.carPick === 'string' ? t.carPick.trim() : '', drop = typeof t.carDrop === 'string' ? t.carDrop.trim() : '';
+        out.carPlace = pick && drop ? (pick === drop ? pick : `${pick} / ${drop}`) : (pick || drop);
+    }
     return out;
+}
+function bfText(bf) { return bf === 'yes' ? '조식 포함' : bf === 'no' ? '조식 불포함' : ''; }
+function segHtml(name, map, cur) {
+    return `<div class="trip-seg">${Object.entries(map).map(([k, v]) => `<label><input type="radio" name="${name}" value="${k}"${cur === k ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>`;
+}
+function segVal(name, map) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el && map[el.value] !== undefined ? el.value : '';
 }
 // 같은 숙소가 이어지는 날을 한 줄로 묶는다 — `1~2일차 디오션 리조트`
 function stayRuns(trip) {
@@ -550,11 +567,12 @@ function stayRuns(trip) {
     days.forEach((d, i) => {
         const name = (d.stay || '').trim();
         if (!name) return;
+        const bf = DAY_BF[d.bf] ? d.bf : '';
         const last = runs[runs.length - 1];
-        if (last && last.name === name && last.to === i - 1) last.to = i;
-        else runs.push({ name, from: i, to: i });
+        if (last && last.name === name && last.bf === bf && last.to === i - 1) last.to = i;
+        else runs.push({ name, bf, from: i, to: i });
     });
-    return runs.map(r => `${r.from === r.to ? r.from + 1 : `${r.from + 1}~${r.to + 1}`}일차 ${r.name}`);
+    return runs.map(r => `${r.from === r.to ? r.from + 1 : `${r.from + 1}~${r.to + 1}`}일차 ${r.name}${r.bf ? ' · ' + bfText(r.bf) : ''}`);
 }
 function travelRow(k, v, empty) {
     return `<div class="trip-row"><span class="k">${k}</span><span class="v${v ? '' : ' empty'}">${v ? escapeHtml(v) : empty}</span></div>`;
@@ -566,21 +584,22 @@ function travelHtml(trip) {
         const f = (id, label, v, max = 60) => `<label class="trip-field row"><span>${label}</span><input type="text" id="${id}" maxlength="${max}" autocomplete="off" value="${escapeHtml(v)}"></label>`;
         return `
         <div class="trip-day editing">
-            <div class="trip-day-head">🧭 교통·숙소</div>
+            <div class="trip-day-head">🧭 여행 기본 정보</div>
             <div class="trip-sub">항공 <small class="trip-sub-note">편명·출발 시각</small></div>
             ${f('tripTvFlightOut', '출발편', t.flightOut)}
             ${f('tripTvFlightBack', '복귀편', t.flightBack)}
-            ${f('tripTvFlightRef', '항공 예약', t.flightRef, 40)}
+            ${f('tripTvBag', '수하물', t.bag)}
+            ${f('tripTvFlightRef', '예약번호', t.flightRef, 40)}
             <div class="trip-sub trip-sub-row">렌트카
                 <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
             </div>
             <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
                 ${f('tripTvCarCo', '업체·차종', t.carCo)}
-                ${f('tripTvCarPick', '인수', t.carPick)}
-                ${f('tripTvCarDrop', '반납', t.carDrop)}
-                ${f('tripTvCarRef', '렌트 예약', t.carRef, 40)}
+                ${f('tripTvCarPlace', '인수·반납', t.carPlace, 80)}
+                <div class="trip-field row"><span>보험</span>${segHtml('tripTvCarIns', TRAVEL_INS, t.carIns)}</div>
+                ${f('tripTvCarRef', '예약번호', t.carRef, 40)}
             </div>
-            <div class="trip-hint">숙소는 일자별 <b>입력</b>의 숙소 항목에 기재합니다.</div>
+            <div class="trip-hint">숙소명과 조식 포함 여부는 일자별 <b>입력</b>에서 기재합니다.</div>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripTravel()">저장</button>
@@ -588,20 +607,21 @@ function travelHtml(trip) {
         </div>`;
     }
     // 국내 여행은 비행기를 안 타는 일이 많아, 적은 게 없으면 항공 줄을 아예 안 보인다(제주라면 적으면 나온다).
-    const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef) ? `
+    const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef || t.bag) ? `
             ${travelRow('출발편', t.flightOut, '미정')}
             ${travelRow('복귀편', t.flightBack, '미정')}
-            ${t.flightRef ? travelRow('항공 예약', t.flightRef, '') : ''}` : '';
+            ${t.bag ? travelRow('수하물', t.bag, '') : ''}
+            ${t.flightRef ? travelRow('예약번호', t.flightRef, '') : ''}` : '';
     const car = t.car === 'yes' ? `
             ${travelRow('렌트카', t.carCo || '사용', '')}
-            ${t.carPick ? travelRow('인수', t.carPick, '') : ''}
-            ${t.carDrop ? travelRow('반납', t.carDrop, '') : ''}
-            ${t.carRef ? travelRow('렌트 예약', t.carRef, '') : ''}` : travelRow('렌트카', t.car === 'no' ? '미사용' : '', '미정');
+            ${t.carPlace ? travelRow('인수·반납', t.carPlace, '') : ''}
+            ${travelRow('보험', t.carIns ? TRAVEL_INS[t.carIns] : '', '미정')}
+            ${t.carRef ? travelRow('예약번호', t.carRef, '') : ''}` : travelRow('렌트카', t.car === 'no' ? '미사용' : '', '미정');
     const runs = stayRuns(trip);
     const stay = runs.length ? runs.map((r, i) => travelRow(i ? '' : '숙소', r, '')).join('') : travelRow('숙소', '', '일자별 숙소를 입력하면 이곳에 표시됩니다');
     return `
         <div class="trip-day trip-travel">
-            <div class="trip-day-head">🧭 교통·숙소</div>
+            <div class="trip-day-head">🧭 여행 기본 정보</div>
             ${flight}
             ${car}
             ${stay}
@@ -619,21 +639,23 @@ function saveTripTravel() {
     const carEl = document.querySelector('input[name="tripTvCar"]:checked');
     const car = carEl && TRAVEL_CAR[carEl.value] !== undefined ? carEl.value : '';
     const next = {
-        flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), flightRef: val('tripTvFlightRef'),
+        flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), bag: val('tripTvBag'), flightRef: val('tripTvFlightRef'),
         car,
         // 미사용이면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
-        carCo: car === 'yes' ? val('tripTvCarCo') : '', carPick: car === 'yes' ? val('tripTvCarPick') : '',
-        carDrop: car === 'yes' ? val('tripTvCarDrop') : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
+        carCo: car === 'yes' ? val('tripTvCarCo') : '', carPlace: car === 'yes' ? val('tripTvCarPlace') : '',
+        carIns: car === 'yes' ? segVal('tripTvCarIns', TRAVEL_INS) : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
     };
     const trip = findTrip(tripOpenId);
     tripEditing = null;
     if (!trip) { renderTripModal(); return; }
     const cur = tripTravel(trip);
-    if (TRAVEL_KEYS.some(k => cur[k] !== next[k])) editTrip(t => {
+    const old = trip.travel || {};
+    // 예전 인수·반납 두 칸이 남아 있으면 값이 같아도 한 번 저장해 새 칸으로 옮긴다
+    if (TRAVEL_KEYS.some(k => cur[k] !== next[k]) || old.carPick || old.carDrop) editTrip(t => {
         const clean = {};
         TRAVEL_KEYS.forEach(k => { if (next[k]) clean[k] = next[k]; });
         if (Object.keys(clean).length) t.travel = clean; else delete t.travel;
-    }, '✅ 교통·숙소를 저장했습니다.');
+    }, '✅ 여행 기본 정보를 저장했습니다.');
     renderTripModal();
 }
 
@@ -994,6 +1016,7 @@ function tripDayHtml(trip, d, i, today) {
             <label class="trip-field row"><span>지역</span><input type="text" id="tripEdArea" maxlength="20" value="${escapeHtml(d.area)}"></label>
             <label class="trip-field row"><span>티오프</span><input type="text" id="tripEdTee" maxlength="20" value="${escapeHtml(d.tee)}"></label>
             <label class="trip-field row"><span>숙소</span><input type="text" id="tripEdStay" maxlength="60" value="${escapeHtml(d.stay)}"></label>
+            <div class="trip-field row"><span>조식</span>${segHtml('tripEdBf', DAY_BF, DAY_BF[d.bf] ? d.bf : '')}</div>
             <label class="trip-field row"><span>메모</span><textarea id="tripEdMemo" rows="2" maxlength="200">${escapeHtml(d.memo)}</textarea></label>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
@@ -1012,7 +1035,7 @@ function tripDayHtml(trip, d, i, today) {
             </div>
             <div class="trip-course">${d.course ? escapeHtml(d.course) : '<span class="empty">골프장 미정</span>'}${d.area ? ` <span class="trip-area">${escapeHtml(d.area)}</span>` : ''}</div>
             <div class="trip-row"><span class="k">티오프</span><span class="v${d.tee ? '' : ' empty'}">${d.tee ? escapeHtml(d.tee) : '미정'}</span></div>
-            <div class="trip-row"><span class="k">숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}</span></div>
+            <div class="trip-row"><span class="k">숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}${d.stay && bfText(d.bf) ? ` <span class="trip-bf">· ${bfText(d.bf)}</span>` : ''}</span></div>
             ${d.memo ? `<div class="trip-memo">${escapeHtml(d.memo)}</div>` : ''}
             ${d.course ? wx : ''}
             ${kind === 'japan' && !past ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (변경)' : ''}</button></div>` : ''}
@@ -1078,7 +1101,7 @@ function cancelTripEdit() { tripEditing = null; costDraft = null; renderTripModa
 
 function saveTripDay(date) {
     const val = id => (document.getElementById(id) || {}).value || '';
-    const next = { course: val('tripEdCourse').trim(), area: val('tripEdArea').trim(), tee: val('tripEdTee').trim(), stay: val('tripEdStay').trim(), memo: val('tripEdMemo').trim() };
+    const next = { course: val('tripEdCourse').trim(), area: val('tripEdArea').trim(), tee: val('tripEdTee').trim(), stay: val('tripEdStay').trim(), bf: segVal('tripEdBf', DAY_BF), memo: val('tripEdMemo').trim() };
     const trip = findTrip(tripOpenId);
     const day = trip && tripDays(trip).find(d => d.date === date);
     tripEditing = null;
@@ -1090,6 +1113,7 @@ function saveTripDay(date) {
         // 골프장 이름을 손으로 바꾸면 GORA에서 받아 둔 위치·예약 주소는 옛 골프장 것이라 걷는다.
         if ((target.course || '') !== next.course) { delete target.lat; delete target.lon; delete target.gora; }
         Object.assign(target, next);
+        if (!target.bf) delete target.bf;   // 미정이면 키째 지운다(예전 일정과 같은 모양)
     }, `✅ ${isoLabel(date)} 일정을 저장했습니다.`);
     renderTripModal(); renderTripCard();
 }

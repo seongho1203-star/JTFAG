@@ -1305,3 +1305,5 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .cost-head-item input:focus, .cost-head-item select:focus { outline: none; border-color: var(--primary-gold); }
 .cost-num { width: 48px; text-align: center; }
 .cost-num.wide { width: 88px; text-align: right; }
+/* 숙소 줄의 조식 표시 — 숙소 이름보다 한 단계 흐리게 */
+.trip-bf { color: var(--text-sub); font-weight: 600; }
