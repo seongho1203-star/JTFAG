@@ -579,6 +579,14 @@ th#avgHeaderTitle { color: var(--primary-gold) !important; font-weight: 900 !imp
 .modal-body { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 /* 여행 창은 끝에 닿아도 뒤(잠긴 화면)로 미는 힘이 새지 않게 — 새면 아이폰이 그 손짓을 뒤에 넘겨 창이 안 밀렸다 */
 #tripModal .modal-body, #goraModal .modal-body { overscroll-behavior: contain; }
+/* 창 위에서 옆으로 밀면 아이폰이 그 손짓을 뒤 화면에 넘겨 **화면 전체가 옆으로 튕기고**, 그 틈에 상태바 자리로
+   뒤 배경이 드러났다(사용자 제보 — 오른쪽에서 왼쪽으로 끌면 화면 위 오른쪽에 밝은 막대가 나온다).
+   창은 세로로만 굴러가므로 옆 손짓을 아예 안 받는다. 여행 칩 줄처럼 안에서 옆으로 굴러가는 칸은
+   그 칸이 손짓의 임자라 그대로 굴러간다(touch-action은 손짓을 실제로 받는 칸까지만 겹쳐 본다).
+   html·body의 옆 튕김도 함께 끈다 — 이 앱에서 화면 전체가 옆으로 튕길 일은 없다(좌우 넘기기는 transform이다). */
+#tripModal .modal-content, #goraModal .modal-content { touch-action: pan-y; }
+#tripModal, #goraModal { touch-action: pan-y; }
+html, body { overscroll-behavior-x: none; }
 /* 여행·GORA 창은 길게 굴리는 창이라 뒤 흐림(blur)을 끈다 — 뒤의 홈이 다시 그려질 때마다(남의 저장) 흐림을
    다시 계산해 굴리는 도중에 멈칫한다. 사진 보기 창(#imageViewModal)과 같은 처리다. */
 #tripModal.active, #goraModal.active { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(15, 23, 42, 0.68); }

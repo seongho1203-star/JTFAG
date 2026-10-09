@@ -409,6 +409,12 @@ scripts/fetch-courses.js  →  courses.js를 커밋
     ④ 잠가 둔 동안 아이폰 키보드가 창(window)을 밀어 놓고 안 돌려놓으면 **입력이 끝날 때 0으로 되돌린다**(ui.js의 `focusout`).
     여행 칩 줄(`.trip-chips`)은 `overflow-y: hidden`이다 — 가로 굴림 칸이 세로로도 1~2px 굴러가 손짓을 먹지 않게.
     헤드리스 확인은 스크래치패드 `edge-test.js`(끝에서 1px · 가운데는 안 건드림 · 흐림 꺼짐 · 날씨 미룸).
+  - **창 위에서 옆으로 밀면 화면 전체가 옆으로 튕겼다**(사용자 제보 — 오른쪽에서 왼쪽으로 끌면 화면 위 오른쪽 상태바 자리에 밝은 막대).
+    창은 세로로만 굴러가는데 옆 손짓을 아이폰이 뒤 화면에 넘겨 고무줄처럼 튕기고, 그 틈에 뒤 배경이 드러난 것이다.
+    두 창(`#tripModal`·`#goraModal`)과 그 `.modal-content`에 `touch-action: pan-y`를 주어 옆 손짓을 아예 안 받는다.
+    **여행 칩 줄처럼 안에서 옆으로 굴러가는 칸은 그대로 굴러간다** — touch-action은 손짓을 실제로 받는 칸까지만 겹쳐 본다
+    (헤드리스로 칩 줄 가로 굴림 · 창 세로 굴림 · 옆으로 밀어도 아무것도 안 밀림을 확인 — 스크래치패드 `pany-test.js`).
+    `html, body`에도 `overscroll-behavior-x: none` — 이 앱에서 화면 전체가 옆으로 튕길 일은 없다(홈 ↔ 정산·스코어 넘기기는 transform이다).
 - **입력칸에 예시 글(`placeholder`)을 넣지 않는다**(사용자 요청 — `예제 글 모두 삭제`). 되살리지 말 것.
 - **onclick 속성에 여행 id·날짜를 그대로 넣으므로** `allTrips()`가 `ID_RE`(영숫자·`-`·`_`)에 맞는 id만,
   `tripDays()`가 `YYYY-MM-DD`만 받는다. 이름·메모 같은 글은 늘 `escapeHtml()`을 거친다.
