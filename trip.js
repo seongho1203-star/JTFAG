@@ -1180,7 +1180,7 @@ async function loadTripWeather(d) {
 
 // ═══ 일본 골프장 찾기 (라쿠텐 GORA) ═══════════════════════════════
 // 흐름: 기준 위치(숙소·역 이름을 찾거나 지도를 눌러 고른다) → 범위·최대 금액 → GORA에 그날 예약 가능한
-// 플랜을 묻는다 → 지도와 목록(가까운 순)에 펼친다 → `날짜 선택 완료`가 그 날짜의 골프장으로 넣는다.
+// 플랜을 묻는다 → 지도와 목록(가까운 순)에 펼친다 → `예약 완료`가 그 날짜의 골프장으로 넣는다.
 // **예약·결제는 앱이 못 한다** — 라쿠텐이 예약 API를 열어 두지 않았다. 그래서 그 골프장의 GORA 예약
 // 페이지를 열어 주고(원문 / 구글 번역으로 한국어), 사람이 거기서 예약한다.
 // 라쿠텐에 묻는 일은 Supabase 함수 `gora`가 한다(열쇠를 앱에 둘 수 없다 — 공개 저장소).
@@ -1858,7 +1858,7 @@ function renderGoraResult() {
             ${it.address ? `<div class="gora-item-meta addr">${escapeHtml(koAddress(it.address))}</div>` : ''}
             <div class="trip-actions">
                 <a class="trip-btn" href="${escapeHtml(it.url)}" target="_blank" rel="noopener" onclick="return openGoraLink(this.href)">🎫 GORA에서 예약</a>
-                <button type="button" class="trip-btn primary" onclick="pickGoraCourse(${i})">날짜 선택 완료</button>
+                <button type="button" class="trip-btn primary" onclick="pickGoraCourse(${i})">예약 완료</button>
             </div>
         </div>`;
     }).join('') + rawLink;
