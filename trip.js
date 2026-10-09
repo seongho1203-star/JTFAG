@@ -146,10 +146,26 @@ function closeTripModal() {
 // '위아래로 스크롤이 안 될 때가 있다'(사용자 제보)의 정체다. 남의 저장·접속 때 다시 읽기마다 이 함수가 돈다.
 let tripTouching = false, tripScrollAt = 0, tripRefreshTimer = 0;
 function tripBusyScrolling() { return tripTouching || Date.now() - tripScrollAt < 400; }
+// 창이 맨 위·맨 아래에 닿아 있을 때 그쪽으로 밀면 **아이폰이 그 손짓을 창 밖(잠가 둔 뒤 화면)에 넘긴다** —
+// 뒤는 붙박여 있어 아무것도 안 움직이고, 같은 손짓으로 반대쪽으로 되밀어도 창이 꿈쩍 안 한다
+// ('스크롤하다가 멈춘다' · 사용자 제보). 손을 대는 순간 끝에서 1px 떼어 두면 늘 창이 그 손짓을 받는다.
+// overscroll-behavior: contain만으로는 다 못 막았다(iOS 16 아래 · 튕기는 도중에 다시 댄 손짓).
+function keepOffEdges(el) {
+    const max = el.scrollHeight - el.clientHeight;
+    if (max < 3) return;                       // 넘치지 않는 창은 굴릴 것이 없다
+    if (el.scrollTop <= 0) el.scrollTop = 1;
+    else if (el.scrollTop >= max) el.scrollTop = max - 1;
+}
+function watchModalScroll(el) {
+    if (!el || el._edgeWatched) return;
+    el._edgeWatched = true;
+    el.addEventListener('touchstart', () => keepOffEdges(el), { passive: true });
+}
 function watchTripScroll() {
     const body = document.getElementById('tripBody');
     if (!body || body._watched) return;
     body._watched = true;
+    watchModalScroll(body);
     body.addEventListener('touchstart', () => { tripTouching = true; }, { passive: true });
     const up = () => { tripTouching = false; tripScrollAt = Date.now(); };
     body.addEventListener('touchend', up, { passive: true });
@@ -1109,7 +1125,12 @@ async function loadTripWeather(d) {
     if ((hit && Date.now() - hit.at < WEATHER_TTL) || tripWeatherBusy[key]) return;
     if (Date.now() < weatherBlockedUntil) return;
     tripWeatherBusy[key] = true;
-    const paint = html => { const el = document.getElementById('tripWx-' + d.date); if (el) el.innerHTML = html; };
+    // 미는 중·미끄러지는 중이면 멈춘 뒤에 칠한다(창을 다시 그리는 것과 같은 규칙).
+    const paint = html => {
+        if (tripBusyScrolling()) { setTimeout(() => paint(html), 450); return; }
+        const el = document.getElementById('tripWx-' + d.date);
+        if (el && el.innerHTML !== html) el.innerHTML = html;
+    };
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16`;
         const res = await fetch(url);
@@ -1306,6 +1327,7 @@ function openGora(date) {
     gora.error = null; gora._searched = false;
     gora.base = trip.base && isFinite(trip.base.lat) ? { ...trip.base } : null;
     document.getElementById('goraModal').classList.add('active');
+    watchModalScroll(document.querySelector('#goraModal .modal-body'));
     renderGora();
     loadLeaflet().then(() => { drawGoraMap(); paintGoraMap(); setTimeout(() => gora.map && gora.map.invalidateSize(), 300); })
         .catch(() => { const m = document.getElementById('goraMap'); if (m) m.innerHTML = '<div class="trip-empty">지도를 불러오지 못했습니다.</div>'; });

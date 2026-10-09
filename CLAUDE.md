@@ -391,6 +391,14 @@ scripts/fetch-courses.js  →  courses.js를 커밋
     창 안을 통째로 갈아 끼웠고, **손가락 아래 요소가 사라지면 아이폰이 그 스크롤을 놓는다.**
   - **내용이 같으면 아예 안 갈아 끼운다**(`setTripBody()` — 지난번 그린 글과 견준다). 창 안에 `innerHTML`을 직접 넣지 말 것.
   - 창 끝에서 미는 힘이 뒤(잠긴 화면)로 새지 않게 `#tripModal`·`#goraModal`의 `.modal-body`에 `overscroll-behavior: contain`.
+  - **그래도 `스크롤하다가 멈춘다`가 다시 왔다**(사용자 제보). 아이폰에서만 나는 자리라 헤드리스로는 재현이 안 돼, 짚이는 넷을 함께 막았다:
+    ① **손을 대는 순간 창이 맨 위·맨 아래면 1px 떼어 둔다**(`keepOffEdges()` · `watchModalScroll()` — 여행 창·GORA 창).
+    끝에 닿은 채 그쪽으로 밀면 아이폰이 그 손짓을 잠가 둔 뒤 화면에 넘겨, 같은 손짓으로 되밀어도 창이 꿈쩍 안 한다.
+    ② **날씨 칠하기도 미는 동안은 미룬다**(`loadTripWeather`의 `paint` — 창 다시 그리기와 같은 `tripBusyScrolling()`).
+    ③ 두 창은 **뒤 흐림(`backdrop-filter`)을 끈다** — 뒤의 홈이 남의 저장으로 다시 그려질 때마다 흐림을 다시 계산해 멈칫한다.
+    ④ 잠가 둔 동안 아이폰 키보드가 창(window)을 밀어 놓고 안 돌려놓으면 **입력이 끝날 때 0으로 되돌린다**(ui.js의 `focusout`).
+    여행 칩 줄(`.trip-chips`)은 `overflow-y: hidden`이다 — 가로 굴림 칸이 세로로도 1~2px 굴러가 손짓을 먹지 않게.
+    헤드리스 확인은 스크래치패드 `edge-test.js`(끝에서 1px · 가운데는 안 건드림 · 흐림 꺼짐 · 날씨 미룸).
 - **입력칸에 예시 글(`placeholder`)을 넣지 않는다**(사용자 요청 — `예제 글 모두 삭제`). 되살리지 말 것.
 - **onclick 속성에 여행 id·날짜를 그대로 넣으므로** `allTrips()`가 `ID_RE`(영숫자·`-`·`_`)에 맞는 id만,
   `tripDays()`가 `YYYY-MM-DD`만 받는다. 이름·메모 같은 글은 늘 `escapeHtml()`을 거친다.

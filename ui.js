@@ -835,6 +835,20 @@ function applyScrollLock() {
     }
 }
 
+// 잠가 둔 동안(창이 떠 있는 동안) 아이폰에서 입력칸을 누르면 키보드가 칸을 보이게 하려고 **창(window)을
+// 위로 민다.** 키보드를 내려도 그 자리를 안 돌려놓는 때가 있어, 화면이 밀린 채 굳고 손으로 밀어도 창 안이
+// 안 굴러가는 것처럼 보였다(여행 창 · 사용자 제보 — '스크롤하다가 멈춘다'). 잠가 둔 동안 창의 자리는
+// 언제나 0이어야 하므로(body를 position:fixed로 붙든다), 입력이 끝나면 0으로 되돌린다.
+document.addEventListener('focusout', () => {
+    if (!IS_IOS) return;
+    setTimeout(() => {
+        if (!scrollLocked) return;
+        const a = document.activeElement;
+        if (a && a.matches && a.matches('input, textarea, select, [contenteditable="true"]')) return;   // 칸에서 칸으로 옮겨 가는 중
+        if (window.scrollY || window.pageYOffset) window.scrollTo(0, 0);
+    }, 150);
+}, true);
+
 let overlayObserver = null;
 let overlayChildObserver = null;
 
