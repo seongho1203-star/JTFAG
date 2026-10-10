@@ -462,7 +462,7 @@ function missionListCard() {
         <div class="msn-head"><span>미션 목록</span><span class="msn-sub">무작위 · 난이도만큼 포인트</span></div>
         ${[1, 2, 3].map(lv => `<div class="msn-lv">
             <div class="msn-lv-head">${msnStars(lv)} ${MISSION_LEVELS[lv].name} <span class="msn-pts">${lv}점</span></div>
-            ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how)}</span></div>`).join('')}
+            ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how).replace(/\(([^)]*)\)$/, ' <i>($1)</i>')}</span></div>`).join('')}
         </div>`).join('')}
         <div class="msn-foot">'파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. ○○는 미션을 받을 때 무작위로 정해지는 다른 멤버이며, 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다.</div>
     </div>`;
