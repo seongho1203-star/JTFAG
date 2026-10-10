@@ -24,8 +24,15 @@ const MULLIGAN_STEP = 5;   // 포인트 5점마다 멀리건 사용권 1개(사�
 const mCount = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? 1 : 0), 0);
 const mRun = (h, pred) => { let run = 0, best = 0; h.rel.forEach((v, i) => { run = pred(v, i) ? run + 1 : 0; if (run > best) best = run; }); return best; };
 const mHalf = (h, a) => h.par.slice(a, a + 9).reduce((t, p, i) => t + p + h.rel[a + i], 0);
+const mGross = h => mHalf(h, 0) + mHalf(h, 9);
+const mBirdie = h => mCount(h, v => v < 0);
 
-// 미션 아홉 가지(사용자가 정한 목록). `w`는 뽑힐 무게 — 전반·후반 42타는 한 가지를 둘로 나눈 것이라 반씩.
+// 미션 목록(사용자가 정했다 — 처음 아홉에 열하나를 더했다). `w`는 뽑힐 무게 — 전반·후반 42타는 한 가지를 둘로 나눈 것이라 반씩.
+// **`who: true`인 미션은 다른 멤버 한 사람이 대상이다**(사용자 요청 — `김지명 버디2개 이런것도`). 받을 때 대상도 무작위로 정해
+// `rec.who`에 남기고, 글의 `{T}` 자리에 그 이름이 들어간다. 판정은 `judge(내 기록, 대상 기록)`이다.
+// 대상이 그 차수에 기록이 없으면(불참) 판정하지 않는다. 겨루는 미션은 비기면 실패다.
+// 난이도는 1~9차 실제 홀 기록으로 성공률을 재서 정했다(○○ 파 6개 64% · ○○ 89타 44% · ○○ 버디 2개 11% ·
+// 후반 대결 44% · 타수 대결 49% · 버디 대결 26% · 버디 1개 56% · 파 8개 28% · 89타 44% · 마지막 3홀 28% · 파5 모두 보기 이하 19%).
 // **'파'는 파 이하(버디 포함)로 센다** — 버디를 했다고 미션이 깨지면 이상하다.
 // **'더블보기'·'트리플 보기'는 그 이상까지 센다**(트리플은 더블보기 이상에도 든다).
 const MISSION_DEFS = [
@@ -48,7 +55,32 @@ const MISSION_DEFS = [
     { id: 'parRun4', lv: 3, w: 2, text: '4홀 연속 파', how: '파 이하(버디 포함) 홀 4개 연속',
       judge: h => { const n = mRun(h, v => v <= 0); return { ok: n >= 4, got: `최대 ${n}홀 연속` }; } },
     { id: 'p5par3', lv: 3, w: 2, text: '파5에서 파 3개', how: '파5 홀에서 파 이하 3개 이상',
-      judge: h => { const n = mCount(h, (v, i) => h.par[i] === 5 && v <= 0); return { ok: n >= 3, got: `파5 파 이하 ${n}개` }; } }
+      judge: h => { const n = mCount(h, (v, i) => h.par[i] === 5 && v <= 0); return { ok: n >= 3, got: `파5 파 이하 ${n}개` }; } },
+    // ── 추가분(본인) ──
+    { id: 'birdie1', lv: 1, w: 2, text: '버디 1개 이상', how: '버디 이하(이글 포함) 홀 1개 이상',
+      judge: h => { const n = mBirdie(h); return { ok: n >= 1, got: `버디 ${n}개` }; } },
+    { id: 'par8', lv: 2, w: 2, text: '파 8개 이상', how: '파 이하(버디 포함) 홀 8개 이상',
+      judge: h => { const n = mCount(h, v => v <= 0); return { ok: n >= 8, got: `파 이하 ${n}개` }; } },
+    { id: 'gross89', lv: 2, w: 2, text: '89타 이하', how: '18홀 합계 89타 이하',
+      judge: h => { const n = mGross(h); return { ok: n <= 89, got: `${n}타` }; } },
+    { id: 'last3', lv: 2, w: 2, text: '마지막 3홀 보기 이하', how: '16·17·18번 홀 모두 보기 이하',
+      judge: h => { const n = h.rel.slice(15).filter(v => v <= 1).length; return { ok: n === 3, got: `마지막 3홀 중 ${n}홀 보기 이하` }; } },
+    { id: 'p5bogey', lv: 3, w: 2, text: '파5 홀 모두 보기 이하', how: '파5 홀 전부 보기 이하',
+      judge: h => { const all = mCount(h, (v, i) => h.par[i] === 5), n = mCount(h, (v, i) => h.par[i] === 5 && v <= 1); return { ok: all > 0 && n === all, got: `파5 ${all}홀 중 ${n}홀 보기 이하` }; } },
+    // ── 다른 멤버가 대상(응원) ──
+    { id: 'tPar6', lv: 1, w: 2, who: true, text: '{T} 파 6개 이상', how: '대상 멤버가 파 이하(버디 포함) 홀 6개 이상',
+      judge: (h, o) => { const n = mCount(o, v => v <= 0); return { ok: n >= 6, got: `{T} 파 이하 ${n}개` }; } },
+    { id: 'tGross89', lv: 2, w: 2, who: true, text: '{T} 89타 이하', how: '대상 멤버가 18홀 합계 89타 이하',
+      judge: (h, o) => { const n = mGross(o); return { ok: n <= 89, got: `{T} ${n}타` }; } },
+    { id: 'tBirdie2', lv: 3, w: 2, who: true, text: '{T} 버디 2개 이상', how: '대상 멤버가 버디 이하(이글 포함) 홀 2개 이상',
+      judge: (h, o) => { const n = mBirdie(o); return { ok: n >= 2, got: `{T} 버디 ${n}개` }; } },
+    // ── 다른 멤버와 대결(비기면 실패) ──
+    { id: 'vsBack', lv: 1, w: 2, who: true, text: '{T}보다 후반 타수 적게', how: '뒤 9홀 합계가 대상 멤버보다 적게(동타는 실패)',
+      judge: (h, o) => { const a = mHalf(h, 9), b = mHalf(o, 9); return { ok: a < b, got: `후반 ${a}타 · {T} ${b}타` }; } },
+    { id: 'vsGross', lv: 2, w: 2, who: true, text: '{T}보다 적은 타수', how: '18홀 합계가 대상 멤버보다 적게(동타는 실패)',
+      judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a < b, got: `${a}타 · {T} ${b}타` }; } },
+    { id: 'vsBirdie', lv: 3, w: 2, who: true, text: '{T}보다 버디 많이', how: '버디 개수가 대상 멤버보다 많게(같으면 실패)',
+      judge: (h, o) => { const a = mBirdie(h), b = mBirdie(o); return { ok: a > b, got: `버디 ${a}개 · {T} ${b}개` }; } }
 ];
 const MISSION_BY_ID = {};
 MISSION_DEFS.forEach(d => { MISSION_BY_ID[d.id] = d; });
@@ -61,7 +93,15 @@ function missionYearNow() {
 function missionRec(round, g) {
     const all = appData && appData.missions;
     const rec = all && all[String(round)] && all[String(round)][g];
-    return rec && MISSION_BY_ID[rec.id] ? rec : null;
+    if (!rec || !MISSION_BY_ID[rec.id]) return null;
+    // 대상 멤버가 있는 미션은 그 이름이 우리 넷 중 하나(본인 제외)여야 한다
+    if (MISSION_BY_ID[rec.id].who && !(golfers.includes(rec.who) && rec.who !== g)) return null;
+    return rec;
+}
+
+// 화면에 적는 미션 글 — `{T}` 자리에 대상 멤버 이름(모르면 ○○)
+function missionText(def, rec) {
+    return def.text.replace('{T}', rec && rec.who ? rec.who : '○○');
 }
 
 // 그 차수의 18홀 기록. 없으면 null.
@@ -81,12 +121,17 @@ function missionResult(round, g) {
     const rec = missionRec(round, g);
     if (!rec) return null;
     const def = MISSION_BY_ID[rec.id];
-    const base = { round, g, rec, def };
+    const base = { round, g, rec, def, text: missionText(def, rec) };
     if (!roundHasHoles(round)) return { ...base, state: 'wait' };
     const h = missionHoles(round, g);
     if (!h) return { ...base, state: 'none' };
-    const r = def.judge(h);
-    return { ...base, state: r.ok ? 'ok' : 'fail', ok: r.ok, got: r.got };
+    let o = null;
+    if (def.who) {
+        o = missionHoles(round, rec.who);
+        if (!o) return { ...base, state: 'none', got: `${rec.who} 기록 없음` };
+    }
+    const r = def.judge(h, o);
+    return { ...base, state: r.ok ? 'ok' : 'fail', ok: r.ok, got: r.got.replace('{T}', rec.who || '') };
 }
 
 function missionRounds() {
@@ -228,6 +273,12 @@ function drawMission() {
     if (missionRec(t.round, me)) { showToast('ℹ️ 이번 라운드 미션은 이미 받았습니다.'); return; }
     const def = pickMission();
     const rec = { id: def.id, at: Date.now(), y: t.year };
+    if (def.who) {
+        const others = golfers.filter(g => g !== me);
+        let k = 0;
+        try { const a = new Uint32Array(1); crypto.getRandomValues(a); k = a[0] % others.length; } catch (e) { k = Math.floor(Math.random() * others.length); }
+        rec.who = others[k];
+    }
     if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
     if (!appData.missions[t.round]) appData.missions[t.round] = {};
     appData.missions[t.round][me] = rec;
@@ -243,14 +294,14 @@ function drawMission() {
         missionLanded = Date.now();
         missionLastHtml = '';
         renderMissionPage();
-        showToast(`🎯 ${t.round}차 미션 · ${def.text} (${MISSION_LEVELS[def.lv].stars} ${def.lv}점)`);
+        showToast(`🎯 ${t.round}차 미션 · ${missionText(def, rec)} (${MISSION_LEVELS[def.lv].stars} ${def.lv}점)`);
     };
     if (!box || reduce) { finish(); return; }
     let i = 0;
     const btn = document.getElementById('msnDrawBtn');
     if (btn) { btn.disabled = true; btn.textContent = '미션 뽑는 중…'; }
     box.classList.add('rolling');
-    missionRoll = { timer: setInterval(() => { box.textContent = MISSION_DEFS[(i++ * 7 + 3) % MISSION_DEFS.length].text; }, 85) };
+    missionRoll = { timer: setInterval(() => { box.textContent = missionText(MISSION_DEFS[(i++ * 7 + 3) % MISSION_DEFS.length], null); }, 85) };
     setTimeout(finish, 1300);
 }
 
@@ -305,14 +356,14 @@ function missionTargetCard(me) {
         mineHtml = `<div class="msn-draw">
             <div class="msn-roll"><span class="msn-ic">${MSN_TARGET_ICON}</span><span class="msn-roll-text" id="msnRollText">어떤 미션이 나올까요?</span></div>
             <button type="button" class="msn-draw-btn" id="msnDrawBtn" onclick="drawMission()">미션 받기</button>
-            <div class="msn-note">아홉 가지 미션 중 하나가 무작위로 정해집니다 · 한 번 받으면 변경할 수 없습니다</div>
+            <div class="msn-note">미션 목록 중 하나가 무작위로 정해집니다 · 한 번 받으면 변경할 수 없습니다</div>
         </div>`;
     } else {
         const d = MISSION_BY_ID[mine.id];
         const pop = Date.now() - missionLanded < 1500 ? ' pop' : '';
         mineHtml = `<div class="msn-mine${pop}">
             <span class="msn-ic">${MSN_TARGET_ICON}</span>
-            <div class="msn-mine-body"><div class="k">내 미션</div><div class="t">${escapeHtml(d.text)}</div><div class="h">${escapeHtml(d.how)}</div></div>
+            <div class="msn-mine-body"><div class="k">내 미션</div><div class="t">${escapeHtml(missionText(d, mine))}</div><div class="h">${escapeHtml(d.how)}</div></div>
             <div class="msn-mine-side">${msnStars(d.lv)}<span class="msn-pts">+${d.lv}점</span></div>
         </div>`;
     }
@@ -320,7 +371,7 @@ function missionTargetCard(me) {
         const rec = missionRec(t.round, g);
         const d = rec && MISSION_BY_ID[rec.id];
         return `<div class="msn-row"><span class="n">${escapeHtml(g)}</span>
-            <span class="m${d ? '' : ' off'}">${d ? escapeHtml(d.text) : '아직 받지 않음'}</span>
+            <span class="m${d ? '' : ' off'}">${d ? escapeHtml(missionText(d, rec)) : '아직 받지 않음'}</span>
             <span class="r">${d ? `${msnStars(d.lv)}<span class="msn-pts">+${d.lv}</span>` : ''}</span></div>`;
     }).join('');
     return `<div class="msn-card">
@@ -342,7 +393,7 @@ function missionLastResultCard() {
         <div class="msn-head"><span>${r}차 미션 결과</span><span class="msn-sub">${okN}명 성공</span></div>
         ${rows.map(x => `<div class="msn-res ${x.state}">
             <span class="mk">${x.state === 'ok' ? '✓' : (x.state === 'fail' ? '✕' : '–')}</span>
-            <div class="b"><div class="n">${escapeHtml(x.g)} <span>${escapeHtml(x.def.text)}</span></div>
+            <div class="b"><div class="n">${escapeHtml(x.g)} <span>${escapeHtml(x.text)}</span></div>
             <div class="g">${x.got ? escapeHtml(x.got) : '홀 기록 없음'}</div></div>
             ${msnStateHtml(x)}</div>`).join('')}
     </div>`;
@@ -402,7 +453,7 @@ function missionHistoryCard(me) {
         <div class="msn-people">${golfers.map(n => `<button type="button" class="${n === g ? 'on' : ''}" onclick="selectMissionPerson('${n}')">${escapeHtml(n)}</button>`).join('')}</div>
         ${list.length ? `<div class="msn-hist">${list.map(x => `<div class="msn-h">
             <span class="rd">${x.round}차</span>
-            <span class="tx">${escapeHtml(x.def.text)} ${msnStars(x.def.lv)}${x.got ? `<small>${escapeHtml(x.got)}</small>` : ''}</span>
+            <span class="tx">${escapeHtml(x.text)} ${msnStars(x.def.lv)}${x.got ? `<small>${escapeHtml(x.got)}</small>` : ''}</span>
             ${msnStateHtml(x)}</div>`).join('')}</div>` : '<div class="msn-empty">아직 받은 미션이 없습니다.</div>'}
     </div>`;
 }
@@ -412,9 +463,9 @@ function missionListCard() {
         <div class="msn-head"><span>미션 목록</span><span class="msn-sub">무작위 · 난이도만큼 포인트</span></div>
         ${[1, 2, 3].map(lv => `<div class="msn-lv">
             <div class="msn-lv-head">${msnStars(lv)} ${MISSION_LEVELS[lv].name} <span class="msn-pts">${lv}점</span></div>
-            ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(d.text)}</b><span>${escapeHtml(d.how)}</span></div>`).join('')}
+            ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how)}</span></div>`).join('')}
         </div>`).join('')}
-        <div class="msn-foot">'파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 스코어카드에 기록이 없는 사람(불참)은 판정하지 않습니다.</div>
+        <div class="msn-foot">'파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. ○○는 미션을 받을 때 무작위로 정해지는 다른 멤버이며, 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다.</div>
     </div>`;
 }
 
@@ -473,7 +524,7 @@ function revealMissionResult(r) {
         <div class="mp-title">${r}차전<br>미션 결과</div>
         <div class="mp-rows">${rows.map((x, i) => `<div class="mp-row${x.ok ? '' : ' fail'}" style="animation-delay:${0.5 + i * STEP}s">
             <span class="mk">${x.ok ? '✓' : '✕'}</span>
-            <div class="b"><div class="n">${escapeHtml(x.g)}</div><div class="m">${escapeHtml(x.def.text)} · <b>${escapeHtml(x.got)}</b></div></div>
+            <div class="b"><div class="n">${escapeHtml(x.g)}</div><div class="m">${escapeHtml(x.text)} · <b>${escapeHtml(x.got)}</b></div></div>
             <span class="p">${x.ok ? '+' + x.def.lv : '실패'}</span></div>`).join('')}</div>
         <div class="mp-sum" style="animation-delay:${tail}s">
             <span><b>${okN}명 성공</b>${kings.length ? ` · 미션 포인트 1위 <b>${kings.map(escapeHtml).join(', ')} ${missionSeasonPoints(kings[0])}점</b>` : ''}</span>

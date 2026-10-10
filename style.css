@@ -1157,6 +1157,9 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .page-tab { position: relative; z-index: 1; flex: 1 1 0; height: 24px; border: none; background: none; padding: 0; color: #6b7075; font-family: inherit; font-size: 0.7rem; font-weight: 700; transition: color 0.2s; }
 .page-tab.on { color: var(--primary-gold); }
 .page-switch button:active { transform: none !important; opacity: 0.7 !important; }
+/* 칸이 다섯이라 좁은 폰(320px)에서 `정산·스코어`가 두 줄로 접혔다 — 한 줄로 두고 글자만 조금 줄인다 */
+.page-tab { white-space: nowrap; letter-spacing: -0.3px; }
+@media (max-width: 360px) { .page-tab { font-size: 0.64rem; letter-spacing: -0.5px; } }
 
 /* 홈 한 화면에 맞추기 — 여백만 조금씩 */
 .header-area { padding: 2px 4px 8px 4px; }
