@@ -1529,3 +1529,7 @@ html, body { overscroll-behavior: none; }
 .trip-empty-title { font-size: 0.98rem; font-weight: 800; color: var(--text-main); }
 .trip-empty-sub { font-size: 0.78rem; color: var(--text-sub); word-break: keep-all; line-height: 1.5; margin-bottom: 8px; }
 .trip-empty .trip-btn { flex: 0 0 auto; padding: 8px 18px; border-radius: 12px; }
+
+/* 수하물 — 포함·미포함 단추 옆에 kg 칸(사용자 요청). 미포함·미정이면 kg 칸은 자리만 남기고 감춘다. */
+.trip-field.row.trip-bag > input { flex: 0 0 58px; width: 58px; text-align: right; }
+.trip-bag em { font-style: normal; font-size: 0.78rem; font-weight: 700; color: var(--text-sub); margin-left: -4px; }

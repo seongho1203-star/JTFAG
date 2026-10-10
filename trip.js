@@ -487,7 +487,9 @@ function tripCourseHide() {
 // 키에서 빠졌으므로 다음 저장 때 옛 값도 함께 걷힌다. 되살리지 말 것.
 // 사용자 요청(10/09) — 예약 칸 이름은 `예약번호` · 렌트 인수·반납은 한 칸(`carPlace`) · 렌트 보험(`carIns`) ·
 // 항공 수하물(`bag`). 예전의 `carPick`/`carDrop`은 읽을 때 한 칸으로 합쳐 보이고, 다음 저장 때 `carPlace`로 옮겨진다.
-const TRAVEL_KEYS = ['flightOut', 'flightBack', 'bag', 'flightRef', 'car', 'carCo', 'carPlace', 'carIns', 'carRef'];
+// 수하물은 포함·미포함 단추 + kg 칸이다(사용자 요청). 예전 자유 글 `bag`은 tripTravel()이 읽어 옮기고 다음 저장 때 걷힌다.
+const TRAVEL_KEYS = ['flightOut', 'flightBack', 'bagIn', 'bagKg', 'flightRef', 'car', 'carCo', 'carPlace', 'carIns', 'carRef'];
+const TRAVEL_BAG = { yes: '포함', no: '미포함' };   // 고르지 않으면 미정
 const TRAVEL_CAR = { '': '미정', yes: '사용', no: '미사용' };
 const TRAVEL_INS = { '': '미정', yes: '가입', no: '미가입' };
 const DAY_BF = { '': '미정', yes: '포함', no: '불포함' };   // 일자별 숙소의 조식 (day.bf)
@@ -497,19 +499,39 @@ function tripTravel(trip) {
     TRAVEL_KEYS.forEach(k => { out[k] = typeof t[k] === 'string' ? t[k] : ''; });
     if (!TRAVEL_CAR[out.car]) out.car = '';
     if (!TRAVEL_INS[out.carIns]) out.carIns = '';
+    if (!TRAVEL_BAG[out.bagIn]) out.bagIn = '';
+    out.bagKg = kgText(out.bagKg);
+    out.bagOld = '';
+    if (!out.bagIn && !out.bagKg && typeof t.bag === 'string' && t.bag.trim()) {   // 예전 자유 글(`위탁 23kg 1개`)
+        const m = /(\d+(?:\.\d+)?)\s*kg/i.exec(t.bag);
+        if (m) { out.bagIn = 'yes'; out.bagKg = kgText(m[1]); }
+        else if (/미포함|불포함|없음/.test(t.bag)) out.bagIn = 'no';
+        else out.bagOld = t.bag.trim();
+    }
     if (!out.carPlace) {   // 예전 두 칸(인수·반납)을 한 칸으로
         const pick = typeof t.carPick === 'string' ? t.carPick.trim() : '', drop = typeof t.carDrop === 'string' ? t.carDrop.trim() : '';
         out.carPlace = pick && drop ? (pick === drop ? pick : `${pick} / ${drop}`) : (pick || drop);
     }
     return out;
 }
+function kgText(v) { const m = /\d+(?:\.\d)?/.exec(String(v || '')); return m && parseFloat(m[0]) > 0 && parseFloat(m[0]) < 1000 ? m[0] : ''; }
+function bagText(t) { return t.bagIn === 'yes' ? `포함${t.bagKg ? ` · ${t.bagKg}kg` : ''}` : t.bagIn === 'no' ? '미포함' : t.bagOld; }
 function bfText(bf) { return bf === 'yes' ? '조식 포함' : bf === 'no' ? '조식 불포함' : ''; }
-function segHtml(name, map, cur) {
-    return `<div class="trip-seg">${Object.entries(map).map(([k, v]) => `<label><input type="radio" name="${name}" value="${k}"${cur === k ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>`;
+function segHtml(name, map, cur, onchange) {
+    return `<div class="trip-seg">${Object.entries(map).map(([k, v]) => `<label><input type="radio" name="${name}" value="${k}"${cur === k ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}><span>${v}</span></label>`).join('')}</div>`;
 }
 function segVal(name, map) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
     return el && map[el.value] !== undefined ? el.value : '';
+}
+// 숙박하는 날 — 마지막 날은 귀가하는 날이라 뺀다(하루짜리 여행은 그날). 기본 정보의 `전 일정 숙소`가 이 날들에 들어간다.
+function stayNights(trip) { const days = tripDays(trip); return days.length > 1 ? days.slice(0, -1) : days; }
+// 숙박일 숙소가 모두 같으면 그 이름과 조식 — 기본 정보 입력 칸을 미리 채운다. 다르거나 비었으면 빈칸.
+function commonStay(trip) {
+    const n = stayNights(trip);
+    const name = n.length ? (n[0].stay || '').trim() : '';
+    const bf = n.length && DAY_BF[n[0].bf] ? n[0].bf : '';
+    return name && n.every(d => (d.stay || '').trim() === name && (DAY_BF[d.bf] ? d.bf : '') === bf) ? { name, bf } : { name: '', bf: '' };
 }
 // 같은 숙소가 이어지는 날을 한 줄로 묶는다 — `1~2일차 디오션 리조트`
 function stayRuns(trip) {
@@ -531,14 +553,18 @@ function travelHtml(trip) {
     const t = tripTravel(trip);
     const kind = tripKind(trip);
     if (tripEditing === 'travel') {
+        const cs = commonStay(trip);
+        const nights = stayNights(trip);
+        const stayLabel = nights.length > 1 ? `1~${nights.length}일차` : '1일차';
         const f = (id, label, v, max = 60) => `<label class="trip-field row"><span>${label}</span><input type="text" id="${id}" maxlength="${max}" autocomplete="off" value="${escapeHtml(v)}"></label>`;
         return `
-        <div class="trip-day editing">
+        <div class="trip-day editing" id="tripTravelCard">
             <div class="trip-day-head">🧭 여행 기본 정보</div>
             <div class="trip-sub">항공 <small class="trip-sub-note">편명·출발 시각</small></div>
             ${f('tripTvFlightOut', '출발편', t.flightOut)}
             ${f('tripTvFlightBack', '복귀편', t.flightBack)}
-            ${f('tripTvBag', '수하물', t.bag)}
+            <div class="trip-field row trip-bag"><span>수하물</span>${segHtml('tripTvBagIn', TRAVEL_BAG, t.bagIn, 'tripBagChanged()')}<input type="text" id="tripTvBagKg" inputmode="decimal" maxlength="5" autocomplete="off" aria-label="수하물 무게(kg)" value="${escapeHtml(t.bagKg)}"${t.bagIn === 'yes' ? '' : ' style="visibility:hidden;"'}><em${t.bagIn === 'yes' ? '' : ' style="visibility:hidden;"'}>kg</em></div>
+            ${t.bagOld ? `<div class="trip-hint">기존 기재 내용: ${escapeHtml(t.bagOld)}</div>` : ''}
             ${f('tripTvFlightRef', '예약번호', t.flightRef, 40)}
             <div class="trip-sub trip-sub-row">렌트카
                 <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
@@ -549,7 +575,10 @@ function travelHtml(trip) {
                 <div class="trip-field row"><span>보험</span>${segHtml('tripTvCarIns', TRAVEL_INS, t.carIns)}</div>
                 ${f('tripTvCarRef', '예약번호', t.carRef, 40)}
             </div>
-            <div class="trip-hint">숙소명과 조식 포함 여부는 일자별 <b>입력</b>에서 기재합니다.</div>
+            <div class="trip-sub">숙소 <small class="trip-sub-note">전 일정 동일 시</small></div>
+            <label class="trip-field row"><span>숙소명</span><input type="text" id="tripTvStay" maxlength="60" autocomplete="off" value="${escapeHtml(cs.name)}"></label>
+            <div class="trip-field row"><span>조식</span>${segHtml('tripTvStayBf', DAY_BF, cs.bf)}</div>
+            <div class="trip-hint">입력하면 숙박일(${stayLabel})의 숙소가 모두 같은 숙소로 저장됩니다. 일자별로 다르면 비워 두고 일자별 <b>입력</b>에서 기재합니다.</div>
             <div class="trip-actions">
                 <button type="button" class="trip-btn ghost" onclick="cancelTripEdit()">취소</button>
                 <button type="button" class="trip-btn primary" onclick="saveTripTravel()">저장</button>
@@ -557,10 +586,10 @@ function travelHtml(trip) {
         </div>`;
     }
     // 국내 여행은 비행기를 안 타는 일이 많아, 적은 게 없으면 항공 줄을 아예 안 보인다(제주라면 적으면 나온다).
-    const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef || t.bag) ? `
+    const flight = (kind !== 'domestic' || t.flightOut || t.flightBack || t.flightRef || bagText(t)) ? `
             ${travelRow('출발편', t.flightOut, '미정')}
             ${travelRow('복귀편', t.flightBack, '미정')}
-            ${t.bag ? travelRow('수하물', t.bag, '') : ''}
+            ${bagText(t) ? travelRow('수하물', bagText(t), '') : ''}
             ${t.flightRef ? travelRow('예약번호', t.flightRef, '') : ''}` : '';
     const car = t.car === 'yes' ? `
             ${travelRow('렌트카', t.carCo || '사용', '')}
@@ -583,28 +612,49 @@ function tripCarChanged() {
     const box = document.getElementById('tripTvCarBox');
     if (box) box.style.display = el && el.value === 'yes' ? '' : 'none';
 }
+function tripBagChanged() {
+    const on = segVal('tripTvBagIn', TRAVEL_BAG) === 'yes';
+    document.querySelectorAll('.trip-bag input[type="text"], .trip-bag em').forEach(el => { el.style.visibility = on ? '' : 'hidden'; });
+    if (on) { const kg = document.getElementById('tripTvBagKg'); if (kg && !kg.value) kg.focus(); }
+}
 function editTripTravel() { tripEditing = 'travel'; renderTripPage(); }
 function saveTripTravel() {
     const val = id => ((document.getElementById(id) || {}).value || '').trim();
     const carEl = document.querySelector('input[name="tripTvCar"]:checked');
     const car = carEl && TRAVEL_CAR[carEl.value] !== undefined ? carEl.value : '';
+    const bagIn = segVal('tripTvBagIn', TRAVEL_BAG);
     const next = {
-        flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), bag: val('tripTvBag'), flightRef: val('tripTvFlightRef'),
+        flightOut: val('tripTvFlightOut'), flightBack: val('tripTvFlightBack'), flightRef: val('tripTvFlightRef'),
+        bagIn, bagKg: bagIn === 'yes' ? kgText(val('tripTvBagKg')) : '',   // 미포함이면 무게는 걷는다
         car,
         // 미사용이면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
         carCo: car === 'yes' ? val('tripTvCarCo') : '', carPlace: car === 'yes' ? val('tripTvCarPlace') : '',
         carIns: car === 'yes' ? segVal('tripTvCarIns', TRAVEL_INS) : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
     };
+    const stay = val('tripTvStay'), stayBf = segVal('tripTvStayBf', DAY_BF);
     const trip = findTrip(tripOpenId);
     tripEditing = null;
     if (!trip) { renderTripPage(); return; }
     const cur = tripTravel(trip);
     const old = trip.travel || {};
-    // 예전 인수·반납 두 칸이 남아 있으면 값이 같아도 한 번 저장해 새 칸으로 옮긴다
-    if (TRAVEL_KEYS.some(k => cur[k] !== next[k]) || old.carPick || old.carDrop) editTrip(t => {
-        const clean = {};
-        TRAVEL_KEYS.forEach(k => { if (next[k]) clean[k] = next[k]; });
-        if (Object.keys(clean).length) t.travel = clean; else delete t.travel;
+    // 예전 칸(인수·반납 두 칸 · 자유 글 수하물)이 남아 있으면 값이 같아도 한 번 저장해 새 칸으로 옮긴다
+    const travelChanged = TRAVEL_KEYS.some(k => cur[k] !== next[k]) || old.carPick || old.carDrop || (old.bag !== undefined && !cur.bagOld);
+    // 전 일정 숙소 — 적었으면 숙박일 모두에 넣는다. 원래 같은 숙소였는데 비웠으면 숙박일 숙소를 지운다.
+    // 날마다 달라서 빈칸으로 열렸고 그대로 두었으면 일자별 숙소는 건드리지 않는다.
+    const cs = commonStay(trip);
+    const nightDates = stayNights(trip).map(d => d.date);
+    const stayChanged = stay ? (stay !== cs.name || stayBf !== cs.bf) : !!cs.name;
+    if (travelChanged || stayChanged) editTrip(t => {
+        if (travelChanged) {
+            const clean = {};
+            TRAVEL_KEYS.forEach(k => { if (next[k]) clean[k] = next[k]; });
+            if (Object.keys(clean).length) t.travel = clean; else delete t.travel;
+        }
+        if (stayChanged) (t.days || []).forEach(d => {
+            if (!d || !nightDates.includes(d.date)) return;
+            d.stay = stay;
+            if (stay && stayBf) d.bf = stayBf; else delete d.bf;
+        });
     }, '✅ 여행 기본 정보를 저장했습니다.');
     renderTripPage();
 }
