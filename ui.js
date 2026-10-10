@@ -1597,6 +1597,11 @@ function resetEffectSeen() {
         if (k && (k.startsWith('jtfag_eagle_') || k.startsWith('jtfag_rank_') || k === 'jtfag_result_seen')) keys.push(k);
     }
     keys.forEach(k => localStorage.removeItem(k));
+    // 결과 발표는 기록이 '아예 없으면' 처음 온 기기로 보고 안 띄운다(checkRoundResultReveal).
+    // 그래서 지우지 말고 '바로 앞 차수까지 봤다'로 적어 둬야 새로고침 때 마지막 차수 결과가 다시 뜬다.
+    if (typeof lastRankedRound === 'number' && lastRankedRound >= 0) {
+        localStorage.setItem('jtfag_result_seen', String(lastRankedRound - 1));
+    }
     showToast(keys.length
         ? `🎬 연출 기록 ${keys.length}개를 초기화했습니다. 새로고침하면 다시 재생됩니다.`
         : "🎬 초기화할 연출 기록이 없습니다.");
