@@ -3,7 +3,7 @@
 // 값은 payload.trips에 둔다 — 여행 하나가
 //   {id, title, kind:'domestic'|'japan'|'abroad', base:{name,lat,lon}?, memo,
 //    days:[{date, course, area, tee, stay, memo, lat?, lon?, gora?:{id,url}}],
-//    travel?:{flightOut, flightBack, flightRef, car:'yes'|'no', carCo, carPick, carDrop, carRef},
+//    travel?:{flightOut, flightBack, bagIn, bagKg, flightRef, car:'yes'|'no', carCo, carModel, carPick, carDrop, carIns, carRef},
 //    costs?, fund?, people?, fx?, payer?, account?, paid?, pack? — 여행 경비·준비물(아래 '여행 경비' 꼭지)}
 //   travel은 여행 전체에 한 벌(항공·렌트카·숙소 예약) — 적은 칸만 남고, 다 비우면 키째 지운다.
 // 고치는 차례는 다른 곳과 같다: saveState() → appData 수정 → syncToSupabase(appData).
@@ -485,10 +485,11 @@ function tripCourseHide() {
 // 숙소 이름은 날짜 칸의 `stay`가 원본이다 — 여기서는 그걸 묶어 보여 주기만 하고(`stayRuns()`),
 // 예전에 있던 `숙소 정보`(stayInfo — 체크인 시각·연락처 따위)는 쓰임이 모호하다는 사용자 말로 걷어냈다.
 // 키에서 빠졌으므로 다음 저장 때 옛 값도 함께 걷힌다. 되살리지 말 것.
-// 사용자 요청(10/09) — 예약 칸 이름은 `예약번호` · 렌트 인수·반납은 한 칸(`carPlace`) · 렌트 보험(`carIns`) ·
-// 항공 수하물(`bag`). 예전의 `carPick`/`carDrop`은 읽을 때 한 칸으로 합쳐 보이고, 다음 저장 때 `carPlace`로 옮겨진다.
+// 사용자 요청(10/09) — 예약 칸 이름은 `예약번호` · 렌트 보험(`carIns`).
+// 렌트카는 업체·차종·인수·반납이 각각 한 칸이다(사용자 요청 10/10 — 두 칸씩 묶여 있던 것을 다시 나눴다).
+// 한때 인수·반납을 한 칸(`carPlace`)으로 합쳤었다 — 그 값은 읽을 때 `A / B`를 갈라 두 칸에 넣고, 다음 저장 때 걷힌다.
 // 수하물은 포함·미포함 단추 + kg 칸이다(사용자 요청). 예전 자유 글 `bag`은 tripTravel()이 읽어 옮기고 다음 저장 때 걷힌다.
-const TRAVEL_KEYS = ['flightOut', 'flightBack', 'bagIn', 'bagKg', 'flightRef', 'car', 'carCo', 'carPlace', 'carIns', 'carRef'];
+const TRAVEL_KEYS = ['flightOut', 'flightBack', 'bagIn', 'bagKg', 'flightRef', 'car', 'carCo', 'carModel', 'carPick', 'carDrop', 'carIns', 'carRef'];
 const TRAVEL_BAG = { yes: '포함', no: '미포함' };   // 고르지 않으면 미정
 const TRAVEL_CAR = { '': '미정', yes: '사용', no: '미사용' };
 const TRAVEL_INS = { '': '미정', yes: '가입', no: '미가입' };
@@ -508,9 +509,11 @@ function tripTravel(trip) {
         else if (/미포함|불포함|없음/.test(t.bag)) out.bagIn = 'no';
         else out.bagOld = t.bag.trim();
     }
-    if (!out.carPlace) {   // 예전 두 칸(인수·반납)을 한 칸으로
-        const pick = typeof t.carPick === 'string' ? t.carPick.trim() : '', drop = typeof t.carDrop === 'string' ? t.carDrop.trim() : '';
-        out.carPlace = pick && drop ? (pick === drop ? pick : `${pick} / ${drop}`) : (pick || drop);
+    const place = typeof t.carPlace === 'string' ? t.carPlace.trim() : '';
+    if (place && !out.carPick && !out.carDrop) {   // 한때 한 칸이던 인수·반납을 두 칸으로(합칠 때 `A / B`, 같으면 하나만 적었다)
+        const parts = place.split(/\s+\/\s+/);
+        out.carPick = parts[0];
+        out.carDrop = parts.length > 1 ? parts.slice(1).join(' / ') : parts[0];
     }
     return out;
 }
@@ -570,8 +573,10 @@ function travelHtml(trip) {
                 <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
             </div>
             <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
-                ${f('tripTvCarCo', '업체·차종', t.carCo)}
-                ${f('tripTvCarPlace', '인수·반납', t.carPlace, 80)}
+                ${f('tripTvCarCo', '업체', t.carCo, 40)}
+                ${f('tripTvCarModel', '차종', t.carModel, 40)}
+                ${f('tripTvCarPick', '인수', t.carPick)}
+                ${f('tripTvCarDrop', '반납', t.carDrop)}
                 <div class="trip-field row"><span>보험</span>${segHtml('tripTvCarIns', TRAVEL_INS, t.carIns)}</div>
                 ${f('tripTvCarRef', '예약번호', t.carRef, 40)}
             </div>
@@ -593,7 +598,9 @@ function travelHtml(trip) {
             ${t.flightRef ? travelRow('예약번호', t.flightRef, '') : ''}` : '';
     const car = t.car === 'yes' ? `
             ${travelRow('렌트카', t.carCo || '사용', '')}
-            ${t.carPlace ? travelRow('인수·반납', t.carPlace, '') : ''}
+            ${t.carModel ? travelRow('차종', t.carModel, '') : ''}
+            ${t.carPick ? travelRow('인수', t.carPick, '') : ''}
+            ${t.carDrop ? travelRow('반납', t.carDrop, '') : ''}
             ${travelRow('보험', t.carIns ? TRAVEL_INS[t.carIns] : '', '미정')}
             ${t.carRef ? travelRow('예약번호', t.carRef, '') : ''}` : travelRow('렌트카', t.car === 'no' ? '미사용' : '', '미정');
     const runs = stayRuns(trip);
@@ -628,7 +635,8 @@ function saveTripTravel() {
         bagIn, bagKg: bagIn === 'yes' ? kgText(val('tripTvBagKg')) : '',   // 미포함이면 무게는 걷는다
         car,
         // 미사용이면 업체·예약번호는 걷는다 — 남겨 두면 마음을 바꿨을 때 옛 예약이 되살아난다
-        carCo: car === 'yes' ? val('tripTvCarCo') : '', carPlace: car === 'yes' ? val('tripTvCarPlace') : '',
+        carCo: car === 'yes' ? val('tripTvCarCo') : '', carModel: car === 'yes' ? val('tripTvCarModel') : '',
+        carPick: car === 'yes' ? val('tripTvCarPick') : '', carDrop: car === 'yes' ? val('tripTvCarDrop') : '',
         carIns: car === 'yes' ? segVal('tripTvCarIns', TRAVEL_INS) : '', carRef: car === 'yes' ? val('tripTvCarRef') : ''
     };
     const stay = val('tripTvStay'), stayBf = segVal('tripTvStayBf', DAY_BF);
@@ -637,8 +645,8 @@ function saveTripTravel() {
     if (!trip) { renderTripPage(); return; }
     const cur = tripTravel(trip);
     const old = trip.travel || {};
-    // 예전 칸(인수·반납 두 칸 · 자유 글 수하물)이 남아 있으면 값이 같아도 한 번 저장해 새 칸으로 옮긴다
-    const travelChanged = TRAVEL_KEYS.some(k => cur[k] !== next[k]) || old.carPick || old.carDrop || (old.bag !== undefined && !cur.bagOld);
+    // 예전 칸(한 칸이던 인수·반납 · 자유 글 수하물)이 남아 있으면 값이 같아도 한 번 저장해 새 칸으로 옮긴다
+    const travelChanged = TRAVEL_KEYS.some(k => cur[k] !== next[k]) || old.carPlace !== undefined || (old.bag !== undefined && !cur.bagOld);
     // 전 일정 숙소 — 적었으면 숙박일 모두에 넣는다. 원래 같은 숙소였는데 비웠으면 숙박일 숙소를 지운다.
     // 날마다 달라서 빈칸으로 열렸고 그대로 두었으면 일자별 숙소는 건드리지 않는다.
     const cs = commonStay(trip);
