@@ -52,6 +52,12 @@ const BADGE_ICONS = {
     lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
     tick: 'M5 12l5 5 9-10',
     rings: 'M5 8.8a3.2 3.2 0 1 0 .01 0M9.7 8.8a3.2 3.2 0 1 0 .01 0M14.3 8.8a3.2 3.2 0 1 0 .01 0M19 8.8a3.2 3.2 0 1 0 .01 0',
+    olympic: 'M5 6a3 3 0 1 0 .01 0M12 6a3 3 0 1 0 .01 0M19 6a3 3 0 1 0 .01 0M8.5 11a3 3 0 1 0 .01 0M15.5 11a3 3 0 1 0 .01 0',
+    b2b: 'M4 13l4-4 4 4M12 13l4-4 4 4M4 19l4-4 4 4M12 19l4-4 4 4',
+    half: 'M12 3a9 9 0 1 0 .01 0M12 3v18',
+    bill: 'M5 3h14v18l-2.5-2-2.5 2-2-2-2 2-2.5-2L5 21zM9 8h6M9 12h6M9 16h3',
+    coaster: 'M2 17c4 0 5-11 9-11s5 11 9 11M2 21h20M6 21v-5M18 21v-5',
+    triple: 'M5 10a2 2 0 1 0 .01 0M12 10a2 2 0 1 0 .01 0M19 10a2 2 0 1 0 .01 0M3 18h18',
     bike: 'M5.5 14a3.5 3.5 0 1 0 .01 0M18.5 14a3.5 3.5 0 1 0 .01 0M5.5 17.5L9.5 9.5h5M12 17.5L9.5 9.5M12 17.5l4.5-8 2 8M15 6h2.5'
 };
 
@@ -86,6 +92,26 @@ function parRun(g, r, n) {
     let run = 0;
     return h.rel.some(v => (run = v === 0 ? run + 1 : 0) >= n);
 }
+// 한 라운드 안에서 pred(지금 홀 i, 홀 기록)가 맞는 홀이 있는가
+function anyHole(g, r, pred) {
+    const h = badgeHoles(g, r);
+    return !!h && h.rel.some((v, i) => pred(i, h));
+}
+// 전반·후반 9홀 타수 [전반, 후반]. 홀 기록이 없으면 null.
+function halves(g, r) {
+    const h = badgeHoles(g, r);
+    if (!h || h.par.length !== 18 || h.rel.length !== 18) return null;
+    const sum = (a, b) => h.par.slice(a, b).reduce((t, p, i) => t + p + h.rel[a + i], 0);
+    return [sum(0, 9), sum(9, 18)];
+}
+// 그 라운드의 아우디 파 횟수 — 파가 4홀 이상 이어진 덩어리 하나를 1회로 센다(6연속도 1회).
+function audiCount(g, r) {
+    const h = badgeHoles(g, r);
+    if (!h) return 0;
+    let run = 0, n = 0;
+    h.rel.forEach(v => { run = v === 0 ? run + 1 : 0; if (run === 4) n++; });
+    return n;
+}
 function firstRound(g, pred) {
     for (let r = 0; r < badgeRounds(); r++) if (pred(r)) return r;
     return -1;
@@ -115,6 +141,12 @@ const BADGE_GROUPS = [
           first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.birdie + s.eagle >= 2; }) },
         { id: 'audiPar', kind: 'life', tier: 'silver', icon: 'rings', name: '아우디 파', cond: '4홀 연속 파', desc: '4개 홀 연속 파 기록 — 아우디 로고의 동그라미 넷',
           first: g => firstRound(g, r => parRun(g, r, 4)) },
+        { id: 'olympicPar', kind: 'life', tier: 'gold', icon: 'olympic', name: '올림픽 파', cond: '5홀 연속 파', desc: '5개 홀 연속 파 기록 — 오륜 마크의 동그라미 다섯',
+          first: g => firstRound(g, r => parRun(g, r, 5)) },
+        { id: 'backToBack', kind: 'life', tier: 'gold', icon: 'b2b', name: '백투백 버디', cond: '2홀 연속 버디', desc: '2개 홀 연속 버디 이하 기록',
+          first: g => firstRound(g, r => anyHole(g, r, (i, h) => i > 0 && h.rel[i] < 0 && h.rel[i - 1] < 0)) },
+        { id: 'half39', kind: 'life', tier: 'silver', icon: 'half', name: '하프 30대', cond: '9홀 39타 이하', desc: '전반 또는 후반 9홀을 39타 이하로 마무리',
+          first: g => firstRound(g, r => { const hv = halves(g, r); return !!hv && Math.min(hv[0], hv[1]) <= 39; }) },
         { id: 'cycleBirdie', kind: 'life', tier: 'gold', icon: 'bike', name: '사이클링 버디', cond: '파3·4·5 모두 버디', desc: '한 라운드에서 파3 · 파4 · 파5 홀 모두 버디',
           first: g => firstRound(g, r => {
               const h = badgeHoles(g, r);
@@ -147,6 +179,8 @@ const BADGE_GROUPS = [
           inc: (g, r) => { const s = badgeStat(g, r); return s ? s.birdie : 0; } },
         { id: 'pars', kind: 'tier', icon: 'shield', name: '철벽 방어', unit: '파', count: '개', steps: [30, 50, 100], desc: '통산 파 개수',
           inc: (g, r) => { const s = badgeStat(g, r); return s ? s.par : 0; } },
+        { id: 'audis', kind: 'tier', icon: 'rings', name: '아우디 수집가', unit: '아우디 파', count: '회', steps: [1, 3, 5], desc: '통산 아우디 파(4홀 연속 파) 횟수',
+          inc: (g, r) => audiCount(g, r) },
         { id: 'eagles', kind: 'tier', icon: 'trophy', name: '독수리 단골', unit: '독수리', count: '회', steps: [3, 5, 10], desc: '통산 독수리 계급 횟수',
           inc: (g, r) => badgeRankRows(g).filter(x => x.round === r && x.rank === 0).length }
     ]},
@@ -174,6 +208,12 @@ const BADGE_GROUPS = [
         { id: 'sparrow2', kind: 'life', tier: 'tease', icon: 'bird', name: '참새 2연속', cond: '2경기 연속', desc: '2경기 연속 참새 계급', first: g => rankRunRound(g, 3, 2) },
         { id: 'club100', kind: 'life', tier: 'tease', icon: 'hundred', name: '100타 클럽', cond: '100타 이상', desc: '한 라운드 100타 이상 기록',
           first: g => firstRound(g, r => { const v = badgeGross(g, r); return v !== null && v >= 100; }) },
+        { id: 'birdieTax', kind: 'life', tier: 'tease', icon: 'bill', name: '버디값', cond: '버디 다음 홀 더블보기', desc: '버디를 한 바로 다음 홀에서 더블보기 이상',
+          first: g => firstRound(g, r => anyHole(g, r, (i, h) => i > 0 && h.rel[i - 1] < 0 && h.rel[i] >= 2)) },
+        { id: 'coaster', kind: 'life', tier: 'tease', icon: 'coaster', name: '롤러코스터', cond: '전·후반 7타 차', desc: '한 라운드에서 전반과 후반 타수가 7타 이상 차이',
+          first: g => firstRound(g, r => { const hv = halves(g, r); return !!hv && Math.abs(hv[0] - hv[1]) >= 7; }) },
+        { id: 'tripleSet', kind: 'life', tier: 'tease', icon: 'triple', name: '트리플 콜렉터', cond: '한 라운드 트리플 3개', desc: '한 라운드에서 트리플 보기 이상 3개',
+          first: g => firstRound(g, r => { const h = badgeHoles(g, r); return !!h && h.rel.filter(v => v >= 3).length >= 3; }) },
         { id: 'onionHat', kind: 'life', tier: 'tease', icon: 'onion', name: '양파 해트트릭', cond: '한 라운드 양파 3개', desc: '한 라운드에서 양파 3개 이상',
           first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.doublePar >= 3; }) }
     ]}
