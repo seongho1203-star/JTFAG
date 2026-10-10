@@ -387,12 +387,14 @@ function saveState() {
 }
 
 async function fetchFromSupabase() {
+    let prevData = null;
     try {
         const { data, error } = await window._supabase.from(window.SUPABASE_TABLE).select('*').eq('id', 1).single();
         if (error || !data) {
             await syncToSupabase(getDefaultData());
             appData = getDefaultData();
         } else {
+            prevData = appData;
             appData = data.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
@@ -408,6 +410,8 @@ async function fetchFromSupabase() {
             syncToSupabase(appData);
         }
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
+        // 미션·멀리건은 더하기만 하는 값 — 낡은 폰이 덮어써 빠진 것을 앞 상태와 이 기기 기록에서 되살린다(mission.js)
+        if (typeof mergeMissionData === 'function' && mergeMissionData(prevData)) syncToSupabase(appData);
         isLoaded = true;
         renderNoticeArea();
         renderAll();

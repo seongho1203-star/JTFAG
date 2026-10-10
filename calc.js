@@ -70,6 +70,7 @@ const SUMMARY_BADGE_TONE = {
     'badge-avg-1': 'gold', 'badge-best-score': 'gold', 'badge-single': 'gold', 'badge-holeinone': 'gold', 'badge-eagle-hit': 'gold',
     'badge-birdie': 'silver', 'badge-par': 'silver', 'badge-par3': 'silver', 'badge-par4': 'silver', 'badge-par5': 'silver', 'badge-phoenix': 'silver',
     'badge-rebound': 'bronze', 'badge-uptrend': 'bronze', 'badge-rival': 'bronze',
+    'badge-mission-king': 'title',
     'badge-donor': 'tease', 'badge-downtrend': 'tease', 'badge-fluctuation': 'tease', 'badge-bomb': 'tease'
 };
 
@@ -98,6 +99,10 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-eagle-2">${imgE} 독수리 2연속!</div>`, desc: "최근 2경기 연속 독수리 계급 달성" });
     }
 
+    // 미션왕(mission.js) — 올해 미션 포인트 1위. 요약 카드는 두 칸만 보이므로 독수리 연속 바로 뒤에 둔다.
+    if (typeof missionKings === 'function' && missionKings().includes(g)) {
+        badges.push({ html: `<div class="season-badge badge-mission-king">🎯 미션왕</div>`, desc: "올해 미션 포인트 1위" });
+    }
     if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
         badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
     }

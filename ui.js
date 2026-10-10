@@ -17,6 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // 다시 그릴 이유가 없고, 그리는 순간 적고 있던 금액 칸이 되돌아간다.
             // (저장을 한 줄로 세우므로 내 로컬 상태가 내가 보낸 것보다 뒤처질 수 없다.)
             if (isMyEcho(payload.new.payload)) { showSaveStatus("⚡ 동기화 완료"); return; }
+            const prevData = appData;
             appData = payload.new.payload;
             if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
             if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
@@ -28,6 +29,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (moneyMode === 'table') overlayMoney();
             else if (reapplyMyMoney()) syncToSupabase(appData);
             applyHoleScores();
+            // 미션·멀리건은 더하기만 하는 값이라, 보낸 폰이 낡아 빠뜨렸으면 합쳐서 한 번 더 저장한다(mission.js).
+            if (typeof mergeMissionData === 'function' && mergeMissionData(prevData)) syncToSupabase(appData);
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
             // 판독 결과(status)는 워크플로가 payload에 써 넣으므로 실시간으로 들어온다.
@@ -605,6 +608,8 @@ function undoLastAction() {
     // 금액은 테이블이 진짜라 사본을 덮어씌우는 것만으로는 안 돌아간다. 내 칸만 테이블에 되돌려 쓴다
     // (사본에 든 남의 금액은 그때 값이라, 그대로 쓰면 그 뒤에 남이 적은 금액을 지운다).
     if (typeof commitUndoMoney === 'function') commitUndoMoney(appData, snapshot);
+    // 미션·멀리건 사용은 되돌리지 않는다 — 되돌려 미션을 다시 뽑을 수 있으면 무작위의 뜻이 없다(mission.js).
+    ['missions', 'mulligans'].forEach(k => { if (appData[k] !== undefined) snapshot[k] = appData[k]; });
     appData = snapshot;
     if (typeof overlayMoney === 'function') overlayMoney();
     syncToSupabase(appData); showToast("↩️ 이전 상태로 되돌렸습니다."); renderAll();
@@ -1276,7 +1281,9 @@ function renderAll() {
     animateFinalTotals();
     checkRankChange();
     checkRoundResultReveal();
+    if (typeof checkMissionReveal === 'function') checkMissionReveal();
     checkEagleStreakCelebration();
+    if (typeof renderMissionPage === 'function') renderMissionPage();
     if (typeof renderBadgePage === 'function') { renderBadgePage(); checkBadgeUnlocks(); }
     if (typeof refreshTripPage === 'function') refreshTripPage();
 }
@@ -1316,6 +1323,8 @@ function runEntranceEffects() {
 }
 
 function afterRevealEffects() {
+    // 미션 결과 발표가 뜨면 아래 넷은 entranceBlocked()에 막히고, 그 창을 닫을 때 다시 이 함수가 돈다.
+    if (typeof checkMissionReveal === 'function') checkMissionReveal();
     animateFinalTotals();
     checkRankChange();
     checkEagleStreakCelebration();
@@ -3873,7 +3882,7 @@ let equalizeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(equalizeTimer); equalizeTimer = setTimeout(equalizeSummaryBadges, 150); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equalizeSummaryBadges());
 
-// ─── 화면 넷: 홈 / 정산·스코어 / 뱃지 / 여행 — 좌우로 밀어서 넘긴다 ───
+// ─── 화면 다섯: 홈 / 정산·스코어 / 미션 / 뱃지 / 여행 — 좌우로 밀어서 넘긴다 ───
 // 사용자 요청 — `통합정산요약까지 1화면, 나머지 2화면` → `탭 모양이 너무 안예뻐. 좌우 슬라이드방식으로`.
 // 숨긴 쪽은 display:none일 뿐 그대로 그려진다(renderAll은 손대지 않는다).
 // 표는 숨어 있는 동안 폭이 0이라 jumpToLatestRound()가 오른쪽 끝으로 못 보낸다 —
@@ -3881,7 +3890,8 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equa
 // top: 넘어간 뒤 놓을 스크롤 자리(안 주면 맨 위).
 // 화면 차례 — 왼쪽부터. 알약의 칸 차례이자 밀어서 넘기는 차례다.
 // 여행은 맨 끝 — 자주 쓰는 탭이 아니다(사용자 요청).
-const PAGE_ORDER = ['home', 'detail', 'badges', 'trip'];
+// 미션은 세 번째(사용자 요청 — `미션탭을 3번째 위치에`).
+const PAGE_ORDER = ['home', 'detail', 'mission', 'badges', 'trip'];
 
 function showPage(name, top) {
     const box = document.getElementById('appContainer');

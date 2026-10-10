@@ -58,6 +58,7 @@ const BADGE_ICONS = {
     bill: 'M5 3h14v18l-2.5-2-2.5 2-2-2-2 2-2.5-2L5 21zM9 8h6M9 12h6M9 16h3',
     coaster: 'M2 17c4 0 5-11 9-11s5 11 9 11M2 21h20M6 21v-5M18 21v-5',
     triple: 'M5 10a2 2 0 1 0 .01 0M12 10a2 2 0 1 0 .01 0M19 10a2 2 0 1 0 .01 0M3 18h18',
+    cross: 'M12 3a9 9 0 1 0 .01 0M9 9l6 6M15 9l-6 6',
     bike: 'M5.5 14a3.5 3.5 0 1 0 .01 0M18.5 14a3.5 3.5 0 1 0 .01 0M5.5 17.5L9.5 9.5h5M12 17.5L9.5 9.5M12 17.5l4.5-8 2 8M15 6h2.5'
 };
 
@@ -202,6 +203,21 @@ const BADGE_GROUPS = [
         { id: 'phoenix', kind: 'title', icon: 'flame', name: '불사조', desc: '직전 차수 상위 계급을 상대로 1:1 최다승', holders: () => golfers.filter(g => golferPhoenixWins[g]),
           metric: g => `하극상 ${(golferUpsetWins && golferUpsetWins[g]) || 0}승` }
     ]},
+    // 라운드 미션(mission.js) — 판정·포인트는 그쪽이 홀 기록에서 셈한 값을 읽기만 한다.
+    { id: 'mission', title: '미션', sub: '라운드 미션 성공 기록', badges: [
+        { id: 'mFirst', kind: 'life', tier: 'bronze', icon: 'target', name: '첫 미션 성공', cond: '미션 1회 성공', desc: '라운드 미션을 처음으로 성공',
+          first: g => missionFirst(g, x => x.ok) },
+        { id: 'mCollect', kind: 'tier', icon: 'check', name: '미션 수집가', unit: '미션 성공', count: '회', steps: [5, 15, 30], desc: '통산 미션 성공 횟수',
+          inc: (g, r) => missionOkAt(g, r + 1) ? 1 : 0 },
+        { id: 'mStreak', kind: 'life', tier: 'gold', icon: 'flame', name: '3연속 성공', cond: '3라운드 연속 성공', desc: '받은 미션을 3라운드 연속 성공',
+          first: g => missionRunRound(g, true, 3) },
+        { id: 'mHard', kind: 'life', tier: 'gold', icon: 'trophy', name: '도전자', cond: '★★★ 미션 성공', desc: '어려움(★★★) 미션 첫 성공',
+          first: g => missionFirst(g, x => x.ok && x.def.lv === 3) },
+        { id: 'mAll', kind: 'life', tier: 'silver', icon: 'rings', name: '올클리어', cond: '넷 다 성공', desc: '한 라운드에서 넷 모두 미션 성공(함께 받음)',
+          first: () => missionAllClear() },
+        { id: 'mKing', kind: 'title', icon: 'crown', name: '미션왕', desc: '올해 미션 포인트 1위', holders: () => missionKings(),
+          metric: g => `${missionSeasonPoints(g)}점` }
+    ]},
     // 놀리는 뱃지 — 사용자 요청으로 넣었다. 색을 따로(`tease`) 두어 자랑 뱃지와 갈라 보이게 한다.
     { id: 'tease', title: '불명예 뱃지', sub: '받고 싶지 않지만 모이는 뱃지', badges: [
         { id: 'donor', kind: 'title', tier: 'tease', icon: 'coin', name: '기부왕', desc: '합산 정산 금액 손실 1위', holders: () => golfers.filter(g => golferDonorMap[g]) },
@@ -219,7 +235,9 @@ const BADGE_GROUPS = [
         { id: 'tripleSet', kind: 'life', tier: 'tease', icon: 'triple', name: '트리플 콜렉터', cond: '한 라운드 트리플 3개', desc: '한 라운드에서 트리플 보기 이상 3개',
           first: g => firstRound(g, r => { const h = badgeHoles(g, r); return !!h && h.rel.filter(v => v >= 3).length >= 3; }) },
         { id: 'onionHat', kind: 'life', tier: 'tease', icon: 'onion', name: '양파 해트트릭', cond: '한 라운드 양파 3개', desc: '한 라운드에서 양파 3개 이상',
-          first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.doublePar >= 3; }) }
+          first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.doublePar >= 3; }) },
+        { id: 'mBreak', kind: 'life', tier: 'tease', icon: 'cross', name: '미션 브레이커', cond: '3라운드 연속 실패', desc: '받은 미션을 3라운드 연속 실패',
+          first: g => missionRunRound(g, false, 3) }
     ]}
 ];
 
