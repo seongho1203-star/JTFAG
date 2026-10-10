@@ -875,7 +875,7 @@ html, body { overscroll-behavior-x: none; }
 .trip-chip.add { border-style: dashed; color: #0f766e; }
 .trip-chip.add.on { color: #ffffff; border-style: solid; }
 .trip-kind-row { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-.trip-kind { flex: 1 1 0; min-width: 90px; }
+.trip-kind { position: relative; flex: 1 1 0; min-width: 90px; }
 .trip-kind input { position: absolute; opacity: 0; pointer-events: none; }
 .trip-kind span { display: flex; align-items: center; justify-content: center; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; font-size: 0.78rem; font-weight: 800; color: #334155; cursor: pointer; }
 .trip-kind input:checked + span { background: #0f766e; border-color: #0f766e; color: #fff; }
@@ -1284,11 +1284,6 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .cost-send { margin-top: 4px; font-size: 0.8rem; color: var(--text-main); line-height: 1.5; }
 .cost-send small { color: var(--text-sub); font-size: 0.68rem; }
 .cost-account { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; padding: 4px 4px 4px 10px; border-radius: 8px; background: #f6f6f3; font-weight: 700; word-break: keep-all; overflow-wrap: anywhere; }
-.cost-paid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.cost-paid-chip { padding: 5px 10px; border: 1px solid var(--line); border-radius: 16px; background: #fff; font-family: inherit; font-size: 0.76rem; font-weight: 700; color: var(--text-main); cursor: pointer; }
-.cost-paid-chip small { color: #b45309; font-weight: 700; }
-.cost-paid-chip.on { border-color: #bfe3cd; background: #e8f5ee; }
-.cost-paid-chip.on small { color: var(--accent-green, #1f6b45); }
 .cost-edit { margin-top: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
 .cost-edit-line { display: flex; gap: 5px; align-items: center; }
 .cost-edit-line + .cost-edit-line { margin-top: 5px; }
@@ -1495,7 +1490,7 @@ html, body { overscroll-behavior: none; }
 .trip-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
 .trip-tile { min-width: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 9px 11px; text-align: left; font-family: inherit; color: var(--text-main); display: flex; flex-direction: column; gap: 2px; }
 .trip-tile .k { font-size: clamp(0.64rem, 2.7vw, 0.7rem); font-weight: 700; color: var(--text-sub); }
-.trip-tile .v { font-size: clamp(0.76rem, 3.3vw, 0.86rem); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trip-tile .v { font-size: clamp(0.76rem, 3.3vw, 0.86rem); font-weight: 800; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; }
 
 /* 일정 줄기 — 날마다 한 줄. 지난 날 회색 번호 · 오늘 남색 번호 · 누르면 그 자리에서 펼친다 */
 #tripPage .trip-line { padding: 14px 14px 10px 14px; }
@@ -1533,3 +1528,12 @@ html, body { overscroll-behavior: none; }
 /* 수하물 — 포함·미포함 단추 옆에 kg 칸(사용자 요청). 미포함·미정이면 kg 칸은 자리만 남기고 감춘다. */
 .trip-field.row.trip-bag > input { flex: 0 0 58px; width: 58px; text-align: right; }
 .trip-bag em { font-style: normal; font-size: 0.78rem; font-weight: 700; color: var(--text-sub); margin-left: -4px; }
+/* 항공 — 편명과 출발 시각을 한 줄에 두 칸으로 (사용자 요청). */
+.trip-field.row.trip-flight > input[type="time"] { flex: 0 0 104px; width: 104px; }
+/* 라운드 없는 날 — `골프장 미정`이 아니라 정해진 것이라 흐린 회색으로 적는다. */
+.tl-course.off { color: #8a9097; font-weight: 700; }
+/* 여행 수정 — 표지 아래 끼어들던 카드를 아래에서 올라오는 창으로 (사용자 제보). 뱃지 상세 창과 같은 틀이다. */
+.trip-sheet .trip-sheet-head { font-size: 1.05rem; font-weight: 900; letter-spacing: -0.3px; }
+.trip-sheet .trip-field { margin-top: 0; }
+.trip-sheet .trip-actions { margin-top: 0; }
+.trip-sheet .trip-sheet-danger { border-top: 1px solid var(--line); padding-top: 12px; }
