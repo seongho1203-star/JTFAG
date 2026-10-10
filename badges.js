@@ -196,7 +196,10 @@ const BADGE_GROUPS = [
         { id: 'par5', kind: 'title', icon: 'long', name: '롱홀 헌터', desc: '파5 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[5] || []).slice() },
         { id: 'uptrend', kind: 'title', icon: 'up', name: '상승세', desc: '최근 경기 타수가 계속 줄어드는 중', holders: () => golfers.filter(g => golferUptrendMap[g]) },
         { id: 'rebound', kind: 'title', icon: 'rebound', name: '극적 반전', desc: '직전 경기 대비 타수를 가장 많이 줄임', holders: () => golfers.filter(g => golferReboundMap[g]) },
-        { id: 'rival', kind: 'title', icon: 'swords', name: '영원의 라이벌', desc: '1:1 매치 무승부 최다', holders: () => golfers.filter(g => golferRivalMap[g]) }
+        { id: 'rival', kind: 'title', icon: 'swords', name: '영원의 라이벌', desc: '1:1 매치 무승부 최다', holders: () => golfers.filter(g => golferRivalMap[g]) },
+        // 불사조 — 직전 차수에 나보다 계급이 높던 상대를 1:1로 이긴 횟수 1위(calc.js의 upsetWins). 멤버 현황에 각자의 승수를 적는다.
+        { id: 'phoenix', kind: 'title', icon: 'flame', name: '불사조', desc: '직전 차수 상위 계급을 상대로 1:1 최다승', holders: () => golfers.filter(g => golferPhoenixWins[g]),
+          metric: g => `하극상 ${(golferUpsetWins && golferUpsetWins[g]) || 0}승` }
     ]},
     // 놀리는 뱃지 — 사용자 요청으로 넣었다. 색을 따로(`tease`) 두어 자랑 뱃지와 갈라 보이게 한다.
     { id: 'tease', title: '불명예 뱃지', sub: '받고 싶지 않지만 모이는 뱃지', badges: [
@@ -469,7 +472,7 @@ function openBadgeDetail(id) {
         if (def.kind === 'tier') line = ms.earned ? `<b style="color:${BADGE_TIERS[BADGE_STEP_TIERS[ms.level - 1]].c}">${BADGE_TIERS[BADGE_STEP_TIERS[ms.level - 1]].name}</b>` : '<b class="off">미획득</b>';
         else if (def.kind === 'life') line = ms.earned ? `<b style="color:${t.c}">${ms.round + 1}차 획득</b>` : '<b class="off">미획득</b>';
         else line = ms.earned ? `<b style="color:${t.c}">보유 중</b>` : '<b class="off">-</b>';
-        const extra = def.kind === 'tier' ? `<span>${badgeQty(def, ms.value)}</span>` : '';
+        const extra = def.kind === 'tier' ? `<span>${badgeQty(def, ms.value)}</span>` : (def.metric ? `<span>${escapeHtml(def.metric(n))}</span>` : '');
         return `<div class="bdg-member${n === g ? ' me' : ''}"><span class="nm">${escapeHtml(n)}</span>${line}${extra}</div>`;
     }).join('');
 
