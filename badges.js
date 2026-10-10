@@ -121,8 +121,6 @@ const BADGE_GROUPS = [
           inc: (g, r) => { const s = badgeStat(g, r); return s ? s.birdie : 0; } },
         { id: 'pars', kind: 'tier', icon: 'shield', name: '철벽 방어', unit: '파', steps: [30, 50, 100], desc: '통산 파 개수',
           inc: (g, r) => { const s = badgeStat(g, r); return s ? s.par : 0; } },
-        { id: 'attend', kind: 'tier', icon: 'calendar', name: '개근상', unit: '경기', steps: [10, 20, 30], desc: '참가한 라운드 수',
-          inc: (g, r) => badgeGross(g, r) !== null ? 1 : 0 },
         { id: 'eagles', kind: 'tier', icon: 'trophy', name: '독수리 단골', unit: '번', steps: [3, 5, 10], desc: '통산 독수리 계급 횟수',
           inc: (g, r) => badgeRankRows(g).filter(x => x.round === r && x.rank === 0).length }
     ]},
