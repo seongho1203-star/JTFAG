@@ -820,7 +820,13 @@ function applyScrollLock() {
         }
         html.style.overflow = 'hidden';
         body.style.overflow = 'hidden';
+        // 잠그면 body가 스스로 굴러가는 칸이 되어(overflow:hidden) 위 막대의 sticky가 body 맨 위로 돌아간다 —
+        // 굴려 둔 만큼 화면 위로 사라진다. 그만큼 내려 두어 창 뒤에서도 막대가 제자리에 있게 한다.
+        const bar = document.getElementById('topBar');
+        if (bar && lockedScrollY) bar.style.transform = `translateY(${lockedScrollY}px)`;
     } else {
+        const bar = document.getElementById('topBar');
+        if (bar) bar.style.transform = '';
         if (IS_IOS) {
             body.style.position = '';
             body.style.top = '';
@@ -3925,12 +3931,15 @@ const pagerSwipe = (() => {
         const box = el('appContainer'), clip = el('pagerClip'), pager = el('pager');
         const W = clip.clientWidth + PAGE_GAP;   // 한 화면 + 사이 틈
         const P = clip.getBoundingClientRect().top + window.scrollY;
-        const off = Math.max(0, window.scrollY - P);
+        // 보이는 자리는 붙박인 위 막대 아래부터다 — 들어오는 화면의 맨 위가 막대에 가리지 않게 그만큼 더한다
+        const bar = el('topBar');
+        const H = bar ? bar.offsetHeight : 0;
+        const off = Math.max(0, window.scrollY + H - P);
         box.classList.add('swiping');
         const incoming = box.querySelector(to === 'home' ? '.page-home' : '.page-detail');
         if (incoming && off) incoming.style.transform = `translateY(${off}px)`;
         pager.style.transform = `translateX(${-order(from) * W}px)`;
-        return { box, clip, pager, W, P, off, incoming, from, to };
+        return { box, clip, pager, W, P, H, off, incoming, from, to };
     }
 
     function paint(s, x) {
@@ -3954,7 +3963,7 @@ const pagerSwipe = (() => {
             s.pager.style.transform = '';
             if (s.incoming) s.incoming.style.transform = '';
             s.box.classList.remove('swiping');
-            if (commit) showPage(s.to, s.off ? s.P : keep);
+            if (commit) showPage(s.to, s.off ? Math.max(0, s.P - s.H) : keep);
             busy = false;
         };
         s.pager.addEventListener('transitionend', end, { once: true });
@@ -4018,6 +4027,14 @@ const pagerSwipe = (() => {
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        // 내용이 위 막대 밑으로 들어가기 시작하면 막대 아래에 가는 선을 긋는다
+        const bar = el('topBar');
+        if (bar) {
+            let q = false;
+            const mark = () => { q = false; bar.classList.toggle('lifted', (window.scrollY || 0) > 2); };
+            window.addEventListener('scroll', () => { if (!q) { q = true; requestAnimationFrame(mark); } }, { passive: true });
+            mark();
+        }
         const clip = el('pagerClip');
         if (!clip) return;
         clip.addEventListener('touchstart', start, { passive: true });

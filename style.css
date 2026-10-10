@@ -1315,3 +1315,13 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .cost-num.wide { width: 88px; text-align: right; }
 /* 숙소 줄의 조식 표시 — 숙소 이름보다 한 단계 흐리게 */
 .trip-bf { color: var(--text-sub); font-weight: 600; }
+/* 위 막대 고정 — 머리말(JTFAG · 🔔 · ⚙️)과 화면 바꾸기 알약은 늘 그 자리에 있고 그 아래 내용만 위아래·좌우로 움직인다.
+   sticky라 자리를 잡아 두는 셈이 따로 없다. body의 위 여백(8px)을 막대 안으로 옮겨 처음 모양은 예전과 같다.
+   좌우는 body 여백만큼 넓혀 굴러가는 카드 그림자가 옆으로 비치지 않게 한다. */
+body { padding-top: 0; }
+.top-bar { position: sticky; top: 0; z-index: 50; margin: 0 -8px; padding: 8px 8px 8px 8px; background: var(--bg-main); }
+.top-bar .page-switch { margin-bottom: 0; }
+.top-bar::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line); opacity: 0; transition: opacity 0.2s; }
+.top-bar.lifted::after { opacity: 1; }
+/* 화면 끝에서 더 끌면 화면 전체(막대까지)가 고무줄처럼 늘어나던 것 — 위아래도 막는다 */
+html, body { overscroll-behavior: none; }

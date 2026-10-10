@@ -60,6 +60,8 @@
 </script>
 
 <div class="container" id="appContainer" data-page="home">
+    <!-- 위 막대 — 머리말 + 화면 바꾸기 알약. 화면 위에 붙박여 있고 그 아래 내용만 굴러간다(.top-bar in style.css). -->
+    <div class="top-bar" id="topBar">
     <!-- 디자인 1 · 클린 화이트 — 왼쪽에 이름, 오른쪽에 알림·관리자 단추 -->
     <div class="header-area">
         <div class="brand">
@@ -77,6 +79,7 @@
         <span class="page-switch-thumb" aria-hidden="true"></span>
         <button type="button" class="page-tab on" data-tab="home" role="tab" onclick="slideToPage('home')">홈</button>
         <button type="button" class="page-tab" data-tab="detail" role="tab" onclick="slideToPage('detail')">정산·스코어</button>
+    </div>
     </div>
 
     <!-- 화면 1(홈): 공지 · 여행 · 통합 정산 요약 — 폰 한 화면에 들어오게 둔다.
