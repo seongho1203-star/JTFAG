@@ -50,7 +50,9 @@ const BADGE_ICONS = {
     hundred: 'M4 7v10M8 9a2 2 0 0 1 4 0v6a2 2 0 0 1-4 0zM15 9a2 2 0 0 1 4 0v6a2 2 0 0 1-4 0z',
     onion: 'M12 3c-1 3-6 6-6 11a6 6 0 0 0 12 0c0-5-5-8-6-11zM12 9c-1 2-2 4-2 7M12 9c1 2 2 4 2 7',
     lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
-    tick: 'M5 12l5 5 9-10'
+    tick: 'M5 12l5 5 9-10',
+    rings: 'M5 8.8a3.2 3.2 0 1 0 .01 0M9.7 8.8a3.2 3.2 0 1 0 .01 0M14.3 8.8a3.2 3.2 0 1 0 .01 0M19 8.8a3.2 3.2 0 1 0 .01 0',
+    bike: 'M5.5 14a3.5 3.5 0 1 0 .01 0M18.5 14a3.5 3.5 0 1 0 .01 0M5.5 17.5L9.5 9.5h5M12 17.5L9.5 9.5M12 17.5l4.5-8 2 8M15 6h2.5'
 };
 
 // ── 기록 읽기 ──────────────────────────────────────────────
@@ -69,6 +71,20 @@ function badgeRankRows(g) {
     const ranks = (typeof golferRankHistory !== 'undefined' && golferRankHistory[g]) || [];
     const rounds = (typeof rankedRoundsList !== 'undefined') ? rankedRoundsList : [];
     return ranks.map((rank, i) => ({ rank, round: rounds[i] }));
+}
+// 그 차수의 홀 기록 — { par: 18홀 파, rel: 이 사람의 파 대비 타수 }. 없으면 null.
+function badgeHoles(g, r) {
+    if (typeof ROUND_HOLES === 'undefined') return null;
+    const rec = ROUND_HOLES[String(r + 1)];
+    if (!rec || !Array.isArray(rec.par) || !rec.rel || !Array.isArray(rec.rel[g])) return null;
+    return { par: rec.par, rel: rec.rel[g] };
+}
+// 파가 n홀 연속인가(아우디 파 = 4 · 버디·보기는 끊는다)
+function parRun(g, r, n) {
+    const h = badgeHoles(g, r);
+    if (!h) return false;
+    let run = 0;
+    return h.rel.some(v => (run = v === 0 ? run + 1 : 0) >= n);
 }
 function firstRound(g, pred) {
     for (let r = 0; r < badgeRounds(); r++) if (pred(r)) return r;
@@ -97,6 +113,16 @@ const BADGE_GROUPS = [
           first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.birdie > 0; }) },
         { id: 'multiBirdie', kind: 'life', tier: 'silver', icon: 'double', name: '멀티 버디', cond: '한 라운드 버디 2개', desc: '한 라운드에서 버디 2개 이상 기록',
           first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.birdie + s.eagle >= 2; }) },
+        { id: 'audiPar', kind: 'life', tier: 'silver', icon: 'rings', name: '아우디 파', cond: '4홀 연속 파', desc: '4개 홀 연속 파 기록 — 아우디 로고의 동그라미 넷',
+          first: g => firstRound(g, r => parRun(g, r, 4)) },
+        { id: 'cycleBirdie', kind: 'life', tier: 'gold', icon: 'bike', name: '사이클링 버디', cond: '파3·4·5 모두 버디', desc: '한 라운드에서 파3 · 파4 · 파5 홀 모두 버디',
+          first: g => firstRound(g, r => {
+              const h = badgeHoles(g, r);
+              if (!h) return false;
+              const got = new Set();
+              h.rel.forEach((v, i) => { if (v < 0) got.add(h.par[i]); });
+              return got.has(3) && got.has(4) && got.has(5);
+          }) },
         { id: 'break89', kind: 'life', tier: 'silver', icon: 'flag', name: '89타 돌파', cond: '89타 이하', desc: '한 라운드 89타 이하 기록',
           first: g => firstRound(g, r => { const v = badgeGross(g, r); return v !== null && v <= 89; }) },
         { id: 'noOnion', kind: 'life', tier: 'silver', icon: 'check', name: '무양파 라운드', cond: '양파 없는 라운드', desc: '18홀 동안 양파(파의 2배 이상) 없이 마무리',
