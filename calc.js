@@ -201,7 +201,7 @@ function calculateAndRender() {
     const avgTitleStr = `${targetR1 + 1}·${targetR2 + 1}차 평균`;
 
     if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
-    if (matchCardTitle) matchCardTitle.innerHTML = `🤝 ${avgTitleStr} 기반 1:1 핸디캡 관계`;
+    if (matchCardTitle) matchCardTitle.textContent = `최근 2경기(${targetR1 + 1}·${targetR2 + 1}차) 평균`;
     if (avgHeaderTitle) avgHeaderTitle.innerHTML = avgTitleStr;
 
     const rows = document.querySelectorAll('#scoreTbody tr');

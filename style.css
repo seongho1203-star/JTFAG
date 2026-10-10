@@ -1134,22 +1134,23 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .trip-field input:focus, .trip-field textarea:focus { border-color: var(--primary-gold); }
 .route-app small { color: var(--primary-gold); background: var(--gold-light); }
 
-/* ─── 화면 둘(홈 / 정산·스코어) — 좌우로 밀어서 넘긴다 ───
+/* ─── 화면 넷(홈 / 정산·스코어 / 뱃지 / 여행) — 좌우로 밀어서 넘긴다 ───
    멈춰 있을 때는 안 보이는 쪽을 display:none으로 둔다(예전과 같다).
    미는 동안만(.swiping) 둘을 나란히 펴고 .pager를 옆으로 옮긴다 — 늘 transform을 걸어 두면
    그 안의 position:fixed가 어긋나므로 움직일 때만 건다. */
 .container:not([data-page="home"]) .page-home,
 .container:not([data-page="detail"]) .page-detail,
-.container:not([data-page="badges"]) .page-badges { display: none; }
+.container:not([data-page="badges"]) .page-badges,
+.container:not([data-page="trip"]) .page-trip { display: none; }
 .pager-clip, .page { display: flow-root; }
 .container.swiping .pager-clip { overflow: hidden; }
 .container.swiping .pager { display: flex; gap: 16px; align-items: flex-start; will-change: transform; }
-.container.swiping .page-home, .container.swiping .page-detail, .container.swiping .page-badges { display: flow-root; flex: 0 0 100%; min-width: 0; }
+.container.swiping .page-home, .container.swiping .page-detail, .container.swiping .page-badges, .container.swiping .page-trip { display: flow-root; flex: 0 0 100%; min-width: 0; }
 .pager.anim { transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
 
 /* 지금 화면 표시 — 흰 알약이 미는 손가락을 따라 옆으로 간다(--seg 0~1) */
-.page-switch { position: relative; display: flex; width: min(100%, 252px); margin: 0 auto 8px auto; padding: 2px; background: #ececea; border-radius: 999px; }
-.page-switch-thumb { position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); border-radius: 999px; background: #ffffff; box-shadow: 0 1px 3px rgba(22, 24, 26, 0.14); transform: translateX(calc(var(--seg, 0) * 100%)); transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+.page-switch { position: relative; display: flex; width: min(100%, 300px); margin: 0 auto 8px auto; padding: 2px; background: #ececea; border-radius: 999px; }
+.page-switch-thumb { position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 4); border-radius: 999px; background: #ffffff; box-shadow: 0 1px 3px rgba(22, 24, 26, 0.14); transform: translateX(calc(var(--seg, 0) * 100%)); transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
 .page-switch.drag .page-switch-thumb { transition: none; }
 .page-tab { position: relative; z-index: 1; flex: 1 1 0; height: 24px; border: none; background: none; padding: 0; color: #6b7075; font-family: inherit; font-size: 0.7rem; font-weight: 700; transition: color 0.2s; }
 .page-tab.on { color: var(--primary-gold); }
@@ -1446,3 +1447,85 @@ html, body { overscroll-behavior: none; }
 .bdg-u-foot { position: absolute; left: 24px; right: 24px; bottom: calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .bdg-u-btn { width: 100%; max-width: 420px; height: 50px; border-radius: 14px; border: none; background: #e8c66a; color: #1a1406; font-family: inherit; font-size: 0.95rem; font-weight: 900; }
 .bdg-u-hint { font-size: 0.74rem; font-weight: 600; color: #6f7782; }
+
+/* ─── 1:1 핸디캡 관계 — 홈 · 통합 정산 요약 아래(사용자 요청으로 정산·스코어에서 옮겼다) ───
+   한 칸 = 두 사람. 윗줄은 누구와 누구, 아랫줄은 누가 몇 타 받는지. 320px에서 한 줄에 둘 다 넣으면 잘린다. */
+.page-home .match-card { margin-top: 10px; padding: 14px 12px 12px 12px; border-radius: 18px; }
+.match-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 4px 10px 4px; }
+.match-sub { font-size: clamp(0.64rem, 2.6vw, 0.7rem); color: var(--text-sub); white-space: nowrap; }
+.page-home .match-grid { gap: 6px; }
+.page-home .match-item { background: var(--bg-main); border: none; border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; min-width: 0; }
+.match-pair { font-size: clamp(0.64rem, 2.6vw, 0.7rem); color: var(--text-sub); white-space: nowrap; }
+.match-res { font-size: clamp(0.74rem, 3vw, 0.8rem); font-weight: 600; color: var(--text-main); white-space: nowrap; }
+.match-res b { color: var(--primary-gold); font-weight: 800; }
+.match-res.even { color: var(--accent-green); font-weight: 800; }
+.match-empty { grid-column: span 2; text-align: center; color: var(--text-sub); font-size: 0.78rem; padding: 6px 0; }
+
+/* ─── 여행 탭(네 번째 화면 · trip.js) — 시안 B: 표지 + 한눈에 셋 + 일정 줄기 ───
+   예전엔 홈의 카드를 누르면 창이 떴다. 지금은 탭이라 화면(body)이 굴러간다. */
+#tripPage .trip-day { border-radius: 18px; border-color: var(--card-border); scroll-margin-top: 112px; }
+#tripPage .trip-chips .trip-chip { min-height: 32px; }
+
+/* 표지 — 남색 한 장. 경로 점은 날짜에 맞춰 색이 다르다(지난 날 흰 점 · 오늘 노란 점 · 아직 속 빈 점). */
+.trip-hero { background: var(--primary-gold); color: #ffffff; border-radius: 20px; padding: 14px 18px 16px 18px; margin-bottom: 10px; }
+.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.hero-meta { font-size: clamp(0.7rem, 2.9vw, 0.78rem); font-weight: 700; color: #c9d6ee; }
+.hero-gear { width: 36px; height: 36px; margin: -8px -10px -8px 0; border: none; background: none; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.hero-gear svg { width: 18px; height: 18px; fill: none; stroke: #c9d6ee; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hero-mid { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: 4px; }
+.hero-title { font-size: clamp(1.12rem, 5.4vw, 1.32rem); font-weight: 900; letter-spacing: -0.5px; line-height: 1.3; word-break: keep-all; min-width: 0; }
+.hero-big { font-size: clamp(2rem, 10vw, 2.45rem); font-weight: 900; letter-spacing: -1px; line-height: 1; white-space: nowrap; flex: 0 0 auto; }
+.hero-big.small { font-size: clamp(1.35rem, 6.6vw, 1.65rem); letter-spacing: -0.5px; }
+.hero-when { margin-top: 6px; font-size: clamp(0.76rem, 3.2vw, 0.84rem); font-weight: 700; color: #e4ebf7; }
+.hero-route { display: grid; margin-top: 14px; }
+.hero-pt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.hero-line { position: absolute; top: 6px; height: 2px; background: rgba(255, 255, 255, 0.28); }
+.hero-line.l { left: 0; right: 50%; }
+.hero-line.r { left: 50%; right: 0; }
+.hero-line.on { background: #ffffff; }
+.hero-dot { position: relative; z-index: 1; width: 14px; height: 14px; border-radius: 50%; box-sizing: border-box; background: var(--primary-gold); border: 2px solid rgba(255, 255, 255, 0.6); }
+.hero-pt.done .hero-dot { background: #ffffff; border-color: #ffffff; }
+.hero-pt.now .hero-dot { background: #ffd23f; border-color: #ffd23f; box-shadow: 0 0 0 4px rgba(255, 210, 63, 0.32); transform: scale(1.15); }
+.hero-lbl { max-width: 100%; font-size: clamp(0.66rem, 2.8vw, 0.74rem); font-weight: 700; color: rgba(255, 255, 255, 0.72); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-pt.done .hero-lbl { color: #ffffff; }
+.hero-pt.now .hero-lbl { color: #ffd23f; font-weight: 800; }
+.hero-today { margin-top: -3px; padding: 1px 6px; border-radius: 999px; background: #ffd23f; color: #1a1400; font-size: 0.6rem; font-weight: 800; }
+
+/* 한눈에 셋 — 누르면 아래 그 카드로 내려간다 */
+.trip-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.trip-tile { min-width: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 9px 11px; text-align: left; font-family: inherit; color: var(--text-main); display: flex; flex-direction: column; gap: 2px; }
+.trip-tile .k { font-size: clamp(0.64rem, 2.7vw, 0.7rem); font-weight: 700; color: var(--text-sub); }
+.trip-tile .v { font-size: clamp(0.76rem, 3.3vw, 0.86rem); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 일정 줄기 — 날마다 한 줄. 지난 날 회색 번호 · 오늘 남색 번호 · 누르면 그 자리에서 펼친다 */
+#tripPage .trip-line { padding: 14px 14px 10px 14px; }
+.trip-line-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.trip-line-hint { font-size: clamp(0.62rem, 2.6vw, 0.68rem); color: var(--text-sub); }
+.tl-item { display: flex; gap: 10px; }
+.tl-item.editing { display: block; margin-bottom: 10px; }
+.tl-rail { flex: 0 0 26px; display: flex; flex-direction: column; align-items: center; }
+.tl-no { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; background: var(--gold-light); color: var(--primary-gold); font-size: 0.76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.tl-item.done .tl-no { background: #eceff3; color: #8a8f94; }
+.tl-item.now .tl-no { background: var(--primary-gold); color: #ffffff; box-shadow: 0 0 0 3px var(--gold-light); }
+.tl-bar { flex: 1 1 auto; width: 2px; min-height: 10px; margin: 3px 0; background: var(--line); }
+.tl-bar.on { background: #c3ccd9; }
+.tl-body { flex: 1 1 auto; min-width: 0; padding-bottom: 12px; }
+.tl-sum { position: relative; width: 100%; border: none; background: none; padding: 1px 22px 0 0; text-align: left; font-family: inherit; color: var(--text-main); display: flex; flex-direction: column; gap: 1px; }
+.tl-sum:active { opacity: 0.6; transform: none !important; }
+.tl-when { font-size: clamp(0.66rem, 2.8vw, 0.72rem); font-weight: 700; color: var(--text-sub); }
+.tl-today { color: var(--primary-gold); font-weight: 800; }
+.tl-course { font-size: clamp(0.86rem, 3.8vw, 0.95rem); font-weight: 800; line-height: 1.35; word-break: keep-all; }
+.tl-course.empty { color: var(--text-sub); font-weight: 700; }
+.tl-item.done .tl-course { color: #6b7075; }
+.tl-sub { font-size: clamp(0.7rem, 2.9vw, 0.76rem); color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-chev { position: absolute; right: 0; top: 12px; width: 16px; height: 16px; fill: none; stroke: #b0b4b8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s ease; }
+.tl-item.open .tl-chev { transform: rotate(90deg); }
+.tl-detail { margin-top: 7px; padding: 8px 10px 4px 10px; background: var(--bg-main); border-radius: 12px; }
+.tl-detail .trip-row:first-child { margin-top: 0; }
+.trip-line-note { margin-top: 0; padding-top: 8px; border-top: 1px solid var(--line); font-size: clamp(0.64rem, 2.7vw, 0.7rem); color: var(--text-sub); word-break: keep-all; }
+
+/* 다가오는 여행이 없을 때 */
+.trip-empty { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 24px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.trip-empty-title { font-size: 0.98rem; font-weight: 800; color: var(--text-main); }
+.trip-empty-sub { font-size: 0.78rem; color: var(--text-sub); word-break: keep-all; line-height: 1.5; margin-bottom: 8px; }
+.trip-empty .trip-btn { flex: 0 0 auto; padding: 8px 18px; border-radius: 12px; }

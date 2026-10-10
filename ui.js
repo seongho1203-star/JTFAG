@@ -1278,7 +1278,7 @@ function renderAll() {
     checkRoundResultReveal();
     checkEagleStreakCelebration();
     if (typeof renderBadgePage === 'function') { renderBadgePage(); checkBadgeUnlocks(); }
-    if (typeof renderTripCard === 'function') { renderTripCard(); refreshTripModal(); }
+    if (typeof refreshTripPage === 'function') refreshTripPage();
 }
 
 // ─── 연출 세 가지 ───
@@ -2363,26 +2363,34 @@ function renderTable() {
     });
 }
 
+// 홈 · 통합 정산 요약 아래(사용자 요청으로 정산·스코어에서 옮겼다). 한 칸에 두 사람 — 윗줄은 누구와 누구,
+// 아랫줄은 누가 몇 타 받는지. 좁은 폰(320)에서 한 줄에 둘 다 넣으면 잘려서 두 줄로 둔다.
 function renderHandicapMatchCard(r1, r2) {
     const matchGrid = document.getElementById('matchGrid'); if (!matchGrid) return;
-    matchGrid.innerHTML = ""; const avgScores = {};
+    const avgScores = {};
     golfers.forEach(g => {
         const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
         const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
         if (!isNaN(s1) && !isNaN(s2)) avgScores[g] = Math.floor((s1 + s2) / 2);
     });
 
-    if (Object.keys(avgScores).length < 4) { matchGrid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-sub);">스코어를 먼저 입력해 주세요.</div>`; return; }
-
-    for (let i = 0; i < golfers.length; i++) {
-        for (let j = i + 1; j < golfers.length; j++) {
-            const diff = avgScores[golfers[i]] - avgScores[golfers[j]];
-            let matchText = diff > 0 ? `<b>${golfers[i]}</b> ➔ ${golfers[j]}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${diff}타</b> 받음` : 
-                            (diff < 0 ? `<b>${golfers[j]}</b> ➔ ${golfers[i]}에게 <b style="color:var(--primary-gold); font-size: clamp(0.7rem, 2.6vw, 0.85rem);">${Math.abs(diff)}타</b> 받음` : 
-                            `<b>${golfers[i]}</b> vs <b>${golfers[j]}</b> ➔ <b style="color:#16a34a;">스크래치</b>`);
-            const item = document.createElement('div'); item.className = 'match-item'; item.innerHTML = matchText; matchGrid.appendChild(item);
+    let html;
+    if (Object.keys(avgScores).length < 4) {
+        html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
+    } else {
+        html = '';
+        for (let i = 0; i < golfers.length; i++) {
+            for (let j = i + 1; j < golfers.length; j++) {
+                const a = golfers[i], b = golfers[j];
+                const diff = avgScores[a] - avgScores[b];
+                const who = diff > 0 ? a : b;
+                const res = diff === 0 ? `<span class="match-res even">스크래치</span>`
+                    : `<span class="match-res"><b>${escapeHtml(who)}</b> ${Math.abs(diff)}타 받음</span>`;
+                html += `<div class="match-item"><span class="match-pair">${escapeHtml(a)} · ${escapeHtml(b)}</span>${res}</div>`;
+            }
         }
     }
+    if (matchGrid._html !== html) { matchGrid.innerHTML = html; matchGrid._html = html; }
 }
 
 function updateScore(name, r, val) {
@@ -3866,14 +3874,15 @@ let equalizeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(equalizeTimer); equalizeTimer = setTimeout(equalizeSummaryBadges, 150); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equalizeSummaryBadges());
 
-// ─── 화면 둘: 홈 / 정산·스코어 — 좌우로 밀어서 넘긴다 ───
+// ─── 화면 넷: 홈 / 정산·스코어 / 뱃지 / 여행 — 좌우로 밀어서 넘긴다 ───
 // 사용자 요청 — `통합정산요약까지 1화면, 나머지 2화면` → `탭 모양이 너무 안예뻐. 좌우 슬라이드방식으로`.
 // 숨긴 쪽은 display:none일 뿐 그대로 그려진다(renderAll은 손대지 않는다).
 // 표는 숨어 있는 동안 폭이 0이라 jumpToLatestRound()가 오른쪽 끝으로 못 보낸다 —
 // 처음 정산·스코어로 넘어올 때 다시 부른다(그 함수는 한 번만 보낸다).
 // top: 넘어간 뒤 놓을 스크롤 자리(안 주면 맨 위).
 // 화면 차례 — 왼쪽부터. 알약의 칸 차례이자 밀어서 넘기는 차례다.
-const PAGE_ORDER = ['home', 'detail', 'badges'];
+// 여행은 맨 끝 — 자주 쓰는 탭이 아니다(사용자 요청).
+const PAGE_ORDER = ['home', 'detail', 'badges', 'trip'];
 
 function showPage(name, top) {
     const box = document.getElementById('appContainer');
@@ -3894,7 +3903,7 @@ function showPage(name, top) {
     }
 }
 // 새로고침해도 보던 화면에 남는다(앱을 새로 켜면 홈부터).
-try { const p = sessionStorage.getItem('jtfag_page'); if (p === 'detail' || p === 'badges') document.addEventListener('DOMContentLoaded', () => showPage(p)); } catch (e) {}
+try { const p = sessionStorage.getItem('jtfag_page'); if (p !== 'home' && PAGE_ORDER.includes(p)) document.addEventListener('DOMContentLoaded', () => showPage(p)); } catch (e) {}
 
 // 미는 동안만 두 화면을 나란히 펴고(.swiping) .pager를 옆으로 옮긴다.
 // - 들어오는 화면은 지금 보이는 자리(스크롤)에 맞춰 내려 둔다 — 정산·스코어 아래쪽에서 밀어도

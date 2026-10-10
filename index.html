@@ -80,11 +80,12 @@
         <button type="button" class="page-tab on" data-tab="home" role="tab" onclick="slideToPage('home')">홈</button>
         <button type="button" class="page-tab" data-tab="detail" role="tab" onclick="slideToPage('detail')">정산·스코어</button>
         <button type="button" class="page-tab" data-tab="badges" role="tab" onclick="slideToPage('badges')">뱃지</button>
+        <button type="button" class="page-tab" data-tab="trip" role="tab" onclick="slideToPage('trip')">여행</button>
     </div>
     </div>
 
-    <!-- 화면 1(홈): 공지 · 여행 · 통합 정산 요약 — 폰 한 화면에 들어오게 둔다.
-         화면 2(정산·스코어): 차수별 정산 · 표 · 핸디캡 · 이력. -->
+    <!-- 화면 1(홈): 공지 · 통합 정산 요약 · 1:1 핸디캡 관계 — 폰 한 화면에 들어오게 둔다.
+         화면 2(정산·스코어): 차수별 정산 · 표 · 이력. 화면 3(뱃지). 화면 4(여행 — trip.js). -->
     <div class="pager-clip" id="pagerClip"><div class="pager" id="pager">
     <div class="page page-home">
     <!-- 다음 라운드(일정·날씨)를 크게, 공금은 아래 한 줄. 누르는 곳은 예전 그대로 둘이다. -->
@@ -103,12 +104,15 @@
         </div>
     </div>
 
-    <!-- 여행 일정(trip.js). 아직 안 끝난 여행이 있을 때만 보인다. -->
-    <div id="tripCard" class="trip-card" style="display:none;"></div>
-
     <div class="total-summary-card">
         <h2>통합 정산 요약</h2>
         <div class="summary-grid" id="summaryGrid"></div>
+    </div>
+
+    <!-- 1:1 핸디캡 관계 — 정산·스코어에서 옮겨 왔다(사용자 요청). 누가 몇 타 받는지가 홈에서 바로 보인다. -->
+    <div class="match-card">
+        <div class="match-head"><span class="card-label">1:1 핸디캡 관계</span><span class="match-sub" id="matchCardTitle">최근 2경기 평균</span></div>
+        <div class="match-grid" id="matchGrid"></div>
     </div>
 
     </div><!-- /page-home -->
@@ -162,17 +166,14 @@
         </table>
     </div>
 
-    <div class="match-card">
-        <h3 id="matchCardTitle">🤝 최근 2경기 평균 기반 1:1 핸디캡 관계</h3>
-        <div class="match-grid" id="matchGrid"></div>
-    </div>
-
     <div class="history-btn-container">
         <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
     </div>
     </div><!-- /page-detail -->
     <!-- 화면 3(뱃지): 사람마다 모은 뱃지 — badges.js가 그린다 -->
     <div class="page page-badges"><div id="badgePage"></div></div>
+    <!-- 화면 4(여행): 표지 · 한눈에 셋 · 일정 줄기 · 기본 정보 · 경비 · 준비물 · 메모 — trip.js가 그린다 -->
+    <div class="page page-trip"><div id="tripPage"></div></div>
     </div></div><!-- /pager -->
 </div>
 
@@ -230,17 +231,7 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="tripModal" onclick="if(event.target === this) closeTripModal()">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="tripTitle">🧳 여행 일정</h3>
-            <button type="button" class="close-btn" onclick="closeTripModal()">✕</button>
-        </div>
-        <div class="modal-body" id="tripBody"></div>
-    </div>
-</div>
-
-<!-- 일본 골프장 찾기(trip.js). 여행 창 위에 뜨므로 층을 하나 높인다(여닫기는 .active). -->
+<!-- 일본 골프장 찾기(trip.js). 여행 탭 위에 뜨는 창이다(여닫기는 .active). -->
 <div class="modal-overlay" id="goraModal" style="z-index:1001;" onclick="if(event.target === this) closeGora()">
     <div class="modal-content">
         <div class="modal-header">
