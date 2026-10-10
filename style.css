@@ -1611,7 +1611,6 @@ html, body { overscroll-behavior: none; }
 .msn-rk .v, .msn-rk .tk { text-align: right; font-weight: 900; font-variant-numeric: tabular-nums; }
 .msn-rk .tk { color: #a87808; }
 .msn-rk small { font-size: 0.62rem; font-weight: 700; color: #9a9fa6; margin-left: 1px; }
-.msn-legend { display: flex; justify-content: flex-end; gap: 10px; margin-top: 9px; font-size: 0.66rem; color: #9a9fa6; }
 .msn-mul { display: flex; align-items: center; gap: 12px; }
 .msn-ticket { flex: 0 0 auto; width: 74px; height: 58px; border-radius: 12px; border: 1.5px dashed #c9a24a; background: #fbf1d6; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #85650d; }
 .msn-ticket .big { font-size: 1.5rem; font-weight: 900; line-height: 1; }
@@ -1639,9 +1638,9 @@ html, body { overscroll-behavior: none; }
 .msn-lv { padding: 8px 0; border-top: 1px solid var(--line); }
 .msn-lv:first-of-type { border-top: 0; padding-top: 0; }
 .msn-lv-head { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 900; margin-bottom: 4px; }
-.msn-lv-item { display: flex; justify-content: space-between; gap: 10px; font-size: 0.78rem; padding: 3px 0; }
-.msn-lv-item b { font-weight: 800; white-space: nowrap; }
-.msn-lv-item span { color: #6b7075; font-size: 0.7rem; text-align: right; word-break: keep-all; }
+.msn-lv-item { display: flex; flex-direction: column; gap: 1px; font-size: 0.78rem; padding: 4px 0; }
+.msn-lv-item b { font-weight: 800; }
+.msn-lv-item span { color: #6b7075; font-size: 0.7rem; line-height: 1.35; word-break: keep-all; }
 
 /* 미션 결과 발표 — 클래스 `reveal-overlay`로 다른 연출이 기다리게 한다 */
 .msn-poster { background: linear-gradient(165deg, #1d2740 0%, #141b2b 60%, #0e131f 100%); color: #f3efe2; display: flex; flex-direction: column; padding: calc(30px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom)); box-sizing: border-box; }

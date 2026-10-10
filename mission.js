@@ -417,7 +417,6 @@ function missionRankCard(me) {
                 <span class="tk" title="멀리건 사용권">${x.m.left}<small>장</small></span>
             </div>`;
         }).join('')}</div>
-        <div class="msn-legend"><span>점 = 올해 미션 포인트</span><span>장 = 남은 멀리건 사용권</span></div>
     </div>`;
 }
 
