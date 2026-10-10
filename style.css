@@ -1351,8 +1351,10 @@ html, body { overscroll-behavior: none; }
 .bdg-me-count .big span { font-size: 0.86rem; color: #8a9097; font-weight: 700; }
 .bdg-me-bar { height: 8px; border-radius: 4px; background: var(--line); margin-top: 14px; overflow: hidden; }
 .bdg-me-bar span { display: block; height: 100%; background: #2b5394; border-radius: 4px; }
-.bdg-goal { width: 100%; margin-top: 12px; display: flex; align-items: center; gap: 10px; background: #f7f7f5; border: none; border-radius: 12px; padding: 10px 12px; font-family: inherit; text-align: left; }
-.bdg-goal-text { flex: 1 1 auto; font-size: 0.74rem; font-weight: 600; color: #3d4450; }
+/* 다음 목표 한 줄 — 카드 안여백 쪽으로 6px씩 넓히고 사이를 좁혀 한 줄에 들어가게 한다(사용자 요청 — 두 줄로 접혔다). */
+.bdg-goal { width: calc(100% + 12px); margin: 12px -6px 0; display: flex; align-items: center; gap: 7px; background: #f7f7f5; border: none; border-radius: 12px; padding: 10px 10px; font-family: inherit; text-align: left; box-sizing: border-box; }
+.bdg-goal > svg { flex-shrink: 0; }
+.bdg-goal-text { flex: 1 1 auto; min-width: 0; font-size: 0.74rem; font-weight: 600; color: #3d4450; letter-spacing: -0.3px; word-break: keep-all; }
 .bdg-goal-text b { color: var(--text-main); }
 .bdg-goal-text b.hl, .bdg-goal-num { color: #2b5394; }
 .bdg-goal-num { font-size: 0.74rem; font-weight: 800; white-space: nowrap; }
