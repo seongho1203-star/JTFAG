@@ -244,6 +244,8 @@ function processAllRoundSettlements() {
     golferRivalMap = {}; 
 
     const globalTies = {};
+    // 불사조 — 직전 차수에 나보다 높은 계급이던 사람을 그 차수 1:1에서 이긴 횟수(하극상).
+    const upsetWins = {};
 
     golfers.forEach(g => {
         totalRankProfit[g] = 0;
@@ -256,6 +258,7 @@ function processAllRoundSettlements() {
         golferFluctuationMap[g] = false;
         golferRivalMap[g] = false;
         globalTies[g] = 0;
+        upsetWins[g] = 0;
     });
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
@@ -398,6 +401,15 @@ function processAllRoundSettlements() {
                     else { matchResults[g1].ties++; matchResults[g2].ties++; }
                 }
 
+                // 직전 계급(이번 차수를 넣기 전 마지막 값)이 상대보다 낮았는데 이겼으면 하극상 1승.
+                // 첫 계급 차수는 직전 계급이 없어 세지 않는다. 계급 숫자는 0(독수리)이 가장 높다.
+                if (winner) {
+                    const loser = winner === g1 ? g2 : g1;
+                    const wPrev = golferRankHistory[winner].slice(-1)[0];
+                    const lPrev = golferRankHistory[loser].slice(-1)[0];
+                    if (wPrev !== undefined && lPrev !== undefined && wPrev > lPrev) upsetWins[winner]++;
+                }
+
                 matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
                 matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
             }
@@ -449,18 +461,10 @@ function processAllRoundSettlements() {
         if (historyList) historyList.innerHTML += roundHistoryHtml;
     }
 
-    let maxPhoenixWins = 0;
-    let phoenixWinner = null;
-    golfers.forEach(g => {
-        let wins = 1; 
-        if (wins > maxPhoenixWins) {
-            maxPhoenixWins = wins;
-            phoenixWinner = g;
-        }
-    });
-    if (phoenixWinner) {
-        golferPhoenixWins[phoenixWinner] = true;
-    }
+    // 불사조 — 하극상 승수가 가장 많은 사람(같으면 함께). 예전엔 승수가 1로 박혀 있어 늘 첫 사람에게 갔다.
+    const maxUpset = Math.max(0, ...golfers.map(g => upsetWins[g]));
+    if (maxUpset > 0) golfers.forEach(g => { if (upsetWins[g] === maxUpset) golferPhoenixWins[g] = true; });
+    golferUpsetWins = upsetWins;
 
     let maxTies = 0;
     golfers.forEach(g => {
