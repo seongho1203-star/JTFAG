@@ -289,22 +289,33 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .eg-legend .eg-title { color: #e9d5ff; }
 .eg-legend .eg-ring { border-color: rgba(216, 180, 254, 0.85); }
 
-/* ─── 라운드 결과 발표 ───
-   4위부터 한 줄씩 아래에서 솟아오르고, 1위가 뜰 때 색종이가 터진다.
-   transform·opacity만 움직인다 — 안드로이드에서 다시 그릴 일이 없어야 한다. */
-.reveal-overlay { position: fixed; inset: 0; z-index: 11500; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.88); overflow: hidden; opacity: 0; transition: opacity 0.25s ease; }
+/* ─── 라운드 결과 발표 — 우승 포스터(사용자가 시안 넷 중 C를 골랐다 · revealRoundResult() in ui.js) ───
+   금빛 화면 전체에 4위 → 3위 → 2위가 차례로 올라오고, 마지막에 우승자 이름과 계급 그림이 뜨며 색종이가 터진다.
+   금액은 적지 않는다(사용자 요청). 계급 그림은 투명 이모티콘을 바탕 없이 통째로 띄운다.
+   transform·opacity만, 한 번 돌고 끝난다 — 안드로이드에서 다시 그릴 일이 없어야 한다. */
+.reveal-overlay { position: fixed; inset: 0; z-index: 11500; overflow: hidden; opacity: 0; transition: opacity 0.3s ease; cursor: pointer; }
 .reveal-overlay.on { opacity: 1; }
-.reveal-card { position: relative; z-index: 2; width: min(90vw, 340px); padding: 20px 16px 16px 16px; border-radius: 18px; background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%); border: 2px solid var(--primary-gold); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
-.reveal-title { text-align: center; font-size: 1.05rem; font-weight: 900; color: #fef08a; margin-bottom: 14px; }
-.reveal-rows { display: flex; flex-direction: column-reverse; gap: 7px; }
-.reveal-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); opacity: 0; transform: translateY(18px); animation: reveal-pop 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) forwards; }
-.reveal-place { font-size: 0.72rem; font-weight: 900; color: #94a3b8; width: 26px; flex-shrink: 0; }
-.reveal-name { font-size: 0.88rem; font-weight: 900; color: #f8fafc; flex-shrink: 0; }
-.rank-badge.reveal-rank { margin-left: auto; padding: 2px 7px; font-size: 0.68rem; }
-.reveal-gross { font-size: 0.82rem; font-weight: 900; color: #fef08a; width: 44px; text-align: right; flex-shrink: 0; }
-.reveal-row:last-child { background: rgba(212, 175, 55, 0.2); box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.5); }
-.reveal-close { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--primary-gold); color: #1e293b; font-size: 0.88rem; font-weight: 900; font-family: inherit; cursor: pointer; }
-@keyframes reveal-pop { to { opacity: 1; transform: translateY(0); } }
+.reveal-poster { background: linear-gradient(160deg, #f7dc8a 0%, #e2b23e 45%, #b9801a 100%); color: #2a1d02; display: flex; flex-direction: column; padding: calc(28px + env(safe-area-inset-top)) 24px calc(30px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+.rp-num { position: absolute; left: -4vw; top: calc(8vh + env(safe-area-inset-top)); font-size: min(76vw, 340px); font-weight: 900; line-height: 1; letter-spacing: -0.06em; color: rgba(255, 255, 255, 0.18); pointer-events: none; }
+.rp-head { position: relative; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.22em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-hero { position: absolute; right: 2vw; top: calc(7vh + env(safe-area-inset-top)); width: min(60vw, 280px); height: auto; object-fit: contain; pointer-events: none; opacity: 0; transform: translateX(110px) rotate(8deg); animation: rp-slide 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.rp-body { position: relative; margin-top: auto; display: flex; flex-direction: column; }
+.rp-win, .rp-row, .rp-tap { opacity: 0; transform: translateY(36px); animation: rp-up 0.55s ease forwards; }
+.rp-kick { font-size: 1.1rem; font-weight: 800; }
+.rp-champ { font-size: clamp(2.6rem, 13vw, 3.4rem); font-weight: 900; line-height: 1.05; letter-spacing: -0.04em; word-break: keep-all; }
+.rp-sub { margin-top: 4px; font-size: 0.95rem; font-weight: 700; color: #4a3608; }
+.rp-rows { margin-top: 22px; display: flex; flex-direction: column; gap: 8px; }
+.rp-row { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.36); }
+.rp-row + .rp-row { background: rgba(255, 255, 255, 0.28); }
+.rp-row + .rp-row + .rp-row { background: rgba(255, 255, 255, 0.2); }
+.rp-place { width: 18px; font-size: 1rem; font-weight: 900; flex-shrink: 0; }
+.rp-pic { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
+.rp-name { flex: 1 1 auto; min-width: 0; font-size: 1rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-meta { font-size: 0.82rem; font-weight: 700; color: #4a3608; flex-shrink: 0; }
+.rp-tap { margin-top: 22px; text-align: center; font-size: 0.8rem; font-weight: 700; color: #4a3608; }
+@keyframes rp-up { to { opacity: 1; transform: none; } }
+@keyframes rp-slide { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rp-hero, .rp-win, .rp-row, .rp-tap { animation-duration: 0.01s; } }
 
 /* ─── 계급이 바뀐 뱃지 ───
    올라가면 솟고 떨어지면 툭 떨어진다. 한 번만 돌고 끝난다. */
@@ -1106,7 +1117,6 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .install-steps span { color: var(--text-main); }
 .install-steps b { color: var(--primary-gold); }
 .install-btn { background: var(--primary-gold); color: #ffffff; }
-.reveal-close { color: #ffffff; }
 
 /* 여행 창 — 청록을 포인트 초록으로 맞춘다 (라쿠텐 지도·목록은 그대로) */
 .trip-summary { background: var(--gold-light); border-color: var(--accent-line); color: var(--text-main); }

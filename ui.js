@@ -1413,32 +1413,56 @@ function checkRoundResultReveal() {
     revealRoundResult(lastRankedRound, order);
 }
 
+// 우승 포스터(사용자가 시안 넷 중 C를 골랐다 — 아티팩트 `JTFAG 결과 발표 시안`).
+// 금빛 화면에 4위 → 3위 → 2위가 아래에서 차례로 올라오고, 마지막에 우승자 이름과 계급 그림이 뜬다.
+// 금액은 적지 않는다(사용자 요청). 계급 그림은 투명 이모티콘을 바탕 없이 통째로 띄운다(입장 인사말과 같다).
 function revealRoundResult(roundIdx, order) {
-    const rows = order.map((name, i) => {
-        const info = RANK_CONFIG[i] || RANK_CONFIG[3];
-        const gross = (appData.scores[name] && appData.scores[name][roundIdx]) || '';
-        return `<div class="reveal-row" style="animation-delay:${0.35 + (order.length - 1 - i) * 0.5}s">
-            <span class="reveal-place">${i + 1}위</span>
-            <span class="reveal-name">${escapeHtml(name)}</span>
-            <span class="rank-badge ${info.class} reveal-rank">${info.icon} ${info.name}</span>
-            <span class="reveal-gross">${gross !== '' ? gross + '타' : ''}</span>
+    const rankOf = name => {
+        const r = (golferRankHistory[name] || []).slice(-1)[0];
+        return RANK_CONFIG[r] ? r : 3;
+    };
+    const picOf = r => { const m = /src="([^"]+)"/.exec(RANK_CONFIG[r].icon || ''); return m ? m[1] : ''; };
+    const grossOf = name => (appData.scores[name] && appData.scores[name][roundIdx]) || '';
+
+    const STEP = 0.45;                                  // 줄 하나가 올라오는 간격(초)
+    const rest = order.slice(1);
+    const rows = rest.map((name, i) => {
+        const r = rankOf(name), pic = picOf(r), g = grossOf(name);
+        const delay = 0.4 + (rest.length - 1 - i) * STEP;   // 4위부터
+        return `<div class="rp-row" style="animation-delay:${delay}s">
+            <span class="rp-place">${i + 2}</span>
+            ${pic ? `<img class="rp-pic" src="${pic}" alt="">` : ''}
+            <span class="rp-name">${escapeHtml(name)}</span>
+            <span class="rp-meta">${g !== '' ? g + '타 · ' : ''}${RANK_CONFIG[r].name}</span>
         </div>`;
-    }).reverse();   // 4위가 먼저 그려지고, 1위가 맨 위에 마지막으로 뜬다
+    });
+    const winAt = 0.4 + rest.length * STEP + 0.25;       // 마지막 줄이 뜬 뒤 우승자
+
+    const champ = order[0];
+    const cr = rankOf(champ), cpic = picOf(cr), cg = grossOf(champ);
+    const course = (appData.courses && appData.courses[roundIdx]) || '';
+    const no = String(roundIdx + 1).padStart(2, '0');
 
     const overlay = document.createElement('div');
-    overlay.className = 'reveal-overlay';
+    overlay.className = 'reveal-overlay reveal-poster';
     overlay.innerHTML = `
-        <div class="reveal-card">
-            <div class="reveal-title">🥁 ${roundIdx + 1}차전 결과</div>
-            <div class="reveal-rows">${rows.join('')}</div>
-            <button type="button" class="reveal-close">확인</button>
+        <div class="rp-num" aria-hidden="true">${no}</div>
+        <div class="rp-head">ROUND ${roundIdx + 1}${course ? ' · ' + escapeHtml(course) : ''}</div>
+        ${cpic ? `<img class="rp-hero" src="${cpic}" alt="" style="animation-delay:${winAt}s">` : ''}
+        <div class="rp-body">
+            <div class="rp-win" style="animation-delay:${winAt + 0.3}s">
+                <div class="rp-kick">🏆 ${roundIdx + 1}차전 우승</div>
+                <div class="rp-champ">${escapeHtml(champ)}님</div>
+                <div class="rp-sub">${cg !== '' ? cg + '타 · ' : ''}${RANK_CONFIG[cr].name}</div>
+            </div>
+            <div class="rp-rows">${rows.join('')}</div>
+            <div class="rp-tap" style="animation-delay:${winAt + 0.9}s">화면을 누르면 넘어갑니다</div>
         </div>`;
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('on'));
 
-    // 1위가 뜨는 순간 색종이를 뿌린다. 마지막 줄의 등장 시각에 맞춘다.
-    const finale = 350 + (order.length - 1) * 500 + 400;
-    const timers = [setTimeout(() => dropConfetti(overlay, 60), finale)];
+    // 우승자가 뜨는 순간 색종이를 뿌린다.
+    const timers = [setTimeout(() => dropConfetti(overlay, 60), (winAt + 0.3) * 1000)];
 
     const close = () => {
         timers.forEach(clearTimeout);
