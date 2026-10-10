@@ -109,7 +109,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-single">🎯 싱글의 품격</div>`, desc: "단일 라운드 79타 이하 달성" });
     }
     if (golferReboundMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-rebound">🔥 극적 반전</div>`, desc: "직전 경기 대비 타수를 가장 많이 줄임" });
+        badges.push({ html: `<div class="season-badge badge-rebound">🔥 극적 반전</div>`, desc: "이번 차수에 직전 차수보다 타수를 가장 많이 줄임" });
     }
     if (golferPhoenixWins[g]) {
         badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
@@ -295,24 +295,21 @@ function processAllRoundSettlements() {
         }
     });
 
-    let maxDiff = -Infinity;
-    let reboundGolfer = null;
-    golfers.forEach(g => {
-        const scores = appData.scores && appData.scores[g] ? appData.scores[g] : [];
-        for (let i = 1; i < scores.length; i++) {
-            const prev = parseFloat(scores[i - 1]);
-            const curr = parseFloat(scores[i]);
-            if (!isNaN(prev) && !isNaN(curr)) {
-                const diff = prev - curr; 
-                if (diff > maxDiff) {
-                    maxDiff = diff;
-                    reboundGolfer = g;
-                }
-            }
-        }
-    });
-    if (reboundGolfer && maxDiff > 0) {
-        golferReboundMap[reboundGolfer] = true;
+    // 극적 반전 — 이번 차수(넷 다 타수가 있는 마지막 차수)에 직전 차수보다 타수를 가장 많이 줄인 사람.
+    // 사용자 요청으로 '기록 전체에서 한 번'이 아니라 이번 차수 기준이다. 같으면 함께 받고, 아무도 안 줄였으면 없다.
+    const scoreAt = (g, r) => parseFloat(appData.scores && appData.scores[g] ? appData.scores[g][r] : NaN);
+    let latestRound = -1;
+    for (let r = (appData.totalRounds || 0) - 1; r >= 1; r--) {
+        if (golfers.every(g => !isNaN(scoreAt(g, r)))) { latestRound = r; break; }
+    }
+    golferReboundDiff = {};
+    if (latestRound >= 1) {
+        golfers.forEach(g => {
+            const prev = scoreAt(g, latestRound - 1), curr = scoreAt(g, latestRound);
+            if (!isNaN(prev) && !isNaN(curr)) golferReboundDiff[g] = prev - curr;
+        });
+        const best = Math.max(0, ...Object.values(golferReboundDiff));
+        if (best > 0) golfers.forEach(g => { if (golferReboundDiff[g] === best) golferReboundMap[g] = true; });
     }
 
     const golferFluctuationRange = {};

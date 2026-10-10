@@ -360,6 +360,7 @@ let golferRankHistory = {};
 let rankedRoundsList = [];   // 계급이 매겨진 차수(0부터). golferRankHistory[이름][i]가 rankedRoundsList[i]차다 — 뱃지 컬렉션이 '몇 차 획득'을 낸다
 let golferBadgesMap = {}; 
 let golferPhoenixWins = {}; 
+let golferReboundDiff = {};  // 극적 반전 — 이번 차수에 직전 차수보다 줄인 타수(이름 → 타수)
 let golferUpsetWins = {};   // 불사조 판정에 쓴 하극상 승수(이름 → 횟수)
 let golferReboundMap = {};  
 let golferSingleMap = {};   
