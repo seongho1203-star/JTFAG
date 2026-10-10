@@ -1094,7 +1094,7 @@ function tripDayDetailHtml(trip, d, past) {
         <div class="tl-detail">
             ${off ? (back ? `<div class="trip-row"><span class="k">복귀편</span><span class="v">${escapeHtml(back)}</span></div>` : '')
                 : `<div class="trip-row"><span class="k">티오프</span><span class="v${d.tee ? '' : ' empty'}">${d.tee ? escapeHtml(d.tee) : '미정'}</span></div>`}
-            <div class="trip-row"><span class="k">숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}${d.stay && bfText(d.bf) ? ` <span class="trip-bf">· ${bfText(d.bf)}</span>` : ''}</span></div>
+            ${!d.stay && homeDay(trip, d) ? '' : `<div class="trip-row"><span class="k">숙소</span><span class="v${d.stay ? '' : ' empty'}">${d.stay ? escapeHtml(d.stay) : '미정'}${d.stay && bfText(d.bf) ? ` <span class="trip-bf">· ${bfText(d.bf)}</span>` : ''}</span></div>`}
             ${d.course && !past ? `<div class="trip-row trip-wx"><span class="k">날씨</span><span class="v" id="tripWx-${dateId}">${tripWeatherHtml(d)}</span></div>` : ''}
             ${d.memo ? `<div class="trip-memo">${escapeHtml(d.memo)}</div>` : ''}
             ${kind === 'japan' && !past && !off ? `<div class="trip-actions"><button type="button" class="trip-btn gora" onclick="openGora('${dateId}')">🔎 일본 골프장 찾기${d.course ? ' (변경)' : ''}</button></div>` : ''}
@@ -1180,7 +1180,7 @@ function tripLineHtml(trip, days, today, openDate) {
         const last = i === days.length - 1;
         const off = noRound(d), back = off ? dayFlight(trip, d) : '';
         const sub = open ? '' : off ? ((back || d.stay) ? `<span class="tl-sub">${back ? `복귀편 ${escapeHtml(back)}` : `숙소 ${escapeHtml(d.stay)}`}</span>` : '')
-            : `<span class="tl-sub">티오프 ${d.tee ? escapeHtml(d.tee) : '미정'} · 숙소 ${d.stay ? escapeHtml(d.stay) : '미정'}</span>`;
+            : `<span class="tl-sub">티오프 ${d.tee ? escapeHtml(d.tee) : '미정'}${!d.stay && homeDay(trip, d) ? '' : ` · 숙소 ${d.stay ? escapeHtml(d.stay) : '미정'}`}</span>`;
         return `
         <div class="tl-item ${st}${open ? ' open' : ''}">
             <div class="tl-rail"><span class="tl-no">${i + 1}</span>${last ? '' : `<span class="tl-bar${st === 'done' ? ' on' : ''}"></span>`}</div>
@@ -1202,6 +1202,9 @@ function tripLineHtml(trip, days, today, openDate) {
             <div class="trip-line-note">${tripNotifyText()}</div>
         </div>`;
 }
+// 여러 날 여행의 마지막 날은 귀가하는 날이라 숙소가 없는 게 정상이다 — `숙소 미정`을 적지 않는다(사용자 제보).
+// 적어 둔 숙소가 있으면 그대로 보인다.
+function homeDay(trip, d) { const days = tripDays(trip); return days.length > 1 && days[days.length - 1].date === d.date; }
 // 라운드가 없는 마지막 날에는 복귀편을 함께 보인다(오전 비행기로 귀국하는 날이 대부분이다).
 function dayFlight(trip, d) {
     const days = tripDays(trip);
