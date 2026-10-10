@@ -117,11 +117,11 @@ const BADGE_GROUPS = [
         { id: 'eagle5', kind: 'life', tier: 'legend', icon: 'crown', name: '독수리 5연속', cond: '전설', desc: '5경기 연속 독수리 계급 달성', first: g => rankRunRound(g, 0, 5) }
     ]},
     { id: 'tier', title: '누적 단계', sub: '브론즈 · 실버 · 골드로 올라갑니다', badges: [
-        { id: 'birdies', kind: 'tier', icon: 'sparkle', name: '버디 수집가', unit: '버디', steps: [3, 10, 30], desc: '통산 버디 개수',
+        { id: 'birdies', kind: 'tier', icon: 'sparkle', name: '버디 수집가', unit: '버디', count: '개', steps: [3, 10, 30], desc: '통산 버디 개수',
           inc: (g, r) => { const s = badgeStat(g, r); return s ? s.birdie : 0; } },
-        { id: 'pars', kind: 'tier', icon: 'shield', name: '철벽 방어', unit: '파', steps: [30, 50, 100], desc: '통산 파 개수',
+        { id: 'pars', kind: 'tier', icon: 'shield', name: '철벽 방어', unit: '파', count: '개', steps: [30, 50, 100], desc: '통산 파 개수',
           inc: (g, r) => { const s = badgeStat(g, r); return s ? s.par : 0; } },
-        { id: 'eagles', kind: 'tier', icon: 'trophy', name: '독수리 단골', unit: '번', steps: [3, 5, 10], desc: '통산 독수리 계급 횟수',
+        { id: 'eagles', kind: 'tier', icon: 'trophy', name: '독수리 단골', unit: '독수리', count: '회', steps: [3, 5, 10], desc: '통산 독수리 계급 횟수',
           inc: (g, r) => badgeRankRows(g).filter(x => x.round === r && x.rank === 0).length }
     ]},
     { id: 'title', title: '시즌 타이틀', sub: '지금 1위만 보유 · 빼앗길 수 있습니다', badges: [
@@ -204,6 +204,10 @@ function badgeTierOf(s, level) {
     return BADGE_TIERS[d.tier || 'title'];
 }
 
+// 단계 뱃지의 양 — `버디 3개` · `파 50개` · `독수리 3회`. 단위(`unit`)와 세는 말(`count`)을 붙여 쓴다.
+// (예전엔 독수리 단골의 단위가 `번`이라 `번 3개`처럼 읽혔다 — 사용자 제보)
+function badgeQty(def, n) { return `${def.unit} ${n}${def.count || '개'}`; }
+
 function badgeIcon(name, size, color, width) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BADGE_ICONS[name] || ''}"/></svg>`;
 }
@@ -221,7 +225,7 @@ function badgeSubText(s) {
     const d = s.def;
     if (d.kind === 'life') return s.earned ? `${s.round + 1}차 획득` : d.cond;
     if (d.kind === 'tier') {
-        if (!s.earned) return `${s.value}/${d.steps[0]}${d.unit === '경기' ? '경기' : ''}`;
+        if (!s.earned) return `${s.value}/${d.steps[0]}`;
         const t = BADGE_TIERS[BADGE_STEP_TIERS[s.level - 1]].name;
         return s.next ? `${t} · ${s.value}/${s.next}` : `${t} 완성`;
     }
@@ -313,7 +317,7 @@ function renderBadgePage() {
         const nextTier = BADGE_TIERS[BADGE_STEP_TIERS[goal.s.earned ? goal.s.level : 0]].name;
         return `<button type="button" class="bdg-goal" onclick="openBadgeDetail('${d.id}')">
             ${badgeIcon('target', 18, '#2b5394', 2)}
-            <span class="bdg-goal-text">다음 목표 · <b>${escapeHtml(d.name)} ${nextTier}</b> — ${d.unit} <b class="hl">${goal.left}${d.unit === '경기' ? '' : '개'}</b> 남음</span>
+            <span class="bdg-goal-text">다음 목표 · <b>${escapeHtml(d.name)} ${nextTier}</b> — ${d.unit} <b class="hl">${goal.left}${d.count}</b> 남음</span>
             <span class="bdg-goal-num">${goal.s.value}/${goal.target}</span>
         </button>`;
     })() : '';
@@ -381,9 +385,9 @@ function openBadgeDetail(id) {
             return `<div class="bdg-step${done ? ' done' : ''}${!done && !current ? ' later' : ''}">
                 <span class="bdg-step-dot" style="--bc:${tier.c}">${done ? badgeIcon('tick', 16, '#ffffff', 2.6) : (i + 1)}</span>
                 <div class="bdg-step-body">
-                    <div class="bdg-step-top"><span>${tier.name} · ${def.unit} ${n}${def.unit === '경기' ? '' : '개'}</span>${current ? `<b>${s.value} / ${n}</b>` : ''}</div>
+                    <div class="bdg-step-top"><span>${tier.name} · ${badgeQty(def, n)}</span>${current ? `<b>${s.value} / ${n}</b>` : ''}</div>
                     ${done ? `<div class="bdg-step-sub">${s.reached[i] + 1}차에 획득</div>` : ''}
-                    ${current ? `<div class="bdg-step-bar"><span style="width:${pct}%"></span></div><div class="bdg-step-sub hl">${def.unit} ${n - s.value}${def.unit === '경기' ? '' : '개'} 남음</div>` : ''}
+                    ${current ? `<div class="bdg-step-bar"><span style="width:${pct}%"></span></div><div class="bdg-step-sub hl">${badgeQty(def, n - s.value)} 남음</div>` : ''}
                 </div>
             </div>`;
         }).join('')}</div>`;
@@ -399,7 +403,7 @@ function openBadgeDetail(id) {
         if (def.kind === 'tier') line = ms.earned ? `<b style="color:${BADGE_TIERS[BADGE_STEP_TIERS[ms.level - 1]].c}">${BADGE_TIERS[BADGE_STEP_TIERS[ms.level - 1]].name}</b>` : '<b class="off">미획득</b>';
         else if (def.kind === 'life') line = ms.earned ? `<b style="color:${t.c}">${ms.round + 1}차 획득</b>` : '<b class="off">미획득</b>';
         else line = ms.earned ? `<b style="color:${t.c}">보유 중</b>` : '<b class="off">-</b>';
-        const extra = def.kind === 'tier' ? `<span>${def.unit} ${ms.value}</span>` : '';
+        const extra = def.kind === 'tier' ? `<span>${badgeQty(def, ms.value)}</span>` : '';
         return `<div class="bdg-member${n === g ? ' me' : ''}"><span class="nm">${escapeHtml(n)}</span>${line}${extra}</div>`;
     }).join('');
 
@@ -485,7 +489,7 @@ function showBadgeUnlock(me, queue) {
         const tier = badgeTierOf(s, k.level || undefined);
         const tease = d.tier === 'tease';
         let what = '획득', line = d.desc, when = '';
-        if (d.kind === 'tier') { what = `${tier.name} 달성`; line = `통산 ${d.unit} ${d.steps[k.level - 1]}${d.unit === '경기' ? '' : '개'} 달성`; when = `${s.reached[k.level - 1] + 1}차 라운드에서 획득`; }
+        if (d.kind === 'tier') { what = `${tier.name} 달성`; line = `통산 ${badgeQty(d, d.steps[k.level - 1])} 달성`; when = `${s.reached[k.level - 1] + 1}차 라운드에서 획득`; }
         else if (d.kind === 'life') when = `${s.round + 1}차 라운드에서 획득`;
         else what = tease ? '떠안음' : '타이틀 획득';
         const stars = d.kind === 'tier' ? `<div class="bdg-u-stars">${[1, 2, 3].map(n => `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="${n <= k.level ? tier.d : 'none'}" stroke="${n <= k.level ? tier.d : '#4a515c'}" stroke-width="1.6" stroke-linejoin="round"/></svg>`).join('')}</div>` : '';
