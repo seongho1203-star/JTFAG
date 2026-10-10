@@ -1023,6 +1023,12 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 /* 시즌 뱃지 — 독수리 연속(2·3연속 이상)만 빼고 모두 차분한 회색 칩. 무엇인지는 그림문자와 글이 말해 준다. */
 .season-badge:not(.badge-eagle-3):not(.badge-eagle-2) { background: #f2f2ee; color: #3a3f44; border: 1px solid transparent; text-shadow: none; box-shadow: none; font-weight: 700; }
 .badge-eagle-2 { background: #fbf4e0; color: #6e5410; border-color: #e9d9a6; box-shadow: none; }
+/* 등급 색(사용자 요청) — 골드·실버·브론즈·불명예. 옅은 칠 + 한 톤 진한 글자 + 가는 테두리만. 뱃지 컬렉션(badges.js)의 등급 색과 같은 집안이다.
+   `:not(...)` 둘을 붙인 것은 위 회색 규칙(같은 모양)을 이기려는 것이다. */
+.season-badge.tone-gold:not(.badge-eagle-3)   { background: #fbf3dc; color: #85650d; border-color: #efdfae; }
+.season-badge.tone-silver:not(.badge-eagle-3) { background: #eef1f4; color: #55616e; border-color: #dbe1e7; }
+.season-badge.tone-bronze:not(.badge-eagle-3) { background: #f7ede3; color: #93592a; border-color: #ecd7c3; }
+.season-badge.tone-tease:not(.badge-eagle-3)  { background: #fbeeea; color: #a3442d; border-color: #f1d6ce; }
 
 /* 계급 뱃지(표·이력) — 그라데이션 대신 옅은 칠 */
 .rank-badge { box-shadow: none; }

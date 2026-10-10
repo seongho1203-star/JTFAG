@@ -64,6 +64,15 @@ function eagleStreak(ranks) {
     return n;
 }
 
+// 요약 카드 뱃지의 등급 — 얼마나 이루기 어려운가로 나눴다. 놀리는 뱃지는 따로(불명예).
+// 독수리 연속(badge-eagle-2/3)은 원래 색이 따로 있어 여기 넣지 않는다. 루키는 회색 그대로.
+const SUMMARY_BADGE_TONE = {
+    'badge-avg-1': 'gold', 'badge-best-score': 'gold', 'badge-single': 'gold', 'badge-holeinone': 'gold', 'badge-eagle-hit': 'gold',
+    'badge-birdie': 'silver', 'badge-par': 'silver', 'badge-par3': 'silver', 'badge-par4': 'silver', 'badge-par5': 'silver', 'badge-phoenix': 'silver',
+    'badge-rebound': 'bronze', 'badge-uptrend': 'bronze', 'badge-rival': 'bronze',
+    'badge-donor': 'tease', 'badge-downtrend': 'tease', 'badge-fluctuation': 'tease', 'badge-bomb': 'tease'
+};
+
 function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
@@ -151,6 +160,12 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-rookie">🌱 루키</div>`, desc: "아직 획득한 뱃지가 없음" });
     }
 
+    // 등급 색(골드·실버·브론즈·불명예)을 붙인다 — 사용자 요청. 색은 style.css의 `.tone-*`.
+    badges.forEach(b => {
+        const m = b.html.match(/class="season-badge (badge-[\w-]+)/);
+        const tone = m && SUMMARY_BADGE_TONE[m[1]];
+        if (tone) b.html = b.html.replace('class="season-badge ', `class="season-badge tone-${tone} `);
+    });
     return badges;
 }
 
