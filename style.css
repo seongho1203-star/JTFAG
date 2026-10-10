@@ -1529,7 +1529,12 @@ html, body { overscroll-behavior: none; }
 .trip-field.row.trip-bag > input { flex: 0 0 58px; width: 58px; text-align: right; }
 .trip-bag em { font-style: normal; font-size: 0.78rem; font-weight: 700; color: var(--text-sub); margin-left: -4px; }
 /* 항공 — 편명과 출발 시각을 한 줄에 두 칸으로 (사용자 요청). */
-.trip-field.row.trip-flight > input[type="time"] { flex: 0 0 104px; width: 104px; }
+.trip-field.row.trip-flight > input, .trip-field.row.trip-pair > input { flex: 1 1 0; width: 0; min-width: 0; height: 34px; box-sizing: border-box; }
+/* 편명·시각 두 칸은 크기가 같아야 한다(사용자 제보) — 아이폰은 시간 칸을 제 모양으로 그려 높이·여백이 달랐다. */
+.trip-field.row.trip-flight > input[type="time"] { -webkit-appearance: none; appearance: none; text-align: left; line-height: 20px; }
+.trip-field.row.trip-flight > input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+/* 업체·차종, 인수·반납을 한 줄에 — 둘째 칸 이름은 칸 사이에 작게 적는다. */
+.trip-field.row.trip-pair > em { flex: 0 0 auto; font-style: normal; color: var(--text-sub); font-size: 0.74rem; font-weight: 700; }
 /* 라운드 없는 날 — `골프장 미정`이 아니라 정해진 것이라 흐린 회색으로 적는다. */
 .tl-course.off { color: #8a9097; font-weight: 700; }
 /* 여행 수정 — 표지 아래 끼어들던 카드를 아래에서 올라오는 창으로 (사용자 제보). 뱃지 상세 창과 같은 틀이다. */

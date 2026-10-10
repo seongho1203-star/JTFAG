@@ -584,6 +584,8 @@ function travelHtml(trip) {
         const nights = stayNights(trip);
         const stayLabel = nights.length > 1 ? `1~${nights.length}일차` : '1일차';
         const flightRow = (k, label, no, time) => `<div class="trip-field row trip-flight"><span>${label}</span><input type="text" id="tripTvFlight${k}" maxlength="30" autocomplete="off" aria-label="${label} 편명" value="${escapeHtml(no)}"><input type="time" id="tripTvFlight${k}Time" aria-label="${label} 출발 시각" value="${escapeHtml(time)}"></div>`;
+        // 두 칸을 한 줄에 — 업체·차종, 인수·반납(사용자 요청 — 두 줄씩 먹었다). 키는 그대로 넷이다.
+        const pair = (id1, l1, v1, id2, l2, v2) => `<div class="trip-field row trip-pair"><span>${l1}</span><input type="text" id="${id1}" maxlength="40" autocomplete="off" aria-label="${l1}" value="${escapeHtml(v1)}"><em>${l2}</em><input type="text" id="${id2}" maxlength="40" autocomplete="off" aria-label="${l2}" value="${escapeHtml(v2)}"></div>`;
         const f = (id, label, v, max = 60) => `<label class="trip-field row"><span>${label}</span><input type="text" id="${id}" maxlength="${max}" autocomplete="off" value="${escapeHtml(v)}"></label>`;
         return `
         <div class="trip-day editing" id="tripTravelCard">
@@ -598,10 +600,8 @@ function travelHtml(trip) {
                 <div class="trip-seg">${Object.entries(TRAVEL_CAR).map(([k, v]) => `<label><input type="radio" name="tripTvCar" value="${k}"${t.car === k ? ' checked' : ''} onchange="tripCarChanged()"><span>${v}</span></label>`).join('')}</div>
             </div>
             <div id="tripTvCarBox"${t.car === 'yes' ? '' : ' style="display:none;"'}>
-                ${f('tripTvCarCo', '업체', t.carCo, 40)}
-                ${f('tripTvCarModel', '차종', t.carModel, 40)}
-                ${f('tripTvCarPick', '인수', t.carPick)}
-                ${f('tripTvCarDrop', '반납', t.carDrop)}
+                ${pair('tripTvCarCo', '업체', t.carCo, 'tripTvCarModel', '차종', t.carModel)}
+                ${pair('tripTvCarPick', '인수', t.carPick, 'tripTvCarDrop', '반납', t.carDrop)}
                 <div class="trip-field row"><span>보험</span>${segHtml('tripTvCarIns', TRAVEL_INS, t.carIns)}</div>
                 ${f('tripTvCarRef', '예약번호', t.carRef, 40)}
             </div>
