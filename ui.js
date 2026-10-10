@@ -2647,7 +2647,6 @@ function defaultScorecardRound() {
 
 async function openScoreRequestModal() {
     if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
-    if (!(await authenticateAdmin())) return;
     selectedScorecardRound = defaultScorecardRound();
     // 게스트 표시는 매번 새로 정한다. 지난번 값이 남아 있으면 엉뚱한 사람이 빠진다.
     const check = document.getElementById('scorecardHasGuest');

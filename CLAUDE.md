@@ -85,7 +85,7 @@ GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
    syncScoresFromHoles()가 표의 타수를 채운다
 ```
 
-- **버튼은 `SCORE_OWNER`(api.js) 기기에서만 보이고, 누르면 관리자 비밀번호를 또 묻는다.**
+- **버튼은 `SCORE_OWNER`(api.js) 기기에서만 보이고, 비밀번호는 묻지 않는다**(사용자 요청 — `어차피 나만 보이니까`. 예전엔 관리자 비밀번호를 한 번 더 물었다).
   `jtfag_my_name`은 누구나 바꿀 수 있어 보안 경계가 아니다 — 실수 방지 장치다.
 - **판독 결과를 그대로 믿지 않는다.** `validate()`가 18홀·파 합계(68~74)·타수 범위와 함께
   **사진에 적힌 합계와 18홀 타수의 합이 같은지**를 본다. 이 검산이 오독을 잡는 핵심이라 빼지 말 것.
