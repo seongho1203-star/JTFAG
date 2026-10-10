@@ -79,6 +79,7 @@
         <span class="page-switch-thumb" aria-hidden="true"></span>
         <button type="button" class="page-tab on" data-tab="home" role="tab" onclick="slideToPage('home')">홈</button>
         <button type="button" class="page-tab" data-tab="detail" role="tab" onclick="slideToPage('detail')">정산·스코어</button>
+        <button type="button" class="page-tab" data-tab="badges" role="tab" onclick="slideToPage('badges')">뱃지</button>
     </div>
     </div>
 
@@ -170,6 +171,8 @@
         <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
     </div>
     </div><!-- /page-detail -->
+    <!-- 화면 3(뱃지): 사람마다 모은 뱃지 — badges.js가 그린다 -->
+    <div class="page page-badges"><div id="badgePage"></div></div>
     </div></div><!-- /pager -->
 </div>
 
@@ -420,6 +423,7 @@
     document.write('<script src="api.js?ver=' + v + '"><\/script>');
     document.write('<script src="money.js?ver=' + v + '"><\/script>');   // 정산 금액 저장소(칸마다 따로)
     document.write('<script src="calc.js?ver=' + v + '"><\/script>');
+    document.write('<script src="badges.js?ver=' + v + '"><\/script>');   // 뱃지 컬렉션
     document.write('<script src="ui.js?ver=' + v + '"><\/script>');
     document.write('<script src="trip.js?ver=' + v + '"><\/script>');   // 여행 일정
 </script>

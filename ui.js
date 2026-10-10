@@ -1277,6 +1277,7 @@ function renderAll() {
     checkRankChange();
     checkRoundResultReveal();
     checkEagleStreakCelebration();
+    if (typeof renderBadgePage === 'function') { renderBadgePage(); checkBadgeUnlocks(); }
     if (typeof renderTripCard === 'function') { renderTripCard(); refreshTripModal(); }
 }
 
@@ -1318,6 +1319,7 @@ function afterRevealEffects() {
     animateFinalTotals();
     checkRankChange();
     checkEagleStreakCelebration();
+    if (typeof checkBadgeUnlocks === 'function') checkBadgeUnlocks();
 }
 
 // 1) 합산 금액이 0에서 실제 값까지 굴러 올라간다. 접속당 한 번.
@@ -3880,9 +3882,12 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => equa
 // 표는 숨어 있는 동안 폭이 0이라 jumpToLatestRound()가 오른쪽 끝으로 못 보낸다 —
 // 처음 정산·스코어로 넘어올 때 다시 부른다(그 함수는 한 번만 보낸다).
 // top: 넘어간 뒤 놓을 스크롤 자리(안 주면 맨 위).
+// 화면 차례 — 왼쪽부터. 알약의 칸 차례이자 밀어서 넘기는 차례다.
+const PAGE_ORDER = ['home', 'detail', 'badges'];
+
 function showPage(name, top) {
     const box = document.getElementById('appContainer');
-    if (!box || (name !== 'home' && name !== 'detail')) return;
+    if (!box || !PAGE_ORDER.includes(name)) return;
     const same = box.dataset.page === name;
     box.dataset.page = name;
     document.querySelectorAll('.page-tab').forEach(b => {
@@ -3891,7 +3896,7 @@ function showPage(name, top) {
         b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     const sw = document.getElementById('pageSwitch');
-    if (sw) sw.style.setProperty('--seg', name === 'detail' ? 1 : 0);
+    if (sw) sw.style.setProperty('--seg', PAGE_ORDER.indexOf(name));
     try { sessionStorage.setItem('jtfag_page', name); } catch (e) {}
     window.scrollTo(0, typeof top === 'number' ? top : 0);
     if (!same && name === 'detail') {
@@ -3899,7 +3904,7 @@ function showPage(name, top) {
     }
 }
 // 새로고침해도 보던 화면에 남는다(앱을 새로 켜면 홈부터).
-try { const p = sessionStorage.getItem('jtfag_page'); if (p === 'detail') document.addEventListener('DOMContentLoaded', () => showPage('detail')); } catch (e) {}
+try { const p = sessionStorage.getItem('jtfag_page'); if (p === 'detail' || p === 'badges') document.addEventListener('DOMContentLoaded', () => showPage(p)); } catch (e) {}
 
 // 미는 동안만 두 화면을 나란히 펴고(.swiping) .pager를 옆으로 옮긴다.
 // - 들어오는 화면은 지금 보이는 자리(스크롤)에 맞춰 내려 둔다 — 정산·스코어 아래쪽에서 밀어도
@@ -3911,7 +3916,7 @@ const pagerSwipe = (() => {
     let st = null;          // 손짓 하나의 상태
     let busy = false;       // 넘어가는 움직임이 도는 중
     const el = id => document.getElementById(id);
-    const order = n => (n === 'detail' ? 1 : 0);
+    const order = n => Math.max(0, PAGE_ORDER.indexOf(n));
     const reduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function taken(t, clip) {
@@ -3936,7 +3941,7 @@ const pagerSwipe = (() => {
         const H = bar ? bar.offsetHeight : 0;
         const off = Math.max(0, window.scrollY + H - P);
         box.classList.add('swiping');
-        const incoming = box.querySelector(to === 'home' ? '.page-home' : '.page-detail');
+        const incoming = to !== from ? box.querySelector('.page-' + to) : null;
         if (incoming && off) incoming.style.transform = `translateY(${off}px)`;
         pager.style.transform = `translateX(${-order(from) * W}px)`;
         return { box, clip, pager, W, P, H, off, incoming, from, to };
@@ -3945,7 +3950,7 @@ const pagerSwipe = (() => {
     function paint(s, x) {
         s.pager.style.transform = `translateX(${x}px)`;
         const sw = el('pageSwitch');
-        if (sw) sw.style.setProperty('--seg', Math.min(1, Math.max(0, -x / s.W)));
+        if (sw) sw.style.setProperty('--seg', Math.min(PAGE_ORDER.length - 1, Math.max(0, -x / s.W)));
     }
 
     // 넘어가거나(commit) 제자리로 돌아간 뒤 정리한다
@@ -3996,16 +4001,19 @@ const pagerSwipe = (() => {
             if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
             if (Math.abs(dx) < Math.abs(dy) * 1.2) { st.dead = true; return; }   // 세로로 굴리는 손짓
             const from = el('appContainer').dataset.page || 'home';
-            const to = from === 'home' ? 'detail' : 'home';
+            // 왼쪽으로 밀면 다음 화면, 오른쪽으로 밀면 앞 화면. 그쪽에 화면이 없으면 제자리(살짝만 따라온다).
+            const step = dx < 0 ? 1 : -1;
+            const to = PAGE_ORDER[order(from) + step] || null;
             st.own = true; st.x = t.clientX;   // 여기서부터 손을 따라간다(처음 10px은 버린다)
-            st.s = open(from, to);
+            st.s = open(from, to || from);
+            st.s.step = step; st.s.edge = !to;
             const sw = el('pageSwitch'); if (sw) sw.classList.add('drag');
         }
         e.preventDefault();
         const s = st.s;
         let d = t.clientX - st.x;
-        // 갈 데가 없는 쪽으로 밀면 살짝만 따라온다
-        if ((s.from === 'home' && d > 0) || (s.from === 'detail' && d < 0)) d *= 0.2;
+        // 갈 데가 없거나, 처음 민 쪽과 반대로 되밀면 살짝만 따라온다
+        if (s.edge || d * s.step > 0) d *= 0.2;
         d = Math.max(-s.W, Math.min(s.W, d));
         st.dx = d;
         st.hist.push([t.clientX, Date.now()]);
@@ -4021,8 +4029,8 @@ const pagerSwipe = (() => {
         const h = cur.hist, a = h[0], b = h[h.length - 1];
         const dt = b[1] - a[1];
         const v = dt > 0 && Date.now() - b[1] < 120 ? (b[0] - a[0]) / dt : 0;   // px/ms, 멈췄다 놓으면 0
-        const dir = s.from === 'home' ? -1 : 1;   // 넘어가려면 이쪽으로 밀어야 한다
-        const go = cur.dx * dir > s.W * 0.3 || (v * dir > 0.5 && cur.dx * dir > 20);
+        const dir = -s.step;   // 넘어가려면 이쪽으로 밀어야 한다
+        const go = !s.edge && (cur.dx * dir > s.W * 0.3 || (v * dir > 0.5 && cur.dx * dir > 20));
         settle(s, go);
     }
 

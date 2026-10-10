@@ -230,6 +230,7 @@ function processAllRoundSettlements() {
     const totalRankProfit = {};
     const roundRankProfit = {};
     golferRankHistory = {}; 
+    rankedRoundsList = [];
     golferSingleMap = {};
     golferReboundMap = {};
     golferPhoenixWins = {};
@@ -440,6 +441,7 @@ function processAllRoundSettlements() {
             `;
         });
 
+        rankedRoundsList.push(r);
         roundHistoryHtml += `</div></div>`;
         if (historyList) historyList.innerHTML += roundHistoryHtml;
     }
