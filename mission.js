@@ -93,7 +93,35 @@ const MISSION_DEFS = [
     { id: 'vsGross', lv: 2, w: 2, who: true, text: '{T}보다 적은 타수', how: '18홀 합계가 대상 멤버보다 적게(동타는 실패)',
       judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a < b, got: `${a}타 · {T} ${b}타` }; } },
     { id: 'vsBirdie', lv: 3, w: 2, who: true, text: '{T}보다 버디 많이', how: '버디 개수가 대상 멤버보다 많게(같으면 실패)',
-      judge: (h, o) => { const a = mBirdie(h), b = mBirdie(o); return { ok: a > b, got: `버디 ${a}개 · {T} ${b}개` }; } }
+      judge: (h, o) => { const a = mBirdie(h), b = mBirdie(o); return { ok: a > b, got: `버디 ${a}개 · {T} ${b}개` }; } },
+    // ── 추가분(멤버 · 사용자 요청 — `멤버 미션이 난이도별로 더 많이 필요`). 1~9차 짝 108가지로 잰 성공률을 주석에 적는다 ──
+    // 응원
+    { id: 'tDbl5', lv: 1, w: 2, who: true, text: '{T} 더블보기 5개 이하', how: '대상 멤버가 더블보기 이상 홀 5개 이하',   // 69%
+      judge: (h, o) => { const n = mCount(o, v => v >= 2); return { ok: n <= 5, got: `{T} 더블보기 이상 ${n}개` }; } },
+    { id: 'tBirdie1', lv: 1, w: 2, who: true, text: '{T} 버디 1개 이상', how: '대상 멤버가 버디 이하(이글 포함) 홀 1개 이상',   // 56%
+      judge: (h, o) => { const n = mBirdie(o); return { ok: n >= 1, got: `{T} 버디 ${n}개` }; } },
+    { id: 'tPar8', lv: 3, w: 2, who: true, text: '{T} 파 8개 이상', how: '대상 멤버가 파 이하(버디 포함) 홀 8개 이상',   // 28%
+      judge: (h, o) => { const n = mCount(o, v => v <= 0); return { ok: n >= 8, got: `{T} 파 이하 ${n}개` }; } },
+    // 협동 — 둘이 함께 이룬다
+    { id: 'duo95', lv: 1, w: 2, who: true, text: '{T}와 둘 다 95타 이하', how: '나와 대상 멤버 모두 18홀 합계 95타 이하',   // 67%
+      judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a <= 95 && b <= 95, got: `${a}타 · {T} ${b}타` }; } },
+    { id: 'duoPar2', lv: 1, w: 2, who: true, text: '{T}와 같은 홀 파 2번', how: '같은 홀에서 둘 다 파 이하인 홀 2개 이상',   // 61%
+      judge: (h, o) => { const n = mCount(h, (v, i) => v <= 0 && o.rel[i] <= 0); return { ok: n >= 2, got: `{T}와 함께 파 ${n}번` }; } },
+    { id: 'duo180', lv: 2, w: 2, who: true, text: '{T}와 합계 180타 이하', how: '나와 대상 멤버의 18홀 합계를 더해 180타 이하',   // 50%
+      judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a + b <= 180, got: `합계 ${a + b}타 (${a} + {T} ${b})` }; } },
+    { id: 'duoBirdie', lv: 3, w: 2, who: true, text: '{T}와 둘 다 버디 1개 이상', how: '나와 대상 멤버 모두 버디 이하 홀 1개 이상',   // 35%
+      judge: (h, o) => { const a = mBirdie(h), b = mBirdie(o); return { ok: a >= 1 && b >= 1, got: `버디 ${a}개 · {T} ${b}개` }; } },
+    // 대결(비기면 실패)
+    { id: 'vsHoles', lv: 2, w: 2, who: true, text: '{T}보다 이긴 홀 많이', how: '홀마다 타수를 견줘 이긴 홀이 진 홀보다 많게(같으면 실패)',   // 46%
+      judge: (h, o) => { const w = mCount(h, (v, i) => v < o.rel[i]), l = mCount(h, (v, i) => v > o.rel[i]); return { ok: w > l, got: `이긴 홀 ${w} · 진 홀 ${l} ({T})` }; } },
+    { id: 'vsDbl', lv: 2, w: 2, who: true, text: '{T}보다 더블보기 적게', how: '더블보기 이상 홀이 대상 멤버보다 적게(같으면 실패)',   // 46%
+      judge: (h, o) => { const a = mCount(h, v => v >= 2), b = mCount(o, v => v >= 2); return { ok: a < b, got: `더블보기 이상 ${a}개 · {T} ${b}개` }; } },
+    { id: 'vsPar', lv: 2, w: 2, who: true, text: '{T}보다 파 많이', how: '파 이하(버디 포함) 홀이 대상 멤버보다 많게(같으면 실패)',   // 45%
+      judge: (h, o) => { const a = mCount(h, v => v <= 0), b = mCount(o, v => v <= 0); return { ok: a > b, got: `파 이하 ${a}개 · {T} ${b}개` }; } },
+    { id: 'vsBy5', lv: 3, w: 2, who: true, text: '{T}보다 5타 이상 적게', how: '18홀 합계가 대상 멤버보다 5타 이상 적게',   // 31%
+      judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a <= b - 5, got: `${a}타 · {T} ${b}타` }; } },
+    { id: 'vsBoth', lv: 3, w: 2, who: true, text: '{T}에게 전·후반 모두 승리', how: '전반 9홀·후반 9홀 합계 모두 대상 멤버보다 적게(동타는 실패)',   // 23%
+      judge: (h, o) => { const a1 = mHalf(h, 0), b1 = mHalf(o, 0), a2 = mHalf(h, 9), b2 = mHalf(o, 9); return { ok: a1 < b1 && a2 < b2, got: `전반 ${a1}·${b1} 후반 ${a2}·${b2} ({T})` }; } }
 ];
 const MISSION_BY_ID = {};
 MISSION_DEFS.forEach(d => { MISSION_BY_ID[d.id] = d; });
@@ -633,7 +661,7 @@ function missionListCard() {
         ${head}
         ${group('본인 미션', '내 기록으로 판정', self)}
         ${group('멤버 미션', '○○ = 무작위로 정해지는 다른 멤버', other)}
-        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MAX}개 이하입니다(예: ★★★ + ★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
+        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MAX}개 이하입니다(예: ★★★ + ★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 
