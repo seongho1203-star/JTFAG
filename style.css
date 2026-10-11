@@ -1556,6 +1556,12 @@ html, body { overscroll-behavior: none; }
 .msn-card { background: #ffffff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 14px 12px; }
 .msn-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.8rem; font-weight: 800; color: #6b7075; margin-bottom: 10px; }
 .msn-head > span:first-child { color: var(--text-main); font-size: 0.9rem; font-weight: 900; }
+.msn-fold { width: 100%; border: none; background: none; padding: 0; font-family: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.msn-fold .msn-sub { display: inline-flex; align-items: center; gap: 4px; }
+.msn-chev { width: 16px; height: 16px; fill: none; stroke: #9a9fa6; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; flex: 0 0 auto; }
+.msn-fold.open .msn-chev { transform: rotate(180deg); }
+.msn-card.folded .msn-head { margin-bottom: 0; }
+.msn-more { display: block; width: 100%; margin-top: 8px; height: 34px; border: 1px solid #e3e5e8; border-radius: 10px; background: #ffffff; color: #2b5394; font-family: inherit; font-size: 0.78rem; font-weight: 800; }
 .msn-sub { font-size: 0.72rem; font-weight: 700; color: #6b7075; white-space: nowrap; }
 .msn-dday { font-size: 0.68rem; font-weight: 900; color: #ffffff; background: #2b5394; border-radius: 7px; padding: 2px 7px; }
 .msn-stars { color: #c99400; font-size: 0.72rem; letter-spacing: -1px; white-space: nowrap; }

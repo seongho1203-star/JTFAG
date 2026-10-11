@@ -506,25 +506,54 @@ function missionMulliganCard(me) {
     </div>`;
 }
 
+// 접었다 펴는 카드(사용자 요청 — 기록이 쌓이면 화면이 길어진다). 기록은 펴 두고 목록은 접어 두는 것이 처음 모양이고,
+// 고른 것은 이 기기에 기억한다(jtfag_msn_fold — 기기마다의 편의라 payload에 안 둔다).
+const MSN_FOLD_DEFAULT = { hist: true, list: false };   // true = 펼침
+const MSN_HIST_SHOWN = 5;                                // 기록은 최근 다섯 개까지 펴고 나머지는 `이전 기록 더 보기`
+let missionHistAll = false;
+function missionFold(key) {
+    try { const m = JSON.parse(localStorage.getItem('jtfag_msn_fold') || '{}'); if (typeof m[key] === 'boolean') return m[key]; } catch (e) {}
+    return MSN_FOLD_DEFAULT[key];
+}
+function toggleMissionFold(key) {
+    let m = {};
+    try { m = JSON.parse(localStorage.getItem('jtfag_msn_fold') || '{}') || {}; } catch (e) {}
+    m[key] = !missionFold(key);
+    try { localStorage.setItem('jtfag_msn_fold', JSON.stringify(m)); } catch (e) {}
+    renderMissionPage();
+}
+function showAllMissionHistory() { missionHistAll = true; renderMissionPage(); }
+const MSN_CHEVRON = '<svg class="msn-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+function msnFoldHead(key, title, sub) {
+    const open = missionFold(key);
+    return `<button type="button" class="msn-head msn-fold${open ? ' open' : ''}" aria-expanded="${open}" onclick="toggleMissionFold('${key}')"><span>${title}</span><span class="msn-sub">${sub}${MSN_CHEVRON}</span></button>`;
+}
+
 function missionHistoryCard(me) {
     if (!missionViewName || !golfers.includes(missionViewName)) missionViewName = golfers.includes(me) ? me : golfers[0];
     const g = missionViewName;
     const list = missionRounds().map(r => missionResult(r, g)).filter(Boolean).reverse();
     const log = missionLog(g);
     const okN = log.filter(x => x.ok).length;
+    const head = msnFoldHead('hist', '미션 기록', log.length ? `${log.length}회 중 ${okN}회 성공` : '');
+    if (!missionFold('hist')) return `<div class="msn-card folded">${head}</div>`;
+    const shown = missionHistAll ? list : list.slice(0, MSN_HIST_SHOWN);
+    const more = list.length - shown.length;
     return `<div class="msn-card">
-        <div class="msn-head"><span>미션 기록</span><span class="msn-sub">${log.length ? `${log.length}회 중 ${okN}회 성공` : ''}</span></div>
+        ${head}
         <div class="msn-people">${golfers.map(n => `<button type="button" class="${n === g ? 'on' : ''}" onclick="selectMissionPerson('${n}')">${escapeHtml(n)}</button>`).join('')}</div>
-        ${list.length ? `<div class="msn-hist">${list.map(x => `<div class="msn-h">
+        ${list.length ? `<div class="msn-hist">${shown.map(x => `<div class="msn-h">
             <span class="rd">${x.round}차</span>
             <span class="tx">${escapeHtml(x.text)} ${msnStars(x.def.lv)}${x.got ? `<small>${escapeHtml(x.got)}</small>` : ''}</span>
-            ${msnStateHtml(x)}</div>`).join('')}</div>` : '<div class="msn-empty">아직 받은 미션이 없습니다.</div>'}
+            ${msnStateHtml(x)}</div>`).join('')}</div>${more > 0 ? `<button type="button" class="msn-more" onclick="showAllMissionHistory()">이전 기록 ${more}건 더 보기</button>` : ''}` : '<div class="msn-empty">아직 받은 미션이 없습니다.</div>'}
     </div>`;
 }
 
 function missionListCard() {
+    const head = msnFoldHead('list', '미션 목록', `${MISSION_DEFS.length}개 · 난이도만큼 포인트`);
+    if (!missionFold('list')) return `<div class="msn-card folded">${head}</div>`;
     return `<div class="msn-card">
-        <div class="msn-head"><span>미션 목록</span><span class="msn-sub">무작위 · 난이도만큼 포인트</span></div>
+        ${head}
         ${[1, 2, 3].map(lv => `<div class="msn-lv">
             <div class="msn-lv-head">${msnStars(lv)} ${MISSION_LEVELS[lv].name} <span class="msn-pts">${lv}점</span></div>
             ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how).replace(/\(([^)]*)\)$/, ' <i>($1)</i>')}</span></div>`).join('')}
