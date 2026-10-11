@@ -1814,3 +1814,5 @@ html, body { overscroll-behavior: none; }
 .celebrate-overlay.on .g3-eagle .eg-bird { width: 100%; max-width: none; opacity: 1; animation: none; animation-delay: inherit; }
 .celebrate-overlay.on .g3-eagle .eg-wl { animation: g3-flap-l .42s ease-in-out 4 alternate; animation-delay: inherit; transform-origin: 138px 60px; }
 .celebrate-overlay.on .g3-eagle .eg-wr { animation: g3-flap-r .42s ease-in-out 4 alternate; animation-delay: inherit; transform-origin: 162px 60px; }
+/* 미션 목록 — 실력 보정을 안 하는 미션 표시 */
+.msn-lv-item .msn-fix { font-style: normal; font-size: 0.6rem; font-weight: 700; color: #8a8f94; border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; margin-left: 3px; white-space: nowrap; }
