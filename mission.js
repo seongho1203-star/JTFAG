@@ -31,7 +31,13 @@ const MISSION_LV_MAX = 4;  // 라운드마다 받는 두 미션(본인 1 + 멤�
 // **지우지 않고 무시한다** — 더하기만 하는 저장이라 지우면 낡은 폰이 되살리고 새 폰이 또 지우며 저장이 돈다.
 // 다시 초기화하려면 이 값만 지금 시각으로 바꾼다.
 const MISSION_RESET_AT = 1791681351211;   // 2026-10-11 10:15 KST
-const missionLive = rec => !!rec && typeof rec === 'object' && (Number(rec.at) || 0) >= MISSION_RESET_AT;
+// 차수 초기화(관리자 메뉴 → `🎯 미션 차수 초기화` · `resetMissionRound()`) — `payload.missionResets = { "10": 시각 }`.
+// 그 차수에서 이 시각보다 먼저 받은 미션은 없는 것으로 본다(지우지 않는다 — 위와 같은 까닭). 값은 더 커지기만 하고 합칠 때 큰 쪽을 쓴다.
+function missionResetAt(round) {
+    const m = appData && appData.missionResets;
+    return Math.max(MISSION_RESET_AT, (m && Number(m[String(round)])) || 0);
+}
+const missionLive = (rec, round) => !!rec && typeof rec === 'object' && (Number(rec.at) || 0) >= (round === undefined ? MISSION_RESET_AT : missionResetAt(round));
 
 // 셈 도우미 — h는 { par: 18홀 파, rel: 파 대비 타수 }
 const mCount = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? 1 : 0), 0);
@@ -148,7 +154,7 @@ function missionSameDraw(a, b) {
 function missionEntry(round, g) {
     const all = appData && appData.missions;
     const rec = all && all[String(round)] && all[String(round)][g];
-    if (!missionLive(rec)) return null;
+    if (!missionLive(rec, round)) return null;
     const slots = missionSlots(rec);
     if (!slots.length) return null;
     const re = rec.re && MISSION_BY_ID[rec.re.id] ? rec.re : null;
@@ -325,11 +331,11 @@ function writeMine(fn) {
 function mergeMissionData(prev) {
     let changed = false;
     const addMission = (r, g, rec) => {
-        if (!missionLive(rec) || !missionSlots(rec).some(m => MISSION_BY_ID[m.id]) || !golfers.includes(g)) return;
+        if (!missionLive(rec, r) || !missionSlots(rec).some(m => MISSION_BY_ID[m.id]) || !golfers.includes(g)) return;
         if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
         if (!appData.missions[r]) appData.missions[r] = {};
         const cur = appData.missions[r][g];
-        if (!missionLive(cur)) { appData.missions[r][g] = rec; changed = true; }
+        if (!missionLive(cur, r)) { appData.missions[r][g] = rec; changed = true; }
         else if (rec.re && !cur.re && missionSameDraw(cur, rec) && MISSION_BY_ID[rec.re.id]) { cur.re = rec.re; changed = true; }
     };
     const addUse = (g, u) => {
@@ -338,6 +344,13 @@ function mergeMissionData(prev) {
         if (!Array.isArray(appData.mulligans[g])) appData.mulligans[g] = [];
         if (!appData.mulligans[g].some(x => x && x.t === u.t)) { appData.mulligans[g].push(u); changed = true; }
     };
+    // 차수 초기화 표시를 먼저 합친다(큰 쪽) — 그래야 아래에서 초기화 전 미션을 되살리지 않는다.
+    const pr = (prev && prev.missionResets) || {};
+    Object.keys(pr).forEach(r => {
+        const v = Number(pr[r]) || 0;
+        if (!appData.missionResets || typeof appData.missionResets !== 'object') appData.missionResets = {};
+        if (v > (Number(appData.missionResets[r]) || 0)) { appData.missionResets[r] = v; changed = true; }
+    });
     const pm = (prev && prev.missions) || {};
     Object.keys(pm).forEach(r => Object.keys(pm[r] || {}).forEach(g => addMission(r, g, pm[r][g])));
     const pu = (prev && prev.mulligans) || {};
@@ -451,6 +464,33 @@ async function redrawMission(i) {
     syncToSupabase(appData);
     rollMission(['msnRoll' + i], 'msnRedraw' + i, '다시 뽑는 중…', () =>
         showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`));
+}
+
+// 관리자 메뉴 → `🎯 미션 차수 초기화`(사용자 요청 — `미션도 관리자모드에서 차수 리셋기능`). 고른 차수의 미션(다시 뽑기 포함)을
+// 없는 것으로 돌려 넷 다 다시 받을 수 있게 한다. 기록을 지우지 않고 `missionResets[차수]`에 시각을 적는다.
+// **시각은 지금이 아니라 그 차수 기록 중 가장 늦은 것 + 1이다** — 폰마다 시계가 어긋나 있어, 지금 시각으로 적으면
+// 시계가 느린 폰에서 바로 다시 받은 미션이 초기화 전 것으로 잘못 걸린다. 멀리건 사용권은 건드리지 않는다.
+let msnResetPick = null;
+async function resetMissionRound() {
+    const rounds = missionRounds().filter(r => golfers.some(g => missionEntry(r, g)));
+    if (!rounds.length) { showToast('ℹ️ 초기화할 미션이 없습니다.'); return; }
+    msnResetPick = rounds[rounds.length - 1];
+    const who = r => golfers.filter(g => missionEntry(r, g));
+    const opts = rounds.slice().reverse().map(r => `<option value="${r}">${r}차 · ${who(r).length}명</option>`).join('');
+    const ok = await showConfirmPrompt(`<b>미션 차수 초기화</b><br>
+        <select onchange="msnResetPick = Number(this.value)" style="margin:10px 0 8px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${opts}</select>
+        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">그 차수에 받은 미션(다시 뽑기 포함)이 없는 것으로 처리되고, 포인트도 다시 계산됩니다. 일정이 잡힌 차수라면 다시 받을 수 있습니다. 취소할 수 없습니다.</span>`, '초기화', '#dc2626');
+    if (!ok) return;
+    const r = msnResetPick;
+    if (!rounds.includes(r)) return;
+    const all = appData.missions && appData.missions[String(r)] || {};
+    let at = 0;
+    Object.keys(all).forEach(g => { const rec = all[g]; if (rec) { at = Math.max(at, Number(rec.at) || 0, (rec.re && Number(rec.re.at)) || 0); } });
+    if (!appData.missionResets || typeof appData.missionResets !== 'object') appData.missionResets = {};
+    appData.missionResets[String(r)] = at + 1;
+    syncToSupabase(appData);
+    if (typeof renderMissionPage === 'function') renderMissionPage();
+    showToast(`🎯 ${r}차 미션을 초기화했습니다.`);
 }
 
 async function useMulligan() {
