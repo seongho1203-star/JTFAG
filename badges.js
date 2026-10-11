@@ -212,7 +212,7 @@ const BADGE_GROUPS = [
         { id: 'mStreak', kind: 'life', tier: 'gold', icon: 'flame', name: '3연속 성공', cond: '3라운드 연속 모두 성공', desc: '받은 미션 두 개를 모두 성공한 라운드가 3번 연속',
           first: g => missionRunRound(g, true, 3) },
         { id: 'mHard', kind: 'life', tier: 'gold', icon: 'trophy', name: '도전자', cond: '★★★ 미션 성공', desc: '어려움(★★★) 미션 첫 성공',
-          first: g => missionFirst(g, x => x.ok && x.def.lv === 3) },
+          first: g => missionFirst(g, x => x.ok && x.lv === 3) },
         { id: 'mAll', kind: 'life', tier: 'silver', icon: 'rings', name: '올클리어', cond: '넷 다 모두 성공', desc: '한 라운드에서 넷 모두 받은 미션을 다 성공',
           first: () => missionAllClear() },
         { id: 'mKing', kind: 'title', icon: 'crown', name: '미션왕', desc: '올해 미션 포인트 1위', holders: () => missionKings(),

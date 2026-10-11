@@ -165,7 +165,10 @@ function missionEntry(round, g) {
         const def = MISSION_BY_ID[src.id];
         if (!def) return;
         if (def.who && !(golfers.includes(src.who) && src.who !== g)) return;
-        items.push({ i, def, who: def.who ? src.who : undefined, redrawn: i === reIdx });
+        // 멤버 미션은 받을 때 대상 실력으로 조정한 별(`lv`)이 같이 적혀 있다 — 그 값이 곧 난이도·포인트다(받는 순간 고정).
+        // 조정이 생기기 전에 받은 미션은 `lv`가 없어 기본 별을 쓴다.
+        const lv = def.who && Number.isInteger(src.lv) && src.lv >= 1 && src.lv <= 3 ? src.lv : def.lv;
+        items.push({ i, def, lv, who: def.who ? src.who : undefined, redrawn: i === reIdx });
     });
     return items.length ? { at: rec.at, y: rec.y, items, redrawn: reIdx >= 0 } : null;
 }
@@ -193,7 +196,7 @@ function missionResults(round, g) {
     if (!e) return [];
     return e.items.map(it => {
         const def = it.def;
-        const base = { round, g, i: it.i, def, who: it.who, y: e.y, redrawn: it.redrawn, text: missionText(def, it) };
+        const base = { round, g, i: it.i, def, lv: it.lv, who: it.who, y: e.y, redrawn: it.redrawn, text: missionText(def, it) };
         if (!roundHasHoles(round)) return { ...base, state: 'wait' };
         const h = missionHoles(round, g);
         if (!h) return { ...base, state: 'none' };
@@ -213,7 +216,7 @@ function missionRoundSum(round, g) {
     const xs = missionResults(round, g).filter(missionJudged);
     if (!xs.length) return null;
     const ok = xs.filter(x => x.ok);
-    return { round, n: xs.length, okN: ok.length, pts: ok.reduce((t, x) => t + x.def.lv, 0), all: ok.length === xs.length, none: ok.length === 0, xs };
+    return { round, n: xs.length, okN: ok.length, pts: ok.reduce((t, x) => t + x.lv, 0), all: ok.length === xs.length, none: ok.length === 0, xs };
 }
 
 function missionRounds() {
@@ -231,7 +234,7 @@ function missionRedraws(g, year) {
 }
 // 포인트 = 성공한 미션의 별 수 − 다시 뽑기에 쓴 점수
 function missionPoints(g, year) {
-    const won = missionLog(g).filter(x => x.ok && (!year || x.y === year)).reduce((t, x) => t + x.def.lv, 0);
+    const won = missionLog(g).filter(x => x.ok && (!year || x.y === year)).reduce((t, x) => t + x.lv, 0);
     return Math.max(0, won - missionRedraws(g, year) * REDRAW_COST);
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
@@ -374,21 +377,62 @@ function pickWeighted(list) {
     for (const d of list) { if ((x -= d.w) < 0) return d; }
     return list[list.length - 1];
 }
-// 받기 — 본인 미션 하나 + 다른 멤버 미션 하나, 난이도(별) 합이 MISSION_LV_MAX 이하인 짝 중에서 무작위
-function pickMissionPair() {
-    const pairs = [];
-    MISSION_DEFS.filter(d => !d.who).forEach(a => MISSION_DEFS.filter(d => d.who).forEach(b => {
-        if (a.lv + b.lv <= MISSION_LV_MAX) pairs.push({ a, b, w: a.w * b.w });
+// ── 멤버 미션 난이도 보정(사용자 요청 — 박승수를 이기는 것과 김지명을 이기는 것이 같은 ★이면 형평이 안 맞는다) ──
+// 받을 때 대상 멤버의 실력을 보고 별을 ±1·±2 조정하고, 그 별로 본인 미션을 골라 합 MISSION_LV_MAX 이하를 맞춘다.
+// 실력은 1:1 핸디캡과 같은 잣대 — 넷 다 타수가 있는 가장 최근 연속 두 차수의 평균(내림)이다. 없으면 조정하지 않는다.
+const MISSION_ADJ_STEPS = [4, 8];   // 4타 이상 차이 ±1 · 8타 이상 ±2
+function missionSkill() {
+    const sc = appData && appData.scores;
+    if (!sc || typeof golfers === 'undefined') return null;
+    const v = (g, r) => parseFloat(sc[g] && sc[g][r]);
+    const full = r => golfers.every(g => v(g, r) > 0);
+    for (let r = (appData.totalRounds || 0) - 1; r >= 1; r--) {
+        if (full(r) && full(r - 1)) {
+            const m = {};
+            golfers.forEach(g => { m[g] = Math.floor((v(g, r) + v(g, r - 1)) / 2); });
+            return m;
+        }
+    }
+    return null;
+}
+// 멤버 미션의 종류 — 대결(○○보다) · 협동(○○와 함께) · 응원(○○가 해낸다)
+function missionKind(def) {
+    return /^vs/.test(def.id) ? '대결' : (/^duo/.test(def.id) ? '협동' : '응원');
+}
+// 조정 폭(+는 어려워짐). x = 어려운 쪽으로 잰 타수 차이
+function missionAdjust(def, me, who, skill) {
+    if (!def.who || !skill || !(skill[me] > 0) || !(skill[who] > 0)) return 0;
+    const avg = golfers.reduce((t, g) => t + skill[g], 0) / golfers.length;
+    const kind = missionKind(def);
+    // 대결은 나와 대상의 차이 · 응원은 대상과 넷 평균의 차이 · 협동은 두 사람 평균과 넷 평균의 차이.
+    // 평균과의 차이는 둘 사이 차이의 절반 크기라 두 배로 견준다(같은 잣대가 되게).
+    const x = kind === '대결' ? skill[me] - skill[who]
+        : kind === '협동' ? ((skill[me] + skill[who]) / 2 - avg) * 2
+        : (skill[who] - avg) * 2;
+    const a = Math.abs(x);
+    const n = a >= MISSION_ADJ_STEPS[1] ? 2 : (a >= MISSION_ADJ_STEPS[0] ? 1 : 0);
+    return x < 0 ? -n : n;
+}
+const missionLvOf = (def, adj) => Math.min(3, Math.max(1, def.lv + adj));
+// 멤버 미션 후보 — 미션 × 대상 멤버마다 조정된 별을 붙여, 별이 budget 이하인 것만
+function memberChoices(me, budget, skipId) {
+    const skill = missionSkill();
+    const out = [];
+    MISSION_DEFS.filter(d => d.who && d.id !== skipId).forEach(def => golfers.filter(g => g !== me).forEach(who => {
+        const lv = missionLvOf(def, missionAdjust(def, me, who, skill));
+        if (lv <= budget) out.push({ def, who, lv, w: def.w });
     }));
-    return pickWeighted(pairs);
+    return out;
 }
-// 다시 뽑기 — 같은 종류(본인·멤버)에서 지금 것을 빼고, 남은 미션과 합쳐 MISSION_LV_MAX 이하
-function pickMissionFor(other, keepLv, skipId) {
-    return pickWeighted(MISSION_DEFS.filter(d => !!d.who === other && d.id !== skipId && d.lv + keepLv <= MISSION_LV_MAX));
-}
-function pickTarget(me) {
-    const others = golfers.filter(g => g !== me);
-    return others[Math.min(others.length - 1, Math.floor(missionRand(others.length)))];
+const selfFits = (keepLv, skipId) => MISSION_DEFS.filter(d => !d.who && d.id !== skipId && d.lv + keepLv <= MISSION_LV_MAX);
+// 받기 — 멤버 미션과 대상을 먼저 정하고(조정된 별), 남은 별 안에서 본인 미션을 고른다.
+// 멤버 쪽 무게에 '들어갈 수 있는 본인 미션 무게의 합'을 곱해, 가능한 짝 전체에서 고르게 뽑은 것과 같게 한다.
+function pickMissionPair(me) {
+    const sum = list => list.reduce((t, d) => t + d.w, 0);
+    const b = pickWeighted(memberChoices(me, MISSION_LV_MAX - 1).map(c => ({ ...c, w: c.w * sum(selfFits(c.lv)) })).filter(c => c.w > 0));
+    if (!b) return null;
+    const a = pickWeighted(selfFits(b.lv));
+    return a ? { a, b } : null;
 }
 
 // 슬롯처럼 미션 이름이 몇 번 바뀌다 멈춘다 — 글자만 바꾸므로 그리기 비용이 없다.
@@ -424,16 +468,16 @@ function drawMission() {
     const t = missionTarget();
     if (!t) { showToast('⚠️ 다음 라운드 일정이 등록되어야 미션을 받을 수 있습니다.'); return; }
     if (missionEntry(t.round, me)) { showToast('ℹ️ 이번 라운드 미션은 이미 받았습니다.'); return; }
-    const p = pickMissionPair();
+    const p = pickMissionPair(me);
     if (!p) return;
-    const rec = { at: Date.now(), y: t.year, ms: [{ id: p.a.id }, { id: p.b.id, who: pickTarget(me) }] };
+    const rec = { at: Date.now(), y: t.year, ms: [{ id: p.a.id }, { id: p.b.def.id, who: p.b.who, lv: p.b.lv }] };
     if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
     if (!appData.missions[t.round]) appData.missions[t.round] = {};
     appData.missions[t.round][me] = rec;
     writeMine(m => { m.missions[t.round] = rec; });
     syncToSupabase(appData);
     rollMission(['msnRoll0', 'msnRoll1'], 'msnDrawBtn', '미션 뽑는 중…', () =>
-        showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a, null)} · ${missionText(p.b, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`));
+        showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a, null)} · ${missionText(p.b.def, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`));
 }
 
 // 다시 뽑기 — 포인트 2점 · 라운드마다 1회 · 두 미션 중 하나만. 처음 기록은 그대로 두고 `re: {i, id, who?, at}`를 덧붙인다.
@@ -454,11 +498,14 @@ async function redrawMission(i) {
     if (!c2.ok) { if (c2.why) showToast(c2.why); return; }
     const raw = appData.missions && appData.missions[t.round] && appData.missions[t.round][me];
     if (!raw) return;
-    const keep = missionEntry(t.round, me).items.filter(x => x.i !== i).reduce((s, x) => s + x.def.lv, 0);
-    const def = pickMissionFor(!!cur.def.who, keep, cur.def.id);
-    if (!def) { showToast('⚠️ 다시 뽑을 수 있는 미션이 없습니다.'); return; }
+    // 다시 뽑기도 같은 규칙 — 같은 종류에서 지금 것을 빼고, 남은 미션의 별과 합쳐 MISSION_LV_MAX 이하(멤버 미션은 조정된 별로)
+    const keep = missionEntry(t.round, me).items.filter(x => x.i !== i).reduce((s, x) => s + x.lv, 0);
+    const pick = cur.def.who ? pickWeighted(memberChoices(me, MISSION_LV_MAX - keep, cur.def.id))
+        : (d => d && { def: d })(pickWeighted(selfFits(keep, cur.def.id)));
+    if (!pick) { showToast('⚠️ 다시 뽑을 수 있는 미션이 없습니다.'); return; }
+    const def = pick.def;
     const re = { i, id: def.id, at: Date.now() };
-    if (def.who) re.who = pickTarget(me);
+    if (def.who) { re.who = pick.who; re.lv = pick.lv; }
     raw.re = re;
     writeMine(m => { m.missions[t.round] = raw; });
     syncToSupabase(appData);
@@ -527,10 +574,16 @@ const MSN_TARGET_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx=
 
 function msnStateHtml(x) {
     if (!x) return '<span class="msn-state off">미수령</span>';
-    if (x.state === 'ok') return `<span class="msn-state ok">성공 +${x.def.lv}</span>`;
+    if (x.state === 'ok') return `<span class="msn-state ok">성공 +${x.lv}</span>`;
     if (x.state === 'fail') return '<span class="msn-state fail">실패</span>';
     if (x.state === 'none') return '<span class="msn-state off">기록 없음</span>';
-    return `<span class="msn-pts">+${x.def.lv}</span>`;
+    return `<span class="msn-pts">+${x.lv}</span>`;
+}
+// 실력 보정 줄 — 조정된 멤버 미션에만(`기본 ★★ · 실력 보정 −1`)
+function msnAdjHtml(x) {
+    if (!x.def.who || x.lv === x.def.lv) return '';
+    const d = x.lv - x.def.lv;
+    return `<div class="adj">기본 ${MISSION_LEVELS[x.def.lv].stars} · 실력 보정 ${d > 0 ? '+' : '−'}${Math.abs(d)}</div>`;
 }
 
 const MSN_PAIR_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.5" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c.6-3 2.8-4.6 5.5-4.6S13.4 16 14 19M13 15c.9-.4 1.9-.6 3-.6 2.7 0 4.9 1.6 5.5 4.6"/></svg>';
@@ -552,25 +605,25 @@ function missionTargetCard(me) {
             <div class="msn-roll"><span class="msn-ic">${MSN_TARGET_ICON}</span><span class="msn-roll-text" id="msnRoll0">본인 미션</span></div>
             <div class="msn-roll"><span class="msn-ic other">${MSN_PAIR_ICON}</span><span class="msn-roll-text" id="msnRoll1">멤버 미션</span></div>
             <button type="button" class="msn-draw-btn" id="msnDrawBtn" onclick="drawMission()">미션 받기</button>
-            <div class="msn-note">본인 미션 1개 + 멤버 미션 1개 · 난이도 합 ★${MISSION_LV_MAX}개 이하로 무작위 · 포인트 ${REDRAW_COST}점으로 1개 다시 뽑기(1회)</div>
+            <div class="msn-note">본인 미션 1개 + 멤버 미션 1개 · 난이도 합 ★${MISSION_LV_MAX}개 이하로 무작위 · 멤버 미션 난이도는 대상 실력에 따라 보정 · 포인트 ${REDRAW_COST}점으로 1개 다시 뽑기(1회)</div>
         </div>`;
     } else {
         const pop = Date.now() - missionLanded < 1500 ? ' pop' : '';
         const rc = redrawCheck(me, t.round);
-        const sum = mine.items.reduce((s, x) => s + x.def.lv, 0);
+        const sum = mine.items.reduce((s, x) => s + x.lv, 0);
         mineHtml = `<div class="msn-pair">${mine.items.map(x => `<div class="msn-mine${pop}${x.def.who ? ' other' : ''}">
             <span class="msn-ic${x.def.who ? ' other' : ''}">${x.def.who ? MSN_PAIR_ICON : MSN_TARGET_ICON}</span>
-            <div class="msn-mine-body"><div class="k">${MSN_KIND[x.def.who ? 1 : 0]}${x.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRoll${x.i}">${escapeHtml(missionText(x.def, x))}</div><div class="h">${msnHowHtml(x.def.how, true)}</div></div>
-            <div class="msn-mine-side">${msnStars(x.def.lv)}<span class="msn-pts">+${x.def.lv}점</span>${mine.redrawn ? '' : `<button type="button" class="msn-redo" id="msnRedraw${x.i}"${rc.ok ? '' : ' disabled'} onclick="redrawMission(${x.i})">다시 뽑기</button>`}</div>
+            <div class="msn-mine-body"><div class="k">${MSN_KIND[x.def.who ? 1 : 0]}${x.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRoll${x.i}">${escapeHtml(missionText(x.def, x))}</div><div class="h">${msnHowHtml(x.def.how, true)}</div>${msnAdjHtml(x)}</div>
+            <div class="msn-mine-side">${msnStars(x.lv)}<span class="msn-pts">+${x.lv}점</span>${mine.redrawn ? '' : `<button type="button" class="msn-redo" id="msnRedraw${x.i}"${rc.ok ? '' : ' disabled'} onclick="redrawMission(${x.i})">다시 뽑기</button>`}</div>
         </div>`).join('')}</div>
         <div class="msn-pair-sum"><span>난이도 합 ★${sum} · 최대 +${sum}점</span><span>${mine.redrawn ? '다시 뽑기 사용함' : (rc.ok ? `다시 뽑기 ${REDRAW_COST}점 · 1회 · 보유 ${rc.pts}점` : `다시 뽑기 ${REDRAW_COST}점 필요 · 보유 ${rc.pts || 0}점`)}</span></div>`;
     }
     const others = golfers.filter(g => g !== me).map(g => {
         const e = missionEntry(t.round, g);
         if (!e) return `<div class="msn-row"><span class="n">${escapeHtml(g)}</span><span class="m off">아직 받지 않음</span><span class="r"></span></div>`;
-        const sum = e.items.reduce((s, x) => s + x.def.lv, 0);
+        const sum = e.items.reduce((s, x) => s + x.lv, 0);
         return `<div class="msn-row"><span class="n">${escapeHtml(g)}</span>
-            <span class="m">${e.items.map(x => `<span class="ml">${escapeHtml(missionText(x.def, x))} ${msnStars(x.def.lv)}</span>`).join('')}</span>
+            <span class="m">${e.items.map(x => `<span class="ml">${escapeHtml(missionText(x.def, x))} ${msnStars(x.lv)}</span>`).join('')}</span>
             <span class="r"><span class="msn-pts">+${sum}</span></span></div>`;
     }).join('');
     return `<div class="msn-card">
@@ -688,7 +741,7 @@ function missionHistoryCard(me) {
         <div class="msn-people">${golfers.map(n => `<button type="button" class="${n === g ? 'on' : ''}" onclick="selectMissionPerson('${n}')">${escapeHtml(n)}</button>`).join('')}</div>
         ${rounds.length ? `<div class="msn-hist">${shown.map(r => missionResults(r, g).map((x, k) => `<div class="msn-h${k ? ' cont' : ''}">
             <span class="rd">${k ? '' : r + '차'}</span>
-            <span class="tx">${escapeHtml(x.text)} ${msnStars(x.def.lv)}${x.got ? `<small>${escapeHtml(x.got)}</small>` : ''}</span>
+            <span class="tx">${escapeHtml(x.text)} ${msnStars(x.lv)}${x.got ? `<small>${escapeHtml(x.got)}</small>` : ''}</span>
             ${msnStateHtml(x)}</div>`).join('')).join('')}</div>${more > 0 ? `<button type="button" class="msn-more" onclick="showAllMissionHistory()">이전 기록 ${more}라운드 더 보기</button>` : ''}` : '<div class="msn-empty">아직 받은 미션이 없습니다.</div>'}
     </div>`;
 }
@@ -705,7 +758,7 @@ function missionListCard() {
         ${head}
         ${group('본인 미션', '내 기록으로 판정', self)}
         ${group('멤버 미션', '○○ = 무작위로 정해지는 다른 멤버', other)}
-        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MAX}개 이하입니다(예: ★★★ + ★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
+        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MAX}개 이하입니다(예: ★★★ + ★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 멤버 미션의 별은 기본 난이도이며, 받을 때 최근 2경기 평균 타수로 실력을 보아 조정합니다 — 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEPS[0]}타 이상이면 ±1, ${MISSION_ADJ_STEPS[1]}타 이상이면 ±2(★1~★3). 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 
@@ -751,8 +804,8 @@ function revealMissionResult(r) {
     const okN = rows.filter(x => x.s.okN > 0).length;
     const STEP = 0.35;
     // 이 차수로 멀리건 사용권이 늘어난 사람
-    const before = g => Math.floor(missionLog(g).filter(x => x.round < r && x.ok).reduce((t, x) => t + x.def.lv, 0) / MULLIGAN_STEP);
-    const after = g => Math.floor(missionLog(g).filter(x => x.round <= r && x.ok).reduce((t, x) => t + x.def.lv, 0) / MULLIGAN_STEP);
+    const before = g => Math.floor(missionLog(g).filter(x => x.round < r && x.ok).reduce((t, x) => t + x.lv, 0) / MULLIGAN_STEP);
+    const after = g => Math.floor(missionLog(g).filter(x => x.round <= r && x.ok).reduce((t, x) => t + x.lv, 0) / MULLIGAN_STEP);
     const gained = golfers.filter(g => after(g) > before(g));
     const kings = missionKings();
     const tail = 0.5 + rows.length * STEP;
