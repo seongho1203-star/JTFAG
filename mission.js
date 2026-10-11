@@ -10,6 +10,10 @@
 //   payload.missions  = { "10": { "신성호": { id: 'p3par2', at: 1760000000000, y: 2026 } } }
 //   payload.mulligans = { "신성호": [ { r: 10, t: 1760000000000 } ] }
 //
+// **다시 뽑기**(사용자 요청 — `포인트2점으로 한번만 다시 뽑을수있게`): 차수마다 한 번, 포인트 2점을 써서 다시 뽑는다.
+// 처음 받은 미션을 고치지 않고 **`re`를 덧붙인다** — `{ id, at, y, re: { id, who?, at } }`. 판정은 `re`가 있으면 그것으로 한다.
+// 덧붙이기만 하므로 아래 '더하기만 한다'는 전제가 그대로 산다(낡은 payload에 `re`가 없으면 합칠 때 되살린다).
+//
 // 두 값 모두 **더하기만 한다**(한 번 받은 미션은 못 바꾸고 · 쓴 사용권은 안 되돌린다). 그래서 낡은 폰이 payload를
 // 통째로 덮어써도 `mergeMissionData()`가 합쳐서 되살린다 — 지우는 길이 없으니 합쳐도 언제나 같은 값으로 모인다.
 
@@ -19,6 +23,7 @@ const MISSION_LEVELS = {
     3: { stars: '★★★', name: '어려움' }
 };
 const MULLIGAN_STEP = 5;   // 포인트 5점마다 멀리건 사용권 1개(사용자가 정했다)
+const REDRAW_COST = 2;     // 다시 뽑기 — 포인트 2점 · 차수마다 1회(사용자가 정했다)
 
 // 셈 도우미 — h는 { par: 18홀 파, rel: 파 대비 타수 }
 const mCount = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? 1 : 0), 0);
@@ -90,10 +95,12 @@ function missionYearNow() {
     return parseInt(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()), 10);
 }
 
+// 판정에 쓰는 미션 — 다시 뽑았으면(`re`) 그 미션이다. `redrawn`이 붙는다.
 function missionRec(round, g) {
     const all = appData && appData.missions;
-    const rec = all && all[String(round)] && all[String(round)][g];
+    let rec = all && all[String(round)] && all[String(round)][g];
     if (!rec || !MISSION_BY_ID[rec.id]) return null;
+    if (rec.re && MISSION_BY_ID[rec.re.id]) rec = { id: rec.re.id, who: rec.re.who, at: rec.re.at, y: rec.y, redrawn: true };
     // 대상 멤버가 있는 미션은 그 이름이 우리 넷 중 하나(본인 제외)여야 한다
     if (MISSION_BY_ID[rec.id].who && !(golfers.includes(rec.who) && rec.who !== g)) return null;
     return rec;
@@ -143,10 +150,30 @@ function missionLog(g) {
     return missionRounds().map(r => missionResult(r, g)).filter(x => x && (x.state === 'ok' || x.state === 'fail'));
 }
 
+// 다시 뽑기에 쓴 횟수(그해 것만 셀 수 있다)
+function missionRedraws(g, year) {
+    return missionRounds().filter(r => { const x = missionRec(r, g); return x && x.redrawn && (!year || x.y === year); }).length;
+}
+// 포인트 = 성공한 미션의 별 수 − 다시 뽑기에 쓴 점수
 function missionPoints(g, year) {
-    return missionLog(g).filter(x => x.ok && (!year || x.rec.y === year)).reduce((t, x) => t + x.def.lv, 0);
+    const won = missionLog(g).filter(x => x.ok && (!year || x.rec.y === year)).reduce((t, x) => t + x.def.lv, 0);
+    return Math.max(0, won - missionRedraws(g, year) * REDRAW_COST);
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
+
+// 지금 다시 뽑을 수 있는가 — 받은 미션이 있고 · 아직 안 다시 뽑았고 · 포인트 2점이 있고 ·
+// 2점을 써도 이미 쓴 멀리건 사용권보다 받은 사용권이 적어지지 않을 때.
+function redrawCheck(g, round) {
+    const rec = missionRec(round, g);
+    if (!rec) return { ok: false };
+    if (rec.redrawn) return { ok: false, done: true, why: 'ℹ️ 이번 라운드는 이미 다시 뽑았습니다.' };
+    const pts = missionPoints(g);
+    if (pts < REDRAW_COST) return { ok: false, why: `⚠️ 포인트가 부족합니다. 다시 뽑기에는 ${REDRAW_COST}점이 필요합니다(보유 ${pts}점).`, pts };
+    if (Math.floor((pts - REDRAW_COST) / MULLIGAN_STEP) < mulliganUses(g).length) {
+        return { ok: false, why: '⚠️ 이미 사용한 멀리건 사용권 때문에 포인트를 사용할 수 없습니다.', pts };
+    }
+    return { ok: true, pts };
+}
 
 // 멀리건 — 받은 개수는 통산 포인트에서 셈하고(해가 바뀌어도 남는다), 쓴 개수만 저장한다.
 function mulliganUses(g) {
@@ -229,7 +256,9 @@ function mergeMissionData(prev) {
         if (!rec || !MISSION_BY_ID[rec.id] || !golfers.includes(g)) return;
         if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
         if (!appData.missions[r]) appData.missions[r] = {};
-        if (!appData.missions[r][g]) { appData.missions[r][g] = rec; changed = true; }
+        const cur = appData.missions[r][g];
+        if (!cur) { appData.missions[r][g] = rec; changed = true; }
+        else if (rec.re && !cur.re && cur.id === rec.id && MISSION_BY_ID[rec.re.id]) { cur.re = rec.re; changed = true; }
     };
     const addUse = (g, u) => {
         if (!u || typeof u.t !== 'number' || !golfers.includes(g)) return;
@@ -250,13 +279,41 @@ function mergeMissionData(prev) {
     return changed;
 }
 
-function pickMission() {
-    const total = MISSION_DEFS.reduce((t, d) => t + d.w, 0);
+function pickMission(skipId) {
+    const pool = MISSION_DEFS.filter(d => d.id !== skipId);
+    const total = pool.reduce((t, d) => t + d.w, 0);
     let x;
     try { const a = new Uint32Array(1); crypto.getRandomValues(a); x = a[0] / 4294967296 * total; }
     catch (e) { x = Math.random() * total; }
-    for (const d of MISSION_DEFS) { if ((x -= d.w) < 0) return d; }
-    return MISSION_DEFS[MISSION_DEFS.length - 1];
+    for (const d of pool) { if ((x -= d.w) < 0) return d; }
+    return pool[pool.length - 1];
+}
+function pickTarget(me) {
+    const others = golfers.filter(g => g !== me);
+    let k = 0;
+    try { const a = new Uint32Array(1); crypto.getRandomValues(a); k = a[0] % others.length; } catch (e) { k = Math.floor(Math.random() * others.length); }
+    return others[k];
+}
+
+// 슬롯처럼 미션 이름이 몇 번 바뀌다 멈춘다 — 글자만 바꾸므로 그리기 비용이 없다.
+function rollMission(btnId, busyText, finish) {
+    const box = document.getElementById('msnRollText');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const done = () => {
+        if (missionRoll) clearInterval(missionRoll.timer);
+        missionRoll = null;
+        missionLanded = Date.now();
+        missionLastHtml = '';
+        renderMissionPage();
+        finish();
+    };
+    if (!box || reduce) { done(); return; }
+    let i = 0;
+    const btn = document.getElementById(btnId);
+    if (btn) { btn.disabled = true; btn.textContent = busyText; }
+    box.classList.add('rolling');
+    missionRoll = { timer: setInterval(() => { box.textContent = missionText(MISSION_DEFS[(i++ * 7 + 3) % MISSION_DEFS.length], null); }, 85) };
+    setTimeout(done, 1300);
 }
 
 let missionRoll = null;      // 뽑는 중이면 { until, timer } — 그동안은 화면을 다시 그리지 않는다
@@ -273,36 +330,40 @@ function drawMission() {
     if (missionRec(t.round, me)) { showToast('ℹ️ 이번 라운드 미션은 이미 받았습니다.'); return; }
     const def = pickMission();
     const rec = { id: def.id, at: Date.now(), y: t.year };
-    if (def.who) {
-        const others = golfers.filter(g => g !== me);
-        let k = 0;
-        try { const a = new Uint32Array(1); crypto.getRandomValues(a); k = a[0] % others.length; } catch (e) { k = Math.floor(Math.random() * others.length); }
-        rec.who = others[k];
-    }
+    if (def.who) rec.who = pickTarget(me);
     if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
     if (!appData.missions[t.round]) appData.missions[t.round] = {};
     appData.missions[t.round][me] = rec;
     writeMine(m => { m.missions[t.round] = rec; });
     syncToSupabase(appData);
+    rollMission('msnDrawBtn', '미션 뽑는 중…', () =>
+        showToast(`🎯 ${t.round}차 미션 · ${missionText(def, rec)} (${MISSION_LEVELS[def.lv].stars} ${def.lv}점)`));
+}
 
-    // 슬롯처럼 미션 이름이 몇 번 바뀌다 멈춘다 — 글자만 바꾸므로 그리기 비용이 없다.
-    const box = document.getElementById('msnRollText');
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const finish = () => {
-        if (missionRoll) clearInterval(missionRoll.timer);
-        missionRoll = null;
-        missionLanded = Date.now();
-        missionLastHtml = '';
-        renderMissionPage();
-        showToast(`🎯 ${t.round}차 미션 · ${missionText(def, rec)} (${MISSION_LEVELS[def.lv].stars} ${def.lv}점)`);
-    };
-    if (!box || reduce) { finish(); return; }
-    let i = 0;
-    const btn = document.getElementById('msnDrawBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '미션 뽑는 중…'; }
-    box.classList.add('rolling');
-    missionRoll = { timer: setInterval(() => { box.textContent = missionText(MISSION_DEFS[(i++ * 7 + 3) % MISSION_DEFS.length], null); }, 85) };
-    setTimeout(finish, 1300);
+// 다시 뽑기 — 포인트 2점 · 차수마다 1회. 처음 미션은 그대로 두고 `re`를 덧붙인다(되돌리기를 안 거는 것도 받기와 같다).
+async function redrawMission() {
+    if (missionRoll) return;
+    const me = localStorage.getItem('jtfag_my_name');
+    const t = missionTarget();
+    if (!me || !golfers.includes(me) || !t) return;
+    const c = redrawCheck(me, t.round);
+    if (!c.ok) { if (c.why) showToast(c.why); return; }
+    const now = missionRec(t.round, me);
+    const ok = await showConfirmPrompt(`<b>포인트 ${REDRAW_COST}점</b>을 사용해 미션을 다시 뽑습니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${t.round}차 라운드 · 1회만 가능하며 취소할 수 없습니다.<br>현재 미션: ${escapeHtml(missionText(MISSION_BY_ID[now.id], now))}<br>보유 포인트 ${c.pts}점 → ${c.pts - REDRAW_COST}점</span>`, '다시 뽑기', '#2b5394');
+    if (!ok) return;
+    // 확인창이 떠 있는 사이 남의 저장이 들어왔을 수 있어 지금 값으로 다시 본다
+    const c2 = redrawCheck(me, t.round);
+    if (!c2.ok) { if (c2.why) showToast(c2.why); return; }
+    const raw = appData.missions && appData.missions[t.round] && appData.missions[t.round][me];
+    if (!raw) return;
+    const def = pickMission(now.id);
+    const re = { id: def.id, at: Date.now() };
+    if (def.who) re.who = pickTarget(me);
+    raw.re = re;
+    writeMine(m => { m.missions[t.round] = raw; });
+    syncToSupabase(appData);
+    rollMission('msnRedrawBtn', '다시 뽑는 중…', () =>
+        showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`));
 }
 
 async function useMulligan() {
@@ -356,16 +417,20 @@ function missionTargetCard(me) {
         mineHtml = `<div class="msn-draw">
             <div class="msn-roll"><span class="msn-ic">${MSN_TARGET_ICON}</span><span class="msn-roll-text" id="msnRollText">어떤 미션이 나올까요?</span></div>
             <button type="button" class="msn-draw-btn" id="msnDrawBtn" onclick="drawMission()">미션 받기</button>
-            <div class="msn-note">미션 목록 중 하나가 무작위로 정해집니다 · 한 번 받으면 변경할 수 없습니다</div>
+            <div class="msn-note">미션 목록 중 하나가 무작위로 정해집니다 · 포인트 ${REDRAW_COST}점으로 1회 다시 뽑을 수 있습니다</div>
         </div>`;
     } else {
         const d = MISSION_BY_ID[mine.id];
         const pop = Date.now() - missionLanded < 1500 ? ' pop' : '';
+        const rc = redrawCheck(me, t.round);
+        const redraw = mine.redrawn ? ''
+            : `<div class="msn-redraw"><button type="button" class="msn-redraw-btn" id="msnRedrawBtn"${rc.ok ? '' : ' disabled'} onclick="redrawMission()">다시 뽑기 · ${REDRAW_COST}점 사용</button>
+                <span>${rc.ok ? `1회 가능 · 보유 ${rc.pts}점` : `보유 ${rc.pts || 0}점 · ${REDRAW_COST}점 이상 필요`}</span></div>`;
         mineHtml = `<div class="msn-mine${pop}">
             <span class="msn-ic">${MSN_TARGET_ICON}</span>
-            <div class="msn-mine-body"><div class="k">내 미션</div><div class="t">${escapeHtml(missionText(d, mine))}</div><div class="h">${escapeHtml(d.how)}</div></div>
+            <div class="msn-mine-body"><div class="k">내 미션${mine.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRollText">${escapeHtml(missionText(d, mine))}</div><div class="h">${escapeHtml(d.how)}</div></div>
             <div class="msn-mine-side">${msnStars(d.lv)}<span class="msn-pts">+${d.lv}점</span></div>
-        </div>`;
+        </div>${redraw}`;
     }
     const others = golfers.filter(g => g !== me).map(g => {
         const rec = missionRec(t.round, g);
@@ -433,7 +498,7 @@ function missionMulliganCard(me) {
             <div class="msn-mul-body">
                 <div class="msn-mul-line">다음 사용권까지 <b>${m.toNext}점</b></div>
                 <div class="msn-mul-bar"><i style="width:${pct}%"></i></div>
-                <div class="msn-mul-sub">통산 ${m.pts}점 · 받은 사용권 ${m.earned}장 · 사용 ${m.used}장</div>
+                <div class="msn-mul-sub">통산 ${m.pts}점 · 받은 사용권 ${m.earned}장 · 사용 ${m.used}장${missionRedraws(me) ? ` · 다시 뽑기 ${missionRedraws(me)}회(−${missionRedraws(me) * REDRAW_COST}점)` : ''}</div>
             </div>
         </div>
         <button type="button" class="msn-use-btn"${m.left > 0 ? '' : ' disabled'} onclick="useMulligan()">멀리건 사용</button>
@@ -464,7 +529,7 @@ function missionListCard() {
             <div class="msn-lv-head">${msnStars(lv)} ${MISSION_LEVELS[lv].name} <span class="msn-pts">${lv}점</span></div>
             ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how).replace(/\(([^)]*)\)$/, ' <i>($1)</i>')}</span></div>`).join('')}
         </div>`).join('')}
-        <div class="msn-foot">'파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. ○○는 미션을 받을 때 무작위로 정해지는 다른 멤버이며, 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다.</div>
+        <div class="msn-foot">'파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. ○○는 미션을 받을 때 무작위로 정해지는 다른 멤버이며, 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션은 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 

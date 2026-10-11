@@ -1578,6 +1578,11 @@ html, body { overscroll-behavior: none; }
 .msn-mine-body .k { font-size: 0.66rem; font-weight: 800; color: #2b5394; }
 .msn-mine-body .t { font-size: 1rem; font-weight: 900; letter-spacing: -0.3px; word-break: keep-all; }
 .msn-mine-body .h { font-size: 0.7rem; color: #6b7075; margin-top: 1px; word-break: keep-all; }
+.msn-mine-body .k em { font-style: normal; font-weight: 800; color: #8a6d1f; background: #fbf3df; border: 1px solid #ecdcae; border-radius: 6px; padding: 0 5px; margin-left: 4px; }
+.msn-redraw { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; }
+.msn-redraw-btn { flex: 0 0 auto; height: 34px; padding: 0 12px; border: 1px solid #c9d6ec; border-radius: 10px; background: #ffffff; color: #2b5394; font-family: inherit; font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.msn-redraw-btn:disabled { color: #a3a8ae; border-color: #e3e5e8; background: #f4f5f6; }
+.msn-redraw span { font-size: 0.68rem; color: #6b7075; text-align: right; word-break: keep-all; }
 .msn-mine-side { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: 0 0 auto; }
 .msn-others { margin-top: 6px; }
 .msn-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 2px; border-top: 1px solid var(--line); font-size: 0.8rem; }
