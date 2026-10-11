@@ -27,6 +27,11 @@ const MISSION_LEVELS = {
 const MULLIGAN_STEP = 5;   // 포인트 5점마다 멀리건 사용권 1개(사용자가 정했다)
 const REDRAW_COST = 2;     // 다시 뽑기 — 포인트 2점 · 차수마다 1회(사용자가 정했다)
 const MISSION_LV_MAX = 4;  // 라운드마다 받는 두 미션(본인 1 + 멤버 1)의 난이도 합 상한 — ★★★ + ★ 까지(사용자가 정했다)
+// 미션 초기화 시각 — 이보다 먼저 받은 미션·쓴 멀리건은 없는 것으로 본다(사용자 요청 — 규칙을 바꿔 모두 다시 시작).
+// **지우지 않고 무시한다** — 더하기만 하는 저장이라 지우면 낡은 폰이 되살리고 새 폰이 또 지우며 저장이 돈다.
+// 다시 초기화하려면 이 값만 지금 시각으로 바꾼다.
+const MISSION_RESET_AT = 1791681351211;   // 2026-10-11 10:15 KST
+const missionLive = rec => !!rec && typeof rec === 'object' && (Number(rec.at) || 0) >= MISSION_RESET_AT;
 
 // 셈 도우미 — h는 { par: 18홀 파, rel: 파 대비 타수 }
 const mCount = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? 1 : 0), 0);
@@ -115,6 +120,7 @@ function missionSameDraw(a, b) {
 function missionEntry(round, g) {
     const all = appData && appData.missions;
     const rec = all && all[String(round)] && all[String(round)][g];
+    if (!missionLive(rec)) return null;
     const slots = missionSlots(rec);
     if (!slots.length) return null;
     const re = rec.re && MISSION_BY_ID[rec.re.id] ? rec.re : null;
@@ -213,7 +219,7 @@ function redrawCheck(g, round) {
 // 멀리건 — 받은 개수는 통산 포인트에서 셈하고(해가 바뀌어도 남는다), 쓴 개수만 저장한다.
 function mulliganUses(g) {
     const list = appData && appData.mulligans && appData.mulligans[g];
-    return Array.isArray(list) ? list.filter(u => u && typeof u.t === 'number') : [];
+    return Array.isArray(list) ? list.filter(u => u && typeof u.t === 'number' && u.t >= MISSION_RESET_AT) : [];
 }
 function mulliganInfo(g) {
     const pts = missionPoints(g);
@@ -291,15 +297,15 @@ function writeMine(fn) {
 function mergeMissionData(prev) {
     let changed = false;
     const addMission = (r, g, rec) => {
-        if (!missionSlots(rec).some(m => MISSION_BY_ID[m.id]) || !golfers.includes(g)) return;
+        if (!missionLive(rec) || !missionSlots(rec).some(m => MISSION_BY_ID[m.id]) || !golfers.includes(g)) return;
         if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
         if (!appData.missions[r]) appData.missions[r] = {};
         const cur = appData.missions[r][g];
-        if (!cur) { appData.missions[r][g] = rec; changed = true; }
+        if (!missionLive(cur)) { appData.missions[r][g] = rec; changed = true; }
         else if (rec.re && !cur.re && missionSameDraw(cur, rec) && MISSION_BY_ID[rec.re.id]) { cur.re = rec.re; changed = true; }
     };
     const addUse = (g, u) => {
-        if (!u || typeof u.t !== 'number' || !golfers.includes(g)) return;
+        if (!u || typeof u.t !== 'number' || u.t < MISSION_RESET_AT || !golfers.includes(g)) return;
         if (!appData.mulligans || typeof appData.mulligans !== 'object') appData.mulligans = {};
         if (!Array.isArray(appData.mulligans[g])) appData.mulligans[g] = [];
         if (!appData.mulligans[g].some(x => x && x.t === u.t)) { appData.mulligans[g].push(u); changed = true; }

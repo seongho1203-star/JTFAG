@@ -1667,8 +1667,8 @@ html, body { overscroll-behavior: none; }
 .msn-lv:first-of-type { border-top: 0; padding-top: 0; }
 .msn-lv-head { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 900; margin-bottom: 4px; }
 .msn-lv-item { display: flex; justify-content: space-between; gap: 10px; font-size: 0.78rem; padding: 3px 0; }
-.msn-lv-item b { font-weight: 800; white-space: nowrap; }
-.msn-lv-item b .msn-stars { display: inline-block; min-width: 2.6em; }
+.msn-lv-item b { font-weight: 800; white-space: nowrap; text-align: left; }
+.msn-lv-item b .msn-stars { margin-right: 2px; }
 .msn-lv-item span { color: #6b7075; font-size: 0.7rem; text-align: right; word-break: keep-all; }
 .msn-lv-item span i { font-style: normal; white-space: nowrap; }
 
