@@ -1616,111 +1616,159 @@ function resetEffectSeen() {
         : "🎬 초기화할 연출 기록이 없습니다.");
 }
 
-/* 연속수에 따라 축포도 등급이 갈린다 — 뱃지(금 → 불꽃 → 전설)와 같은 언어다.
-   둘이 어긋나면 '급이 올라갔다'가 전해지지 않는다.
-   바뀌는 건 색과 문구뿐이라 그리기 비용은 그대로다. */
+/* 독수리 연속 달성 — 대관식(사용자 요청 — `독수리3연속하기 쉽지않잖아. 그래서 엄청 웅장하게` ·
+   시안 `독수리 3연속 대관식`을 보고 `이대로 넣어줘`).
+
+   차례: 어둠 속 금빛 한 줄 → 검은 막이 위아래로 열림 → 우승 메달이 차수마다 하나씩 내리꽂힘(그 차수 타수) →
+   독수리 강림(실사 영상을 금테 원판에 · 못 받으면 앱이 그린 독수리) → 섬광과 함께 큰 숫자 폭발 →
+   `독·수·리` → 이름 → 붉은 낙인. 메달이 꽂힐 때·숫자가 터질 때 화면이 흔들리고 북소리가 난다(WebAudio로 만든다 — 파일이 없다).
+
+   등급은 뱃지와 같은 셋이다(3 금빛 · 4 불꽃 · 5 이상 전설). **transform·opacity만 움직이고 모든 애니메이션이 횟수가 정해져 끝난다**
+   (안드로이드 규칙). 화면 비율을 세로 1:2.05에 맞춰 가운데 둔다 — 크기를 폭 기준(cqw)으로 잡아 넓은 화면에서 넘치지 않게. */
 const EAGLE_TIERS = [
-    {
-        min: 5, cls: 'eg-legend', mark: '👑',
-        sub: n => `${n}경기 연속 독수리.<br><b>JTFAG의 전설입니다</b> 👑`,
-        confetti: 150, colors: ['#fde68a', '#fbbf24', '#c084fc', '#a78bfa', '#ffffff', '#7c3aed']
-    },
-    {
-        min: 4, cls: 'eg-fire', mark: '🔥',
-        sub: n => `${n}번을 내리 1등.<br><b>이제 말릴 사람이 없습니다</b> 🔥`,
-        confetti: 120, colors: ['#fbbf24', '#f59e0b', '#ef4444', '#fca5a5', '#ffffff', '#dc2626']
-    },
-    {
-        min: 3, cls: '', mark: '',
-        sub: n => `독수리 ${n}경기 연속 달성!<br>모두 축하해 주세요 🎉`,
-        confetti: 90, colors: null
-    }
+    { min: 5, cls: 't5', seal: 'JTFAG<br>전설', sub: n => `<em>${n}경기 연속 1위</em> · 모임 역사에 이름을 새겼습니다`, conf: ['#fff1c9', '#c79bff', '#f4c95d', '#ffffff'], confN: 110 },
+    { min: 4, cls: 't4', seal: '불패의<br>군림', sub: n => `<em>${n}경기 연속 1위</em> · 아무도 막지 못했습니다`, conf: ['#ffe1c2', '#ff7a2f', '#ffb347', '#ffffff'], confN: 90 },
+    { min: 3, cls: '', seal: '명예의<br>전당', sub: n => `<em>${n}경기 연속 1위</em> · 독수리 계급을 지켜 냈습니다`, conf: ['#fff4cf', '#f4c95d', '#e0a52b', '#ffffff'], confN: 70 }
 ];
 
 function eagleTier(streak) {
     return EAGLE_TIERS.find(t => streak >= t.min) || EAGLE_TIERS[EAGLE_TIERS.length - 1];
 }
 
-/* 연속한 만큼 독수리 도장을 한 줄로 찍는다.
-   숫자만으로는 4와 5의 차이가 잘 안 느껴지는데, 도장이 하나씩 톡톡 박히면
-   '쭉 이어졌다'가 눈에 들어온다. 열 개가 넘어도 줄만 길어지지 화면은 안 깨진다.
-   찍히는 시각은 인라인 delay로 준다 — 개수가 정해져 있지 않아 CSS로는 못 적는다. */
-const STAMP_START = 1.75, STAMP_GAP = 0.1;
-
-function eagleStamps(streak) {
-    const n = Math.min(streak, 12);       // 열두 개가 넘으면 줄이 두 줄로 넘어간다
-    const last = STAMP_START + (n - 1) * STAMP_GAP;
-    const more = streak > n
-        ? `<span class="eg-stamp-more" style="animation-delay:${(last + STAMP_GAP).toFixed(2)}s">+${streak - n}</span>`
-        : '';
-    return `<div class="eg-stamps">` +
-        Array.from({ length: n }, (_, i) =>
-            `<span class="eg-stamp" style="animation-delay:${(STAMP_START + i * STAMP_GAP).toFixed(2)}s">🦅</span>`).join('') +
-        more + `</div>`;
+// 연속을 이룬 차수들 — 계급 이력의 끝에서 연속수만큼(`rankedRoundsList[i]`가 i번째 계급의 차수 인덱스다)
+function eagleStreakRounds(name, streak) {
+    const list = (typeof rankedRoundsList !== 'undefined' && rankedRoundsList) || [];
+    return list.slice(Math.max(0, list.length - streak)).map(r => {
+        const s = parseFloat(appData && appData.scores && appData.scores[name] ? appData.scores[name][r] : NaN);
+        return { no: r + 1, score: isNaN(s) ? '' : String(s) };
+    });
 }
 
-// 도장이 다 찍힌 뒤에 아래 문구가 올라와야 순서가 맞는다.
-// 개수만큼 늦춰야 하므로 CSS에 못 적고 인라인으로 준다.
-function eagleSubDelay(streak) {
-    return STAMP_START + (Math.min(streak, 12) - 1) * STAMP_GAP + 0.35;
+// 북소리 — 낮은 사인파가 뚝 떨어지며 사라지고 짧은 잡음을 얹는다. 소리가 막혀도 그림은 그대로다.
+let eagleAudioCtx = null;
+function eagleDrums(plan) {
+    try {
+        if (!eagleAudioCtx) eagleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = eagleAudioCtx;
+        if (ctx.resume) ctx.resume();
+        const boom = (at, f, g) => {
+            const t = ctx.currentTime + at;
+            const o = ctx.createOscillator(), v = ctx.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.45, t + 0.5);
+            v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(g, t + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+            o.connect(v).connect(ctx.destination); o.start(t); o.stop(t + 1.2);
+            const len = Math.floor(ctx.sampleRate * 0.25), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+            for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+            const s = ctx.createBufferSource(), n = ctx.createGain(), lp = ctx.createBiquadFilter();
+            lp.type = 'lowpass'; lp.frequency.value = 900; n.gain.value = g * 0.5;
+            s.buffer = buf; s.connect(lp).connect(n).connect(ctx.destination); s.start(t);
+        };
+        const swell = (at, dur) => {
+            const t = ctx.currentTime + at;
+            [98, 147, 196, 247].forEach((f, i) => {
+                const o = ctx.createOscillator(), v = ctx.createGain(), lp = ctx.createBiquadFilter();
+                o.type = 'sawtooth'; o.frequency.value = f; lp.type = 'lowpass';
+                lp.frequency.setValueAtTime(300, t); lp.frequency.linearRampToValueAtTime(2200, t + dur * 0.6);
+                v.gain.setValueAtTime(0.0001, t); v.gain.linearRampToValueAtTime(0.035, t + 0.4); v.gain.setValueAtTime(0.035, t + dur * 0.7); v.gain.linearRampToValueAtTime(0.0001, t + dur);
+                o.connect(lp).connect(v).connect(ctx.destination); o.start(t + i * 0.02); o.stop(t + dur + 0.1);
+            });
+        };
+        swell(0.2, 1.4);
+        plan.hits.forEach(t => boom(t, 70, 0.7));
+        boom(plan.count, 46, 1); boom(plan.count, 92, 0.5);
+        boom(plan.seal, 120, 0.45);
+        swell(plan.count - 0.05, 3.2);
+    } catch (e) { /* 소리가 안 나도 축하는 계속된다 */ }
+}
+
+// 제목 글꼴(Black Han Sans·Cinzel)은 이 연출에서만 쓰므로 처음 뜰 때 한 번 불러온다. 못 받으면 앱 글꼴로 그려진다.
+function loadEagleFonts() {
+    if (document.getElementById('g3Fonts')) return;
+    const l = document.createElement('link');
+    l.id = 'g3Fonts'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Cinzel:wght@600&display=swap';
+    document.head.appendChild(l);
 }
 
 function celebrateEagleStreak(name, streak) {
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();
+    loadEagleFonts();
 
-    // 사진(EAGLE_HERO_URL)이 있으면 가로를 꽉 채우는 시네마 밴드로 깐다.
-    //
-    // **화면 전체를 덮지 않는 이유가 있다.** 받은 그림이 가로형(498x389)이라
-    // 세로 화면에 cover로 깔면 양옆이 잘려 독수리 머리가 반토막 난다.
-    // 가로만 맞추면 원본보다 작게 그려져 선명하기까지 하다.
-    //
-    // 밴드 위아래는 그라데이션으로 어둠에 녹인다 — `mask`를 쓰면 매 프레임
-    // 다시 합성되므로(GIF는 계속 바뀐다) 그냥 그라데이션 조각을 덮는다.
-    const photo = EAGLE_HERO_URL;
     const tier = eagleTier(streak);
+    const rounds = eagleStreakRounds(name, streak);
+    const shown = rounds.slice(-8);      // 메달은 여덟 개까지 — 그 넘어로는 한 줄에 안 들어간다
+    const n = shown.length || 1;
+    const M0 = 1.6, GAP = n > 5 ? 0.25 : 0.45;
+    const EAG = M0 + (n - 1) * GAP + 0.75, CNT = EAG + 1.25, TTL = CNT + 0.55, NAME = TTL + 0.55, SEAL = NAME + 0.6, SUB = SEAL + 0.4;
+    const mSize = n <= 3 ? 24 : n === 4 ? 19 : n === 5 ? 15.5 : 11;
+    const photo = EAGLE_HERO_URL;
+
     const overlay = document.createElement('div');
-    overlay.className = 'celebrate-overlay' + (photo ? ' eg-photo-mode' : '') + (tier.cls ? ' ' + tier.cls : '');
-    overlay.innerHTML = `
-        <div class="eg-ring"></div>
-        <div class="eg-ring eg-ring2"></div>
-        <div class="eg-stage">
-            ${photo ? `
-            <div class="eg-band">
-                <img class="eg-photo" src="${photo}" alt="">
-                <div class="eg-band-fade eg-band-top"></div>
-                <div class="eg-band-fade eg-band-bot"></div>
-                <div class="eg-band-line eg-band-line-t"></div>
-                <div class="eg-band-line eg-band-line-b"></div>
-            </div>` : eagleSvg()}
-            <div class="eg-count">${streak}<span>연속</span>${tier.mark ? `<b class="eg-mark">${tier.mark}</b>` : ''}</div>
-            <div class="eg-title">독 수 리</div>
-            <div class="eg-name">${escapeHtml(name)}</div>
-            ${eagleStamps(streak)}
-            <div class="eg-sub" style="animation-delay:${eagleSubDelay(streak).toFixed(2)}s">${tier.sub(streak)}</div>
-        </div>
-        <div class="eg-skip">화면을 누르면 닫힙니다</div>`;
+    overlay.className = 'celebrate-overlay g3-host';
+    overlay.innerHTML = `<div class="g3 ${tier.cls}">
+        <div class="g3-sky" style="animation-delay:.9s"></div>
+        <div class="g3-rays" style="animation-delay:1s,1s"></div>
+        <div class="g3-halo" style="animation-delay:${(EAG + 0.3).toFixed(2)}s"></div>
+        <div class="g3-stage"><div class="g3-shake">
+            <div class="g3-medals" style="--m:${mSize}cqw;animation-delay:${(EAG - 0.1).toFixed(2)}s">
+                ${shown.map((r, i) => `<div class="g3-medal" style="animation-delay:${(M0 + i * GAP).toFixed(2)}s"><b>${r.no}</b>${r.score ? `<small>${escapeHtml(r.score)}타</small>` : ''}</div>`).join('')}
+            </div>
+            <div class="g3-eagle${photo ? ' g3-photo' : ''}" style="animation-delay:${EAG.toFixed(2)}s">${photo
+                ? `<div class="g3-disc"><img src="${photo}" alt=""></div>`
+                : eagleSvg()}</div>
+            <div class="g3-wave" style="animation-delay:${(CNT + 0.05).toFixed(2)}s"></div>
+            <div class="g3-count" style="animation-delay:${CNT.toFixed(2)}s"><b>${streak}</b><span>연속</span></div>
+            <div class="g3-title">${['독', '수', '리'].map((c, i) => `<i style="animation-delay:${(TTL + i * 0.12).toFixed(2)}s">${c}</i>`).join('')}</div>
+            <div class="g3-name" style="animation-delay:${NAME.toFixed(2)}s"><b>${escapeHtml(name)}</b></div>
+            <div class="g3-seal" style="animation-delay:${SEAL.toFixed(2)}s">${tier.seal}</div>
+            <div class="g3-sub" style="animation-delay:${SUB.toFixed(2)}s">${tier.sub(streak)}</div>
+        </div></div>
+        <div class="g3-fx"></div>
+        <div class="g3-curtain top" style="animation-delay:.9s"></div><div class="g3-curtain bot" style="animation-delay:.9s"></div>
+        <div class="g3-line" style="animation-delay:.1s"></div>
+        <div class="g3-kicker" style="animation-delay:.15s">JTFAG · HALL OF FAME</div>
+        <div class="g3-flash" style="animation-delay:${CNT.toFixed(2)}s"></div>
+        <div class="g3-skip" style="animation-delay:${(SUB + 0.4).toFixed(2)}s">화면을 누르면 닫힙니다</div>
+    </div>`;
 
     // 사진을 못 받아오면(주소가 바뀌었거나 오프라인) 앱이 그린 독수리로 되돌아간다.
-    const img = overlay.querySelector('.eg-photo');
+    const img = overlay.querySelector('.g3-disc img');
     if (img) img.onerror = () => {
-        overlay.classList.remove('eg-photo-mode');
-        const band = overlay.querySelector('.eg-band');
-        if (band) band.remove();
-        overlay.querySelector('.eg-stage').insertAdjacentHTML('afterbegin', eagleSvg());
+        const box = overlay.querySelector('.g3-eagle');
+        if (box) { box.classList.remove('g3-photo'); box.innerHTML = eagleSvg(); }
     };
 
-    dropConfetti(overlay, tier.confetti, tier.colors);
+    // 메달이 꽂힐 때마다·숫자가 터질 때·낙인이 찍힐 때 화면이 흔들린다(같은 키프레임을 여러 번 건다)
+    const hits = shown.map((_, i) => M0 + i * GAP + 0.38);
+    overlay.querySelector('.g3-shake').style.animation =
+        hits.concat([CNT + 0.1, SEAL + 0.3]).map((t, i) => `g3-shake ${i === hits.length ? 0.5 : 0.32}s ease-out ${t.toFixed(2)}s`).join(',');
 
     document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('on'));
-    playEagleCry();
 
-    // 사진은 천천히 밀고 들어오는 맛이 있어 조금 더 오래 둔다.
-    let timer = null;
-    const close = () => { clearTimeout(timer); overlay.classList.remove('on'); setTimeout(() => overlay.remove(), 300); };
+    // 불씨(아래에서 위로)와 색종이(위에서 아래로) — 개수를 정해 두고 한 번씩만 돈다. 이동 거리는 실제 화면 높이로 준다.
+    const stage = overlay.querySelector('.g3');
+    const H = stage.clientHeight || window.innerHeight, W = stage.clientWidth || window.innerWidth;
+    let fx = '';
+    for (let i = 0; i < 34; i++) {
+        fx += `<span class="g3-ember" style="left:${(Math.random() * 100).toFixed(1)}%;--d:${(2.6 + Math.random() * 2.2).toFixed(2)}s;--x:${((Math.random() - 0.5) * 40).toFixed(0)}px;--rise:${(-H * (0.5 + Math.random() * 0.6)).toFixed(0)}px;animation-delay:${(EAG + Math.random() * 3).toFixed(2)}s"></span>`;
+    }
+    for (let i = 0; i < tier.confN; i++) {
+        fx += `<span class="g3-conf" style="left:${(Math.random() * 100).toFixed(1)}%;background:${tier.conf[i % tier.conf.length]};--d:${(2.4 + Math.random() * 2).toFixed(2)}s;--x:${((Math.random() - 0.5) * W * 0.4).toFixed(0)}px;--fall:${(H * (1.05 + Math.random() * 0.2)).toFixed(0)}px;--r:${(Math.random() * 900 - 450).toFixed(0)}deg;animation-delay:${(CNT + 0.05 + Math.random() * 1.2).toFixed(2)}s${Math.random() < 0.3 ? ';border-radius:50%' : ''}"></span>`;
+    }
+    overlay.querySelector('.g3-fx').innerHTML = fx;
+
+    requestAnimationFrame(() => overlay.classList.add('on'));
+    eagleDrums({ hits, count: CNT + 0.05, seal: SEAL + 0.3 });
+    const timers = [setTimeout(playEagleCry, (EAG + 0.4) * 1000)];
+
+    const close = () => {
+        timers.forEach(clearTimeout);
+        overlay.classList.remove('on');
+        setTimeout(() => overlay.remove(), 300);
+    };
     overlay.onclick = close;
-    timer = setTimeout(close, photo ? 8000 : 6500);
+    timers.push(setTimeout(close, (SUB + 3.6) * 1000));
 }
 
 // 접속하면 표를 맨 오른쪽으로 밀어 둔다 — 궁금한 건 방금 친 차수라서다.
