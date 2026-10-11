@@ -1584,6 +1584,7 @@ html, body { overscroll-behavior: none; }
 .msn-mine-body .k { font-size: 0.66rem; font-weight: 800; color: #2b5394; }
 .msn-mine-body .t { font-size: 1rem; font-weight: 900; letter-spacing: -0.3px; word-break: keep-all; }
 .msn-mine-body .h { font-size: 0.7rem; color: #6b7075; margin-top: 1px; word-break: keep-all; }
+.msn-mine-body .h i { font-style: normal; white-space: nowrap; }
 .msn-mine-body .k em { font-style: normal; font-weight: 800; color: #8a6d1f; background: #fbf3df; border: 1px solid #ecdcae; border-radius: 6px; padding: 0 5px; margin-left: 4px; }
 .msn-redraw { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; }
 .msn-redraw-btn { flex: 0 0 auto; height: 34px; padding: 0 12px; border: 1px solid #c9d6ec; border-radius: 10px; background: #ffffff; color: #2b5394; font-family: inherit; font-size: 0.78rem; font-weight: 800; white-space: nowrap; }

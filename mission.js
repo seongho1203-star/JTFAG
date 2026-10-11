@@ -478,6 +478,10 @@ async function useMulligan() {
 let missionViewName = null;   // 기록을 보는 사람(처음엔 이 기기 주인)
 let missionLastHtml = '';
 
+// 미션 설명 — 끝 괄호(`(동타는 실패)`)는 안 쪼개지게 묶는다. 받은 미션 카드에서는 그 괄호를 다음 줄로 내린다(사용자 요청).
+function msnHowHtml(how, br) {
+    return escapeHtml(how).replace(/\s*\(([^)]*)\)$/, (m, t) => `${br ? '<br>' : ' '}<i>(${t})</i>`);
+}
 function msnStars(lv) { return `<span class="msn-stars" aria-label="${MISSION_LEVELS[lv].name}">${MISSION_LEVELS[lv].stars}</span>`; }
 const MSN_TARGET_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.9"/></svg>';
 
@@ -516,7 +520,7 @@ function missionTargetCard(me) {
         const sum = mine.items.reduce((s, x) => s + x.def.lv, 0);
         mineHtml = `<div class="msn-pair">${mine.items.map(x => `<div class="msn-mine${pop}${x.def.who ? ' other' : ''}">
             <span class="msn-ic${x.def.who ? ' other' : ''}">${x.def.who ? MSN_PAIR_ICON : MSN_TARGET_ICON}</span>
-            <div class="msn-mine-body"><div class="k">${MSN_KIND[x.def.who ? 1 : 0]}${x.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRoll${x.i}">${escapeHtml(missionText(x.def, x))}</div><div class="h">${escapeHtml(x.def.how)}</div></div>
+            <div class="msn-mine-body"><div class="k">${MSN_KIND[x.def.who ? 1 : 0]}${x.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRoll${x.i}">${escapeHtml(missionText(x.def, x))}</div><div class="h">${msnHowHtml(x.def.how, true)}</div></div>
             <div class="msn-mine-side">${msnStars(x.def.lv)}<span class="msn-pts">+${x.def.lv}점</span>${mine.redrawn ? '' : `<button type="button" class="msn-redo" id="msnRedraw${x.i}"${rc.ok ? '' : ' disabled'} onclick="redrawMission(${x.i})">다시 뽑기</button>`}</div>
         </div>`).join('')}</div>
         <div class="msn-pair-sum"><span>난이도 합 ★${sum} · 최대 +${sum}점</span><span>${mine.redrawn ? '다시 뽑기 사용함' : (rc.ok ? `다시 뽑기 ${REDRAW_COST}점 · 1회 · 보유 ${rc.pts}점` : `다시 뽑기 ${REDRAW_COST}점 필요 · 보유 ${rc.pts || 0}점`)}</span></div>`;
@@ -655,7 +659,7 @@ function missionListCard() {
     if (!missionFold('list')) return `<div class="msn-card folded">${head}</div>`;
     const group = (title, sub, list) => `<div class="msn-lv">
             <div class="msn-lv-head">${title} <span class="msn-sub">${sub}</span></div>
-            ${[1, 2, 3].map(lv => list.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${msnStars(d.lv)} ${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how).replace(/\(([^)]*)\)$/, ' <i>($1)</i>')}</span></div>`).join('')).join('')}
+            ${[1, 2, 3].map(lv => list.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${msnStars(d.lv)} ${escapeHtml(missionText(d, null))}</b><span>${msnHowHtml(d.how)}</span></div>`).join('')).join('')}
         </div>`;
     return `<div class="msn-card">
         ${head}
