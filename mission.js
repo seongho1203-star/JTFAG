@@ -27,6 +27,7 @@ const MISSION_LEVELS = {
 const MULLIGAN_STEP = 5;   // 포인트 5점마다 멀리건 사용권 1개(사용자가 정했다)
 const REDRAW_COST = 2;     // 다시 뽑기 — 포인트 2점 · 차수마다 1회(사용자가 정했다)
 const MISSION_LV_MAX = 4;  // 라운드마다 받는 두 미션(본인 1 + 멤버 1)의 난이도 합 상한 — ★★★ + ★ 까지(사용자가 정했다)
+const MISSION_LV_MIN = 3;  // 그 합의 하한 — ★ + ★은 너무 쉽다(사용자가 정했다). 조정된 별로 센다
 // 미션 초기화 시각 — 이보다 먼저 받은 미션·쓴 멀리건은 없는 것으로 본다(사용자 요청 — 규칙을 바꿔 모두 다시 시작).
 // **지우지 않고 무시한다** — 더하기만 하는 저장이라 지우면 낡은 폰이 되살리고 새 폰이 또 지우며 저장이 돈다.
 // 다시 초기화하려면 이 값만 지금 시각으로 바꾼다.
@@ -415,16 +416,16 @@ function missionAdjust(def, me, who, skill) {
 }
 const missionLvOf = (def, adj) => Math.min(3, Math.max(1, def.lv + adj));
 // 멤버 미션 후보 — 미션 × 대상 멤버마다 조정된 별을 붙여, 별이 budget 이하인 것만
-function memberChoices(me, budget, skipId) {
+function memberChoices(me, budget, skipId, low = 1) {
     const skill = missionSkill();
     const out = [];
     MISSION_DEFS.filter(d => d.who && d.id !== skipId).forEach(def => golfers.filter(g => g !== me).forEach(who => {
         const lv = missionLvOf(def, missionAdjust(def, me, who, skill));
-        if (lv <= budget) out.push({ def, who, lv, w: def.w });
+        if (lv <= budget && lv >= low) out.push({ def, who, lv, w: def.w });
     }));
     return out;
 }
-const selfFits = (keepLv, skipId) => MISSION_DEFS.filter(d => !d.who && d.id !== skipId && d.lv + keepLv <= MISSION_LV_MAX);
+const selfFits = (keepLv, skipId) => MISSION_DEFS.filter(d => !d.who && d.id !== skipId && d.lv + keepLv <= MISSION_LV_MAX && d.lv + keepLv >= MISSION_LV_MIN);
 // 받기 — 멤버 미션과 대상을 먼저 정하고(조정된 별), 남은 별 안에서 본인 미션을 고른다.
 // 멤버 쪽 무게에 '들어갈 수 있는 본인 미션 무게의 합'을 곱해, 가능한 짝 전체에서 고르게 뽑은 것과 같게 한다.
 function pickMissionPair(me) {
@@ -498,9 +499,9 @@ async function redrawMission(i) {
     if (!c2.ok) { if (c2.why) showToast(c2.why); return; }
     const raw = appData.missions && appData.missions[t.round] && appData.missions[t.round][me];
     if (!raw) return;
-    // 다시 뽑기도 같은 규칙 — 같은 종류에서 지금 것을 빼고, 남은 미션의 별과 합쳐 MISSION_LV_MAX 이하(멤버 미션은 조정된 별로)
+    // 다시 뽑기도 같은 규칙 — 같은 종류에서 지금 것을 빼고, 남은 미션의 별과 합쳐 MISSION_LV_MIN 이상 · MAX 이하(멤버 미션은 조정된 별로)
     const keep = missionEntry(t.round, me).items.filter(x => x.i !== i).reduce((s, x) => s + x.lv, 0);
-    const pick = cur.def.who ? pickWeighted(memberChoices(me, MISSION_LV_MAX - keep, cur.def.id))
+    const pick = cur.def.who ? pickWeighted(memberChoices(me, MISSION_LV_MAX - keep, cur.def.id, MISSION_LV_MIN - keep))
         : (d => d && { def: d })(pickWeighted(selfFits(keep, cur.def.id)));
     if (!pick) { showToast('⚠️ 다시 뽑을 수 있는 미션이 없습니다.'); return; }
     const def = pick.def;
@@ -605,7 +606,7 @@ function missionTargetCard(me) {
             <div class="msn-roll"><span class="msn-ic">${MSN_TARGET_ICON}</span><span class="msn-roll-text" id="msnRoll0">본인 미션</span></div>
             <div class="msn-roll"><span class="msn-ic other">${MSN_PAIR_ICON}</span><span class="msn-roll-text" id="msnRoll1">멤버 미션</span></div>
             <button type="button" class="msn-draw-btn" id="msnDrawBtn" onclick="drawMission()">미션 받기</button>
-            <div class="msn-note">본인 미션 1개 + 멤버 미션 1개 · 난이도 합 ★${MISSION_LV_MAX}개 이하로 무작위 · 멤버 미션 난이도는 대상 실력에 따라 보정 · 포인트 ${REDRAW_COST}점으로 1개 다시 뽑기(1회)</div>
+            <div class="msn-note">본인 미션 1개 + 멤버 미션 1개 · 난이도 합 ★${MISSION_LV_MIN}~${MISSION_LV_MAX}개로 무작위 · 멤버 미션 난이도는 대상 실력에 따라 보정 · 포인트 ${REDRAW_COST}점으로 1개 다시 뽑기(1회)</div>
         </div>`;
     } else {
         const pop = Date.now() - missionLanded < 1500 ? ' pop' : '';
@@ -758,7 +759,7 @@ function missionListCard() {
         ${head}
         ${group('본인 미션', '내 기록으로 판정', self)}
         ${group('멤버 미션', '○○ = 무작위로 정해지는 다른 멤버', other)}
-        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MAX}개 이하입니다(예: ★★★ + ★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 멤버 미션의 별은 기본 난이도이며, 받을 때 최근 2경기 평균 타수로 실력을 보아 조정합니다 — 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEPS[0]}타 이상이면 ±1, ${MISSION_ADJ_STEPS[1]}타 이상이면 ±2(★1~★3). 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
+        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MIN}~${MISSION_LV_MAX}개입니다(예: ★★★ + ★ · ★★ + ★ · ★★ + ★★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 멤버 미션의 별은 기본 난이도이며, 받을 때 최근 2경기 평균 타수로 실력을 보아 조정합니다 — 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEPS[0]}타 이상이면 ±1, ${MISSION_ADJ_STEPS[1]}타 이상이면 ±2(★1~★3). 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 
