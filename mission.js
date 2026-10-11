@@ -7,7 +7,9 @@
 // (`payload.mulligans`). **성공·실패·포인트·사용권·뱃지는 전부 홀 기록(ROUND_HOLES)에서 그때그때 계산한다** —
 // 판정을 저장하면 스코어카드를 다시 올렸을 때 어긋난다(뱃지 컬렉션과 같은 생각).
 //
-//   payload.missions  = { "10": { "신성호": { id: 'p3par2', at: 1760000000000, y: 2026 } } }
+//   payload.missions  = { "10": { "신성호": { at, y: 2026, ms: [{ id: 'p3par2' }, { id: 'tPar6', who: '김지명' }] } } }
+//   (라운드마다 본인 미션 1개 + 멤버 미션 1개 · 난이도 합 ★4 이하 — 사용자가 정했다. 미션이 하나이던 예전 판
+//    `{ id, who?, at, y }`도 그대로 읽는다 — missionSlots())
 //   payload.mulligans = { "신성호": [ { r: 10, t: 1760000000000 } ] }
 //
 // **다시 뽑기**(사용자 요청 — `포인트2점으로 한번만 다시 뽑을수있게`): 차수마다 한 번, 포인트 2점을 써서 다시 뽑는다.
@@ -24,6 +26,7 @@ const MISSION_LEVELS = {
 };
 const MULLIGAN_STEP = 5;   // 포인트 5점마다 멀리건 사용권 1개(사용자가 정했다)
 const REDRAW_COST = 2;     // 다시 뽑기 — 포인트 2점 · 차수마다 1회(사용자가 정했다)
+const MISSION_LV_MAX = 4;  // 라운드마다 받는 두 미션(본인 1 + 멤버 1)의 난이도 합 상한 — ★★★ + ★ 까지(사용자가 정했다)
 
 // 셈 도우미 — h는 { par: 18홀 파, rel: 파 대비 타수 }
 const mCount = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? 1 : 0), 0);
@@ -95,15 +98,36 @@ function missionYearNow() {
     return parseInt(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()), 10);
 }
 
-// 판정에 쓰는 미션 — 다시 뽑았으면(`re`) 그 미션이다. `redrawn`이 붙는다.
-function missionRec(round, g) {
+// 저장된 한 사람·한 차수의 칸 목록. 지금 판은 `ms`(본인 미션 + 멤버 미션)이고,
+// 미션이 하나이던 예전 판(`{ id, who? }`)은 한 칸짜리로 읽는다.
+function missionSlots(rec) {
+    if (!rec || typeof rec !== 'object') return [];
+    if (Array.isArray(rec.ms)) return rec.ms.filter(m => m && typeof m === 'object');
+    return rec.id ? [{ id: rec.id, who: rec.who }] : [];
+}
+// 같은 뽑기에서 나온 기록인가(합칠 때 `re`를 옮겨 붙여도 되는가)
+function missionSameDraw(a, b) {
+    return missionSlots(a).map(m => m.id).join(',') === missionSlots(b).map(m => m.id).join(',');
+}
+
+// 판정에 쓰는 미션들 — 다시 뽑은 칸(`re.i`)은 `re`의 미션이다(`redrawn`).
+// 대상 멤버가 있는 미션은 그 이름이 우리 넷 중 하나(본인 제외)여야 한다.
+function missionEntry(round, g) {
     const all = appData && appData.missions;
-    let rec = all && all[String(round)] && all[String(round)][g];
-    if (!rec || !MISSION_BY_ID[rec.id]) return null;
-    if (rec.re && MISSION_BY_ID[rec.re.id]) rec = { id: rec.re.id, who: rec.re.who, at: rec.re.at, y: rec.y, redrawn: true };
-    // 대상 멤버가 있는 미션은 그 이름이 우리 넷 중 하나(본인 제외)여야 한다
-    if (MISSION_BY_ID[rec.id].who && !(golfers.includes(rec.who) && rec.who !== g)) return null;
-    return rec;
+    const rec = all && all[String(round)] && all[String(round)][g];
+    const slots = missionSlots(rec);
+    if (!slots.length) return null;
+    const re = rec.re && MISSION_BY_ID[rec.re.id] ? rec.re : null;
+    const reIdx = re ? (Number.isInteger(re.i) ? re.i : 0) : -1;
+    const items = [];
+    slots.forEach((m, i) => {
+        const src = i === reIdx ? re : m;
+        const def = MISSION_BY_ID[src.id];
+        if (!def) return;
+        if (def.who && !(golfers.includes(src.who) && src.who !== g)) return;
+        items.push({ i, def, who: def.who ? src.who : undefined, redrawn: i === reIdx });
+    });
+    return items.length ? { at: rec.at, y: rec.y, items, redrawn: reIdx >= 0 } : null;
 }
 
 // 화면에 적는 미션 글 — `{T}` 자리에 대상 멤버 이름(모르면 ○○)
@@ -123,50 +147,61 @@ function roundHasHoles(round) {
     return typeof ROUND_HOLES !== 'undefined' && !!ROUND_HOLES[String(round)];
 }
 
-// 판정 — state: 'wait'(아직 홀 기록 없음) · 'none'(그 차수에 기록이 없음 = 불참) · 'ok' · 'fail'
-function missionResult(round, g) {
-    const rec = missionRec(round, g);
-    if (!rec) return null;
-    const def = MISSION_BY_ID[rec.id];
-    const base = { round, g, rec, def, text: missionText(def, rec) };
-    if (!roundHasHoles(round)) return { ...base, state: 'wait' };
-    const h = missionHoles(round, g);
-    if (!h) return { ...base, state: 'none' };
-    let o = null;
-    if (def.who) {
-        o = missionHoles(round, rec.who);
-        if (!o) return { ...base, state: 'none', got: `${rec.who} 기록 없음` };
-    }
-    const r = def.judge(h, o);
-    return { ...base, state: r.ok ? 'ok' : 'fail', ok: r.ok, got: r.got.replace('{T}', rec.who || '') };
+// 판정 — state: 'wait'(아직 홀 기록 없음) · 'none'(그 차수에 기록이 없음 = 불참) · 'ok' · 'fail'. 미션 하나마다 한 줄.
+function missionResults(round, g) {
+    const e = missionEntry(round, g);
+    if (!e) return [];
+    return e.items.map(it => {
+        const def = it.def;
+        const base = { round, g, i: it.i, def, who: it.who, y: e.y, redrawn: it.redrawn, text: missionText(def, it) };
+        if (!roundHasHoles(round)) return { ...base, state: 'wait' };
+        const h = missionHoles(round, g);
+        if (!h) return { ...base, state: 'none' };
+        let o = null;
+        if (def.who) {
+            o = missionHoles(round, it.who);
+            if (!o) return { ...base, state: 'none', got: `${it.who} 기록 없음` };
+        }
+        const r = def.judge(h, o);
+        return { ...base, state: r.ok ? 'ok' : 'fail', ok: r.ok, got: r.got.replace('{T}', it.who || '') };
+    });
+}
+const missionJudged = x => x.state === 'ok' || x.state === 'fail';
+
+// 한 사람·한 차수 요약 — 판정된 미션 수 · 성공 수 · 얻은 포인트. 판정된 것이 없으면 null.
+function missionRoundSum(round, g) {
+    const xs = missionResults(round, g).filter(missionJudged);
+    if (!xs.length) return null;
+    const ok = xs.filter(x => x.ok);
+    return { round, n: xs.length, okN: ok.length, pts: ok.reduce((t, x) => t + x.def.lv, 0), all: ok.length === xs.length, none: ok.length === 0, xs };
 }
 
 function missionRounds() {
     return Object.keys((appData && appData.missions) || {}).map(Number).filter(n => n > 0).sort((a, b) => a - b);
 }
 
-// 한 사람의 판정이 끝난 미션(성공·실패)을 차수 순서대로
+// 한 사람의 판정이 끝난 미션(성공·실패)을 차수 순서대로 — 미션 하나가 한 칸
 function missionLog(g) {
-    return missionRounds().map(r => missionResult(r, g)).filter(x => x && (x.state === 'ok' || x.state === 'fail'));
+    return missionRounds().flatMap(r => missionResults(r, g).filter(missionJudged));
 }
 
 // 다시 뽑기에 쓴 횟수(그해 것만 셀 수 있다)
 function missionRedraws(g, year) {
-    return missionRounds().filter(r => { const x = missionRec(r, g); return x && x.redrawn && (!year || x.y === year); }).length;
+    return missionRounds().filter(r => { const e = missionEntry(r, g); return e && e.redrawn && (!year || e.y === year); }).length;
 }
 // 포인트 = 성공한 미션의 별 수 − 다시 뽑기에 쓴 점수
 function missionPoints(g, year) {
-    const won = missionLog(g).filter(x => x.ok && (!year || x.rec.y === year)).reduce((t, x) => t + x.def.lv, 0);
+    const won = missionLog(g).filter(x => x.ok && (!year || x.y === year)).reduce((t, x) => t + x.def.lv, 0);
     return Math.max(0, won - missionRedraws(g, year) * REDRAW_COST);
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
 
-// 지금 다시 뽑을 수 있는가 — 받은 미션이 있고 · 아직 안 다시 뽑았고 · 포인트 2점이 있고 ·
+// 지금 다시 뽑을 수 있는가 — 받은 미션이 있고 · 이번 라운드에 아직 안 다시 뽑았고 · 포인트 2점이 있고 ·
 // 2점을 써도 이미 쓴 멀리건 사용권보다 받은 사용권이 적어지지 않을 때.
 function redrawCheck(g, round) {
-    const rec = missionRec(round, g);
-    if (!rec) return { ok: false };
-    if (rec.redrawn) return { ok: false, done: true, why: 'ℹ️ 이번 라운드는 이미 다시 뽑았습니다.' };
+    const e = missionEntry(round, g);
+    if (!e) return { ok: false };
+    if (e.redrawn) return { ok: false, done: true, why: 'ℹ️ 이번 라운드는 이미 다시 뽑았습니다.' };
     const pts = missionPoints(g);
     if (pts < REDRAW_COST) return { ok: false, why: `⚠️ 포인트가 부족합니다. 다시 뽑기에는 ${REDRAW_COST}점이 필요합니다(보유 ${pts}점).`, pts };
     if (Math.floor((pts - REDRAW_COST) / MULLIGAN_STEP) < mulliganUses(g).length) {
@@ -209,23 +244,26 @@ function missionFirst(g, pred) {
     const hit = missionLog(g).find(pred);
     return hit ? hit.round - 1 : -1;
 }
+// 그 차수에 성공한 미션 수(미션 수집가는 하나하나 센다)
 function missionOkAt(g, round) {
-    const x = missionResult(round, g);
-    return !!x && x.state === 'ok';
+    const s = missionRoundSum(round, g);
+    return s ? s.okN : 0;
 }
-// n번 연달아 성공(또는 실패)한 첫 차수 — 미션을 받은 라운드끼리 센다
+// n라운드 연달아 '모두 성공'(또는 '모두 실패')한 첫 차수 — 미션을 받은 라운드끼리 센다. 반만 성공하면 둘 다 끊긴다.
 function missionRunRound(g, ok, n) {
     let run = 0;
-    for (const x of missionLog(g)) {
-        run = x.ok === ok ? run + 1 : 0;
-        if (run >= n) return x.round - 1;
+    for (const r of missionRounds()) {
+        const s = missionRoundSum(r, g);
+        if (!s) continue;
+        run = (ok ? s.all : s.none) ? run + 1 : 0;
+        if (run >= n) return r - 1;
     }
     return -1;
 }
 // 넷 모두 미션을 받아 다 성공한 첫 차수
 function missionAllClear() {
     for (const r of missionRounds()) {
-        if (golfers.every(g => missionOkAt(g, r))) return r - 1;
+        if (golfers.every(g => { const s = missionRoundSum(r, g); return s && s.all; })) return r - 1;
     }
     return -1;
 }
@@ -253,12 +291,12 @@ function writeMine(fn) {
 function mergeMissionData(prev) {
     let changed = false;
     const addMission = (r, g, rec) => {
-        if (!rec || !MISSION_BY_ID[rec.id] || !golfers.includes(g)) return;
+        if (!missionSlots(rec).some(m => MISSION_BY_ID[m.id]) || !golfers.includes(g)) return;
         if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
         if (!appData.missions[r]) appData.missions[r] = {};
         const cur = appData.missions[r][g];
         if (!cur) { appData.missions[r][g] = rec; changed = true; }
-        else if (rec.re && !cur.re && cur.id === rec.id && MISSION_BY_ID[rec.re.id]) { cur.re = rec.re; changed = true; }
+        else if (rec.re && !cur.re && missionSameDraw(cur, rec) && MISSION_BY_ID[rec.re.id]) { cur.re = rec.re; changed = true; }
     };
     const addUse = (g, u) => {
         if (!u || typeof u.t !== 'number' || !golfers.includes(g)) return;
@@ -279,25 +317,36 @@ function mergeMissionData(prev) {
     return changed;
 }
 
-function pickMission(skipId) {
-    const pool = MISSION_DEFS.filter(d => d.id !== skipId);
-    const total = pool.reduce((t, d) => t + d.w, 0);
-    let x;
-    try { const a = new Uint32Array(1); crypto.getRandomValues(a); x = a[0] / 4294967296 * total; }
-    catch (e) { x = Math.random() * total; }
-    for (const d of pool) { if ((x -= d.w) < 0) return d; }
-    return pool[pool.length - 1];
+function missionRand(n) {
+    try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296 * n; }
+    catch (e) { return Math.random() * n; }
+}
+function pickWeighted(list) {
+    if (!list.length) return null;
+    let x = missionRand(list.reduce((t, d) => t + d.w, 0));
+    for (const d of list) { if ((x -= d.w) < 0) return d; }
+    return list[list.length - 1];
+}
+// 받기 — 본인 미션 하나 + 다른 멤버 미션 하나, 난이도(별) 합이 MISSION_LV_MAX 이하인 짝 중에서 무작위
+function pickMissionPair() {
+    const pairs = [];
+    MISSION_DEFS.filter(d => !d.who).forEach(a => MISSION_DEFS.filter(d => d.who).forEach(b => {
+        if (a.lv + b.lv <= MISSION_LV_MAX) pairs.push({ a, b, w: a.w * b.w });
+    }));
+    return pickWeighted(pairs);
+}
+// 다시 뽑기 — 같은 종류(본인·멤버)에서 지금 것을 빼고, 남은 미션과 합쳐 MISSION_LV_MAX 이하
+function pickMissionFor(other, keepLv, skipId) {
+    return pickWeighted(MISSION_DEFS.filter(d => !!d.who === other && d.id !== skipId && d.lv + keepLv <= MISSION_LV_MAX));
 }
 function pickTarget(me) {
     const others = golfers.filter(g => g !== me);
-    let k = 0;
-    try { const a = new Uint32Array(1); crypto.getRandomValues(a); k = a[0] % others.length; } catch (e) { k = Math.floor(Math.random() * others.length); }
-    return others[k];
+    return others[Math.min(others.length - 1, Math.floor(missionRand(others.length)))];
 }
 
 // 슬롯처럼 미션 이름이 몇 번 바뀌다 멈춘다 — 글자만 바꾸므로 그리기 비용이 없다.
-function rollMission(btnId, busyText, finish) {
-    const box = document.getElementById('msnRollText');
+function rollMission(boxIds, btnId, busyText, finish) {
+    const boxes = boxIds.map(id => document.getElementById(id)).filter(Boolean);
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const done = () => {
         if (missionRoll) clearInterval(missionRoll.timer);
@@ -307,62 +356,66 @@ function rollMission(btnId, busyText, finish) {
         renderMissionPage();
         finish();
     };
-    if (!box || reduce) { done(); return; }
+    if (!boxes.length || reduce) { done(); return; }
     let i = 0;
-    const btn = document.getElementById(btnId);
+    const btn = btnId && document.getElementById(btnId);
     if (btn) { btn.disabled = true; btn.textContent = busyText; }
-    box.classList.add('rolling');
-    missionRoll = { timer: setInterval(() => { box.textContent = missionText(MISSION_DEFS[(i++ * 7 + 3) % MISSION_DEFS.length], null); }, 85) };
+    boxes.forEach(b => b.classList.add('rolling'));
+    missionRoll = { timer: setInterval(() => { i++; boxes.forEach((b, k) => { b.textContent = missionText(MISSION_DEFS[(i * 7 + 3 + k * 5) % MISSION_DEFS.length], null); }); }, 85) };
     setTimeout(done, 1300);
 }
 
-let missionRoll = null;      // 뽑는 중이면 { until, timer } — 그동안은 화면을 다시 그리지 않는다
+let missionRoll = null;      // 뽑는 중이면 { timer } — 그동안은 화면을 다시 그리지 않는다
 let missionLanded = 0;       // 막 뽑힌 미션에 한 번만 붙이는 연출 시각
 
-// 미션 받기 — 한 번 받으면 못 바꾼다. **되돌리기(saveState)를 일부러 안 건다** —
-// 되돌리기로 미션을 지웠다 다시 뽑을 수 있으면 무작위의 뜻이 없어진다(undoLastAction도 미션은 그대로 둔다).
+// 미션 받기 — 본인 미션 + 멤버 미션 두 개를 한 번에. 한 번 받으면 못 바꾼다(다시 뽑기 1회만).
+// **되돌리기(saveState)를 일부러 안 건다** — 되돌리기로 미션을 지웠다 다시 뽑을 수 있으면 무작위의 뜻이 없어진다.
 function drawMission() {
     if (missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
     if (!me || !golfers.includes(me)) { showToast('⚠️ 이름을 먼저 설정해야 미션을 받을 수 있습니다.'); return; }
     const t = missionTarget();
     if (!t) { showToast('⚠️ 다음 라운드 일정이 등록되어야 미션을 받을 수 있습니다.'); return; }
-    if (missionRec(t.round, me)) { showToast('ℹ️ 이번 라운드 미션은 이미 받았습니다.'); return; }
-    const def = pickMission();
-    const rec = { id: def.id, at: Date.now(), y: t.year };
-    if (def.who) rec.who = pickTarget(me);
+    if (missionEntry(t.round, me)) { showToast('ℹ️ 이번 라운드 미션은 이미 받았습니다.'); return; }
+    const p = pickMissionPair();
+    if (!p) return;
+    const rec = { at: Date.now(), y: t.year, ms: [{ id: p.a.id }, { id: p.b.id, who: pickTarget(me) }] };
     if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
     if (!appData.missions[t.round]) appData.missions[t.round] = {};
     appData.missions[t.round][me] = rec;
     writeMine(m => { m.missions[t.round] = rec; });
     syncToSupabase(appData);
-    rollMission('msnDrawBtn', '미션 뽑는 중…', () =>
-        showToast(`🎯 ${t.round}차 미션 · ${missionText(def, rec)} (${MISSION_LEVELS[def.lv].stars} ${def.lv}점)`));
+    rollMission(['msnRoll0', 'msnRoll1'], 'msnDrawBtn', '미션 뽑는 중…', () =>
+        showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a, null)} · ${missionText(p.b, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`));
 }
 
-// 다시 뽑기 — 포인트 2점 · 차수마다 1회. 처음 미션은 그대로 두고 `re`를 덧붙인다(되돌리기를 안 거는 것도 받기와 같다).
-async function redrawMission() {
+// 다시 뽑기 — 포인트 2점 · 라운드마다 1회 · 두 미션 중 하나만. 처음 기록은 그대로 두고 `re: {i, id, who?, at}`를 덧붙인다.
+async function redrawMission(i) {
     if (missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
     const t = missionTarget();
     if (!me || !golfers.includes(me) || !t) return;
     const c = redrawCheck(me, t.round);
     if (!c.ok) { if (c.why) showToast(c.why); return; }
-    const now = missionRec(t.round, me);
-    const ok = await showConfirmPrompt(`<b>포인트 ${REDRAW_COST}점</b>을 사용해 미션을 다시 뽑습니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${t.round}차 라운드 · 1회만 가능하며 취소할 수 없습니다.<br>현재 미션: ${escapeHtml(missionText(MISSION_BY_ID[now.id], now))}<br>보유 포인트 ${c.pts}점 → ${c.pts - REDRAW_COST}점</span>`, '다시 뽑기', '#2b5394');
+    const e = missionEntry(t.round, me);
+    const cur = e && e.items.find(x => x.i === i);
+    if (!cur) return;
+    const ok = await showConfirmPrompt(`<b>포인트 ${REDRAW_COST}점</b>을 사용해 이 미션을 다시 뽑습니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${t.round}차 라운드 · 라운드당 1회 · 취소할 수 없습니다.<br>현재 미션: ${escapeHtml(missionText(cur.def, cur))}<br>보유 포인트 ${c.pts}점 → ${c.pts - REDRAW_COST}점</span>`, '다시 뽑기', '#2b5394');
     if (!ok) return;
     // 확인창이 떠 있는 사이 남의 저장이 들어왔을 수 있어 지금 값으로 다시 본다
     const c2 = redrawCheck(me, t.round);
     if (!c2.ok) { if (c2.why) showToast(c2.why); return; }
     const raw = appData.missions && appData.missions[t.round] && appData.missions[t.round][me];
     if (!raw) return;
-    const def = pickMission(now.id);
-    const re = { id: def.id, at: Date.now() };
+    const keep = missionEntry(t.round, me).items.filter(x => x.i !== i).reduce((s, x) => s + x.def.lv, 0);
+    const def = pickMissionFor(!!cur.def.who, keep, cur.def.id);
+    if (!def) { showToast('⚠️ 다시 뽑을 수 있는 미션이 없습니다.'); return; }
+    const re = { i, id: def.id, at: Date.now() };
     if (def.who) re.who = pickTarget(me);
     raw.re = re;
     writeMine(m => { m.missions[t.round] = raw; });
     syncToSupabase(appData);
-    rollMission('msnRedrawBtn', '다시 뽑는 중…', () =>
+    rollMission(['msnRoll' + i], 'msnRedraw' + i, '다시 뽑는 중…', () =>
         showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`));
 }
 
@@ -402,6 +455,9 @@ function msnStateHtml(x) {
     return `<span class="msn-pts">+${x.def.lv}</span>`;
 }
 
+const MSN_PAIR_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.5" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c.6-3 2.8-4.6 5.5-4.6S13.4 16 14 19M13 15c.9-.4 1.9-.6 3-.6 2.7 0 4.9 1.6 5.5 4.6"/></svg>';
+const MSN_KIND = ['본인 미션', '멤버 미션'];
+
 function missionTargetCard(me) {
     const t = missionTarget();
     if (!t) {
@@ -409,35 +465,35 @@ function missionTargetCard(me) {
             <div class="msn-empty">다음 라운드 일정이 등록되면 미션을 받을 수 있습니다.<br><span>홈의 <b>다음 라운드</b>에서 일정을 등록합니다.</span></div></div>`;
     }
     const dday = t.days === 0 ? 'D-DAY' : `D-${t.days}`;
-    const mine = me && golfers.includes(me) ? missionRec(t.round, me) : null;
+    const mine = me && golfers.includes(me) ? missionEntry(t.round, me) : null;
     let mineHtml;
     if (!me || !golfers.includes(me)) {
         mineHtml = '<div class="msn-empty">이름을 설정한 기기에서 미션을 받을 수 있습니다.</div>';
     } else if (!mine) {
         mineHtml = `<div class="msn-draw">
-            <div class="msn-roll"><span class="msn-ic">${MSN_TARGET_ICON}</span><span class="msn-roll-text" id="msnRollText">어떤 미션이 나올까요?</span></div>
+            <div class="msn-roll"><span class="msn-ic">${MSN_TARGET_ICON}</span><span class="msn-roll-text" id="msnRoll0">본인 미션</span></div>
+            <div class="msn-roll"><span class="msn-ic other">${MSN_PAIR_ICON}</span><span class="msn-roll-text" id="msnRoll1">멤버 미션</span></div>
             <button type="button" class="msn-draw-btn" id="msnDrawBtn" onclick="drawMission()">미션 받기</button>
-            <div class="msn-note">미션 목록 중 하나가 무작위로 정해집니다 · 포인트 ${REDRAW_COST}점으로 1회 다시 뽑을 수 있습니다</div>
+            <div class="msn-note">본인 미션 1개 + 멤버 미션 1개 · 난이도 합 ★${MISSION_LV_MAX}개 이하로 무작위 · 포인트 ${REDRAW_COST}점으로 1개 다시 뽑기(1회)</div>
         </div>`;
     } else {
-        const d = MISSION_BY_ID[mine.id];
         const pop = Date.now() - missionLanded < 1500 ? ' pop' : '';
         const rc = redrawCheck(me, t.round);
-        const redraw = mine.redrawn ? ''
-            : `<div class="msn-redraw"><button type="button" class="msn-redraw-btn" id="msnRedrawBtn"${rc.ok ? '' : ' disabled'} onclick="redrawMission()">다시 뽑기 · ${REDRAW_COST}점 사용</button>
-                <span>${rc.ok ? `1회 가능 · 보유 ${rc.pts}점` : `보유 ${rc.pts || 0}점 · ${REDRAW_COST}점 이상 필요`}</span></div>`;
-        mineHtml = `<div class="msn-mine${pop}">
-            <span class="msn-ic">${MSN_TARGET_ICON}</span>
-            <div class="msn-mine-body"><div class="k">내 미션${mine.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRollText">${escapeHtml(missionText(d, mine))}</div><div class="h">${escapeHtml(d.how)}</div></div>
-            <div class="msn-mine-side">${msnStars(d.lv)}<span class="msn-pts">+${d.lv}점</span></div>
-        </div>${redraw}`;
+        const sum = mine.items.reduce((s, x) => s + x.def.lv, 0);
+        mineHtml = `<div class="msn-pair">${mine.items.map(x => `<div class="msn-mine${pop}${x.def.who ? ' other' : ''}">
+            <span class="msn-ic${x.def.who ? ' other' : ''}">${x.def.who ? MSN_PAIR_ICON : MSN_TARGET_ICON}</span>
+            <div class="msn-mine-body"><div class="k">${MSN_KIND[x.def.who ? 1 : 0]}${x.redrawn ? ' <em>다시 뽑음</em>' : ''}</div><div class="t" id="msnRoll${x.i}">${escapeHtml(missionText(x.def, x))}</div><div class="h">${escapeHtml(x.def.how)}</div></div>
+            <div class="msn-mine-side">${msnStars(x.def.lv)}<span class="msn-pts">+${x.def.lv}점</span>${mine.redrawn ? '' : `<button type="button" class="msn-redo" id="msnRedraw${x.i}"${rc.ok ? '' : ' disabled'} onclick="redrawMission(${x.i})">다시 뽑기</button>`}</div>
+        </div>`).join('')}</div>
+        <div class="msn-pair-sum"><span>난이도 합 ★${sum} · 최대 +${sum}점</span><span>${mine.redrawn ? '다시 뽑기 사용함' : (rc.ok ? `다시 뽑기 ${REDRAW_COST}점 · 1회 · 보유 ${rc.pts}점` : `다시 뽑기 ${REDRAW_COST}점 필요 · 보유 ${rc.pts || 0}점`)}</span></div>`;
     }
     const others = golfers.filter(g => g !== me).map(g => {
-        const rec = missionRec(t.round, g);
-        const d = rec && MISSION_BY_ID[rec.id];
+        const e = missionEntry(t.round, g);
+        if (!e) return `<div class="msn-row"><span class="n">${escapeHtml(g)}</span><span class="m off">아직 받지 않음</span><span class="r"></span></div>`;
+        const sum = e.items.reduce((s, x) => s + x.def.lv, 0);
         return `<div class="msn-row"><span class="n">${escapeHtml(g)}</span>
-            <span class="m${d ? '' : ' off'}">${d ? escapeHtml(missionText(d, rec)) : '아직 받지 않음'}</span>
-            <span class="r">${d ? `${msnStars(d.lv)}<span class="msn-pts">+${d.lv}</span>` : ''}</span></div>`;
+            <span class="m">${e.items.map(x => `<span class="ml">${escapeHtml(missionText(x.def, x))} ${msnStars(x.def.lv)}</span>`).join('')}</span>
+            <span class="r"><span class="msn-pts">+${sum}</span></span></div>`;
     }).join('');
     return `<div class="msn-card">
         <div class="msn-head"><span>${t.round}차 라운드 미션</span><span class="msn-dday">${dday}</span></div>
@@ -451,16 +507,21 @@ function missionLastResultCard() {
     const judged = missionRounds().filter(r => roundHasHoles(r));
     if (!judged.length) return '';
     const r = judged[judged.length - 1];
-    const rows = golfers.map(g => missionResult(r, g)).filter(Boolean);
-    if (!rows.length) return '';
-    const okN = rows.filter(x => x.state === 'ok').length;
+    const people = golfers.map(g => ({ g, xs: missionResults(r, g) })).filter(p => p.xs.length);
+    if (!people.length) return '';
+    const okN = people.filter(p => p.xs.some(x => x.ok)).length;
     return `<div class="msn-card">
         <div class="msn-head"><span>${r}차 미션 결과</span><span class="msn-sub">${okN}명 성공</span></div>
-        ${rows.map(x => `<div class="msn-res ${x.state}">
-            <span class="mk">${x.state === 'ok' ? '✓' : (x.state === 'fail' ? '✕' : '–')}</span>
-            <div class="b"><div class="n">${escapeHtml(x.g)} <span>${escapeHtml(x.text)}</span></div>
-            <div class="g">${x.got ? escapeHtml(x.got) : '홀 기록 없음'}</div></div>
-            ${msnStateHtml(x)}</div>`).join('')}
+        ${people.map(p => {
+            const s = missionRoundSum(r, p.g);
+            return `<div class="msn-res-p">
+            <div class="msn-res-head"><b>${escapeHtml(p.g)}</b><span>${s ? `${s.n}개 중 ${s.okN}개 성공${s.pts ? ` · +${s.pts}점` : ''}` : '판정 없음'}</span></div>
+            ${p.xs.map(x => `<div class="msn-res ${x.state}">
+                <span class="mk">${x.state === 'ok' ? '✓' : (x.state === 'fail' ? '✕' : '–')}</span>
+                <div class="b"><div class="n"><span>${escapeHtml(x.text)}</span></div>
+                <div class="g">${x.got ? escapeHtml(x.got) : '홀 기록 없음'}</div></div>
+                ${msnStateHtml(x)}</div>`).join('')}</div>`;
+        }).join('')}
     </div>`;
 }
 
@@ -532,33 +593,36 @@ function msnFoldHead(key, title, sub) {
 function missionHistoryCard(me) {
     if (!missionViewName || !golfers.includes(missionViewName)) missionViewName = golfers.includes(me) ? me : golfers[0];
     const g = missionViewName;
-    const list = missionRounds().map(r => missionResult(r, g)).filter(Boolean).reverse();
+    const rounds = missionRounds().filter(r => missionEntry(r, g)).reverse();
     const log = missionLog(g);
     const okN = log.filter(x => x.ok).length;
-    const head = msnFoldHead('hist', '미션 기록', log.length ? `${log.length}회 중 ${okN}회 성공` : '');
+    const head = msnFoldHead('hist', '미션 기록', log.length ? `${log.length}개 중 ${okN}개 성공` : '');
     if (!missionFold('hist')) return `<div class="msn-card folded">${head}</div>`;
-    const shown = missionHistAll ? list : list.slice(0, MSN_HIST_SHOWN);
-    const more = list.length - shown.length;
+    const shown = missionHistAll ? rounds : rounds.slice(0, MSN_HIST_SHOWN);
+    const more = rounds.length - shown.length;
     return `<div class="msn-card">
         ${head}
         <div class="msn-people">${golfers.map(n => `<button type="button" class="${n === g ? 'on' : ''}" onclick="selectMissionPerson('${n}')">${escapeHtml(n)}</button>`).join('')}</div>
-        ${list.length ? `<div class="msn-hist">${shown.map(x => `<div class="msn-h">
-            <span class="rd">${x.round}차</span>
+        ${rounds.length ? `<div class="msn-hist">${shown.map(r => missionResults(r, g).map((x, k) => `<div class="msn-h${k ? ' cont' : ''}">
+            <span class="rd">${k ? '' : r + '차'}</span>
             <span class="tx">${escapeHtml(x.text)} ${msnStars(x.def.lv)}${x.got ? `<small>${escapeHtml(x.got)}</small>` : ''}</span>
-            ${msnStateHtml(x)}</div>`).join('')}</div>${more > 0 ? `<button type="button" class="msn-more" onclick="showAllMissionHistory()">이전 기록 ${more}건 더 보기</button>` : ''}` : '<div class="msn-empty">아직 받은 미션이 없습니다.</div>'}
+            ${msnStateHtml(x)}</div>`).join('')).join('')}</div>${more > 0 ? `<button type="button" class="msn-more" onclick="showAllMissionHistory()">이전 기록 ${more}라운드 더 보기</button>` : ''}` : '<div class="msn-empty">아직 받은 미션이 없습니다.</div>'}
     </div>`;
 }
 
 function missionListCard() {
-    const head = msnFoldHead('list', '미션 목록', `${MISSION_DEFS.length}개 · 난이도만큼 포인트`);
+    const self = MISSION_DEFS.filter(d => !d.who), other = MISSION_DEFS.filter(d => d.who);
+    const head = msnFoldHead('list', '미션 목록', `본인 ${self.length} · 멤버 ${other.length}`);
     if (!missionFold('list')) return `<div class="msn-card folded">${head}</div>`;
+    const group = (title, sub, list) => `<div class="msn-lv">
+            <div class="msn-lv-head">${title} <span class="msn-sub">${sub}</span></div>
+            ${[1, 2, 3].map(lv => list.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${msnStars(d.lv)} ${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how).replace(/\(([^)]*)\)$/, ' <i>($1)</i>')}</span></div>`).join('')).join('')}
+        </div>`;
     return `<div class="msn-card">
         ${head}
-        ${[1, 2, 3].map(lv => `<div class="msn-lv">
-            <div class="msn-lv-head">${msnStars(lv)} ${MISSION_LEVELS[lv].name} <span class="msn-pts">${lv}점</span></div>
-            ${MISSION_DEFS.filter(d => d.lv === lv).map(d => `<div class="msn-lv-item"><b>${escapeHtml(missionText(d, null))}</b><span>${escapeHtml(d.how).replace(/\(([^)]*)\)$/, ' <i>($1)</i>')}</span></div>`).join('')}
-        </div>`).join('')}
-        <div class="msn-foot">'파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. ○○는 미션을 받을 때 무작위로 정해지는 다른 멤버이며, 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션은 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
+        ${group('본인 미션', '내 기록으로 판정', self)}
+        ${group('멤버 미션', '○○ = 무작위로 정해지는 다른 멤버', other)}
+        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MAX}개 이하입니다(예: ★★★ + ★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패입니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 
@@ -587,7 +651,7 @@ function checkMissionReveal() {
     if (typeof isLoaded !== 'undefined' && !isLoaded) return;
     if (typeof entranceBlocked === 'function' && entranceBlocked()) return;
     if (document.querySelector('.reveal-overlay, .celebrate-overlay, .bdg-unlock')) return;
-    const judged = missionRounds().filter(r => roundHasHoles(r) && golfers.some(g => { const x = missionResult(r, g); return x && (x.state === 'ok' || x.state === 'fail'); }));
+    const judged = missionRounds().filter(r => roundHasHoles(r) && golfers.some(g => missionRoundSum(r, g)));
     if (!judged.length) return;
     const r = judged[judged.length - 1];
     const key = 'jtfag_mission_seen';
@@ -599,9 +663,9 @@ function checkMissionReveal() {
 }
 
 function revealMissionResult(r) {
-    const rows = golfers.map(g => missionResult(r, g)).filter(x => x && (x.state === 'ok' || x.state === 'fail'));
-    rows.sort((a, b) => (b.ok - a.ok) || (b.def.lv - a.def.lv));
-    const okN = rows.filter(x => x.ok).length;
+    const rows = golfers.map(g => missionRoundSum(r, g) && { g, s: missionRoundSum(r, g) }).filter(Boolean);
+    rows.sort((a, b) => (b.s.pts - a.s.pts) || (b.s.okN - a.s.okN));
+    const okN = rows.filter(x => x.s.okN > 0).length;
     const STEP = 0.35;
     // 이 차수로 멀리건 사용권이 늘어난 사람
     const before = g => Math.floor(missionLog(g).filter(x => x.round < r && x.ok).reduce((t, x) => t + x.def.lv, 0) / MULLIGAN_STEP);
@@ -615,10 +679,10 @@ function revealMissionResult(r) {
         <div class="mp-num" aria-hidden="true">${String(r).padStart(2, '0')}</div>
         <div class="mp-ey">MISSION RESULT</div>
         <div class="mp-title">${r}차전<br>미션 결과</div>
-        <div class="mp-rows">${rows.map((x, i) => `<div class="mp-row${x.ok ? '' : ' fail'}" style="animation-delay:${0.5 + i * STEP}s">
-            <span class="mk">${x.ok ? '✓' : '✕'}</span>
-            <div class="b"><div class="n">${escapeHtml(x.g)}</div><div class="m">${escapeHtml(x.text)} · <b>${escapeHtml(x.got)}</b></div></div>
-            <span class="p">${x.ok ? '+' + x.def.lv : '실패'}</span></div>`).join('')}</div>
+        <div class="mp-rows">${rows.map((x, i) => `<div class="mp-row${x.s.okN ? '' : ' fail'}" style="animation-delay:${0.5 + i * STEP}s">
+            <span class="mk">${x.s.okN}/${x.s.n}</span>
+            <div class="b"><div class="n">${escapeHtml(x.g)}</div>${x.s.xs.map(m => `<div class="m${m.ok ? ' ok' : ''}">${m.ok ? '✓' : '✕'} ${escapeHtml(m.text)} · <b>${escapeHtml(m.got)}</b></div>`).join('')}</div>
+            <span class="p">${x.s.pts ? '+' + x.s.pts : '실패'}</span></div>`).join('')}</div>
         <div class="mp-sum" style="animation-delay:${tail}s">
             <span><b>${okN}명 성공</b>${kings.length ? ` · 미션 포인트 1위 <b>${kings.map(escapeHtml).join(', ')} ${missionSeasonPoints(kings[0])}점</b>` : ''}</span>
             ${gained.map(g => `<span class="mp-gain">🎟️ <b>${escapeHtml(g)}</b> 멀리건 사용권 +1</span>`).join('')}

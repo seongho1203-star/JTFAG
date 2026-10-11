@@ -208,12 +208,12 @@ const BADGE_GROUPS = [
         { id: 'mFirst', kind: 'life', tier: 'bronze', icon: 'target', name: '첫 미션 성공', cond: '미션 1회 성공', desc: '라운드 미션을 처음으로 성공',
           first: g => missionFirst(g, x => x.ok) },
         { id: 'mCollect', kind: 'tier', icon: 'check', name: '미션 수집가', unit: '미션 성공', count: '회', steps: [5, 15, 30], desc: '통산 미션 성공 횟수',
-          inc: (g, r) => missionOkAt(g, r + 1) ? 1 : 0 },
-        { id: 'mStreak', kind: 'life', tier: 'gold', icon: 'flame', name: '3연속 성공', cond: '3라운드 연속 성공', desc: '받은 미션을 3라운드 연속 성공',
+          inc: (g, r) => missionOkAt(g, r + 1) },
+        { id: 'mStreak', kind: 'life', tier: 'gold', icon: 'flame', name: '3연속 성공', cond: '3라운드 연속 모두 성공', desc: '받은 미션 두 개를 모두 성공한 라운드가 3번 연속',
           first: g => missionRunRound(g, true, 3) },
         { id: 'mHard', kind: 'life', tier: 'gold', icon: 'trophy', name: '도전자', cond: '★★★ 미션 성공', desc: '어려움(★★★) 미션 첫 성공',
           first: g => missionFirst(g, x => x.ok && x.def.lv === 3) },
-        { id: 'mAll', kind: 'life', tier: 'silver', icon: 'rings', name: '올클리어', cond: '넷 다 성공', desc: '한 라운드에서 넷 모두 미션 성공(함께 받음)',
+        { id: 'mAll', kind: 'life', tier: 'silver', icon: 'rings', name: '올클리어', cond: '넷 다 모두 성공', desc: '한 라운드에서 넷 모두 받은 미션을 다 성공',
           first: () => missionAllClear() },
         { id: 'mKing', kind: 'title', icon: 'crown', name: '미션왕', desc: '올해 미션 포인트 1위', holders: () => missionKings(),
           metric: g => `${missionSeasonPoints(g)}점` }
@@ -236,7 +236,7 @@ const BADGE_GROUPS = [
           first: g => firstRound(g, r => { const h = badgeHoles(g, r); return !!h && h.rel.filter(v => v >= 3).length >= 3; }) },
         { id: 'onionHat', kind: 'life', tier: 'tease', icon: 'onion', name: '양파 해트트릭', cond: '한 라운드 양파 3개', desc: '한 라운드에서 양파 3개 이상',
           first: g => firstRound(g, r => { const s = badgeStat(g, r); return !!s && s.doublePar >= 3; }) },
-        { id: 'mBreak', kind: 'life', tier: 'tease', icon: 'cross', name: '미션 브레이커', cond: '3라운드 연속 실패', desc: '받은 미션을 3라운드 연속 실패',
+        { id: 'mBreak', kind: 'life', tier: 'tease', icon: 'cross', name: '미션 브레이커', cond: '3라운드 연속 모두 실패', desc: '받은 미션을 하나도 못 한 라운드가 3번 연속',
           first: g => missionRunRound(g, false, 3) }
     ]}
 ];
