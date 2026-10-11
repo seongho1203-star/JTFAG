@@ -404,9 +404,9 @@ function pickWeighted(list) {
     return list[list.length - 1];
 }
 // ── 멤버 미션 난이도 보정(사용자 요청 — 박승수를 이기는 것과 김지명을 이기는 것이 같은 ★이면 형평이 안 맞는다) ──
-// 받을 때 대상 멤버의 실력을 보고 별을 ±1·±2 조정하고, 그 별로 본인 미션을 골라 합 MISSION_LV_MAX 이하를 맞춘다.
+// 받을 때 대상 멤버의 실력을 보고 별을 ±1 조정하고, 그 별로 본인 미션을 골라 합 MISSION_LV_MAX 이하를 맞춘다.
 // 실력은 1:1 핸디캡과 같은 잣대 — 넷 다 타수가 있는 가장 최근 연속 두 차수의 평균(내림)이다. 없으면 조정하지 않는다.
-const MISSION_ADJ_STEPS = [4, 8];   // 4타 이상 차이 ±1 · 8타 이상 ±2
+const MISSION_ADJ_STEP = 4;   // 4타 이상 차이면 ±1 — 폭은 ±1까지(사용자 요청 — ±2는 너무 커 조합이 줄었다)
 function missionSkill() {
     const sc = appData && appData.scores;
     if (!sc || typeof golfers === 'undefined') return null;
@@ -438,7 +438,7 @@ function missionAdjust(def, me, who, skill) {
         : kind === '협동' ? ((skill[me] + skill[who]) / 2 - avg) * 2
         : (skill[who] - avg) * 2;
     const a = Math.abs(x);
-    const n = a >= MISSION_ADJ_STEPS[1] ? 2 : (a >= MISSION_ADJ_STEPS[0] ? 1 : 0);
+    const n = a >= MISSION_ADJ_STEP ? 1 : 0;
     return x < 0 ? -n : n;
 }
 const missionLvOf = (def, adj) => Math.min(3, Math.max(1, def.lv + adj));
@@ -792,7 +792,7 @@ function missionListCard() {
         ${head}
         ${group('본인 미션', '내 기록으로 판정', self)}
         ${group('멤버 미션', '○○ = 무작위로 정해지는 다른 멤버', other)}
-        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MIN}~${MISSION_LV_MAX}개입니다(예: ★★★ + ★ · ★★ + ★ · ★★ + ★★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 목록의 별은 기본 난이도이며, 받을 때 최근 2경기 평균 타수로 실력을 보아 조정합니다 — 본인 미션은 나, 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEPS[0]}타 이상이면 ±1, ${MISSION_ADJ_STEPS[1]}타 이상이면 ±2(★1~★3). '보정 없음' 미션은 실력과 관계없이 기본 별 그대로입니다. 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
+        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MIN}~${MISSION_LV_MAX}개입니다(예: ★★★ + ★ · ★★ + ★ · ★★ + ★★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 목록의 별은 기본 난이도이며, 받을 때 최근 2경기 평균 타수로 실력을 보아 조정합니다 — 본인 미션은 나, 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEP}타 이상 차이 나면 ±1(★1~★3). '보정 없음' 미션은 실력과 관계없이 기본 별 그대로입니다. 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 
