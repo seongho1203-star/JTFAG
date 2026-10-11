@@ -902,6 +902,8 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
       접속 직후 자동으로 뜰 때는 브라우저가 소리를 막을 수 있다 — 막혀도 그림은 그대로다.
     - 제목 글꼴(Black Han Sans · Cinzel)은 이 연출이 처음 뜰 때 Google Fonts에서 불러온다(`loadEagleFonts()`). 앱의 `* { font-family … !important }`를
       이기려고 `.g3-*` 글꼴 줄에 `!important`를 붙였다. 못 받으면 Pretendard로 그려진다.
+    - **관리자 메뉴 → `🦅 독수리 대관식 미리보기`로 언제든 본다**(`previewEagleCrown()` · 사용자 요청 — `내가 지금 볼수있는 방법은없나`). 누를 때마다 3 → 4 → 5연속을 돌아가며,
+      이름은 이 기기 주인 · 메달은 마지막 차수들의 실제 타수다. 아무것도 저장하지 않는다(연출 기록 `jtfag_eagle_*`도 안 건드린다).
     - **여기서도 `transform`과 `opacity`만 쓴다** — 헤드리스로 무한 반복 0개 · filter 0개 · 가로 넘침 없음 · 저절로 닫힘을 확인했다(스크래치패드 `g3-app-test.js`).
   - **소리는 `SOUND_CONFIG[0]`(Eagle.mp3)를 쓴다.** 브라우저가 사용자 동작 없는 자동 재생을
     막아 접속 직후엔 안 날 수 있다 — 막혀도 그림은 그대로 나오고 오류창도 안 띄운다.

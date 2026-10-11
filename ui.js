@@ -3547,6 +3547,17 @@ async function adminRunAction(fn) {
     renderAdminModal();
 }
 
+// 관리자 메뉴의 `🦅 독수리 대관식 미리보기` — 아무도 연속 중이 아닐 때도 연출을 볼 수 있게(사용자 요청 — `내가 지금 볼수있는 방법은없나`).
+// 누를 때마다 3 → 4 → 5연속을 돌아가며 보여 준다. 이름은 이 기기 주인, 메달은 마지막 차수들의 실제 타수다. 아무것도 저장하지 않는다.
+let eaglePreviewNext = 3;
+function previewEagleCrown() {
+    const n = eaglePreviewNext;
+    eaglePreviewNext = n >= 5 ? 3 : n + 1;
+    const me = localStorage.getItem('jtfag_my_name');
+    closeAdminModal();
+    celebrateEagleStreak(golfers.includes(me) ? me : golfers[0], n);
+}
+
 function renderAdminModal() {
     const status = document.getElementById('adminStatus');
     const actions = document.getElementById('adminActions');
@@ -3564,6 +3575,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 수정 잠금' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만'}</span></button>
         <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 수정 잠금' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만'}</span></button>
+        <button type="button" class="admin-btn" onclick="previewEagleCrown()">🦅 독수리 대관식 미리보기 <span class="admin-btn-sub">누를 때마다 ${eaglePreviewNext}연속</span></button>
         <button type="button" class="admin-btn" onclick="resetEffectSeen()">🎬 연출 다시 보기 <span class="admin-btn-sub">이 기기의 연출 기록만 초기화</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
         <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
