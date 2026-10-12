@@ -1483,6 +1483,33 @@ html, body { overscroll-behavior: none; }
 .match-vs .vs-val.give { color: var(--text-main); }
 .match-vs .vs-val.even { color: var(--accent-green); }
 .match-vs .vs-rec { display: block; font-size: clamp(0.6rem, 2.5vw, 0.66rem); color: var(--text-sub); font-weight: 600; }
+.match-vs { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.match-vs:active { background: var(--bg-main); border-radius: 10px; }
+/* 1:1 상대 전적 창(아래에서 올라온다 · 뱃지 상세와 같은 틀) */
+.h2h-head { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 2px; }
+.h2h-title { font-size: 1.15rem; font-weight: 900; letter-spacing: -0.3px; }
+.h2h-title i { font-style: normal; font-size: 0.8rem; color: var(--text-sub); font-weight: 700; margin: 0 4px; }
+.h2h-sum { font-size: 0.82rem; font-weight: 700; color: var(--text-sub); }
+.h2h-sum b { color: var(--text-main); font-size: 0.95rem; }
+.h2h-sum b.up { color: var(--accent-green); } .h2h-sum b.down { color: #c2453b; }
+.h2h-list { display: flex; flex-direction: column; background: #f7f7f5; border-radius: 14px; padding: 2px 12px; }
+.h2h-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #ebebe7; }
+.h2h-row:first-child { border-top: none; }
+.h2h-rd { width: 64px; flex: none; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.h2h-rd b { font-size: 0.86rem; font-weight: 900; }
+.h2h-rd span { font-size: 0.66rem; color: var(--text-sub); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h2h-sc { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.h2h-p { display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; }
+.h2h-p .nm { color: var(--text-sub); font-weight: 600; }
+.h2h-p.me .nm { color: var(--text-main); font-weight: 800; }
+.h2h-p .sc { font-weight: 700; color: var(--text-main); white-space: nowrap; }
+.h2h-p .sc em { font-style: normal; color: var(--primary-gold); font-weight: 700; font-size: 0.72rem; margin: 0 4px; }
+.h2h-p .sc b { font-weight: 900; }
+.h2h-p .sc em + b::before { content: '= '; font-weight: 600; color: var(--text-sub); }
+.h2h-note { font-size: 0.64rem; color: var(--text-sub); font-weight: 600; text-align: right; }
+.h2h-res { width: 30px; height: 30px; flex: none; border-radius: 15px; display: grid; place-items: center; font-size: 0.8rem; font-weight: 900; color: #fff; }
+.h2h-res.w { background: var(--accent-green); } .h2h-res.l { background: #c2453b; } .h2h-res.t { background: #9aa0a8; }
+.h2h-foot { font-size: 0.68rem; color: var(--text-sub); font-weight: 600; line-height: 1.5; text-align: center; }
 
 /* ─── 여행 탭(네 번째 화면 · trip.js) — 시안 B: 표지 + 한눈에 셋 + 일정 줄기 ───
    예전엔 홈의 카드를 누르면 창이 떴다. 지금은 탭이라 화면(body)이 굴러간다. */

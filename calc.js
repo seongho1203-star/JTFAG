@@ -692,31 +692,51 @@ function getHoleAnalysis(name) {
 function headToHead(name, rounds) {
     const rec = {};
     golfers.forEach(g => { if (g !== name) rec[g] = { w: 0, l: 0, t: 0 }; });
-
     for (const r of rounds) {
-        if (r < 2) continue;                    // 직전 두 차수가 있어야 핸디캡을 낸다
-        let complete = true;
-        const hAvg = {}, cScore = {};
-        golfers.forEach(g => {
-            const s = appData.scores[g] || [];
-            const s1 = parseFloat(s[r - 2]), s2 = parseFloat(s[r - 1]), sr = parseFloat(s[r]);
-            if (isNaN(s1) || isNaN(s2) || isNaN(sr)) complete = false;
-            hAvg[g] = Math.floor((s1 + s2) / 2);
-            cScore[g] = sr;
-        });
-        if (!complete) continue;                // 넷 다 있어야 한 판으로 친다
-
-        for (const opp in rec) {
-            const mine = cScore[name] - (hAvg[name] - hAvg[opp]);
-            const theirs = cScore[opp];
-            if (mine < theirs) rec[opp].w++;
-            else if (mine > theirs) rec[opp].l++;
-            else if (hAvg[name] < hAvg[opp]) rec[opp].w++;
-            else if (hAvg[opp] < hAvg[name]) rec[opp].l++;
-            else rec[opp].t++;
-        }
+        const d = h2hRoundData(r);
+        if (!d) continue;
+        for (const opp in rec) rec[opp][h2hOutcome(d, name, opp).res]++;
     }
     return rec;
+}
+
+/* 한 차수의 핸디캡(직전 두 차수 평균 · 내림)과 그 차수 타수. 넷 다 있어야 한 판으로 친다 — 없으면 null. */
+function h2hRoundData(r) {
+    if (r < 2) return null;                     // 직전 두 차수가 있어야 핸디캡을 낸다
+    const hAvg = {}, cScore = {};
+    for (const g of golfers) {
+        const s = appData.scores[g] || [];
+        const s1 = parseFloat(s[r - 2]), s2 = parseFloat(s[r - 1]), sr = parseFloat(s[r]);
+        if (isNaN(s1) || isNaN(s2) || isNaN(sr)) return null;
+        hAvg[g] = Math.floor((s1 + s2) / 2);
+        cScore[g] = sr;
+    }
+    return { hAvg, cScore };
+}
+
+/* 그 차수에서 name과 opp의 승부. 차이만큼 내 타수를 깎아 견주고, 같으면 핸디캡이 낮은 쪽이 이긴다. */
+function h2hOutcome(d, name, opp) {
+    const give = d.hAvg[name] - d.hAvg[opp];    // 양수면 내가 받는다
+    const mine = d.cScore[name] - give, theirs = d.cScore[opp];
+    let res;
+    if (mine < theirs) res = 'w';
+    else if (mine > theirs) res = 'l';
+    else if (d.hAvg[name] < d.hAvg[opp]) res = 'w';
+    else if (d.hAvg[opp] < d.hAvg[name]) res = 'l';
+    else res = 't';
+    return { res, give, tieBreak: mine === theirs && res !== 't' };
+}
+
+/* 홈 1:1 카드의 상세 창 몫 — 차수마다 두 사람 타수·핸디캡·결과. 승패 셈은 위 headToHead와 같은 함수를 쓴다. */
+function headToHeadGames(name, opp, rounds) {
+    const out = [];
+    for (const r of rounds) {
+        const d = h2hRoundData(r);
+        if (!d) continue;
+        const o = h2hOutcome(d, name, opp);
+        out.push({ r, my: d.cScore[name], opp: d.cScore[opp], myH: d.hAvg[name], oppH: d.hAvg[opp], ...o });
+    }
+    return out;
 }
 
 function allRoundIdx() {

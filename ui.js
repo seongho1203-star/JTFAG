@@ -2482,12 +2482,56 @@ function renderHandicapMatchCard(r1, r2) {
             const mid = pct === null ? `<span class="vs-pct none">-</span><span class="vs-rate"></span>`
                 : `<span class="vs-pct ${tone}">승률 <b>${pct}%</b></span>`
                 + `<span class="vs-rate"><i class="w" style="width:${r.w / n * 100}%"></i><i class="t" style="width:${r.t / n * 100}%"></i></span>`;
-            html += `<div class="match-vs"><span class="vs-name">${escapeHtml(opp)}</span>`
+            html += `<div class="match-vs" role="button" onclick="openH2HDetail(${golfers.indexOf(opp)})"><span class="vs-name">${escapeHtml(opp)}</span>`
                 + `<span class="vs-mid">${mid}</span>`
                 + `<span class="vs-val ${cls}">${label}<span class="vs-rec">${recText}</span></span></div>`;
         });
     }
     if (matchGrid._html !== html) { matchGrid.innerHTML = html; matchGrid._html = html; }
+}
+
+// 1:1 카드의 줄을 누르면 그 상대와의 차수별 승부를 아래에서 올라오는 창으로 보여 준다(사용자 요청).
+// 차수 · 골프장 · 두 사람 타수 · 받은 타수를 뺀 보정 타수 · 승패. 셈은 headToHeadGames()(calc.js) — 카드의 승률과 같은 함수다.
+function closeH2HDetail() {
+    const o = document.querySelector('.h2h-overlay');
+    if (!o) return;
+    o.classList.remove('show', 'h2h-overlay');
+    setTimeout(() => o.remove(), 220);
+}
+
+function openH2HDetail(oppIdx) {
+    const opp = golfers[oppIdx]; if (!opp) return;
+    const saved = localStorage.getItem('jtfag_my_name');
+    const me = golfers.includes(saved) ? saved : golfers[0];
+    if (opp === me) return;
+    closeH2HDetail();
+    const games = headToHeadGames(me, opp, allRoundIdx()).reverse();   // 최근 차수가 위
+    const w = games.filter(g => g.res === 'w').length, l = games.filter(g => g.res === 'l').length, t = games.length - w - l;
+    const pct = games.length ? Math.round((w + t / 2) / games.length * 100) : null;
+    const tone = pct === null ? '' : pct > 50 ? 'up' : pct < 50 ? 'down' : '';
+    const line = (nm, gross, recv, mine) => `<div class="h2h-p${mine ? ' me' : ''}"><span class="nm">${escapeHtml(nm)}</span>`
+        + `<span class="sc">${gross}${recv > 0 ? `<em>−${recv}</em><b>${gross - recv}</b>` : ''}</span></div>`;
+    const rows = games.map(g => {
+        const course = (appData.courses && appData.courses[g.r]) || '';
+        const resTxt = g.res === 'w' ? '승' : g.res === 'l' ? '패' : '무';
+        const note = g.tieBreak ? '<div class="h2h-note">동타 · 핸디캡이 낮은 쪽 승</div>' : '';
+        return `<div class="h2h-row"><div class="h2h-rd"><b>${g.r + 1}차</b>${course ? `<span>${escapeHtml(course)}</span>` : ''}</div>`
+            + `<div class="h2h-sc">${line(me, g.my, Math.max(0, g.give), true)}${line(opp, g.opp, Math.max(0, -g.give), false)}${note}</div>`
+            + `<span class="h2h-res ${g.res}">${resTxt}</span></div>`;
+    }).join('');
+    const o = document.createElement('div');
+    o.className = 'bdg-sheet-overlay h2h-overlay';
+    o.innerHTML = `<div class="bdg-sheet h2h-sheet" role="dialog" aria-label="${escapeHtml(opp)} 상대 전적">
+        <div class="bdg-grip"></div>
+        <div class="h2h-head"><div class="h2h-title">${escapeHtml(me)} <i>vs</i> ${escapeHtml(opp)}</div>
+            <div class="h2h-sum">${games.length ? `${w}승 ${l}패${t ? ` ${t}무` : ''} · 승률 <b class="${tone}">${pct}%</b>` : '전적 없음'}</div></div>
+        ${rows ? `<div class="h2h-list">${rows}</div>` : ''}
+        <div class="h2h-foot">핸디캡은 해당 차수 직전 두 경기 평균의 차이이며, 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 네 명의 타수가 모두 없는 차수는 제외됩니다.</div>
+        <button type="button" class="bdg-close" onclick="closeH2HDetail()">닫기</button>
+    </div>`;
+    o.addEventListener('click', e => { if (e.target === o) closeH2HDetail(); });
+    document.body.appendChild(o);
+    requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
 }
 
 function updateScore(name, r, val) {
