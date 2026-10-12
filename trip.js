@@ -70,7 +70,7 @@ function tripNotifyText() {
     const parts = [];
     if (before.length) parts.push(`출발 ${before.join('·')}`);
     if (list.includes(0)) parts.push('여행 기간 중 매일');
-    return `🔔 알림: ${parts.join(' · ')} 아침`;
+    return `🔔 알림: ${parts.join(' · ')} 아침 · 여행 기간의 라운드 알림은 여행 알림으로 대체`;
 }
 function findTrip(id) { return allTrips().find(t => t.id === id) || null; }
 

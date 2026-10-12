@@ -103,6 +103,14 @@ async function remindRound(payload, today, daysBefore, ranks) {
     console.log(`[라운드] ${roundDate} · D-${remaining}`);
     if (!daysBefore.includes(remaining)) { console.log('[라운드] 알림 보낼 날이 아닙니다.'); return; }
 
+    // 여행 기간 안의 라운드는 여행 알림이 대신 알린다(사용자 지적 — 10/26 여행 첫날 디오션이 11차가 되면 두 번 간다).
+    // 출발 전 알림은 여행 쪽이 늘 보내므로 건너뛰고, 당일은 여행 쪽이 그날 적힌 것이 없어 안 보낼 때만 라운드 알림을 보낸다.
+    const trip = tripOn(payload, roundDate);
+    if (trip && (remaining > 0 || tripDaySays(trip.day))) {
+        console.log(`[라운드] ${clean(trip.trip.title) || '골프 여행'} 기간의 라운드라 여행 알림으로 대신합니다.`);
+        return;
+    }
+
     const fill = makeFill(ranks, { 남은일수: String(remaining), 디데이: ddayLabel(remaining), 일정: label || roundDate });
     await push((sub) => fill(titleTemplate, sub), (sub) => fill(bodyTemplate, sub), `round-${roundDate}`);
 }
@@ -121,6 +129,23 @@ function tripDaysOf(trip) {
         .slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 }
 const clean = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+// 그 날짜가 들어 있는 여행과 그날 칸. 없으면 null.
+function tripOn(payload, iso) {
+    for (const trip of (Array.isArray(payload.trips) ? payload.trips : [])) {
+        const day = tripDaysOf(trip).find(d => d.date === iso);
+        if (day) return { trip, day };
+    }
+    return null;
+}
+// 여행 당일 알림을 보낼 만큼 적힌 것이 있는가(remindTrips와 같은 잣대).
+function tripDaySays(d) { return !!(clean(d.course) || clean(d.tee) || clean(d.stay)); }
+// 여행 칸에 티오프가 비어 있어도 그날이 일정에 잡힌 라운드면 그 시각을 쓴다(`오후 12:30`).
+function teeOf(payload, d) {
+    const tee = clean(d.tee);
+    if (tee || payload.nextRoundISO !== d.date) return tee;
+    const m = String(payload.nextRoundDate || '').match(/(오전|오후)\s+\d{1,2}:\d{2}/);
+    return m ? m[0] : '';
+}
 
 async function remindTrips(payload, today, daysBefore, ranks) {
     const trips = Array.isArray(payload.trips) ? payload.trips : [];
@@ -137,9 +162,10 @@ async function remindTrips(payload, today, daysBefore, ranks) {
             const span = days.length > 1 ? `${shortDate(first.date)} ~ ${shortDate(last.date)}` : shortDate(first.date);
             const course = clean(first.course);
             const fill = makeFill(ranks, {});
+            const firstTee = teeOf(payload, first);
             await push(
                 `🧳 ${ddayLabel(until)} ${name}`,
-                (sub) => fill(`{호칭} ${span}${course ? ` · 1일차 ${course}` : ''}${clean(first.tee) ? ` ${clean(first.tee)}` : ''}`, sub),
+                (sub) => fill(`{호칭} ${span}${course ? ` · 1일차 ${course}` : ''}${firstTee ? ` ${firstTee}` : ''}`, sub),
                 `trip-${trip.id}`);
             continue;
         }
@@ -148,8 +174,8 @@ async function remindTrips(payload, today, daysBefore, ranks) {
         const i = days.findIndex(d => d.date === today);
         if (i < 0 || !daysBefore.includes(0)) continue;
         const d = days[i];
-        const course = clean(d.course), tee = clean(d.tee), stay = clean(d.stay);
-        if (!course && !tee && !stay) { console.log(`[여행] ${name} ${i + 1}일차 — 적힌 것이 없어 건너뜁니다.`); continue; }
+        const course = clean(d.course), tee = teeOf(payload, d), stay = clean(d.stay);
+        if (!tripDaySays(d)) { console.log(`[여행] ${name} ${i + 1}일차 — 적힌 것이 없어 건너뜁니다.`); continue; }
         console.log(`[여행] ${name} · ${i + 1}일차`);
         const fill = makeFill(ranks, {});
         const parts = [tee && `티오프 ${tee}`, stay && `숙소 ${stay}`].filter(Boolean).join(' · ');
