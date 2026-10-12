@@ -996,6 +996,15 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   포인트는 **성공한 별 수 − 다시 뽑기 횟수 × 2**(`missionPoints()` · 그해 것은 `rec.y`로 · 0 아래로 안 내려간다). 같은 미션은 다시 안 나온다(`pickMission(skipId)`).
   2점이 없거나, 2점을 쓰면 이미 쓴 멀리건 사용권보다 받은 사용권이 적어지면 단추가 잠긴다. 저장은 받기와 같이 `saveState()`를 안 건다.
   지금은 10차부터라 다들 0점이다 — 첫 성공 전에는 단추가 잠겨 보이는 게 정상이다.
+- **멀리건은 라운드(차수)마다 한 번만 쓴다**(사용자 요청 · `mulliganRound()`·`mulliganUsedIn()` in mission.js). 쓰는 차수는 미션과 같은
+  잣대(`missionTarget()`의 다음 라운드, 없으면 마지막 차수)다. 그 차수에 이미 썼으면 단추가 `N차 사용 완료`로 잠기고 `useMulligan()`도 한 번 더 막는다.
+- **쓰면 나머지 동반자 셋에게 푸시가 간다**(`🏌️ ○○님 멀리건 사용`). 앱에는 발송 열쇠가 없으므로 **스코어 판독과 같은 줄을 탄다** —
+  `payload.scoreRequests`에 `action: '멀리건'` 요청을 남기고 `kickScorecardWorkflow()`로 깨우면, `scripts/read-scorecard.js`의
+  `processOne()`이 파일은 안 건드리고 `notify()`가 `sendPush({exceptName})`(scripts/push.js — 이름 있는 구독 중 쓴 사람만 뺀다)로 보낸다.
+  **새 함수·새 Secret이 없다**(kick-scorecard는 '대기' 요청이면 무엇이든 깨운다). 방금 다른 요청으로 깨운 직후(20초)면 25초 뒤 한 번 더 깨운다.
+  - 스코어카드 목록(`renderScoreRequestModal`)에는 안 보이고, 끝난 멀리건 요청은 `pruneScoreRequests()`(ui.js)가 먼저 걷는다 —
+    안 그러면 `MAX_SCORE_REQUESTS`(10)를 채워 스코어카드 기록을 밀어낸다. scoreRequests를 더하는 곳은 이 함수로 자를 것.
+  - 헤드리스 확인은 스크래치패드 `mul-test.js`(1회 제한 · 요청 저장 · 깨우기 · 목록에 안 보임 · 정리)와 `srv-stub.js`(발송기 dry run — 셋에게만).
 - 멀리건 사용권은 **통산 포인트 ÷ 5 − 쓴 장수**다(해가 바뀌어도 남는다). 써도 포인트는 안 준다. 포인트 순위·미션왕은 올해 포인트(`missionSeasonPoints`).
 - 결과 발표(`revealMissionResult()` · `.msn-poster`)는 판정된 차수가 새로 생기면 기기마다 한 번(`jtfag_mission_seen` · 처음 보는 기기는 조용히 기억만).
   **클래스 `reveal-overlay`를 함께 달아** 다른 연출이 기다리게 한다 — 차례는 계급 결과 발표 → 미션 결과 발표(`afterRevealEffects()` 맨 앞) → 카운트업·계급 변동·축포·뱃지 획득.

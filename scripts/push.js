@@ -21,15 +21,17 @@ function setVapid(env) {
 // 함수를 주면 사람마다 다른 문구를 보낼 수 있다 ("학등급 신성호님 …").
 function textFor(v, sub) { return typeof v === 'function' ? v(sub) : v; }
 
-// onlyName을 주면 그 사람 기기에만 보낸다.
+// onlyName을 주면 그 사람 기기에만 보낸다. exceptName을 주면 그 사람을 뺀 이름 있는 기기에만 보낸다
+// (멀리건 알림 — 쓴 사람 말고 나머지 동반자에게).
 // 한 사람이 폰과 PC를 따로 구독했을 수 있어 이름이 같은 구독은 모두 받는다.
 // 만료된 구독(404/410)은 보내면서 정리한다.
-async function sendPush({ supabaseUrl, headers, env, title, body, tag, onlyName, dryRun }) {
+async function sendPush({ supabaseUrl, headers, env, title, body, tag, onlyName, exceptName, dryRun }) {
     const res = await fetch(`${supabaseUrl}/rest/v1/${PUSH_TABLE}?select=*`, { headers });
     if (!res.ok) throw new Error(`구독 조회 실패: ${res.status} ${await res.text()}`);
 
     const all = await res.json();
-    const subs = onlyName ? all.filter(s => s.name === onlyName) : all;
+    const subs = onlyName ? all.filter(s => s.name === onlyName)
+        : exceptName ? all.filter(s => s.name && s.name !== exceptName) : all;
     if (subs.length === 0) {
         console.log(onlyName ? `${onlyName}의 구독이 없어 알림을 건너뜁니다.` : '구독자가 없어 알림을 건너뜁니다.');
         return { sent: 0, total: 0 };

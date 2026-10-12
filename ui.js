@@ -2845,7 +2845,8 @@ function renderScoreRequestModal() {
         if (can) delBtn.textContent = `🗑️ ${selectedScorecardRound + 1}차 홀 기록 삭제`;
     }
 
-    const list = (appData.scoreRequests || []).slice().reverse();
+    // 멀리건 알림 요청은 같은 줄을 탈 뿐 스코어카드가 아니라 목록에 안 보인다(mission.js의 useMulligan).
+    const list = (appData.scoreRequests || []).filter(r => r && r.action !== '멀리건').slice().reverse();
     if (list.length === 0) {
         log.innerHTML = `<div class="scorecard-log-empty">등록된 스코어카드가 없습니다.</div>`;
         return;
@@ -2860,6 +2861,14 @@ function renderScoreRequestModal() {
             </div>${note}
         </div>`;
     }).join('');
+}
+
+/* scoreRequests는 MAX_SCORE_REQUESTS개까지만 둔다. 끝난 멀리건 알림 요청을 먼저 걷는다 —
+   안 그러면 알림 몇 건이 스코어카드 기록을 밀어낸다. */
+function pruneScoreRequests() {
+    if (!Array.isArray(appData.scoreRequests)) return;
+    appData.scoreRequests = appData.scoreRequests.filter(r => !(r && r.action === '멀리건' && r.status !== '대기'));
+    while (appData.scoreRequests.length > MAX_SCORE_REQUESTS) appData.scoreRequests.shift();
 }
 
 /* 홀 기록 지우기 요청. 사진 판독과 **같은 줄**을 탄다 —
@@ -2900,7 +2909,7 @@ async function requestHoleDelete() {
         status: '대기',
         note: ''
     });
-    while (appData.scoreRequests.length > MAX_SCORE_REQUESTS) appData.scoreRequests.shift();
+    pruneScoreRequests();
 
     // 사진 등록과 같은 이유로 저장이 끝난 뒤에 깨운다 — 워크플로가 DB의 '대기'를 보고 움직인다.
     await syncToSupabase(appData);
@@ -2967,7 +2976,7 @@ async function handleScorecardUpload(event) {
         status: '대기',
         note: ''
     });
-    while (appData.scoreRequests.length > MAX_SCORE_REQUESTS) appData.scoreRequests.shift();
+    pruneScoreRequests();
 
     // 깨우기 전에 저장이 끝나야 한다. 판독 함수는 DB에 '대기' 요청이 있는지 보고
     // 움직이므로, 저장이 아직 안 닿았으면 "대기 중인 요청이 없다"며 그냥 돌아간다.

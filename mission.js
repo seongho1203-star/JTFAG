@@ -284,6 +284,14 @@ function mulliganUses(g) {
     const list = appData && appData.mulligans && appData.mulligans[g];
     return Array.isArray(list) ? list.filter(u => u && typeof u.t === 'number' && u.t >= MISSION_RESET_AT) : [];
 }
+// 멀리건은 라운드(차수)마다 한 번만 쓴다(사용자 요청). 쓰는 차수는 일정에 잡힌 다음 라운드, 없으면 마지막 차수다.
+function mulliganRound() {
+    const t = missionTarget();
+    return t ? t.round : (appData.totalRounds || 0);
+}
+function mulliganUsedIn(g, round) {
+    return mulliganUses(g).some(u => u.r === round);
+}
 function mulliganInfo(g) {
     const pts = missionPoints(g);
     const earned = Math.floor(pts / MULLIGAN_STEP);
@@ -577,22 +585,43 @@ async function resetMissionRound() {
 async function useMulligan() {
     const me = localStorage.getItem('jtfag_my_name');
     if (!me || !golfers.includes(me)) { showToast('⚠️ 이름을 먼저 설정해야 합니다.'); return; }
+    const round = mulliganRound();
+    if (mulliganUsedIn(me, round)) { showToast(`ℹ️ ${round}차 라운드에서는 이미 멀리건을 사용했습니다. 라운드당 1회만 사용할 수 있습니다.`); return; }
     const info = mulliganInfo(me);
     if (info.left <= 0) { showToast(`⚠️ 사용 가능한 멀리건이 없습니다. 다음 사용권까지 ${info.toNext}점 남았습니다.`); return; }
-    const t = missionTarget();
-    const round = t ? t.round : (appData.totalRounds || 0);
-    const ok = await showConfirmPrompt(`<b>멀리건 사용권 1개</b>를 사용합니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${round}차 라운드 · 사용 후 취소할 수 없습니다.<br>보유 ${info.left}개 → ${info.left - 1}개</span>`, '사용', '#2b5394');
+    const ok = await showConfirmPrompt(`<b>멀리건 사용권 1개</b>를 사용합니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${round}차 라운드 · 라운드당 1회 · 사용 후 취소할 수 없습니다.<br>보유 ${info.left}개 → ${info.left - 1}개<br>동반자에게 사용 알림이 전송됩니다.</span>`, '사용', '#2b5394');
     if (!ok) return;
     // 확인창이 떠 있는 사이 남의 저장이 들어왔을 수 있어 지금 값으로 다시 본다
+    if (mulliganUsedIn(me, round)) { showToast(`ℹ️ ${round}차 라운드에서는 이미 멀리건을 사용했습니다.`); return; }
     if (mulliganInfo(me).left <= 0) { showToast('⚠️ 사용 가능한 멀리건이 없습니다.'); return; }
     const use = { r: round, t: Date.now() };
     if (!appData.mulligans || typeof appData.mulligans !== 'object') appData.mulligans = {};
     if (!Array.isArray(appData.mulligans[me])) appData.mulligans[me] = [];
     appData.mulligans[me].push(use);
     writeMine(m => { m.mulligans.push(use); });
-    syncToSupabase(appData);
+    // 동반자 알림 — 앱에는 발송 열쇠가 없으므로 스코어 판독과 같은 줄을 탄다(api.js의 kickScorecardWorkflow →
+    // scripts/read-scorecard.js가 action '멀리건'을 보고 나머지 셋에게 보낸다). 스코어카드 목록에는 안 보인다.
+    const now = new Date(use.t);
+    if (!Array.isArray(appData.scoreRequests)) appData.scoreRequests = [];
+    appData.scoreRequests.push({
+        id: `${use.t}-${Math.random().toString(36).slice(2, 8)}`,
+        action: '멀리건',
+        round,
+        time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        by: me,
+        left: mulliganInfo(me).left,
+        status: '대기',
+        note: ''
+    });
+    if (typeof pruneScoreRequests === 'function') pruneScoreRequests();
     renderMissionPage();
     showToast(`⛳ 멀리건 사용권을 사용했습니다. 남은 사용권 ${mulliganInfo(me).left}개`);
+    // 깨우기 전에 저장이 닿아야 한다 — 함수가 DB의 '대기'를 보고 움직인다.
+    await syncToSupabase(appData);
+    if (typeof kickScorecardWorkflow === 'function' && !(await kickScorecardWorkflow())) {
+        // 방금 다른 요청으로 깨운 직후면(20초) 건너뛴다 — 한 번만 더 깨운다(대기가 없으면 함수가 그냥 돌아간다)
+        setTimeout(() => { kickScorecardWorkflow(); }, 25000);
+    }
 }
 
 // ── 미션 화면 ─────────────────────────────────────────────
@@ -714,11 +743,13 @@ function missionRankCard(me) {
 function missionMulliganCard(me) {
     if (!me || !golfers.includes(me)) return '';
     const m = mulliganInfo(me);
+    const round = mulliganRound();
+    const usedNow = round > 0 && mulliganUsedIn(me, round);
     const pct = Math.round((MULLIGAN_STEP - m.toNext) / MULLIGAN_STEP * 100);
     const uses = golfers.flatMap(g => mulliganUses(g).map(u => ({ g, u }))).sort((a, b) => b.u.t - a.u.t).slice(0, 5);
     const fmt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
     return `<div class="msn-card">
-        <div class="msn-head"><span>멀리건 사용권</span><span class="msn-sub">포인트 ${MULLIGAN_STEP}점마다 1장</span></div>
+        <div class="msn-head"><span>멀리건 사용권</span><span class="msn-sub">포인트 ${MULLIGAN_STEP}점마다 1장 · 라운드당 1회</span></div>
         <div class="msn-mul">
             <div class="msn-ticket"><span class="big">${m.left}</span><span class="lb">장 보유</span></div>
             <div class="msn-mul-body">
@@ -727,7 +758,7 @@ function missionMulliganCard(me) {
                 <div class="msn-mul-sub">통산 ${m.pts}점 · 받은 사용권 ${m.earned}장 · 사용 ${m.used}장${missionRedraws(me) ? ` · 다시 뽑기 ${missionRedraws(me)}회(−${missionRedraws(me) * REDRAW_COST}점)` : ''}</div>
             </div>
         </div>
-        <button type="button" class="msn-use-btn"${m.left > 0 ? '' : ' disabled'} onclick="useMulligan()">멀리건 사용</button>
+        <button type="button" class="msn-use-btn"${m.left > 0 && !usedNow ? '' : ' disabled'} onclick="useMulligan()">${usedNow ? `${round}차 사용 완료` : '멀리건 사용'}</button>
         ${uses.length ? `<div class="msn-uses"><div class="lb">최근 사용</div>${uses.map(x => `<div class="msn-use"><span>${escapeHtml(x.g)}</span><span>${x.u.r ? x.u.r + '차' : ''} · ${fmt(x.u.t)}</span></div>`).join('')}</div>` : ''}
     </div>`;
 }

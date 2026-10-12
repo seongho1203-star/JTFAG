@@ -472,6 +472,11 @@ async function processOne(req, names) {
 
     // 삭제 요청은 사진도 판독도 없다. 그 차수 블록만 걷어낸다.
     if (req.action === '삭제') return removeOne(req);
+    // 멀리건 사용 알림(mission.js의 useMulligan). 파일은 안 건드리고 알림만 보낸다 — notify()가 나머지 동반자에게.
+    if (req.action === '멀리건') {
+        console.log(`\n▸ ${req.round}차 멀리건 사용 알림 (${req.time}, ${req.by})`);
+        return { totals: `${req.by || '동반자'}님이 ${req.round}차 라운드에서 멀리건을 사용했습니다.`, skipped: [], records: [], written: false };
+    }
 
     console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
     if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 올바르지 않습니다.');
@@ -599,6 +604,21 @@ async function notify(targets, results) {
         const r = results.get(req.id);
         if (!r) continue;
         const ok = r.status === '완료';
+        if (req.action === '멀리건') {
+            if (!ok || !req.by) continue;
+            try {
+                const left = Number.isInteger(req.left) ? ` (남은 사용권 ${req.left}장)` : '';
+                await sendPush({
+                    supabaseUrl: SUPABASE_URL, headers, env,
+                    title: `🏌️ ${req.by}님 멀리건 사용`,
+                    body: `${req.round}차 라운드에서 멀리건 사용권 1장을 사용했습니다${left}.`,
+                    tag: `mulligan-${req.round}-${req.by}`,
+                    exceptName: req.by,
+                    dryRun: !!DRY_RUN
+                });
+            } catch (err) { console.error('멀리건 알림 발송 실패:', err.message); }
+            continue;
+        }
         try {
             await sendPush({
                 supabaseUrl: SUPABASE_URL, headers, env,
