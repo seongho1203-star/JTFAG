@@ -1244,6 +1244,8 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 /* 계급 그림은 바탕이 투명한 이모티콘 그대로, 오리지 않고 통째로 크게 띄운다(사용자 요청 — 동그라미로 오렸다가 되돌렸다). */
 .greet-pic { position: absolute; right: 4vw; top: calc(10vh + env(safe-area-inset-top)); width: min(70vw, 320px); height: auto; object-fit: contain; transform: translateX(70px) scale(0.92); opacity: 0; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease; pointer-events: none; }
 .greet-poster.show .greet-pic { transform: none; opacity: 1; }
+/* 그림이 아직 안 풀렸으면 숨겨 두었다가 다 오면 그때 미끄러져 들어온다(setGreetPic · index.html 맨 앞의 줄). */
+.greet-poster.show .greet-pic.wait { transform: translateX(70px) scale(0.92); opacity: 0; }
 .greet-text { position: relative; }
 .greet-kick, .greet-name, .greet-msg { transform: translateY(16px); opacity: 0; transition: transform 0.5s ease, opacity 0.5s ease; }
 .greet-kick { font-size: clamp(0.85rem, 3.6vw, 0.98rem); font-weight: 700; }

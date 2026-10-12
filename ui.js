@@ -3849,6 +3849,54 @@ async function deleteMyName() {
     }
 }
 
+// ─── 입장 인사말의 계급 그림을 이 기기에 담아 둔다 ───
+// 사용자 제보 — `등급 이모티콘이 인터넷 환경에 따라서 늦게 뜬다`. 그림이 Supabase 저장소에 있어
+// 접속할 때마다 받아 와야 했고, 느린 곳에서는 포스터가 다 뜬 뒤에야 그림이 나타났다.
+// 한 번 받은 그림을 data URL로 localStorage(`jtfag_greet_pic` = {url, data})에 남기면
+// index.html 맨 앞의 줄이 다음 접속 때 인터넷 없이 첫 프레임부터 그린다.
+// - 내 계급 하나만 담는다(네 장을 다 담으면 아이폰에서 PNG라 2MB 가까이 된다). 계급이 바뀐 첫 접속만 받아 온다.
+// - 크기는 긴 변 720px까지 — 포스터에서 폭 320px로 보이므로 레티나에서도 안 뭉개진다.
+// - Supabase 공개 저장소는 CORS를 열어 두어 캔버스로 옮길 수 있다. 막히면(캔버스 오염) 조용히 넘어간다 — 예전처럼 받아 올 뿐이다.
+const GREET_PIC_KEY = 'jtfag_greet_pic';
+const GREET_PIC_EDGE = 720;
+function greetPicCached(url) {
+    try {
+        const c = JSON.parse(localStorage.getItem(GREET_PIC_KEY) || 'null');
+        return c && c.url === url && typeof c.data === 'string' && c.data.startsWith('data:image/') ? c.data : '';
+    } catch (e) { return ''; }
+}
+// 그림이 다 풀린 뒤에 미끄러져 들어오게 한다 — 늦게 오면 포스터가 뜬 뒤 툭 나타나는 대신 그때 들어온다.
+function setGreetPic(pic, src) {
+    pic.classList.add('wait');
+    const ready = () => pic.classList.remove('wait');
+    pic.onload = ready;
+    pic.src = src;
+    if (pic.complete && pic.naturalWidth) ready();
+}
+function storeGreetPic(url) {
+    if (!url || greetPicCached(url)) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        try {
+            const w = img.naturalWidth, h = img.naturalHeight;
+            if (!w || !h) return;
+            const k = Math.min(1, GREET_PIC_EDGE / Math.max(w, h));
+            const cv = document.createElement('canvas');
+            cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+            const cx = cv.getContext('2d');
+            cx.imageSmoothingQuality = 'high';
+            cx.drawImage(img, 0, 0, cv.width, cv.height);
+            // 바탕이 투명한 그림이라 JPEG은 안 된다. webp를 못 만드는 브라우저(사파리)는 PNG를 돌려준다.
+            let data = cv.toDataURL('image/webp', 0.9);
+            if (!data.startsWith('data:image/webp')) data = cv.toDataURL('image/png');
+            if (data.length > 1500000) return;
+            localStorage.setItem(GREET_PIC_KEY, JSON.stringify({ url, data }));
+        } catch (e) {}
+    };
+    img.src = url;
+}
+
 function showGreeting(myName) {
     const ranks = golferRankHistory[myName] || [];
     let myRankIdx = 3; 
@@ -3905,8 +3953,12 @@ function showGreeting(myName) {
     let pic = overlay.querySelector('.greet-pic');
     if (picSrc) {
         if (!pic) { pic = document.createElement('img'); pic.className = 'greet-pic'; pic.alt = ''; overlay.prepend(pic); }
-        if (pic.getAttribute('src') !== picSrc) pic.src = picSrc;
+        // 이 기기에 담아 둔 그림이 있으면 그것을 쓴다 — 인터넷을 안 기다린다(greetPicCached).
+        const show = greetPicCached(picSrc) || picSrc;
+        if (pic.getAttribute('src') !== show) setGreetPic(pic, show);
     } else if (pic) pic.remove();
+    // 다음 접속 때 바로 뜨게 계급 그림을 이 기기에 담아 둔다(이미 담겨 있으면 아무 일도 안 한다).
+    setTimeout(() => storeGreetPic(picSrc), 3500);
     if (!overlay.isConnected) {
         document.body.appendChild(overlay);
         requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('show')));

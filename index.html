@@ -39,7 +39,17 @@
                 + '<div class="greet-name"><span class="greet-rank"></span>등급<br><span class="greet-who"></span>님</div>'
                 + '<div class="greet-msg">입장하였습니다 · 화면을 누르면 넘어갑니다</div></div>';
             var pic = el.querySelector('.greet-pic');
-            if (g.pic) pic.src = g.pic; else pic.remove();
+            if (g.pic) {
+                // 이 기기에 담아 둔 계급 그림(jtfag_greet_pic · ui.js의 storeGreetPic)이 있으면 인터넷을 안 기다린다.
+                var c = null;
+                try { c = JSON.parse(localStorage.getItem('jtfag_greet_pic') || 'null'); } catch (e2) {}
+                var src = c && c.url === g.pic && typeof c.data === 'string' && c.data.indexOf('data:image/') === 0 ? c.data : g.pic;
+                // 다 풀린 뒤에 미끄러져 들어온다(wait) — 늦게 와도 툭 나타나지 않는다.
+                pic.className = 'greet-pic wait';
+                pic.onload = function () { pic.classList.remove('wait'); };
+                pic.src = src;
+                if (pic.complete && pic.naturalWidth) pic.classList.remove('wait');
+            } else pic.remove();
             el.querySelector('.greet-kick').textContent = g.phrase;
             el.querySelector('.greet-rank').textContent = g.rankName;
             el.querySelector('.greet-who').textContent = n;
