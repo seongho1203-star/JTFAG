@@ -2509,15 +2509,18 @@ function openH2HDetail(oppIdx) {
     const w = games.filter(g => g.res === 'w').length, l = games.filter(g => g.res === 'l').length, t = games.length - w - l;
     const pct = games.length ? Math.round((w + t / 2) / games.length * 100) : null;
     const tone = pct === null ? '' : pct > 50 ? 'up' : pct < 50 ? 'down' : '';
-    const line = (nm, gross, recv, mine) => `<div class="h2h-p${mine ? ' me' : ''}"><span class="nm">${escapeHtml(nm)}</span>`
-        + `<span class="sc">${gross}${recv > 0 ? `<em>−${recv}</em><b>${gross - recv}</b>` : ''}</span></div>`;
+    // 경기 카드(사용자가 시안 넷 중 D를 골랐다 — 아티팩트 `JTFAG 전적 창 시안`). 나는 늘 왼쪽 · 보정 타수 한 쌍을 크게.
     const rows = games.map(g => {
         const course = (appData.courses && appData.courses[g.r]) || '';
-        const resTxt = g.res === 'w' ? '승' : g.res === 'l' ? '패' : '무';
-        const note = g.tieBreak ? '<div class="h2h-note">동타 · 핸디캡이 낮은 쪽 승</div>' : '';
-        return `<div class="h2h-row"><div class="h2h-rd"><b>${g.r + 1}차</b>${course ? `<span>${escapeHtml(course)}</span>` : ''}</div>`
-            + `<div class="h2h-sc">${line(me, g.my, Math.max(0, g.give), true)}${line(opp, g.opp, Math.max(0, -g.give), false)}${note}</div>`
-            + `<span class="h2h-res ${g.res}">${resTxt}</span></div>`;
+        const myNet = g.my - Math.max(0, g.give), oppNet = g.opp - Math.max(0, -g.give);
+        const hc = g.give > 0 ? `<em>${g.give}타 받음</em>` : g.give < 0 ? `<em>${-g.give}타 줌</em>` : '스크래치';
+        const desc = g.give <= 0 ? `${g.my}타 · ${escapeHtml(opp)} ${g.opp}타 · ${hc}` : `${g.my}타 · ${hc} · ${escapeHtml(opp)} ${g.opp}타`;
+        const resTxt = g.res === 'w' ? '승' : g.res === 'l' ? '패' : '무승부';
+        const gap = Math.abs(myNet - oppNet);
+        const tail = g.res === 't' ? '무승부' : gap ? `${gap}타 차 ${resTxt}` : `동타 · 핸디 우위 ${resTxt}`;
+        return `<div class="h2h-card ${g.res}"><div class="h2h-l"><div class="h2h-a">${g.r + 1}차${course ? `<span>${escapeHtml(course)}</span>` : ''}</div>`
+            + `<div class="h2h-b">${desc}</div></div>`
+            + `<div class="h2h-r"><div class="h2h-x">${myNet}<i>:</i>${oppNet}</div><div class="h2h-y">${tail}</div></div></div>`;
     }).join('');
     const o = document.createElement('div');
     o.className = 'bdg-sheet-overlay h2h-overlay';
@@ -2526,7 +2529,7 @@ function openH2HDetail(oppIdx) {
         <div class="h2h-head"><div class="h2h-title">${escapeHtml(me)} <i>vs</i> ${escapeHtml(opp)}</div>
             <div class="h2h-sum">${games.length ? `${w}승 ${l}패${t ? ` ${t}무` : ''} · 승률 <b class="${tone}">${pct}%</b>` : '전적 없음'}</div></div>
         ${rows ? `<div class="h2h-list">${rows}</div>` : ''}
-        <div class="h2h-foot">핸디캡은 해당 차수 직전 두 경기 평균의 차이이며, 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 네 명의 타수가 모두 없는 차수는 제외됩니다.</div>
+        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 두 경기 평균의 차이이며, 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 네 명의 타수가 모두 없는 차수는 제외됩니다.</div>
         <button type="button" class="bdg-close" onclick="closeH2HDetail()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeH2HDetail(); });
