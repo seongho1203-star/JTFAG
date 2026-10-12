@@ -1858,11 +1858,7 @@ function paintMoneyResult(el, v, wait) {
     el.className = `money-result-badge ${wait ? 'wait' : moneyResultTone(v)}`;
     el.textContent = wait ? '대기' : moneyResultText(v);
 }
-// 스코어 입력 대기인 차수는 계급정산·타수정산 칸에 금액 대신 `대기`를 적고 표 아래에 한 줄로 알린다(roundScored in calc.js).
-function paintMoneyWait(wait) {
-    const el = document.getElementById('moneyWait');
-    if (el) el.hidden = !wait;
-}
+// 스코어 입력 대기인 차수는 계급정산·타수정산 칸에 금액 대신 `대기`를 적는다(roundScored in calc.js).
 
 // 남의 칸은 readonly로 두고 누르면 왜 안 되는지 알려 준다.
 // pointer-events를 끄지 않는 이유가 그것이다 — 아무 반응이 없으면 고장으로 보인다.
@@ -2007,7 +2003,6 @@ function renderMoneyTable() {
             paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenaltyOf(g, selectedMoneyRoundIdx), waiting);
             paintMoneyResult(document.getElementById(`money_stroke_${g}`), strokeDiffOf(g, selectedMoneyRoundIdx), waiting);
         });
-        paintMoneyWait(waiting);
         renderDonateRow();
         return;
     }
@@ -2029,7 +2024,6 @@ function renderMoneyTable() {
                 <td><span id="money_stroke_${g}" class="money-result-badge ${waiting ? 'wait' : moneyResultTone(pureStrokeDiff)}">${waiting ? '대기' : moneyResultText(pureStrokeDiff)}</span></td>
             </tr>`;
     });
-    paintMoneyWait(waiting);
     renderDonateRow();
 }
 
