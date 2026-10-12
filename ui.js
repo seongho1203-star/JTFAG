@@ -2446,8 +2446,8 @@ function renderTable() {
 
 // 홈 · 통합 정산 요약 아래(사용자 요청으로 정산·스코어에서 옮겼다).
 // **이 기기 주인 기준 대결표다**(사용자가 시안 다섯 중 B를 골랐다 — 아티팩트 `JTFAG 핸디캡 시안`).
-// 상대 셋마다 받는 타수는 남색 칸, 주는 타수는 빨간 칸으로 세고 1:1 전적(`headToHead`)을 곁들인다.
-// 칸 수는 모임 안 가장 큰 차이에 맞춰 네 기기 모두 같은 눈금이 되게 한다(6~14칸).
+// 상대 셋마다 가운데에 그 상대와의 통산 승률(`headToHead`), 오른쪽에 받는/주는 타수와 승패를 적는다.
+// (처음엔 가운데가 타수 칸 막대였는데 사용자 요청으로 승률로 바꿨다.)
 // 이름을 아직 안 정한 기기는 첫 사람 기준으로 보여 준다.
 function renderHandicapMatchCard(r1, r2) {
     const matchGrid = document.getElementById('matchGrid'); if (!matchGrid) return;
@@ -2466,24 +2466,24 @@ function renderHandicapMatchCard(r1, r2) {
         html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
     } else {
         if (title) title.textContent = `${me}님 기준 · ${r1 + 1}·${r2 + 1}차 평균 ${avgScores[me]}`;
-        const vals = golfers.map(g => avgScores[g]);
-        const spread = Math.max(...vals) - Math.min(...vals);
-        const cells = Math.min(Math.max(spread, 6), 14);
         const rec = typeof headToHead === 'function' ? headToHead(me, allRoundIdx()) : {};
         html = '';
         golfers.filter(g => g !== me).forEach(opp => {
             const diff = avgScores[me] - avgScores[opp];      // 양수면 내가 받는다
             const abs = Math.abs(diff);
-            const filled = abs === 0 ? 0 : spread <= 14 ? abs : Math.max(1, Math.round(abs * 14 / spread));
             const cls = diff > 0 ? 'get' : diff < 0 ? 'give' : 'even';
-            let bar = '';
-            for (let k = 0; k < cells; k++) bar += `<i${k < filled ? ` class="${cls}"` : ''}></i>`;
             const label = diff > 0 ? `${abs}타 받음` : diff < 0 ? `${abs}타 줌` : '스크래치';
-            const r = rec[opp];
-            const played = r && (r.w + r.l + r.t) > 0;
-            const recText = played ? `${r.w}승 ${r.l}패${r.t ? ` ${r.t}무` : ''}` : '전적 없음';
+            const r = rec[opp] || { w: 0, l: 0, t: 0 };
+            const n = r.w + r.l + r.t;
+            const recText = n ? `${r.w}승 ${r.l}패${r.t ? ` ${r.t}무` : ''}` : '전적 없음';
+            // 가운데는 그 상대와의 통산 승률 — 무승부는 반 승으로 센다.
+            const pct = n ? Math.round((r.w + r.t / 2) / n * 100) : null;
+            const tone = pct === null ? 'none' : pct > 50 ? 'up' : pct < 50 ? 'down' : 'flat';
+            const mid = pct === null ? `<span class="vs-pct none">-</span><span class="vs-rate"></span>`
+                : `<span class="vs-pct ${tone}">승률 <b>${pct}%</b></span>`
+                + `<span class="vs-rate"><i class="w" style="width:${r.w / n * 100}%"></i><i class="t" style="width:${r.t / n * 100}%"></i></span>`;
             html += `<div class="match-vs"><span class="vs-name">${escapeHtml(opp)}</span>`
-                + `<span class="vs-bar">${bar}</span>`
+                + `<span class="vs-mid">${mid}</span>`
                 + `<span class="vs-val ${cls}">${label}<span class="vs-rec">${recText}</span></span></div>`;
         });
     }

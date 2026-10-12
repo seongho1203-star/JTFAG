@@ -1468,13 +1468,19 @@ html, body { overscroll-behavior: none; }
 .match-vs { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-top: 1px solid var(--line); }
 .match-vs:first-child { border-top: none; padding-top: 2px; }
 .match-vs .vs-name { width: 50px; flex: none; font-weight: 800; font-size: clamp(0.78rem, 3.3vw, 0.85rem); color: var(--text-main); white-space: nowrap; }
-.match-vs .vs-bar { flex: 1; min-width: 0; display: flex; gap: 3px; }
-.match-vs .vs-bar i { flex: 1; height: 10px; border-radius: 3px; background: var(--line); }
-.match-vs .vs-bar i.get { background: var(--primary-gold); }
-.match-vs .vs-bar i.give { background: #c2453b; }
+.match-vs .vs-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.match-vs .vs-pct { font-size: clamp(0.66rem, 2.7vw, 0.72rem); color: var(--text-sub); font-weight: 600; white-space: nowrap; }
+.match-vs .vs-pct b { font-size: clamp(0.9rem, 3.8vw, 1rem); font-weight: 800; margin-left: 2px; }
+.match-vs .vs-pct.up b { color: var(--accent-green); }
+.match-vs .vs-pct.down b { color: #c2453b; }
+.match-vs .vs-pct.flat b { color: var(--text-main); }
+.match-vs .vs-rate { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #f4d6d3; }
+.match-vs .vs-rate i { height: 100%; }
+.match-vs .vs-rate i.w { background: var(--accent-green); }
+.match-vs .vs-rate i.t { background: var(--line); }
 .match-vs .vs-val { flex: none; min-width: 64px; text-align: right; font-weight: 800; font-size: clamp(0.78rem, 3.3vw, 0.85rem); white-space: nowrap; line-height: 1.2; }
 .match-vs .vs-val.get { color: var(--primary-gold); }
-.match-vs .vs-val.give { color: #c2453b; }
+.match-vs .vs-val.give { color: var(--text-main); }
 .match-vs .vs-val.even { color: var(--accent-green); }
 .match-vs .vs-rec { display: block; font-size: clamp(0.6rem, 2.5vw, 0.66rem); color: var(--text-sub); font-weight: 600; }
 
