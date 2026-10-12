@@ -1853,10 +1853,15 @@ function renderMoneyRoundOptions(select) {
 // 정산 금액 뱃지. 계급정산·타수정산이 같은 함수를 쓰므로 두 칸이 어긋날 수 없다.
 function moneyResultTone(v) { return v > 0 ? 'pos' : (v < 0 ? 'neg' : 'zero'); }
 function moneyResultText(v) { return v === 0 ? "0원" : (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만"; }
-function paintMoneyResult(el, v) {
+function paintMoneyResult(el, v, wait) {
     if (!el) return;
-    el.className = `money-result-badge ${moneyResultTone(v)}`;
-    el.textContent = moneyResultText(v);
+    el.className = `money-result-badge ${wait ? 'wait' : moneyResultTone(v)}`;
+    el.textContent = wait ? '대기' : moneyResultText(v);
+}
+// 스코어 입력 대기인 차수는 계급정산·타수정산 칸에 금액 대신 `대기`를 적고 표 아래에 한 줄로 알린다(roundScored in calc.js).
+function paintMoneyWait(wait) {
+    const el = document.getElementById('moneyWait');
+    if (el) el.hidden = !wait;
 }
 
 // 남의 칸은 readonly로 두고 누르면 왜 안 되는지 알려 준다.
@@ -1967,7 +1972,7 @@ function rankPenaltyOf(name, roundIdx) {
 function strokeDiffOf(name, roundIdx) {
     const m = (appData.roundMoney && appData.roundMoney[roundIdx] && appData.roundMoney[roundIdx][name]) || { start: 0, end: 0 };
     const start = Number(m.start) || 0, end = Number(m.end) || 0;
-    if (!moneySettled(m)) return 0;              // 남은 금액을 아직 안 적은 사람은 0으로 둔다(게임 중 — calc.js)
+    if (!moneySettled(m) || !roundScored(roundIdx)) return 0;   // 남은 금액 전이거나 스코어 입력 대기면 0(calc.js)
     return (end - start) - rankPenaltyOf(name, roundIdx);
 }
 
@@ -1987,6 +1992,7 @@ function renderMoneyTable() {
 
     // 잠금 상태가 바뀌면 칸을 다시 만들어야 한다 — 아래 빠른 길은 값만 갈아 끼운다.
     const lockKey = `${isMoneyUnlocked ? 'all' : myGolferName() || 'none'}`;
+    const waiting = !roundScored(selectedMoneyRoundIdx);
 
     if (tbody.children.length === golfers.length
         && tbody.getAttribute('data-round') === String(selectedMoneyRoundIdx)
@@ -1998,9 +2004,10 @@ function renderMoneyTable() {
             if (sInput && document.activeElement !== sInput) sInput.value = formatNumber(m.start);
             if (eInput && document.activeElement !== eInput) eInput.value = formatNumber(m.end);
 
-            paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenaltyOf(g, selectedMoneyRoundIdx));
-            paintMoneyResult(document.getElementById(`money_stroke_${g}`), strokeDiffOf(g, selectedMoneyRoundIdx));
+            paintMoneyResult(document.getElementById(`money_rank_${g}`), rankPenaltyOf(g, selectedMoneyRoundIdx), waiting);
+            paintMoneyResult(document.getElementById(`money_stroke_${g}`), strokeDiffOf(g, selectedMoneyRoundIdx), waiting);
         });
+        paintMoneyWait(waiting);
         renderDonateRow();
         return;
     }
@@ -2018,10 +2025,11 @@ function renderMoneyTable() {
                 <td style="font-weight:800; color:var(--text-main);">${g}</td>
                 <td>${moneyCell(g, 'start', m.start)}</td>
                 <td>${moneyCell(g, 'end', m.end)}</td>
-                <td><span id="money_rank_${g}" class="money-result-badge ${moneyResultTone(rankPenalty)}">${moneyResultText(rankPenalty)}</span></td>
-                <td><span id="money_stroke_${g}" class="money-result-badge ${moneyResultTone(pureStrokeDiff)}">${moneyResultText(pureStrokeDiff)}</span></td>
+                <td><span id="money_rank_${g}" class="money-result-badge ${waiting ? 'wait' : moneyResultTone(rankPenalty)}">${waiting ? '대기' : moneyResultText(rankPenalty)}</span></td>
+                <td><span id="money_stroke_${g}" class="money-result-badge ${waiting ? 'wait' : moneyResultTone(pureStrokeDiff)}">${waiting ? '대기' : moneyResultText(pureStrokeDiff)}</span></td>
             </tr>`;
     });
+    paintMoneyWait(waiting);
     renderDonateRow();
 }
 
@@ -2111,6 +2119,13 @@ function paintNearBox() {
     if (!el) return;
 
     // 타수정산을 다 더하면 팟에 남은 돈이 된다. 마이너스면 팟에 쌓인 것이다.
+    // 스코어 입력 대기면 계급이 안 정해져 잔액을 셀 수 없다.
+    if (!roundScored(selectedMoneyRoundIdx)) {
+        el.textContent = '-';
+        el.className = 'zero';
+        paintNearCheck(0);
+        return;
+    }
     const sum = golfers.reduce((a, g) => a + strokeDiffOf(g, selectedMoneyRoundIdx), 0);
     const left = -sum;
 
@@ -2136,6 +2151,11 @@ function paintNearCheck(left) {
         return (Number(m.start) || 0) !== 0 || (Number(m.end) || 0) !== 0;
     });
 
+    if (!roundScored(selectedMoneyRoundIdx)) {
+        badge.className = 'near-check none';
+        badge.textContent = '스코어 입력 대기';
+        return;
+    }
     if (!entered) {
         badge.className = 'near-check none';
         badge.textContent = '미입력';

@@ -435,6 +435,10 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 .money-result-badge.pos  { background: rgba(22, 163, 74, 0.10); color: #16a34a; }
 .money-result-badge.neg  { background: rgba(220, 38, 38, 0.10); color: #dc2626; }
 .money-result-badge.zero { background: rgba(0, 0, 0, 0.03);     color: #64748b; }
+.money-result-badge.wait { background: #fef3c7; color: #b45309; }   /* 스코어 입력 대기 */
+.money-wait { margin-top: 8px; padding: 7px 10px; border-radius: 8px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 0.72rem; line-height: 1.45; word-break: keep-all; }
+.money-wait[hidden] { display: none; }
+.money-wait b { font-weight: 800; }
 
 /* 핸디캡 제목 + 저장 상태 한 줄. 상태 문구가 길어지면(`⚡ 서버 연결 및 동기화 완료`)
    제목이 `산/출`처럼 단어 가운데서 잘렸다 — 제목이 `flex: 1`로 남은 자리만 받았기 때문이다.

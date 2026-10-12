@@ -16,6 +16,19 @@ function formatFinalBalance(v) {
 // 남은 금액 0원은 '아직 안 적음'과 구별할 수 없어 같은 것으로 본다(다 잃는 일은 사실상 없다).
 function moneySettled(m) { return !!m && (Number(m.end) || 0) > 0; }
 
+// 그 차수의 스코어가 들어왔는가 — 넷 다 타수가 있는 마지막 차수까지를 끝난 것으로 본다(사용자 요청 —
+// 10차 스코어 등록 전인데 정산이 먼저 반영되어 혼동됐다). 그 뒤의 차수는 `스코어 입력 대기`라
+// 요약 합산·표의 계급정산·타수정산·니어 잔액에서 모두 빠진다. 계급은 이 타수로 매겨지므로 곧 '계급정산 확정'이다.
+// 마지막 차수까지로 보는 것은, 예전 차수에 한 사람 타수가 비어 있어도 그 차수 정산이 사라지지 않게 하려는 것이다.
+function lastScoredRound() {
+    const sc = (appData && appData.scores) || {};
+    for (let r = (appData.totalRounds || 0) - 1; r >= 0; r--) {
+        if (golfers.every(g => { const v = parseFloat(sc[g] ? sc[g][r] : NaN); return !isNaN(v) && v > 0; })) return r;
+    }
+    return -1;
+}
+function roundScored(r) { return r <= lastScoredRound(); }
+
 // 찬조 합계 — 모임을 위해 그 사람이 쓴 돈. `roundMoney[차수][이름].donate`에 있다.
 // 정산에서 나온 값이 아니라 따로 적은 값이라, 합산에서 그만큼 **뺀다**
 // (-50만인 사람이 5만을 찬조하면 -55만). 예전 payload에는 키가 없으므로 없으면 0.
@@ -526,7 +539,7 @@ function processAllRoundSettlements() {
                 if (!rMoney) continue;
 
                 const m = rMoney[g] || { start: 0, end: 0 };
-                if (moneySettled(m)) {
+                if (moneySettled(m) && roundScored(rIdx)) {
                     const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
                     const totalDiff = m.end - m.start;
                     const pureStroke = totalDiff - rPenalty; 
@@ -562,7 +575,7 @@ function processAllRoundSettlements() {
                     if (!rMoney) continue;
 
                     const m = rMoney[g] || { start: 0, end: 0 };
-                    if (moneySettled(m)) {
+                    if (moneySettled(m) && roundScored(rIdx)) {
                         const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
                         const totalDiff = m.end - m.start;
                         const pureStroke = totalDiff - rPenalty; 
