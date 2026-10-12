@@ -2444,8 +2444,11 @@ function renderTable() {
     });
 }
 
-// 홈 · 통합 정산 요약 아래(사용자 요청으로 정산·스코어에서 옮겼다). 한 칸에 두 사람 — 윗줄은 누구와 누구,
-// 아랫줄은 누가 몇 타 받는지. 좁은 폰(320)에서 한 줄에 둘 다 넣으면 잘려서 두 줄로 둔다.
+// 홈 · 통합 정산 요약 아래(사용자 요청으로 정산·스코어에서 옮겼다).
+// **이 기기 주인 기준 대결표다**(사용자가 시안 다섯 중 B를 골랐다 — 아티팩트 `JTFAG 핸디캡 시안`).
+// 상대 셋마다 받는 타수는 남색 칸, 주는 타수는 빨간 칸으로 세고 1:1 전적(`headToHead`)을 곁들인다.
+// 칸 수는 모임 안 가장 큰 차이에 맞춰 네 기기 모두 같은 눈금이 되게 한다(6~14칸).
+// 이름을 아직 안 정한 기기는 첫 사람 기준으로 보여 준다.
 function renderHandicapMatchCard(r1, r2) {
     const matchGrid = document.getElementById('matchGrid'); if (!matchGrid) return;
     const avgScores = {};
@@ -2455,21 +2458,34 @@ function renderHandicapMatchCard(r1, r2) {
         if (!isNaN(s1) && !isNaN(s2)) avgScores[g] = Math.floor((s1 + s2) / 2);
     });
 
+    const saved = localStorage.getItem('jtfag_my_name');
+    const me = golfers.includes(saved) ? saved : golfers[0];
+    const title = document.getElementById('matchCardTitle');
     let html;
     if (Object.keys(avgScores).length < 4) {
         html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
     } else {
+        if (title) title.textContent = `${me}님 기준 · ${r1 + 1}·${r2 + 1}차 평균 ${avgScores[me]}`;
+        const vals = golfers.map(g => avgScores[g]);
+        const spread = Math.max(...vals) - Math.min(...vals);
+        const cells = Math.min(Math.max(spread, 6), 14);
+        const rec = typeof headToHead === 'function' ? headToHead(me, allRoundIdx()) : {};
         html = '';
-        for (let i = 0; i < golfers.length; i++) {
-            for (let j = i + 1; j < golfers.length; j++) {
-                const a = golfers[i], b = golfers[j];
-                const diff = avgScores[a] - avgScores[b];
-                const who = diff > 0 ? a : b;
-                const res = diff === 0 ? `<span class="match-res even">스크래치</span>`
-                    : `<span class="match-res"><b>${escapeHtml(who)}</b> ${Math.abs(diff)}타 받음</span>`;
-                html += `<div class="match-item"><span class="match-pair">${escapeHtml(a)} · ${escapeHtml(b)}</span>${res}</div>`;
-            }
-        }
+        golfers.filter(g => g !== me).forEach(opp => {
+            const diff = avgScores[me] - avgScores[opp];      // 양수면 내가 받는다
+            const abs = Math.abs(diff);
+            const filled = abs === 0 ? 0 : spread <= 14 ? abs : Math.max(1, Math.round(abs * 14 / spread));
+            const cls = diff > 0 ? 'get' : diff < 0 ? 'give' : 'even';
+            let bar = '';
+            for (let k = 0; k < cells; k++) bar += `<i${k < filled ? ` class="${cls}"` : ''}></i>`;
+            const label = diff > 0 ? `${abs}타 받음` : diff < 0 ? `${abs}타 줌` : '스크래치';
+            const r = rec[opp];
+            const played = r && (r.w + r.l + r.t) > 0;
+            const recText = played ? `${r.w}승 ${r.l}패${r.t ? ` ${r.t}무` : ''}` : '전적 없음';
+            html += `<div class="match-vs"><span class="vs-name">${escapeHtml(opp)}</span>`
+                + `<span class="vs-bar">${bar}</span>`
+                + `<span class="vs-val ${cls}">${label}<span class="vs-rec">${recText}</span></span></div>`;
+        });
     }
     if (matchGrid._html !== html) { matchGrid.innerHTML = html; matchGrid._html = html; }
 }
