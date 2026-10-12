@@ -10,6 +10,12 @@ function formatFinalBalance(v) {
     return (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만";
 }
 
+// 그 차수의 정산이 끝났는가 — 남은 금액이 적혀야 끝난 것이다(사용자 요청 — 시작 금액만 적었을 때
+// 통합 정산 요약 합산에 `-30만`처럼 바로 반영되어 동반자들이 오해했다).
+// 시작 금액만 있으면 아직 게임 중이라 요약·표의 타수정산·니어 잔액에서 모두 빼 둔다.
+// 남은 금액 0원은 '아직 안 적음'과 구별할 수 없어 같은 것으로 본다(다 잃는 일은 사실상 없다).
+function moneySettled(m) { return !!m && (Number(m.end) || 0) > 0; }
+
 // 찬조 합계 — 모임을 위해 그 사람이 쓴 돈. `roundMoney[차수][이름].donate`에 있다.
 // 정산에서 나온 값이 아니라 따로 적은 값이라, 합산에서 그만큼 **뺀다**
 // (-50만인 사람이 5만을 찬조하면 -55만). 예전 payload에는 키가 없으므로 없으면 0.
@@ -520,7 +526,7 @@ function processAllRoundSettlements() {
                 if (!rMoney) continue;
 
                 const m = rMoney[g] || { start: 0, end: 0 };
-                if (m.start > 0 || m.end > 0) {
+                if (moneySettled(m)) {
                     const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
                     const totalDiff = m.end - m.start;
                     const pureStroke = totalDiff - rPenalty; 
@@ -556,7 +562,7 @@ function processAllRoundSettlements() {
                     if (!rMoney) continue;
 
                     const m = rMoney[g] || { start: 0, end: 0 };
-                    if (m.start > 0 || m.end > 0) {
+                    if (moneySettled(m)) {
                         const rPenalty = (roundRankProfit[g] && roundRankProfit[g][rIdx] !== undefined) ? roundRankProfit[g][rIdx] : 0;
                         const totalDiff = m.end - m.start;
                         const pureStroke = totalDiff - rPenalty; 

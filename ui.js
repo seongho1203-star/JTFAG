@@ -1967,7 +1967,7 @@ function rankPenaltyOf(name, roundIdx) {
 function strokeDiffOf(name, roundIdx) {
     const m = (appData.roundMoney && appData.roundMoney[roundIdx] && appData.roundMoney[roundIdx][name]) || { start: 0, end: 0 };
     const start = Number(m.start) || 0, end = Number(m.end) || 0;
-    if (start === 0 && end === 0) return 0;      // 아직 안 적은 사람은 0으로 둔다
+    if (!moneySettled(m)) return 0;              // 남은 금액을 아직 안 적은 사람은 0으로 둔다(게임 중 — calc.js)
     return (end - start) - rankPenaltyOf(name, roundIdx);
 }
 
@@ -2139,6 +2139,16 @@ function paintNearCheck(left) {
     if (!entered) {
         badge.className = 'near-check none';
         badge.textContent = '미입력';
+        return;
+    }
+    // 시작 금액만 적은 사람이 있으면 아직 게임 중이라 잔액이 맞을 수 없다 — 불일치로 겁주지 않는다.
+    const playing = golfers.some(g => {
+        const m = round[g] || {};
+        return (Number(m.start) || 0) !== 0 && !moneySettled(m);
+    });
+    if (playing) {
+        badge.className = 'near-check none';
+        badge.textContent = '입력 중';
         return;
     }
 
