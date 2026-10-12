@@ -1169,13 +1169,14 @@ function openScheduleForRound(r) {
 
 function openScheduleModal(pickRound) {
     document.getElementById('scheduleModal').classList.add('active');
-    const now = new Date(); document.getElementById('schMonth').value = now.getMonth() + 1; document.getElementById('schDay').value = now.getDate();
 
     // 표에서 눌러 들어왔으면 그 차수, 아니면 지난번에 잡아 둔 차수,
     // 그것도 없으면 아직 안 친 다음 차수를 미리 고른다.
     const saved = parseInt(pickRound || appData.nextRoundNo, 10);
     const pick = (saved >= 1 && saved <= appData.totalRounds + 1) ? saved : appData.totalRounds + 1;
     renderScheduleRoundOptions(document.getElementById('schRound'), pick);
+    // 그 차수에 잡아 둔 일정이 있으면 날짜·시각을 그대로 물려 온다(사용자 요청). 없으면 오늘 날짜.
+    fillScheduleWhen(pick);
 
     // 고른 차수에 이미 정해진 곳이 있으면 그걸, 없으면 지난번에 고른 곳을 넣어 둔다.
     // (표에서 골프장 칸을 눌러 들어온 경우 그 차수의 이름이 그대로 떠야 한다.)
@@ -1192,6 +1193,26 @@ function openScheduleModal(pickRound) {
     renderCourseResults(true);
 }
 
+/* 일정 창의 날짜·시각 칸 채우기. 고른 차수가 일정이 잡힌 차수(`nextRoundNo`)이고 문구
+   (`10월 14일 오후 5:34 …` — saveSchedule()이 쓰는 모양)를 읽을 수 있으면 그 값으로, 아니면 오늘 날짜로.
+   월·일은 연도가 있는 `nextRoundISO`를 먼저 본다. 시각을 못 읽으면 시각 칸은 건드리지 않는다. */
+function scheduledWhen() {
+    const m = String(appData.nextRoundDate || '').match(/(\d{1,2})월\s*(\d{1,2})일\s+(오전|오후)\s+(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    const iso = String(appData.nextRoundISO || '').match(/^\d{4}-(\d{2})-(\d{2})$/);
+    return { month: iso ? +iso[1] : +m[1], day: iso ? +iso[2] : +m[2], ampm: m[3], hour: +m[4], minute: m[5] };
+}
+function fillScheduleWhen(round) {
+    const w = parseInt(appData.nextRoundNo, 10) === round ? scheduledWhen() : null;
+    const now = new Date();
+    document.getElementById('schMonth').value = w ? w.month : now.getMonth() + 1;
+    document.getElementById('schDay').value = w ? w.day : now.getDate();
+    if (!w) return;
+    document.getElementById('schAmpm').value = w.ampm;
+    document.getElementById('schHour').value = w.hour;
+    document.getElementById('schMinute').value = w.minute;
+}
+
 /* 창을 열어 둔 채로 차수를 바꾸면 그 차수에 정해 둔 골프장·코스로 갈아 끼운다.
    **이미 정해진 게 있을 때만** 바꾼다 — 아직 아무것도 없는 차수로 옮겼는데
    치던 이름을 지워 버리면, 새 차수를 잡으려던 사람이 처음부터 다시 쳐야 한다. */
@@ -1200,6 +1221,7 @@ function onScheduleRoundChange() {
     if (!no) return;
     const club = roundCourseMap()[no] || (appData.courses && appData.courses[no - 1]) || '';
     const sub = subCourseOf(no - 1);
+    if (parseInt(appData.nextRoundNo, 10) === no) fillScheduleWhen(no);
     if (club) {
         document.getElementById('schCourseSearch').value = club;
         document.getElementById('schSubCourse').value = sub;
