@@ -46,6 +46,7 @@ const mRun = (h, pred) => { let run = 0, best = 0; h.rel.forEach((v, i) => { run
 const mHalf = (h, a) => h.par.slice(a, a + 9).reduce((t, p, i) => t + p + h.rel[a + i], 0);
 const mGross = h => mHalf(h, 0) + mHalf(h, 9);
 const mBirdie = h => mCount(h, v => v < 0);
+const mStrokes = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? h.par[i] + v : 0), 0);
 
 // 특별미션은 뽑기와 관계없이 모든 멤버의 홀 기록으로 판정한다.
 // 한 홀은 홀인원·이글·알바트로스 중 해당하는 한 항목에만 가산한다.
@@ -123,6 +124,19 @@ const MISSION_DEFS = [
       judge: h => { const n = h.rel.slice(15).filter(v => v <= 0).length; return { ok: n >= 2, got: `마지막 3홀 파 이하 ${n}개` }; } },
     { id: 'p5birdie', fair: true, lv: 3, w: 2, text: '파5에서 버디', how: '파5 홀에서 버디 이하 1개 이상',   // 17% (11·33·11·11)
       judge: h => { const n = mCount(h, (v, i) => h.par[i] === 5 && v < 0); return { ok: n >= 1, got: `파5 버디 ${n}개` }; } },
+    // ── 선택한 추천 미션(개인 1·2·4·7·8·9). 1~10차 성공률로 기본 별을 정하고 수령 시 실력을 보정한다. ──
+    { id: 'parSet', lv: 1, w: 2, text: '파 풀세트', how: '파3·파4·파5에서 각각 파 이하 1개 이상',   // 78%
+      judge: h => { const ns = [3, 4, 5].map(p => mCount(h, (v, i) => h.par[i] === p && v <= 0)); return { ok: ns.every(n => n >= 1), got: `파3 ${ns[0]}개 · 파4 ${ns[1]}개 · 파5 ${ns[2]}개` }; } },
+    { id: 'startFinish', lv: 3, w: 2, text: '좋은 시작과 마무리', how: '1·18번 홀 모두 보기 이하',   // 33%
+      judge: h => { const a = h.rel[0], b = h.rel[17]; return { ok: a <= 1 && b <= 1, got: `1번 홀 ${h.par[0] + a}타 · 18번 홀 ${h.par[17] + b}타` }; } },
+    { id: 'doubleClosing', lv: 3, w: 2, text: '더블 클로징', how: '9·18번 홀 모두 파 이하',   // 13%
+      judge: h => { const a = h.rel[8], b = h.rel[17]; return { ok: a <= 0 && b <= 0, got: `9번 홀 ${h.par[8] + a}타 · 18번 홀 ${h.par[17] + b}타` }; } },
+    { id: 'p4Defense', lv: 3, w: 2, text: '파4 방어', how: '파4에서 더블보기 이상 홀 1개 이하',   // 25%
+      judge: h => { const n = mCount(h, (v, i) => h.par[i] === 4 && v >= 2); return { ok: n <= 1, got: `파4 더블보기 이상 ${n}개` }; } },
+    { id: 'averageBreak', fair: true, average: true, lv: 3, w: 2, text: '내 평균 돌파', how: '수령 시 최근 3경기 평균(내림)보다 3타 이상 적게',   // 18% · 이미 본인 평균 기준이므로 별 추가 보정 없음
+      judge: (h, o, rec) => { const n = mGross(h), target = rec.avg - 3; return { ok: n <= target, got: `${n}타 · 기준 평균 ${rec.avg}타 · 목표 ${target}타 이하` }; } },
+    { id: 'backRestart', lv: 2, w: 2, text: '후반 재출발', how: '10·11·12번 홀 모두 보기 이하',   // 48%
+      judge: h => { const n = h.rel.slice(9, 12).filter(v => v <= 1).length; return { ok: n === 3, got: `10~12번 홀 중 ${n}홀 보기 이하` }; } },
     // ── 다른 멤버가 대상(응원) ──
     { id: 'tPar6', lv: 1, w: 2, who: true, text: '{T} 파 6개 이상', how: '대상 멤버가 파 이하(버디 포함) 홀 6개 이상',
       judge: (h, o) => { const n = mCount(o, v => v <= 0); return { ok: n >= 6, got: `{T} 파 이하 ${n}개` }; } },
@@ -154,6 +168,19 @@ const MISSION_DEFS = [
       judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a + b <= 180, got: `합계 ${a + b}타 (${a} + {T} ${b})` }; } },
     { id: 'duoBirdie', lv: 3, w: 2, who: true, text: '{T}와 둘 다 버디 1개 이상', how: '나와 대상 멤버 모두 버디 이하 홀 1개 이상',   // 35%
       judge: (h, o) => { const a = mBirdie(h), b = mBirdie(o); return { ok: a >= 1 && b >= 1, got: `버디 ${a}개 · {T} ${b}개` }; } },
+    // ── 선택한 추천 미션(협동 1·3·4·6·8·10) ──
+    { id: 'duoRoles', lv: 1, w: 2, who: true, text: '{T}와 역할 분담', how: '나는 파3, 대상 멤버는 파5에서 각각 파 이하 1개 이상',   // 77%
+      judge: (h, o) => { const a = mCount(h, (v, i) => h.par[i] === 3 && v <= 0), b = mCount(o, (v, i) => o.par[i] === 5 && v <= 0); return { ok: a >= 1 && b >= 1, got: `내 파3 파 이하 ${a}개 · {T} 파5 파 이하 ${b}개` }; } },
+    { id: 'duoDefense', lv: 3, w: 2, who: true, text: '{T}와 동반 수비', how: '두 사람 모두 13~18번 홀에서 트리플 보기 이상 없이 마무리',   // 23%
+      judge: (h, o) => { const a = h.rel.slice(12).filter(v => v >= 3).length, b = o.rel.slice(12).filter(v => v >= 3).length; return { ok: a === 0 && b === 0, got: `마지막 6홀 트리플 이상 ${a}개 · {T} ${b}개` }; } },
+    { id: 'duoFinish', lv: 3, w: 2, who: true, text: '{T}와 동반 피니시', how: '두 사람 모두 18번 홀 보기 이하',   // 25%
+      judge: (h, o) => { const a = h.par[17] + h.rel[17], b = o.par[17] + o.rel[17]; return { ok: h.rel[17] <= 1 && o.rel[17] <= 1, got: `18번 홀 ${a}타 · {T} ${b}타` }; } },
+    { id: 'duoBirdie3', lv: 3, w: 2, who: true, text: '{T}와 버디 합작', how: '각자 버디 이하 1개 이상, 두 사람 합계 3개 이상',   // 10%
+      judge: (h, o) => { const a = mBirdie(h), b = mBirdie(o); return { ok: a >= 1 && b >= 1 && a + b >= 3, got: `버디 ${a}개 · {T} ${b}개 · 합계 ${a + b}개` }; } },
+    { id: 'duoClosingRoles', lv: 2, w: 2, who: true, text: '{T}와 마무리 분담', how: '나는 9번 홀, 대상 멤버는 18번 홀 보기 이하',   // 41%
+      judge: (h, o) => { const a = h.par[8] + h.rel[8], b = o.par[17] + o.rel[17]; return { ok: h.rel[8] <= 1 && o.rel[17] <= 1, got: `내 9번 홀 ${a}타 · {T} 18번 홀 ${b}타` }; } },
+    { id: 'duoShortPar', lv: 2, w: 2, who: true, text: '{T}와 숏홀 합작', how: '같은 파3 홀에서 두 사람 모두 파 이하 1번 이상',   // 53%
+      judge: (h, o) => { const n = mCount(h, (v, i) => h.par[i] === 3 && v <= 0 && o.rel[i] <= 0); return { ok: n >= 1, got: `파3에서 {T}와 함께 파 이하 ${n}번` }; } },
     // 대결(비기면 실패)
     { id: 'vsHoles', lv: 2, w: 2, who: true, text: '{T}보다 이긴 홀 많이', how: '홀마다 타수를 견줘 이긴 홀이 진 홀보다 많게(같으면 실패)',   // 46%
       judge: (h, o) => { const w = mCount(h, (v, i) => v < o.rel[i]), l = mCount(h, (v, i) => v > o.rel[i]); return { ok: w > l, got: `이긴 홀 ${w} · 진 홀 ${l} ({T})` }; } },
@@ -164,7 +191,18 @@ const MISSION_DEFS = [
     { id: 'vsBy5', lv: 3, w: 2, who: true, text: '{T}보다 5타 이상 적게', how: '18홀 합계가 대상 멤버보다 5타 이상 적게',   // 31%
       judge: (h, o) => { const a = mGross(h), b = mGross(o); return { ok: a <= b - 5, got: `${a}타 · {T} ${b}타` }; } },
     { id: 'vsBoth', lv: 3, w: 2, who: true, text: '{T}에게 전·후반 모두 승리', how: '전반 9홀·후반 9홀 합계 모두 대상 멤버보다 적게(동타는 실패)',   // 23%
-      judge: (h, o) => { const a1 = mHalf(h, 0), b1 = mHalf(o, 0), a2 = mHalf(h, 9), b2 = mHalf(o, 9); return { ok: a1 < b1 && a2 < b2, got: `전반 ${a1}·${b1} 후반 ${a2}·${b2} ({T})` }; } }
+      judge: (h, o) => { const a1 = mHalf(h, 0), b1 = mHalf(o, 0), a2 = mHalf(h, 9), b2 = mHalf(o, 9); return { ok: a1 < b1 && a2 < b2, got: `전반 ${a1}·${b1} 후반 ${a2}·${b2} ({T})` }; } },
+    // ── 선택한 추천 미션(경쟁 1·3·4·5·7) ──
+    { id: 'vsLast6', lv: 2, w: 2, who: true, text: '{T}와 막판 6홀 승부', how: '13~18번 홀 합계가 대상 멤버보다 적게(동타는 실패)',   // 44%
+      judge: (h, o) => { const a = mStrokes(h, (v, i) => i >= 12), b = mStrokes(o, (v, i) => i >= 12); return { ok: a < b, got: `마지막 6홀 ${a}타 · {T} ${b}타` }; } },
+    { id: 'vsShort', lv: 2, w: 2, who: true, text: '{T}와 숏홀 승부', how: '파3 홀 타수 합계가 대상 멤버보다 적게(동타는 실패)',   // 44%
+      judge: (h, o) => { const a = mStrokes(h, (v, i) => h.par[i] === 3), b = mStrokes(o, (v, i) => o.par[i] === 3); return { ok: a < b, got: `파3 합계 ${a}타 · {T} ${b}타` }; } },
+    { id: 'vsMiddle', lv: 2, w: 2, who: true, text: '{T}와 미들홀 승부', how: '파4 홀 타수 합계가 대상 멤버보다 적게(동타는 실패)',   // 47%
+      judge: (h, o) => { const a = mStrokes(h, (v, i) => h.par[i] === 4), b = mStrokes(o, (v, i) => o.par[i] === 4); return { ok: a < b, got: `파4 합계 ${a}타 · {T} ${b}타` }; } },
+    { id: 'vsLong', lv: 2, w: 2, who: true, text: '{T}와 롱홀 승부', how: '파5 홀 타수 합계가 대상 멤버보다 적게(동타는 실패)',   // 45%
+      judge: (h, o) => { const a = mStrokes(h, (v, i) => h.par[i] === 5), b = mStrokes(o, (v, i) => o.par[i] === 5); return { ok: a < b, got: `파5 합계 ${a}타 · {T} ${b}타` }; } },
+    { id: 'vsWinRun3', lv: 2, w: 2, who: true, text: '{T}에게 3홀 연속 승리', how: '3홀 연속 대상 멤버보다 적은 타수(동타는 연속 중단)',   // 40%
+      judge: (h, o) => { const n = mRun(h, (v, i) => h.par[i] + v < o.par[i] + o.rel[i]); return { ok: n >= 3, got: `{T}에게 최대 ${n}홀 연속 승리` }; } }
 ];
 const MISSION_BY_ID = {};
 MISSION_DEFS.forEach(d => { MISSION_BY_ID[d.id] = d; });
@@ -205,14 +243,18 @@ function missionEntry(round, g) {
         // 받을 때 실력으로 조정한 별(`lv`)이 같이 적혀 있다 — 그 값이 곧 난이도·포인트다(받는 순간 고정).
         // 조정이 생기기 전에 받은 미션은 `lv`가 없어 기본 별을 쓴다.
         const lv = Number.isInteger(src.lv) && src.lv >= 1 && src.lv <= 3 ? src.lv : def.lv;
-        items.push({ i, def, lv, who: def.who ? src.who : undefined, redrawn: i === reIdx });
+        const item = { i, def, lv, who: def.who ? src.who : undefined, redrawn: i === reIdx };
+        // 평균 돌파의 기준도 수령 시 고정한다 — 경기 후 새 평균을 쓰면 목표가 바뀐다.
+        if (def.average) item.avg = Number.isInteger(src.avg) && src.avg > 0 ? src.avg : null;
+        items.push(item);
     });
     return items.length ? { at: rec.at, y: rec.y, items, redrawn: reIdx >= 0 } : null;
 }
 
 // 화면에 적는 미션 글 — `{T}` 자리에 대상 멤버 이름(모르면 ○○)
 function missionText(def, rec) {
-    return def.text.replace('{T}', rec && rec.who ? rec.who : '○○');
+    const text = def.text.replace('{T}', rec && rec.who ? rec.who : '○○');
+    return def.average && rec && Number.isInteger(rec.avg) && rec.avg > 0 ? `${text} (${rec.avg - 3}타 이하)` : text;
 }
 
 // 그 차수의 18홀 기록. 없으면 null.
@@ -263,12 +305,13 @@ function missionResults(round, g) {
         if (!roundHasHoles(round)) return { ...base, state: 'wait' };
         const h = missionHoles(round, g);
         if (!h) return { ...base, state: 'none' };
+        if (def.average && !it.avg) return { ...base, state: 'none', got: '기준 평균 없음' };
         let o = null;
         if (def.who) {
             o = missionHoles(round, it.who);
             if (!o) return { ...base, state: 'none', got: `${it.who} 기록 없음` };
         }
-        const r = def.judge(h, o);
+        const r = def.judge(h, o, it);
         return { ...base, state: r.ok ? 'ok' : 'fail', ok: r.ok, got: r.got.replace('{T}', it.who || '') };
     });
 }
@@ -490,7 +533,8 @@ function memberChoices(me, budget, skipId, low = 1) {
 // 본인 미션 후보 — 내 실력으로 조정한 별을 붙여, 남은 미션(keepLv)과 합쳐 MISSION_LV_MIN~MAX인 것만
 function selfChoices(me, keepLv, skipId) {
     const skill = missionSkill();
-    return MISSION_DEFS.filter(d => !d.who && d.id !== skipId).map(def => ({ def, lv: missionLvOf(def, missionAdjust(def, me, null, skill)), w: def.w }))
+    return MISSION_DEFS.filter(d => !d.who && d.id !== skipId && (!d.average || (skill && skill[me] > 0)))
+        .map(def => ({ def, lv: missionLvOf(def, missionAdjust(def, me, null, skill)), w: def.w, ...(def.average ? { avg: skill[me] } : {}) }))
         .filter(c => c.lv + keepLv <= MISSION_LV_MAX && c.lv + keepLv >= MISSION_LV_MIN);
 }
 // 받기 — 멤버 미션과 대상을 먼저 정하고(조정된 별), 남은 별 안에서 본인 미션을 고른다.
@@ -539,13 +583,14 @@ function drawMission() {
     const p = pickMissionPair(me);
     if (!p) return;
     const rec = { at: Date.now(), y: t.year, ms: [{ id: p.a.def.id, lv: p.a.lv }, { id: p.b.def.id, who: p.b.who, lv: p.b.lv }] };
+    if (p.a.def.average) rec.ms[0].avg = p.a.avg;
     if (!appData.missions || typeof appData.missions !== 'object') appData.missions = {};
     if (!appData.missions[t.round]) appData.missions[t.round] = {};
     appData.missions[t.round][me] = rec;
     writeMine(m => { m.missions[t.round] = rec; });
     syncToSupabase(appData);
     rollMission(['msnRoll0', 'msnRoll1'], 'msnDrawBtn', '미션 뽑는 중…', () =>
-        showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a.def, null)} · ${missionText(p.b.def, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`));
+        showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a.def, rec.ms[0])} · ${missionText(p.b.def, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`));
 }
 
 // 다시 뽑기 — 포인트 2점 · 라운드마다 1회 · 두 미션 중 하나만. 처음 기록은 그대로 두고 `re: {i, id, who?, at}`를 덧붙인다.
@@ -574,6 +619,7 @@ async function redrawMission(i) {
     const def = pick.def;
     const re = { i, id: def.id, at: Date.now() };
     re.lv = pick.lv;
+    if (def.average) re.avg = pick.avg;
     if (def.who) re.who = pick.who;
     raw.re = re;
     writeMine(m => { m.missions[t.round] = raw; });
