@@ -62,9 +62,12 @@ async function main() {
         assert.doesNotMatch(html, /passport-pin|⚑/);
     }
     app.ctx.group = {key:'jnj',name:'JNJ골프리조트',visits:[{round:1}]};
+    assert.equal(app.run("passportClubKey('JNJ골프리조트')"), 'jnj');
+    assert.match(app.run('passportStampHtml(group,0)'), /src="assets\/club-marks\/v1\/jnj\.jpeg"/);
+    app.ctx.group = {key:'unknown',name:'UNKNOWN CC',visits:[{round:1}]};
     const missing = app.run('passportStampHtml(group,0)');
     assert.doesNotMatch(missing, /<img/);
-    assert.match(missing, />JNJ<\/span>/, '확보하지 못한 마크는 임의 이미지 대신 이름을 표시');
+    assert.match(missing, />UNKN<\/span>/, '미등록 마크는 임의 이미지 대신 이름을 표시');
     const w = worker();
     const urls = Array.from(w.run('CLUB_MARK_URLS'));
     assert.deepEqual(urls.map(u=>u.split('/').pop()).sort(),Array.from(marks).sort(), '화면·서비스워커 파일 목록 일치');

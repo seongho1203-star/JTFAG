@@ -666,6 +666,7 @@ async function useMulligan() {
     const ok = await showConfirmPrompt(`<b>멀리건 사용권 1개</b>를 사용합니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${round}차 라운드 · 라운드당 1회 · 사용 후 취소할 수 없습니다.<br>보유 ${info.left}개 → ${info.left - 1}개<br>동반자에게 사용 알림이 전송됩니다.</span>`, '사용', '#2b5394');
     if (!ok) return;
     // 확인창이 떠 있는 사이 남의 저장이 들어왔을 수 있어 지금 값으로 다시 본다
+    if (localStorage.getItem('jtfag_my_name') !== me) { showToast('⚠️ 본인 이름을 다시 확인해 주세요.'); return; }
     if (mulliganUsedIn(me, round)) { showToast(`ℹ️ ${round}차 라운드에서는 이미 멀리건을 사용했습니다.`); return; }
     if (mulliganInfo(me).left <= 0) { showToast('⚠️ 사용 가능한 멀리건이 없습니다.'); return; }
     const use = { r: round, t: Date.now() };
@@ -819,7 +820,7 @@ function missionPointCards(me) {
     return `<div class="msn-card msn-points-card">
         <div class="msn-head"><span>미션 포인트</span><span class="msn-sub">${year} 시즌</span></div>
         <div class="bdg-people msn-point-people">${rows.map(x => {
-            return `<button type="button" class="bdg-person msn-point-person${x.g === selected ? ' on' : ''}" aria-pressed="${x.g === selected}" onclick="selectMissionPerson('${x.g}')">
+            return `<button type="button" class="bdg-person msn-point-person${x.g === selected ? ' on' : ''}" aria-pressed="${x.g === selected}"${x.g === me ? ` aria-haspopup="dialog" aria-label="${escapeHtml(x.g)} 미션 포인트 · 멀리건 사용"` : ''} onclick="selectMissionPointPerson('${x.g}')">
                 <span class="bdg-pname">${escapeHtml(x.g)}</span>
                 <span class="msn-point-value">${x.p}<small>점</small></span>
                 <span class="msn-point-ticket">사용권 ${x.m.left}장</span>
@@ -828,16 +829,15 @@ function missionPointCards(me) {
     </div>`;
 }
 
-function missionMulliganCard(me) {
-    if (!me || !golfers.includes(me)) return '';
+// 본인 포인트 카드에서만 여는 멀리건 창. 사용 규칙·저장·동반자 알림은 useMulligan()을 그대로 쓴다.
+let missionMulliganPopup = null;
+let missionMulliganBusy = false;
+function mulliganPopupBody(me) {
     const m = mulliganInfo(me);
-    const round = mulliganRound();
-    const usedNow = round > 0 && mulliganUsedIn(me, round);
     const pct = Math.round((MULLIGAN_STEP - m.toNext) / MULLIGAN_STEP * 100);
     const uses = golfers.flatMap(g => mulliganUses(g).map(u => ({ g, u }))).sort((a, b) => b.u.t - a.u.t).slice(0, 5);
     const fmt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
-    return `<div class="msn-card">
-        <div class="msn-head"><span>멀리건 사용권</span><span class="msn-sub">포인트 ${MULLIGAN_STEP}점마다 1장 · 라운드당 1회</span></div>
+    return `<p class="msn-mulligan-rule">포인트 ${MULLIGAN_STEP}점마다 1장 · 라운드당 1회</p>
         <div class="msn-mul">
             <div class="msn-ticket"><span class="big">${m.left}</span><span class="lb">장 보유</span></div>
             <div class="msn-mul-body">
@@ -846,9 +846,70 @@ function missionMulliganCard(me) {
                 <div class="msn-mul-sub">통산 ${m.pts}점 · 받은 사용권 ${m.earned}장 · 사용 ${m.used}장${missionRedraws(me) ? ` · 다시 뽑기 ${missionRedraws(me)}회(−${missionRedraws(me) * REDRAW_COST}점)` : ''}</div>
             </div>
         </div>
-        <button type="button" class="msn-use-btn"${m.left > 0 && !usedNow ? '' : ' disabled'} onclick="useMulligan()">${usedNow ? `${round}차 사용 완료` : '멀리건 사용'}</button>
-        ${uses.length ? `<div class="msn-uses"><div class="lb">최근 사용</div>${uses.map(x => `<div class="msn-use"><span>${escapeHtml(x.g)}</span><span>${x.u.r ? x.u.r + '차' : ''} · ${fmt(x.u.t)}</span></div>`).join('')}</div>` : ''}
-    </div>`;
+        ${uses.length ? `<div class="msn-uses"><div class="lb">최근 사용</div>${uses.map(x => `<div class="msn-use"><span>${escapeHtml(x.g)}</span><span>${x.u.r ? x.u.r + '차' : ''} · ${fmt(x.u.t)}</span></div>`).join('')}</div>` : ''}`;
+}
+function closeMulliganPopup() {
+    if (!missionMulliganPopup) return;
+    const { element, owner } = missionMulliganPopup;
+    missionMulliganPopup = null;
+    element.remove();
+    const card = document.querySelector('.msn-point-person[aria-haspopup="dialog"]');
+    if (localStorage.getItem('jtfag_my_name') === owner && card) card.focus();
+}
+function refreshMulliganPopup() {
+    const popup = missionMulliganPopup;
+    if (!popup) return;
+    if (popup.owner !== localStorage.getItem('jtfag_my_name') || !golfers.includes(popup.owner)) { closeMulliganPopup(); return; }
+    const html = mulliganPopupBody(popup.owner);
+    if (html !== popup.html) { popup.html = html; popup.body.innerHTML = html; }
+    const round = mulliganRound();
+    const usedNow = round > 0 && mulliganUsedIn(popup.owner, round);
+    const empty = mulliganInfo(popup.owner).left <= 0;
+    popup.useButton.disabled = missionMulliganBusy || empty || usedNow;
+    popup.useButton.textContent = missionMulliganBusy ? '처리 중…' : usedNow ? `${round}차 사용 완료` : empty ? '사용권 없음' : '멀리건 사용';
+}
+function openMulliganPopup(name) {
+    if (name !== localStorage.getItem('jtfag_my_name') || !golfers.includes(name)) return;
+    if (missionMulliganPopup) { refreshMulliganPopup(); return; }
+    const element = document.createElement('div');
+    element.className = 'msn-mulligan-overlay';
+    element.innerHTML = `<section class="msn-mulligan-sheet" role="dialog" aria-modal="true" aria-labelledby="msnMulliganTitle">
+        <div class="msn-mulligan-head"><div><p>${escapeHtml(name)}</p><h2 id="msnMulliganTitle">멀리건 사용권</h2></div><button type="button" class="msn-mulligan-close" aria-label="닫기" onclick="closeMulliganPopup()">×</button></div>
+        <div class="msn-mulligan-content"></div>
+        <div class="msn-mulligan-actions"><button type="button" class="msn-use-btn" onclick="useMulliganFromPopup()">멀리건 사용</button></div>
+    </section>`;
+    missionMulliganPopup = { element, owner: name, body: element.querySelector('.msn-mulligan-content'), useButton: element.querySelector('.msn-use-btn'), html: '' };
+    element.addEventListener('click', e => { if (e.target === element) closeMulliganPopup(); });
+    element.addEventListener('keydown', e => {
+        if (missionMulliganBusy) return;
+        if (e.key === 'Escape') { e.preventDefault(); closeMulliganPopup(); }
+        if (e.key === 'Tab') {
+            const buttons = [...element.querySelectorAll('button:not(:disabled)')];
+            const next = e.shiftKey ? buttons[buttons.length - 1] : buttons[0];
+            const edge = e.shiftKey ? buttons[0] : buttons[buttons.length - 1];
+            if (document.activeElement === edge) { e.preventDefault(); next.focus(); }
+        }
+    });
+    document.body.appendChild(element);
+    refreshMulliganPopup();
+    element.querySelector('.msn-mulligan-close').focus();
+}
+async function useMulliganFromPopup() {
+    const popup = missionMulliganPopup;
+    if (!popup || missionMulliganBusy) return;
+    if (popup.owner !== localStorage.getItem('jtfag_my_name')) { closeMulliganPopup(); return; }
+    missionMulliganBusy = true;
+    refreshMulliganPopup();
+    try { await useMulligan(); }
+    finally {
+        missionMulliganBusy = false;
+        refreshMulliganPopup();
+        if (missionMulliganPopup) missionMulliganPopup.element.querySelector('.msn-mulligan-close').focus();
+    }
+}
+function selectMissionPointPerson(name) {
+    selectMissionPerson(name);
+    if (name === localStorage.getItem('jtfag_my_name')) openMulliganPopup(name);
 }
 
 // 접었다 펴는 카드(사용자 요청 — 기록이 쌓이면 화면이 길어진다).
@@ -918,10 +979,11 @@ function renderMissionPage() {
     const box = document.getElementById('missionPage');
     if (!box || typeof golfers === 'undefined' || missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
-    const html = missionPointCards(me) + '<div id="predictionHost"></div>' + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
+    const html = missionPointCards(me) + '<div id="predictionHost"></div>' + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionHistoryCard(me) + missionListCard();
     // 같으면 갈아 끼우지 않는다 — 남의 저장마다 renderAll이 돈다
     if (html !== missionLastHtml) { missionLastHtml = html; box.innerHTML = html; }
     if (typeof renderPredictionCard === 'function') renderPredictionCard();
+    refreshMulliganPopup();
 }
 
 function selectMissionPerson(name) {

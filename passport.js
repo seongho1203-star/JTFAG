@@ -5,13 +5,14 @@ let passportGroupsShown = [];
 let passportTripsShown = [];
 const PASSPORT_SEEN_KEY = 'jtfag_passport_seen_v1';
 const PASSPORT_NEW_KEY = 'jtfag_passport_new_v1';
-// 공식 홈페이지·공식 예약 앱에서 확인한 마크. 파일은 앱에 포함하고 SW가 기기에 캐시한다.
+// 공식 홈페이지·공식 예약 앱에서 확인한 마크와 사용자 제공 JNJ 마크. 파일은 앱에 포함하고 SW가 기기에 캐시한다.
 const PASSPORT_MARKS = Object.freeze({
     '함평엘리체': { file: 'hampyeong-eliche.png', ink: '#a07e24', background: '#282524' },
     '어등산': { file: 'eodeungsan.svg', ink: '#346c57', background: '#214c3e' },
     '해피니스': { file: 'happiness.png', ink: '#174d82', background: '#073c78' },
     '광주': { file: 'gwangju.png', ink: '#b56920', background: '#283c2f', symbol: true },
-    '무등산': { file: 'mudeungsan.png', ink: '#a88a80', background: '#ffffff' }
+    '무등산': { file: 'mudeungsan.png', ink: '#a88a80', background: '#ffffff' },
+    'jnj': { file: 'jnj.jpeg', ink: '#087fab', background: '#ffffff' }
 });
 const passportNewKeys = new Set((() => {
     try { const saved = JSON.parse(localStorage.getItem(PASSPORT_NEW_KEY) || '[]'); return Array.isArray(saved) ? saved.filter(k => typeof k === 'string') : []; }
