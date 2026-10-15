@@ -2134,8 +2134,8 @@ function paintNearBox() {
     const el = document.getElementById('nearCarry');
     if (!el) return;
 
-    // 타수정산을 다 더하면 팟에 남은 돈이 된다. 마이너스면 팟에 쌓인 것이다.
-    // 스코어 입력 대기면 계급이 안 정해져 잔액을 셀 수 없다.
+    // 화면에는 타수정산 합계를 그대로 표시한다. 잃은 돈이 딴 돈보다 많으면 음수다.
+    // 스코어 입력 대기면 계급이 안 정해져 합계를 셀 수 없다.
     if (!roundScored(selectedMoneyRoundIdx)) {
         el.textContent = '-';
         el.className = 'zero';
@@ -2143,7 +2143,7 @@ function paintNearBox() {
         return;
     }
     const sum = golfers.reduce((a, g) => a + strokeDiffOf(g, selectedMoneyRoundIdx), 0);
-    const left = -sum;
+    const left = sum;
 
     el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : '+'}${formatNumber(Math.abs(left))}원`;
     el.className = left === 0 ? 'zero' : (left > 0 ? 'carry-out' : 'carry-in');
