@@ -37,6 +37,9 @@ async function main(){
     assert.equal(request.tools[0].max_uses,2);
     const invented=clone(siteReply);invented.content[1].text='{"site_url":"https://invented.example/"}';
     assert.equal(await discoverSite({name:'신규CC'},async()=>invented),null,'검색에 없는 주소 거부');
+    const referenced={content:[{type:'web_search_tool_result',content:[{type:'web_search_result',url:'https://tour.example/club'}]},{type:'text',text:'{"site_url":"https://club.example/","evidence_url":"https://tour.example/club"}'}]};
+    assert.equal(await discoverSite({name:'신규CC'},async()=>referenced,async()=>({url:'https://tour.example/club',type:'text/html',bytes:Buffer.from('<a href="https://club.example/">홈페이지</a>')})),'https://club.example/');
+    assert.equal(await discoverSite({name:'신규CC'},async()=>referenced,async()=>({url:'https://tour.example/club',type:'text/html',bytes:Buffer.from('<a href="https://other.example/">다른 홈페이지</a>')})),null,'검색 출처의 실제 링크가 다르면 거부');
     const found=await collectCandidates('https://official.example/',async url=>({url,type:url.endsWith('.png')?'image/png':'text/html;charset=utf-8',bytes:url.endsWith('.png')?png:Buffer.from(html)}));
     assert.equal(found.images.length,1);
     const approved={content:[{type:'tool_use',name:'select_logo',input:{index:0,confirmed:true,background:'#ffffff',ink:'#246842'}}]};
