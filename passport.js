@@ -106,7 +106,7 @@ function passportStampHtml(group, index) {
     const mark = PASSPORT_MARKS[group.key];
     return `<button type="button" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}
-        <span class="passport-seal"><span class="passport-seal-label">JTFAG · GOLF PASSPORT</span>${passportMarkHtml(group)}</span>
+        <span class="passport-seal"><span class="passport-seal-label">JTFAG</span>${passportMarkHtml(group)}</span>
         <b class="passport-name">${escapeHtml(group.name)}</b><small class="passport-first">첫 방문 ${first.date || first.round + '차'}</small>
         <span class="passport-visits">${group.visits.length}회 방문 <span aria-hidden="true">›</span></span>
     </button>`;
@@ -142,8 +142,8 @@ function passportHtml() {
     if (selected) return passportDetailHtml(selected);
     passportSelected = '';
     const upcoming = passportUpcoming(data.groups);
-    return `<div class="passport-cover"><p class="passport-eyebrow">OUR GOLF JOURNEY</p><h2>JTFAG<br>골프장 여권</h2><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div><div><b>${data.rounds}</b><span>완료 라운드</span></div></div></div>
-        <p class="passport-sub">완료된 스코어카드로 도장을 수집합니다. 도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>
+    return `<div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div><div><b>${data.rounds}</b><span>완료 라운드</span></div></div></div>
+        <p class="passport-sub">도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>
         ${data.groups.length ? `<div class="passport-grid">${data.groups.map(passportStampHtml).join('')}</div>` : '<div class="passport-empty">첫 라운드의 스코어카드가 등록되면 골프장 도장이 찍힙니다.</div>'}
         ${data.unnamed ? `<p class="passport-sub">골프장 미지정 ${data.unnamed}라운드는 골프장 등록 후 도장에 반영됩니다.</p>` : ''}
         ${upcoming.length ? `<details class="passport-plans"><summary>방문 예정 · ${upcoming.length}곳</summary>${upcoming.map(x => `<button type="button" onclick="openPassportTrip(${x.index})"><span>${escapeHtml(x.name)}<small>${x.date}</small></span><em>방문 예정 ›</em></button>`).join('')}</details>` : ''}`;
