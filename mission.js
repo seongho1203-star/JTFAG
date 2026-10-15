@@ -688,9 +688,12 @@ async function useMulligan() {
     });
     if (typeof pruneScoreRequests === 'function') pruneScoreRequests();
     renderMissionPage();
-    showToast(`⛳ 멀리건 사용권을 사용했습니다. 남은 사용권 ${mulliganInfo(me).left}개`);
     // 깨우기 전에 저장이 닿아야 한다 — 함수가 DB의 '대기'를 보고 움직인다.
-    await syncToSupabase(appData);
+    if (!(await syncToSupabase(appData))) {
+        showToast('⚠️ 멀리건 사용 기록 저장에 실패했습니다. 서버 연결 상태를 확인해 주세요.', 5000);
+        return;
+    }
+    showToast(`⛳ 멀리건 사용권을 사용했습니다. 남은 사용권 ${mulliganInfo(me).left}개`);
     if (typeof kickScorecardWorkflow === 'function' && !(await kickScorecardWorkflow())) {
         // 방금 다른 요청으로 깨운 직후면(20초) 건너뛴다 — 한 번만 더 깨운다(대기가 없으면 함수가 그냥 돌아간다)
         setTimeout(() => { kickScorecardWorkflow(); }, 25000);

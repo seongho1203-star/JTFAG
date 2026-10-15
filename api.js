@@ -385,6 +385,7 @@ let golferParSpecialists = { 3: [], 4: [], 5: [] };
 const MIN_PAR_TYPE_HOLES = 6;
 let golferFinalNetProfitMap = {}; 
 let isLoaded = false;
+let leagueReadReady = false;  // 서버 자료를 한 번 확인하기 전에는 초기 상태를 저장하지 않는다.
 let golferAvgScores = {};
 let golferMinScores = {};
 
@@ -397,15 +398,19 @@ async function fetchFromSupabase() {
     let prevData = null;
     try {
         const { data, error } = await window._supabase.from(window.SUPABASE_TABLE).select('*').eq('id', 1).single();
-        if (error || !data) {
-            await syncToSupabase(getDefaultData());
-            appData = getDefaultData();
-        } else {
-            prevData = appData;
-            appData = data.payload;
-            if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
-            if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
+        if (error) throw error;
+        const payload = data && data.payload;
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)
+            || !Number.isInteger(payload.totalRounds) || payload.totalRounds < 1
+            || !payload.scores || typeof payload.scores !== 'object' || Array.isArray(payload.scores)) {
+            throw new Error('서버 리그 자료가 없거나 유효하지 않습니다.');
         }
+        // 조회 실패·빈 응답을 새 리그로 판단해 초기값을 upsert하지 않는다.
+        prevData = appData;
+        appData = payload;
+        leagueReadReady = true;
+        if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
+        if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
         // 접속할 때만 도는 게 아니라 앱이 앞으로 나올 때도 돈다(ui.js의 visibilitychange).
         // **금액은 따로 둔 테이블(money.js)이 진짜다.** 읽어서 payload의 낡은 금액 위에 얹는다.
@@ -425,9 +430,11 @@ async function fetchFromSupabase() {
         // 금액 분리 저장이 켜졌는지 눈으로 확인할 수 있게 적어 둔다(docs/금액분리.md의 확인 단계).
         showSaveStatus(typeof moneyMode !== 'undefined' && moneyMode === 'table'
             ? "⚡ 서버 연결 및 동기화 완료" : "⚡ Supabase 연결 완료");
+        return true;
     } catch (err) {
         console.error("Load Error:", err);
         showSaveStatus("⚠️ DB 연결 확인 필요");
+        return false;
     }
 }
 
@@ -447,20 +454,33 @@ const CLIENT_ID = 'c' + Math.random().toString(36).slice(2, 10) + Date.now().toS
 let _revSeq = 0;
 let _saveBusy = false;
 let _saveNext = null;
+let _saveWaiters = [];
 
-async function syncToSupabase(dataToSave) {
+function syncToSupabase(dataToSave) {
+    if (!leagueReadReady) {
+        showSaveStatus("⚠️ 서버 자료 확인 후 다시 시도해 주세요.");
+        return Promise.resolve(false);
+    }
     _saveNext = dataToSave || appData;      // 언제나 '가장 마지막 상태'만 남긴다
-    if (_saveBusy) return;                  // 이미 보내는 중이면 끝나고 이어서 보낸다
+    const saved = new Promise(resolve => _saveWaiters.push(resolve));
+    if (!_saveBusy) flushSupabaseSaves();
+    return saved;                           // 이미 보내는 중이어도 내 요청이 포함된 저장의 응답까지 기다린다.
+}
+
+async function flushSupabaseSaves() {
     _saveBusy = true;
     try {
         while (_saveNext) {
             const snap = _saveNext; _saveNext = null;
-            snap._rev = { by: CLIENT_ID, n: ++_revSeq };
+            const waiters = _saveWaiters; _saveWaiters = [];
+            let saved = false;
             try {
+                snap._rev = { by: CLIENT_ID, n: ++_revSeq };
                 const { error } = await window._supabase.from(window.SUPABASE_TABLE).upsert({ id: 1, payload: snap });
                 if (error) { console.error("Save Error:", error); showSaveStatus("⚠️ 저장 실패"); }
-                else { showSaveStatus("⚡ 동기화 완료"); }
+                else { saved = true; showSaveStatus("⚡ 동기화 완료"); }
             } catch (err) { console.error("Sync Exception:", err); showSaveStatus("⚠️ 저장 실패"); }
+            finally { waiters.forEach(resolve => resolve(saved)); }
         }
     } finally { _saveBusy = false; }
 }

@@ -2930,8 +2930,12 @@ async function requestHoleDelete() {
     pruneScoreRequests();
 
     // 사진 등록과 같은 이유로 저장이 끝난 뒤에 깨운다 — 워크플로가 DB의 '대기'를 보고 움직인다.
-    await syncToSupabase(appData);
+    const saved = await syncToSupabase(appData);
     renderScoreRequestModal();
+    if (!saved) {
+        showToast("⚠️ 삭제 요청 저장에 실패했습니다. 서버 연결 상태를 확인해 주세요.", 5000);
+        return;
+    }
     showToast(`🗑️ ${round + 1}차 삭제를 요청했습니다.`);
     if (await kickScorecardWorkflow()) {
         showToast("🚀 처리를 시작했습니다. 1~2분 뒤 새로고침하면 반영됩니다.");
@@ -2999,8 +3003,12 @@ async function handleScorecardUpload(event) {
 
     // 깨우기 전에 저장이 끝나야 한다. 판독 함수는 DB에 '대기' 요청이 있는지 보고
     // 움직이므로, 저장이 아직 안 닿았으면 "대기 중인 요청이 없다"며 그냥 돌아간다.
-    await syncToSupabase(appData);
+    const saved = await syncToSupabase(appData);
     renderScoreRequestModal();
+    if (!saved) {
+        showToast("⚠️ 스코어카드 요청 저장에 실패했습니다. 서버 연결 상태를 확인해 주세요.", 5000);
+        return;
+    }
     showToast(guestTotal === null
         ? `✅ ${round + 1}차 스코어카드를 등록했습니다. 판독 완료 후 타수가 자동 반영됩니다.`
         : `✅ ${round + 1}차 스코어카드를 등록했습니다. 게스트(${guestTotal}타)는 제외하고 기록됩니다.`);
