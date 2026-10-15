@@ -2546,7 +2546,7 @@ function openH2HDetail(oppIdx) {
         <div class="h2h-head"><div class="h2h-title">${escapeHtml(me)} <i>vs</i> ${escapeHtml(opp)}</div>
             <div class="h2h-sum">${games.length ? `${w}승 ${l}패${t ? ` ${t}무` : ''} · 승률 <b class="${tone}">${pct}%</b>` : '전적 없음'}</div></div>
         ${rows ? `<div class="h2h-list">${rows}</div>` : ''}
-        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 세 경기 평균의 차이이며, 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2·3차와 네 명의 타수가 모두 없는 차수는 제외됩니다.</div>
+        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 경기 평균의 차이이며, 1~10차는 기존 2경기, ${THREE_GAME_HANDICAP_FROM_ROUND}차부터 3경기 기준을 적용합니다. 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 산출에 필요한 기록이 없는 차수는 제외됩니다.</div>
         <button type="button" class="bdg-close" onclick="closeH2HDetail()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeH2HDetail(); });
@@ -3404,7 +3404,7 @@ function winRateListHtml(rec) {
 }
 
 /* 골프장별 1:1 승률.
-   핸디캡이 직전 세 차수라 1·2·3차는 승부가 안 나온다 — 그 골프장에 4차 이후 라운드가
+   1~10차는 기존 두 경기 기준을 보존한다. 1·2차는 승부가 안 나온다 — 그 골프장에 3차 이후 라운드가
    하나도 없으면 목록에 올리지 않는다. 빈 칸을 골라 놓고 '매치 없음'만 보는 건 헛걸음이다. */
 let h2hCourseKey = null;
 
@@ -3444,7 +3444,7 @@ function renderCourseWinRate(name) {
     sel.value = h2hCourseKey;
 
     box.innerHTML = winRateListHtml(cur.rec)
-        + `<div class="winrate-note">핸디캡은 직전 3개 차수 기준으로 산출되므로 1·2·3차전은 집계에서 제외됩니다.</div>`;
+        + `<div class="winrate-note">1~10차는 기존 2경기, ${THREE_GAME_HANDICAP_FROM_ROUND}차부터 직전 3경기 평균 기준입니다. 1·2차전과 산출에 필요한 기록이 없는 차수는 집계에서 제외됩니다.</div>`;
 }
 
 function selectCourseWinRate(key, name) {

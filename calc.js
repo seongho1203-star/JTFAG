@@ -194,19 +194,21 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
 }
 
 const HANDICAP_ROUNDS = 3;
+// 규칙 변경 전 확정된 1~10차 정산은 직전 2경기 기준을 유지한다.
+const THREE_GAME_HANDICAP_FROM_ROUND = 11;  // 1부터 시작하는 차수
 
-// 정산·맞대결·현재 핸디캡이 같은 세 경기 평균(내림)을 사용한다.
-function handicapAverageAt(end) {
-    if (end < HANDICAP_ROUNDS - 1) return null;
+// 현재 핸디캡은 세 경기, 과거 정산은 해당 차수에 적용된 경기 수로 평균을 낸다.
+function handicapAverageAt(end, count = HANDICAP_ROUNDS) {
+    if (end < count - 1) return null;
     const averages = {};
     for (const g of golfers) {
         let sum = 0;
-        for (let r = end - HANDICAP_ROUNDS + 1; r <= end; r++) {
+        for (let r = end - count + 1; r <= end; r++) {
             const score = parseFloat((appData.scores[g] || [])[r]);
             if (!Number.isFinite(score) || score <= 0) return null;
             sum += score;
         }
-        averages[g] = Math.floor(sum / HANDICAP_ROUNDS);
+        averages[g] = Math.floor(sum / count);
     }
     return averages;
 }
@@ -381,7 +383,7 @@ function processAllRoundSettlements() {
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
 
-    for (let r = HANDICAP_ROUNDS; r < totalRounds; r++) {
+    for (let r = 2; r < totalRounds; r++) {
         const data = h2hRoundData(r);
         if (!data) continue;
         const handicapAvg = data.hAvg, currentScores = data.cScore;
@@ -668,14 +670,14 @@ function getHoleAnalysis(name) {
 }
 
 /* ── 1:1 승률 ─────────────────────────────────────────────────
-   핸디캡을 씌운 맞대결이다. 그 차수 **직전 세 차수**의 평균으로 핸디캡을 내고,
+   핸디캡을 씌운 맞대결이다. 1~10차는 기존 직전 두 차수, 11차부터 직전 세 차수의 평균으로 핸디캡을 내고,
    그 차이만큼 내 타수를 깎아 상대의 그 차수 타수와 견준다(적을수록 이긴다).
    같으면 핸디캡이 낮은 쪽(잘 치는 쪽)이 이긴 것으로 본다.
 
    **통산 승률과 골프장별 승률이 이 함수를 같이 쓴다.** 규칙이 두 군데가 되면
    같은 경기를 두고 숫자가 어긋난다. 계산은 여기 한 곳에만 둘 것.
 
-   핸디캡이 직전 세 차수라 **골프장별로 볼 때도 그 세 차수는 골프장을 안 가린다** —
+   **골프장별로 볼 때도 핸디캡 산출에 쓰는 직전 차수들은 골프장을 안 가린다** —
    핸디캡은 '요즘 얼마나 치는가'이지 그 골프장 실력이 아니기 때문이다.
    덕분에 골프장별 승패를 다 더하면 통산 승패와 정확히 맞는다. */
 function headToHead(name, rounds) {
@@ -689,9 +691,10 @@ function headToHead(name, rounds) {
     return rec;
 }
 
-/* 한 차수의 핸디캡(직전 세 차수 평균 · 내림)과 그 차수 타수. 넷 다 있어야 한 판으로 친다 — 없으면 null. */
+/* 해당 차수의 규칙으로 핸디캡(평균 · 내림)과 타수를 낸다. 과거 정산·맞대결은 함께 보존한다. */
 function h2hRoundData(r) {
-    const hAvg = handicapAverageAt(r - 1), cScore = {};
+    const count = r + 1 < THREE_GAME_HANDICAP_FROM_ROUND ? 2 : HANDICAP_ROUNDS;
+    const hAvg = handicapAverageAt(r - 1, count), cScore = {};
     if (!hAvg) return null;
     for (const g of golfers) {
         const s = appData.scores[g] || [];
