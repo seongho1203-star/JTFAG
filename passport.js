@@ -5,6 +5,14 @@ let passportGroupsShown = [];
 let passportTripsShown = [];
 const PASSPORT_SEEN_KEY = 'jtfag_passport_seen_v1';
 const PASSPORT_NEW_KEY = 'jtfag_passport_new_v1';
+// 공식 홈페이지·공식 예약 앱에서 확인한 마크. 파일은 앱에 포함하고 SW가 기기에 캐시한다.
+const PASSPORT_MARKS = Object.freeze({
+    '함평엘리체': { file: 'hampyeong-eliche.png', ink: '#a07e24', background: '#282524' },
+    '어등산': { file: 'eodeungsan.svg', ink: '#346c57', background: '#214c3e' },
+    '해피니스': { file: 'happiness.png', ink: '#174d82', background: '#073c78' },
+    '광주': { file: 'gwangju.png', ink: '#b56920', background: '#283c2f', symbol: true },
+    '무등산': { file: 'mudeungsan.png', ink: '#a88a80', background: '#ffffff' }
+});
 const passportNewKeys = new Set((() => {
     try { const saved = JSON.parse(localStorage.getItem(PASSPORT_NEW_KEY) || '[]'); return Array.isArray(saved) ? saved.filter(k => typeof k === 'string') : []; }
     catch (err) { return []; }
@@ -83,11 +91,21 @@ function openPassportTrip(index) {
     tripSection = 'schedule';
     switchTrip(trip.id);
 }
+function passportMarkHtml(group) {
+    const mark = PASSPORT_MARKS[group.key];
+    const text = group.name.replace(/\s+/g, '');
+    const initials = escapeHtml((text.match(/^[a-z0-9]{1,4}/i) || [Array.from(text).slice(0, 2).join('')])[0]);
+    return `<span class="passport-mark${mark && mark.symbol ? ' passport-mark-symbol' : ''}"${mark ? ` style="background:${mark.background}"` : ''}>
+        ${mark ? `<img src="assets/club-marks/v1/${mark.file}" alt="${escapeHtml(group.name)} 마크" width="128" height="96" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false">` : ''}
+        <span class="passport-mark-fallback"${mark ? ' hidden' : ''}>${initials}</span>
+    </span>`;
+}
 function passportStampHtml(group, index) {
     const first = group.visits[0];
-    return `<button type="button" class="passport-stamp tone-${index % 4}" onclick="openPassport(${index})" aria-label="${escapeHtml(group.name)} 방문 기록">
+    const mark = PASSPORT_MARKS[group.key];
+    return `<button type="button" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}
-        <span class="passport-seal"><span class="passport-seal-label">JTFAG · GOLF PASSPORT</span><span class="passport-pin" aria-hidden="true">⚑</span><b>${escapeHtml(group.name)}</b><small>첫 방문 ${first.date || first.round + '차'}</small></span>
+        <span class="passport-seal"><span class="passport-seal-label">JTFAG · GOLF PASSPORT</span>${passportMarkHtml(group)}<b>${escapeHtml(group.name)}</b><small>첫 방문 ${first.date || first.round + '차'}</small></span>
         <span class="passport-visits">${group.visits.length}회 방문 <span aria-hidden="true">›</span></span>
     </button>`;
 }

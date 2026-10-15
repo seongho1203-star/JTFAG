@@ -1,10 +1,38 @@
-// 라운드 알림 수신 + 등급 이미지 전용 캐시.
+// 라운드 알림 수신 + 등급 이미지·골프장 마크 캐시.
 // HTML·CSS·JS·정산 데이터는 캐시하지 않아 배포와 실시간 데이터가 바로 반영된다.
 const RANK_ICON_CACHE_PREFIX = 'jtfag-rank-icons-';
 const RANK_ICON_CACHE = RANK_ICON_CACHE_PREFIX + 'v1';  // 같은 주소의 그림을 교체하면 버전을 올린다.
 const RANK_ICON_BASE = 'https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/';
 const RANK_ICON_URLS = ['IMG_8343.png', 'IMG_8331.png', 'IMG_8333.png', 'IMG_8335.png', 'IMG_8606.gif'].map(file => RANK_ICON_BASE + file);
 const rankIconRequests = new Map();
+const CLUB_MARK_CACHE_PREFIX = 'jtfag-club-marks-';
+const CLUB_MARK_CACHE = CLUB_MARK_CACHE_PREFIX + 'v1';
+const CLUB_MARK_BASE = new URL('assets/club-marks/v1/', self.registration.scope).href;
+const CLUB_MARK_URLS = ['hampyeong-eliche.png', 'eodeungsan.svg', 'happiness.png', 'gwangju.png', 'mudeungsan.png'].map(file => CLUB_MARK_BASE + file);
+const clubMarkRequests = new Map();
+
+async function cachedClubMark(url) {
+    let cache;
+    try {
+        cache = await caches.open(CLUB_MARK_CACHE);
+        const saved = await cache.match(url);
+        if (saved) return saved;
+    } catch (e) {}
+    let pending = clubMarkRequests.get(url);
+    if (!pending) {
+        pending = (async () => {
+            const response = await fetch(url, { credentials: 'same-origin' });
+            if (cache && response.ok && (response.headers.get('content-type') || '').startsWith('image/')) {
+                try { await cache.put(url, response.clone()); } catch (e) {}
+            }
+            return response;
+        })();
+        clubMarkRequests.set(url, pending);
+        pending.then(() => clubMarkRequests.delete(url), () => clubMarkRequests.delete(url));
+    }
+    return (await pending).clone();
+}
+const cacheClubMarks = () => Promise.allSettled(CLUB_MARK_URLS.map(cachedClubMark));
 
 async function cachedRankIcon(url) {
     let cache;
@@ -32,25 +60,28 @@ async function cachedRankIcon(url) {
 // 한 장이 실패해도 나머지 그림·서비스워커 설치는 완료한다. 다음 실행 때 빠진 그림만 다시 저장한다.
 const cacheRankIcons = () => Promise.allSettled(RANK_ICON_URLS.map(cachedRankIcon));
 self.addEventListener('install', event => {
-    event.waitUntil(cacheRankIcons().then(() => self.skipWaiting()));
+    event.waitUntil(Promise.allSettled([cacheRankIcons(), cacheClubMarks()]).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
     event.waitUntil((async () => {
         try {
             const keys = await caches.keys();
-            await Promise.all(keys.filter(key => key.startsWith(RANK_ICON_CACHE_PREFIX) && key !== RANK_ICON_CACHE).map(key => caches.delete(key)));
+            await Promise.all(keys.filter(key => (key.startsWith(RANK_ICON_CACHE_PREFIX) && key !== RANK_ICON_CACHE)
+                || (key.startsWith(CLUB_MARK_CACHE_PREFIX) && key !== CLUB_MARK_CACHE)).map(key => caches.delete(key)));
         } catch (e) {}
         await self.clients.claim();
     })());
 });
 self.addEventListener('message', event => {
-    if (event.data && event.data.type === 'CACHE_RANK_ICONS') event.waitUntil(cacheRankIcons());
+    if (event.data && event.data.type === 'CACHE_RANK_ICONS') event.waitUntil(Promise.allSettled([cacheRankIcons(), cacheClubMarks()]));
 });
 
 // 등급 이미지는 저장본을 먼저 쓰며, 캐시가 있으면 네트워크 요청·재검증을 하지 않는다.
 self.addEventListener('fetch', (event) => {
     if (event.request.method === 'GET' && RANK_ICON_URLS.includes(event.request.url)) {
         event.respondWith(cachedRankIcon(event.request.url));
+    } else if (event.request.method === 'GET' && CLUB_MARK_URLS.includes(event.request.url)) {
+        event.respondWith(cachedClubMark(event.request.url));
     } else if (event.request.mode === 'navigate') event.respondWith(fetch(event.request));
 });
 

@@ -43,9 +43,12 @@ assert.equal(run("redrawCheck('신성호',11).ok"), false, '이미 사용한 사
 run('appData.mulligans={}');
 assert.equal(run("redrawCheck('신성호',11).ok"), true, '예측으로 얻은 점수를 다시 뽑기에 사용');
 
-// 카드 디자인과 배치: 4명·동점·선택 표시, 기존 표·별도 예측 순위 제거.
+// 카드 디자인과 배치: 4명·고정 순서·선택 표시, 순위와 기존 표·별도 예측 순위 제거.
 let html = run("missionPointCards('신성호')");
 assert.equal((html.match(/class="bdg-person msn-point-person/g) || []).length, 4);
+assert.doesNotMatch(html, /bdg-place|\d위|msn-point-title/);
+const memberOrder = [...html.matchAll(/class="bdg-pname">([^<]+)</g)].map(x => x[1]);
+assert.deepEqual(memberOrder, plain(run('golfers')), '포인트와 무관하게 멤버 순서를 유지');
 assert.match(html, /msn-point-person on" aria-pressed="true" onclick="selectMissionPerson\('신성호'\)/);
 assert.match(html, /msn-point-value">2<small>점/);
 assert.doesNotMatch(html, /class="msn-rk|class="msn-rank/);
@@ -63,10 +66,9 @@ assert.match(m.host.innerHTML, /미션 포인트에 합산/);
 assert.doesNotMatch(m.host.innerHTML, /예측 전용|예측 포인트 순위/);
 run('appData.predictions={}');
 html = run("missionPointCards('신성호')");
-assert.equal((html.match(/class="bdg-place">1위/g) || []).length, 4, '0점 동점은 같은 순위');
-assert.doesNotMatch(html, /msn-point-title">미션왕/);
+assert.doesNotMatch(html, /bdg-place|\d위|msn-point-title/);
 console.log('PASS: 미션·특별미션·예측 통합, 연도·차수별 합산, 수정 중복 방지·다시 뽑기 비용');
-console.log('PASS: 통합 포인트로 사용권·다시 뽑기·미션왕 계산, 최상단 4인 카드·선택·동점·기존 표 제거');
+console.log('PASS: 통합 포인트로 사용권·다시 뽑기·미션왕 계산, 최상단 4인 카드·고정 순서·순위 숨김');
 
 // 실제 기록의 금액·계급 정산은 예측 점수 유무에 영향을 받지 않는다.
 const c = make();

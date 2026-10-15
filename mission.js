@@ -815,19 +815,14 @@ function specialMissionCard(me) {
 function missionPointCards(me) {
     const year = missionYearNow();
     const rows = golfers.map(g => ({ g, p: missionSeasonPoints(g), m: mulliganInfo(g) }));
-    const sorted = rows.slice().sort((a, b) => b.p - a.p);
-    const kings = missionKings();
     const selected = golfers.includes(missionViewName) ? missionViewName : (golfers.includes(me) ? me : golfers[0]);
     return `<div class="msn-card msn-points-card">
         <div class="msn-head"><span>미션 포인트</span><span class="msn-sub">${year} 시즌</span></div>
-        <div class="bdg-people msn-point-people">${sorted.map(x => {
-            const place = sorted.findIndex(y => y.p === x.p) + 1;
+        <div class="bdg-people msn-point-people">${rows.map(x => {
             return `<button type="button" class="bdg-person msn-point-person${x.g === selected ? ' on' : ''}" aria-pressed="${x.g === selected}" onclick="selectMissionPerson('${x.g}')">
-                <span class="bdg-place">${place}위</span>
                 <span class="bdg-pname">${escapeHtml(x.g)}</span>
                 <span class="msn-point-value">${x.p}<small>점</small></span>
                 <span class="msn-point-ticket">사용권 ${x.m.left}장</span>
-                <span class="msn-point-title">${kings.includes(x.g) ? '미션왕' : ''}</span>
             </button>`;
         }).join('')}</div>
     </div>`;
