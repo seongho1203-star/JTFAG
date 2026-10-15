@@ -209,7 +209,7 @@ async function savePrediction() {
         appData.predictions[entry.id] = entry;
         predictionRemember(entry);
         predictionDraft = null;
-        showToast('✅ 예측을 등록했습니다. 티오프 전까지 수정할 수 있습니다.');
+        showToast('✅ 예측을 등록했습니다.\n티오프 전까지 수정할 수 있습니다.');
         closePredictionPopup();
     } else {
         if (appData.predictions) delete appData.predictions[entry.id];
