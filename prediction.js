@@ -3,7 +3,7 @@
 const PREDICTION_POINTS = 2;
 const PREDICTION_NONE = 'none';
 const PREDICTION_MINE_KEY = 'jtfag_prediction_mine_v1';
-let predictionOpen = false;
+let predictionPopup = null;
 let predictionHistoryOpen = false;
 let predictionSaving = false;
 let predictionDraft = null;
@@ -111,7 +111,64 @@ function predictionName(name) { return name === PREDICTION_NONE ? '버디 없음
 function predictionTime(ms) {
     return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
 }
-function togglePrediction() { predictionOpen = !predictionOpen; renderPredictionCard(); }
+function openPredictionPopup() {
+    if (predictionSaving) return;
+    if (predictionPopup) { renderPredictionCard(); return; }
+    const s = predictionSchedule(), me = localStorage.getItem('jtfag_my_name');
+    if (s && !predictionHasStarted(s.round, s.deadline) && golfers.includes(me)) {
+        if (!predictionDraft || predictionDraft.round !== s.round || predictionDraft.player !== me) {
+            const old = predictionLatest(s.round, me);
+            predictionDraft = { round: s.round, player: me, first: old ? old.first : '', eagle: old ? old.eagle : '', birdies: old ? String(old.birdies) : '' };
+        }
+    } else predictionDraft = null;
+    const element = document.createElement('div');
+    element.className = 'pred-overlay';
+    element.innerHTML = `<section class="pred-sheet" role="dialog" aria-modal="true" aria-labelledby="predictionTitle">
+        <div class="pred-popup-head"><h2 id="predictionTitle">라운드 예측</h2><button type="button" class="pred-popup-close" aria-label="닫기" onclick="closePredictionPopup()">×</button></div>
+        <div class="pred-popup-body"></div><div class="pred-popup-footer"></div>
+    </section>`;
+    predictionPopup = { element, owner: me, body: element.querySelector('.pred-popup-body'), footer: element.querySelector('.pred-popup-footer'), html: '', actions: '' };
+    element.addEventListener('click', e => { if (e.target === element && predictionPopup && predictionPopup.element === element) closePredictionPopup(); });
+    element.addEventListener('keydown', e => {
+        if (predictionSaving) return;
+        if (e.key === 'Escape') { e.preventDefault(); closePredictionPopup(); }
+        if (e.key === 'Tab') {
+            const inputs = [...element.querySelectorAll('button:not(:disabled), input:not(:disabled), summary')];
+            const edge = e.shiftKey ? inputs[0] : inputs[inputs.length - 1];
+            if (document.activeElement === edge) { e.preventDefault(); inputs[e.shiftKey ? inputs.length - 1 : 0].focus(); }
+        }
+    });
+    document.body.appendChild(element);
+    // 키보드가 가리는 공간을 피하되 전체 화면 덮개는 유지해 배경 스크롤 잠금이 풀리지 않게 한다.
+    const viewport = window.visualViewport;
+    if (viewport) {
+        const fit = () => {
+            if (!predictionPopup || predictionPopup.element !== element) return;
+            element.style.paddingBottom = `${Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)}px`;
+            element.querySelector('.pred-sheet').style.maxHeight = `${Math.floor(viewport.height * .88)}px`;
+        };
+        predictionPopup.unfit = () => { viewport.removeEventListener('resize', fit); viewport.removeEventListener('scroll', fit); };
+        viewport.addEventListener('resize', fit);
+        viewport.addEventListener('scroll', fit);
+        fit();
+    }
+    renderPredictionCard();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (predictionPopup && predictionPopup.element === element) element.classList.add('show');
+    }));
+    element.querySelector('.pred-popup-close').focus({ preventScroll: true });
+}
+function closePredictionPopup() {
+    if (!predictionPopup || predictionSaving) return;
+    const element = predictionPopup.element;
+    if (predictionPopup.unfit) predictionPopup.unfit();
+    predictionPopup = null;
+    predictionDraft = null;
+    element.classList.remove('show');
+    setTimeout(() => element.remove(), 260);
+    const button = document.querySelector('.pred-participate');
+    if (button) button.focus({ preventScroll: true });
+}
 function togglePredictionHistory() { predictionHistoryOpen = !predictionHistoryOpen; renderPredictionCard(); }
 function editPrediction(round) {
     const schedule = predictionSchedule(), me = localStorage.getItem('jtfag_my_name');
@@ -119,7 +176,8 @@ function editPrediction(round) {
     if (!schedule || schedule.round !== round || predictionHasStarted(round, schedule.deadline)) { showToast('⚠️ 예측 참여가 마감되었습니다.'); return; }
     const old = predictionLatest(round, me);
     predictionDraft = { round, player: me, first: old ? old.first : '', eagle: old ? old.eagle : '', birdies: old ? String(old.birdies) : '' };
-    renderPredictionCard();
+    if (predictionPopup) renderPredictionCard();
+    else openPredictionPopup();
 }
 function pickPrediction(key, value) {
     if (!predictionDraft || !['first', 'eagle'].includes(key)) return;
@@ -127,7 +185,7 @@ function pickPrediction(key, value) {
     if (document.activeElement && document.activeElement.id === 'predictionBirdies') document.activeElement.blur();
     renderPredictionCard();
 }
-function cancelPrediction() { if (!predictionSaving) { predictionDraft = null; renderPredictionCard(); } }
+function cancelPrediction() { closePredictionPopup(); }
 async function savePrediction() {
     if (predictionSaving || !predictionDraft) return;
     const s = predictionSchedule(), d = predictionDraft, me = localStorage.getItem('jtfag_my_name');
@@ -152,6 +210,7 @@ async function savePrediction() {
         predictionRemember(entry);
         predictionDraft = null;
         showToast('✅ 예측을 등록했습니다. 티오프 전까지 수정할 수 있습니다.');
+        closePredictionPopup();
     } else {
         if (appData.predictions) delete appData.predictions[entry.id];
         showToast('⚠️ 예측 저장에 실패했습니다. 다시 시도해 주세요.');
@@ -165,7 +224,6 @@ function predictionFormHtml(d) {
         <div class="pred-label">독수리 등급 주인공 <small>적중 +2점</small></div>${buttons('eagle', golfers)}
         <label class="pred-label" for="predictionBirdies">네 명의 버디 총개수 <small>정확히 적중 +2점</small></label>
         <div class="pred-count"><input id="predictionBirdies" type="number" inputmode="numeric" min="0" max="72" step="1" value="${escapeHtml(d.birdies)}" placeholder="개수 입력" oninput="predictionDraft.birdies=this.value"${predictionSaving ? ' disabled' : ''}><span>개</span></div>
-        <div class="pred-actions"><button type="button" onclick="cancelPrediction()"${predictionSaving ? ' disabled' : ''}>취소</button><button type="button" class="primary" onclick="savePrediction()"${predictionSaving ? ' disabled' : ''}>${predictionSaving ? '저장 중…' : '예측 등록'}</button></div>
     </div>`;
 }
 function predictionEntryHtml(e, reveal) {
@@ -195,21 +253,26 @@ function renderPredictionCard() {
     const draft = predictionDraft && s && predictionDraft.round === s.round && predictionDraft.player === me && !locked ? predictionDraft : null;
     clearTimeout(predictionDeadlineTimer);
     if (s && !locked) predictionDeadlineTimer = setTimeout(renderPredictionCard, Math.min(Math.max(1, s.deadline - Date.now()), 2147483647));
-    const head = `<button type="button" class="msn-head msn-fold${predictionOpen ? ' open' : ''}" aria-expanded="${predictionOpen}" onclick="togglePrediction()"><span>🔮 라운드 예측</span><span class="msn-sub">${round ? `${round}차 · ${entries.length}/4명` : '일정 대기'}${MSN_CHEVRON}</span></button>`;
-    let content = '';
-    if (predictionOpen) {
-        content = `<p class="pred-rule">항목별 적중 2점 · 라운드 최대 6점 · 미션 포인트에 합산</p>`;
-        if (s) content += `<div class="pred-schedule"><b>${s.round}차 · ${escapeHtml(s.course || '예정 라운드')}</b><span>${locked ? '참여 마감' : '참여 가능'} · ${predictionTime(s.deadline)} 마감</span></div>`;
-        else if (!round) content += '<div class="msn-empty">티오프 시각이 포함된 다음 라운드 일정을 등록하면 예측에 참여할 수 있습니다.</div>';
-        if (round) content += predictionRoundHtml(round, me);
-        if (draft) content += predictionFormHtml(draft);
-        else if (s && !locked) content += `<button type="button" class="pred-start" onclick="editPrediction(${s.round})">${predictionLatest(s.round, me) ? '내 예측 수정' : '예측 참여'}</button>`;
-        content += '<p class="pred-rule">첫 버디는 1번 홀부터 확인하며 같은 홀의 동시 달성자는 모두 정답입니다. 버디는 파보다 1타 적은 기록만 집계합니다.</p>';
-        const past = rounds.filter(r => r !== round);
-        if (past.length) content += `<button type="button" class="pred-history-toggle" aria-expanded="${predictionHistoryOpen}" onclick="togglePredictionHistory()">지난 예측 ${past.length}라운드 ${predictionHistoryOpen ? '접기' : '보기'}</button>${predictionHistoryOpen ? past.map(r => `<details class="pred-past"><summary>${r}차 예측 결과</summary>${predictionRoundHtml(r, me)}</details>`).join('') : ''}`;
-    }
-    const html = `<div class="msn-card pred-card${predictionOpen ? '' : ' folded'}">${head}${content}</div>`;
-    // 입력 중 실시간 갱신으로 숫자 칸의 커서가 사라지는 것을 막는다. 마감 시에는 즉시 잠근다.
-    if (draft && !predictionSaving && document.activeElement && document.activeElement.id === 'predictionBirdies') return;
+    const label = !locked ? (predictionLatest(s.round, me) ? '수정하기' : '참여하기') : round ? '결과보기' : '참여하기';
+    const html = `<div class="msn-card pred-card"><div class="pred-summary"><span class="pred-title">라운드 예측</span><span class="pred-status">${round ? `${round}차 · ${entries.length}/4명 참여${locked ? ' · 마감' : ''}` : '일정 대기'}</span></div><button type="button" class="pred-participate" aria-haspopup="dialog" onclick="openPredictionPopup()">${label}</button></div>`;
     if (host._html !== html) { host.innerHTML = html; host._html = html; }
+    const popup = predictionPopup;
+    if (!popup) return;
+    if (popup.owner !== me) { closePredictionPopup(); return; }
+    if (!draft && !predictionSaving) predictionDraft = null;
+    let content = '<p class="pred-rule">항목별 적중 2점 · 라운드 최대 6점 · 미션 포인트에 합산</p>';
+    if (s) content += `<div class="pred-schedule"><b>${s.round}차 · ${escapeHtml(s.course || '예정 라운드')}</b><span>${locked ? '참여 마감' : '참여 가능'} · ${predictionTime(s.deadline)} 마감</span></div>`;
+    else if (!round) content += '<div class="msn-empty">티오프 시각이 포함된 다음 라운드 일정을 등록하면 예측에 참여할 수 있습니다.</div>';
+    if (s && !locked && !golfers.includes(me)) content += '<div class="msn-empty">내 이름을 설정한 후 예측에 참여할 수 있습니다.</div>';
+    if (draft) content += predictionFormHtml(draft);
+    if (round) content += predictionRoundHtml(round, me);
+    content += '<p class="pred-rule">첫 버디는 1번 홀부터 확인하며 같은 홀의 동시 달성자는 모두 정답입니다. 버디는 파보다 1타 적은 기록만 집계합니다.</p>';
+    const past = rounds.filter(r => r !== round);
+    if (past.length) content += `<button type="button" class="pred-history-toggle" aria-expanded="${predictionHistoryOpen}" onclick="togglePredictionHistory()">지난 예측 ${past.length}라운드 ${predictionHistoryOpen ? '접기' : '보기'}</button>${predictionHistoryOpen ? past.map(r => `<details class="pred-past"><summary>${r}차 예측 결과</summary>${predictionRoundHtml(r, me)}</details>`).join('') : ''}`;
+    const actions = draft ? `<div class="pred-actions"><button type="button" onclick="cancelPrediction()"${predictionSaving ? ' disabled' : ''}>취소</button><button type="button" class="primary" onclick="savePrediction()"${predictionSaving ? ' disabled' : ''}>${predictionSaving ? '저장 중…' : '예측 등록'}</button></div>` : `<div class="pred-actions"><button type="button" onclick="closePredictionPopup()"${predictionSaving ? ' disabled' : ''}>닫기</button></div>`;
+    // 숫자 입력 중에는 커서를 보존하고 마감·일정 변경 시에는 즉시 입력을 잠근다.
+    const typing = draft && !predictionSaving && document.activeElement && document.activeElement.id === 'predictionBirdies';
+    if (!typing && popup.html !== content) { popup.html = content; popup.body.innerHTML = content; }
+    if (popup.actions !== actions) { popup.actions = actions; popup.footer.innerHTML = actions; }
+    popup.element.querySelector('.pred-popup-close').disabled = predictionSaving;
 }

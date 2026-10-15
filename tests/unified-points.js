@@ -62,9 +62,10 @@ assert.ok(box.innerHTML.indexOf('msn-points-card') < box.innerHTML.indexOf('miss
 assert.doesNotMatch(box.innerHTML, /멀리건 사용권|msn-use-btn|msn-mul"/, '기존 별도 멀리건 카드 제거');
 run("selectMissionPerson('이관교')");
 assert.match(box.innerHTML, /msn-point-person on" aria-pressed="true" onclick="selectMissionPointPerson\('이관교'\)/);
-run('togglePrediction()');
-assert.match(m.host.innerHTML, /미션 포인트에 합산/);
-assert.doesNotMatch(m.host.innerHTML, /예측 전용|예측 포인트 순위/);
+run('openPredictionPopup()');
+assert.match(run('predictionPopup.body.innerHTML'), /미션 포인트에 합산/);
+assert.doesNotMatch(run('predictionPopup.body.innerHTML'), /예측 전용|예측 포인트 순위/);
+assert.doesNotMatch(m.host.innerHTML, /pred-form|pred-person/);
 run('appData.predictions={}');
 html = run("missionPointCards('신성호')");
 assert.doesNotMatch(html, /bdg-place|\d위|msn-point-title/);

@@ -1860,7 +1860,21 @@ html, body { overscroll-behavior: none; }
 /* 미션 목록 — 실력 보정을 안 하는 미션 표시 */
 .msn-lv-item .msn-fix { font-style: normal; font-size: 0.6rem; font-weight: 700; color: #8a8f94; border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; margin-left: 3px; white-space: nowrap; }
 /* 라운드 예측 — 기존 미션·정산 스타일과 분리한다. */
-.pred-card { border-color: #d9d5e9; }
+.pred-card { display: flex; align-items: center; gap: 12px; border-color: #d9d5e9; }
+.pred-summary { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.pred-title { font-size: .9rem; font-weight: 800; }
+.pred-status { color: #73717e; font-size: .7rem; }
+.pred-participate { flex-shrink: 0; min-height: 36px; padding: 8px 12px; border: 1px solid #70508e; border-radius: 10px; background: #70508e; color: #fff; font: inherit; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.pred-overlay { position: fixed; inset: 0; z-index: 1500; box-sizing: border-box; background: rgba(15, 23, 42, 0); display: flex; align-items: flex-end; justify-content: center; transition: background .22s ease; }
+.pred-overlay.show { background: rgba(15, 23, 42, .55); }
+.pred-sheet { width: 100%; max-width: 500px; max-height: 88vh; max-height: 88dvh; box-sizing: border-box; border-radius: 22px 22px 0 0; background: #fff; display: flex; flex-direction: column; transform: translateY(100%); transition: transform .26s cubic-bezier(.32, .72, 0, 1); }
+.pred-overlay.show .pred-sheet { transform: none; }
+.pred-popup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 8px; }
+.pred-popup-head h2 { margin: 0; font-size: 1.1rem; }
+.pred-popup-close { flex: 0 0 36px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f2f2ee; color: #3d4450; font-size: 1.5rem; }
+.pred-popup-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px; }
+.pred-popup-footer { padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); }
+.pred-popup-footer .pred-actions { margin: 0; }
 .pred-rule { margin: 8px 0 12px; color: #73717e; font-size: .73rem; line-height: 1.6; word-break: keep-all; }
 .pred-schedule { display: flex; flex-direction: column; gap: 4px; padding: 12px; background: #f3f0f9; border-radius: 10px; font-size: .85rem; }
 .pred-schedule span { color: #706384; font-size: .74rem; line-height: 1.5; }
@@ -1868,15 +1882,14 @@ html, body { overscroll-behavior: none; }
 .pred-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 14px 0 8px; color: #29232f; font-size: .82rem; font-weight: 800; }
 .pred-label small { font-size: .7rem; font-weight: 600; color: #76618c; }
 .pred-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.pred-choices button, .pred-actions button, .pred-start { min-height: 40px; padding: 8px; border: 1px solid #e0dce9; border-radius: 10px; color: #5b5269; background: #fff; font: inherit; font-size: .8rem; font-weight: 750; }
+.pred-choices button, .pred-actions button { min-height: 40px; padding: 8px; border: 1px solid #e0dce9; border-radius: 10px; color: #5b5269; background: #fff; font: inherit; font-size: .8rem; font-weight: 750; }
 .pred-choices button.selected { background: #ede5f5; border-color: #9a7bb5; color: #613586; box-shadow: inset 0 0 0 1px #9a7bb5; }
 .pred-count { display: flex; align-items: center; gap: 10px; font-size: .85rem; }
 .pred-count input { width: 130px; min-width: 0; height: 42px; box-sizing: border-box; border: 1px solid #d9d1e1; border-radius: 10px; padding: 8px 12px; background: #fff; color: #29232f; font-size: 16px; font-weight: 800; }
 .pred-actions { display: flex; gap: 8px; margin-top: 14px; }
 .pred-actions button { flex: 1; }
-.pred-actions .primary, .pred-start { color: #fff; background: #70508e; border-color: #70508e; }
-.pred-start { width: 100%; margin-top: 12px; }
-.pred-card button:disabled { opacity: .5; }
+.pred-actions .primary { color: #fff; background: #70508e; border-color: #70508e; }
+.pred-overlay button:disabled { opacity: .5; }
 .pred-person { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; padding: 12px 0; border-bottom: 1px solid #efedf2; font-size: .8rem; }
 .pred-person > span { color: #8b8791; font-size: .73rem; }
 .pred-person.detail { display: block; }
@@ -1904,17 +1917,17 @@ html, body { overscroll-behavior: none; }
 .passport-totals span { color: #d0dcd3; font-size: .73rem; }
 .passport-sub { margin: 12px 2px 16px; color: #7c817b; font-size: .75rem; line-height: 1.6; word-break: keep-all; }
 .passport-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.passport-stamp { position: relative; min-width: 0; padding: 10px 8px; border: 1px solid #e5e8e0; border-radius: 14px; background: #fffefa; color: var(--passport-ink, #346a60); text-align: center; font: inherit; cursor: pointer; }
-.passport-seal { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 175px; gap: 8px; padding: 12px 5px; border: 1px dashed currentColor; border-radius: 11px; }
+.passport-stamp { position: relative; min-width: 0; padding: 8px; border: 0; background: transparent; color: var(--passport-ink, #346a60); text-align: center; font: inherit; cursor: pointer; }
+.passport-seal { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 180px; aspect-ratio: 1 / 1; box-sizing: border-box; margin: 0 auto; gap: 6px; padding: 12px; border: 2px dashed currentColor; border-radius: 50%; background: #fffefa; box-shadow: inset 0 0 0 4px #fffefa, inset 0 0 0 5px currentColor; }
 .passport-seal-label { display: block; max-width: 100%; font-size: .43rem; font-weight: 800; letter-spacing: .04em; }
-.passport-mark { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 128px; height: 88px; border-radius: 10px; overflow: hidden; background: #eff2eb; }
+.passport-mark { display: flex; align-items: center; justify-content: center; width: 85%; max-width: 128px; height: clamp(48px, 16vw, 72px); border-radius: 8px; overflow: hidden; background: #eff2eb; }
 .passport-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.passport-mark-symbol { max-width: 88px; justify-content: flex-start; }
+.passport-mark-symbol { max-width: clamp(48px, 16vw, 72px); justify-content: flex-start; }
 .passport-mark-symbol img { width: auto; max-width: none; flex-shrink: 0; }
 .passport-mark img[hidden], .passport-mark-fallback[hidden] { display: none; }
 .passport-mark-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: #eff2eb; color: #667b70; font-size: 1.4rem; font-weight: 900; }
-.passport-seal b { padding: 0 3px; font-size: .83rem; line-height: 1.45; overflow-wrap: anywhere; word-break: keep-all; }
-.passport-seal small { font-size: .6rem; line-height: 1.4; overflow-wrap: anywhere; }
+.passport-name { display: block; margin-top: 10px; padding: 0 3px; font-size: .83rem; line-height: 1.45; overflow-wrap: anywhere; word-break: keep-all; }
+.passport-first { display: block; margin-top: 3px; font-size: .6rem; line-height: 1.4; overflow-wrap: anywhere; }
 .passport-visits { display: flex; justify-content: space-between; padding: 10px 4px 0; font-size: .72rem; font-weight: 800; }
 .passport-new { position: absolute; top: 7px; right: 7px; padding: 3px 5px; border-radius: 5px; background: #b84534; color: #fff; font-size: .55rem; font-weight: 900; }
 .passport-back { padding: 5px 0 15px; background: transparent; border: 0; color: #426a61; font: inherit; font-size: .8rem; font-weight: 800; }

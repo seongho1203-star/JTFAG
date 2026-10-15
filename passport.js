@@ -106,7 +106,8 @@ function passportStampHtml(group, index) {
     const mark = PASSPORT_MARKS[group.key];
     return `<button type="button" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}
-        <span class="passport-seal"><span class="passport-seal-label">JTFAG · GOLF PASSPORT</span>${passportMarkHtml(group)}<b>${escapeHtml(group.name)}</b><small>첫 방문 ${first.date || first.round + '차'}</small></span>
+        <span class="passport-seal"><span class="passport-seal-label">JTFAG · GOLF PASSPORT</span>${passportMarkHtml(group)}</span>
+        <b class="passport-name">${escapeHtml(group.name)}</b><small class="passport-first">첫 방문 ${first.date || first.round + '차'}</small>
         <span class="passport-visits">${group.visits.length}회 방문 <span aria-hidden="true">›</span></span>
     </button>`;
 }
