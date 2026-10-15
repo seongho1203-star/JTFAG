@@ -2145,7 +2145,7 @@ function paintNearBox() {
     const sum = golfers.reduce((a, g) => a + strokeDiffOf(g, selectedMoneyRoundIdx), 0);
     const left = -sum;
 
-    el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : ''}${formatNumber(Math.abs(left))}원`;
+    el.textContent = left === 0 ? '없음' : `${left < 0 ? '-' : '+'}${formatNumber(Math.abs(left))}원`;
     el.className = left === 0 ? 'zero' : (left > 0 ? 'carry-out' : 'carry-in');
     paintNearCheck(left);
 }
