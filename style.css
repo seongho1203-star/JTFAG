@@ -1667,18 +1667,13 @@ html, body { overscroll-behavior: none; }
 .msn-res .n { font-size: 0.82rem; font-weight: 800; }
 .msn-res .n span { font-weight: 600; color: #3d4450; }
 .msn-res .g { font-size: 0.7rem; color: #6b7075; }
-.msn-rank { display: flex; flex-direction: column; gap: 8px; }
-.msn-rk { display: grid; grid-template-columns: 14px minmax(0, 1fr) 70px 38px 30px; gap: 7px; align-items: center; font-size: 0.8rem; }
-.msn-rk .no { font-weight: 900; color: #9a9fa6; }
-.msn-rk .no.first { color: #a87808; }
-.msn-rk .nm { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.msn-rk.me .nm { color: #2b5394; }
-.msn-rk .nm em { font-style: normal; font-size: 0.6rem; font-weight: 900; color: #2b5394; background: #eaf0f8; border-radius: 5px; padding: 0 4px; margin-left: 4px; vertical-align: 1px; }
-.msn-rk .bar { height: 7px; border-radius: 4px; background: #efefec; overflow: hidden; }
-.msn-rk .bar i { display: block; height: 100%; background: #2b5394; border-radius: 4px; }
-.msn-rk .v, .msn-rk .tk { text-align: right; font-weight: 900; font-variant-numeric: tabular-nums; }
-.msn-rk .tk { color: #a87808; }
-.msn-rk small { font-size: 0.62rem; font-weight: 700; color: #9a9fa6; margin-left: 1px; }
+.msn-point-person { min-width: 0; gap: 4px; padding: 10px 2px 8px; }
+.msn-point-person .bdg-pname { font-size: .8rem; }
+.msn-point-value { font-size: 1.25rem; font-weight: 900; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.msn-point-value small { margin-left: 2px; font-size: .62rem; font-weight: 700; opacity: .8; }
+.msn-point-ticket { font-size: .62rem; font-weight: 700; opacity: .8; }
+.msn-point-title { min-height: 14px; color: #9b710d; font-size: .6rem; font-weight: 900; line-height: 14px; }
+.msn-point-person.on .msn-point-title { color: #ffe1a0; }
 .msn-mul { display: flex; align-items: center; gap: 12px; }
 .msn-ticket { flex: 0 0 auto; width: 74px; height: 58px; border-radius: 12px; border: 1.5px dashed #c9a24a; background: #fbf1d6; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #85650d; }
 .msn-ticket .big { font-size: 1.5rem; font-weight: 900; line-height: 1; }
@@ -1882,10 +1877,8 @@ html, body { overscroll-behavior: none; }
 .pred-result em { flex-shrink: 0; font-size: .71rem; font-style: normal; color: #94909a; }
 .pred-result em.hit { padding: 1px 6px; border-radius: 5px; color: #236c49; background: #eaf5ed; font-weight: 800; }
 .pred-answer { padding: 12px; margin-top: 12px; background: #f7f6f2; border-radius: 10px; font-size: .76rem; line-height: 1.8; word-break: keep-all; }
-.pred-ranking, .pred-past { margin-top: 12px; padding: 11px; background: #f7f7f8; border-radius: 10px; }
-.pred-ranking summary, .pred-past summary { cursor: pointer; font-size: .78rem; font-weight: 800; }
-.pred-rank { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; font-size: .77rem; }
-.pred-rank.me { color: #704c91; }
+.pred-past { margin-top: 12px; padding: 11px; background: #f7f7f8; border-radius: 10px; }
+.pred-past summary { cursor: pointer; font-size: .78rem; font-weight: 800; }
 .pred-history-toggle { width: 100%; margin-top: 12px; padding: 10px; border: 0; background: transparent; color: #746580; font-size: .77rem; font-weight: 800; }
 
 /* 여행 탭 안의 골프장 여권. 도장은 CSS로 그려 외부 이미지를 요청하지 않는다. */

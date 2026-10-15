@@ -291,8 +291,8 @@ function specialMissionLog(g) {
     });
 }
 
-function specialMissionPoints(g, year) {
-    return specialMissionLog(g).filter(x => !year || x.y === year).reduce((sum, x) => sum + x.pts, 0);
+function specialMissionPoints(g, year, throughRound = Infinity) {
+    return specialMissionLog(g).filter(x => x.round <= throughRound && (!year || x.y === year)).reduce((sum, x) => sum + x.pts, 0);
 }
 
 // 판정 — state: 'wait'(아직 홀 기록 없음) · 'none'(그 차수에 기록이 없음 = 불참) · 'ok' · 'fail'. 미션 하나마다 한 줄.
@@ -335,13 +335,14 @@ function missionLog(g) {
 }
 
 // 다시 뽑기에 쓴 횟수(그해 것만 셀 수 있다)
-function missionRedraws(g, year) {
-    return missionRounds().filter(r => { const e = missionEntry(r, g); return e && e.redrawn && (!year || e.y === year); }).length;
+function missionRedraws(g, year, throughRound = Infinity) {
+    return missionRounds().filter(r => { const e = missionEntry(r, g); return r <= throughRound && e && e.redrawn && (!year || e.y === year); }).length;
 }
-// 포인트 = 성공한 미션의 별 수 + 특별미션 포인트 − 다시 뽑기에 쓴 점수
-function missionPoints(g, year) {
-    const won = missionLog(g).filter(x => x.ok && (!year || x.y === year)).reduce((t, x) => t + x.lv, 0);
-    return Math.max(0, won + specialMissionPoints(g, year) - missionRedraws(g, year) * REDRAW_COST);
+// 포인트 = 미션 성공 + 특별미션 + 예측 적중 − 다시 뽑기. 시즌 순위·사용권·다시 뽑기가 모두 이 값을 쓴다.
+function missionPoints(g, year, throughRound = Infinity) {
+    const won = missionLog(g).filter(x => x.ok && x.round <= throughRound && (!year || x.y === year)).reduce((t, x) => t + x.lv, 0);
+    const predicted = typeof predictionPoints === 'function' ? predictionPoints(g, year, throughRound) : 0;
+    return Math.max(0, won + specialMissionPoints(g, year, throughRound) + predicted - missionRedraws(g, year, throughRound) * REDRAW_COST);
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
 
@@ -811,23 +812,23 @@ function specialMissionCard(me) {
     </div>`;
 }
 
-function missionRankCard(me) {
+function missionPointCards(me) {
     const year = missionYearNow();
     const rows = golfers.map(g => ({ g, p: missionSeasonPoints(g), m: mulliganInfo(g) }));
     const sorted = rows.slice().sort((a, b) => b.p - a.p);
-    const top = Math.max(1, sorted[0] ? sorted[0].p : 1);
     const kings = missionKings();
-    return `<div class="msn-card">
+    const selected = golfers.includes(missionViewName) ? missionViewName : (golfers.includes(me) ? me : golfers[0]);
+    return `<div class="msn-card msn-points-card">
         <div class="msn-head"><span>미션 포인트</span><span class="msn-sub">${year} 시즌</span></div>
-        <div class="msn-rank">${sorted.map(x => {
+        <div class="bdg-people msn-point-people">${sorted.map(x => {
             const place = sorted.findIndex(y => y.p === x.p) + 1;
-            return `<div class="msn-rk${x.g === me ? ' me' : ''}">
-                <span class="no${place === 1 && x.p > 0 ? ' first' : ''}">${place}</span>
-                <span class="nm">${escapeHtml(x.g)}${kings.includes(x.g) ? '<em>미션왕</em>' : ''}</span>
-                <span class="bar"><i style="width:${Math.round(x.p / top * 100)}%"></i></span>
-                <span class="v">${x.p}<small>점</small></span>
-                <span class="tk" title="멀리건 사용권">${x.m.left}<small>장</small></span>
-            </div>`;
+            return `<button type="button" class="bdg-person msn-point-person${x.g === selected ? ' on' : ''}" aria-pressed="${x.g === selected}" onclick="selectMissionPerson('${x.g}')">
+                <span class="bdg-place">${place}위</span>
+                <span class="bdg-pname">${escapeHtml(x.g)}</span>
+                <span class="msn-point-value">${x.p}<small>점</small></span>
+                <span class="msn-point-ticket">사용권 ${x.m.left}장</span>
+                <span class="msn-point-title">${kings.includes(x.g) ? '미션왕' : ''}</span>
+            </button>`;
         }).join('')}</div>
     </div>`;
 }
@@ -922,7 +923,7 @@ function renderMissionPage() {
     const box = document.getElementById('missionPage');
     if (!box || typeof golfers === 'undefined' || missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
-    const html = '<div id="predictionHost"></div>' + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionRankCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
+    const html = missionPointCards(me) + '<div id="predictionHost"></div>' + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
     // 같으면 갈아 끼우지 않는다 — 남의 저장마다 renderAll이 돈다
     if (html !== missionLastHtml) { missionLastHtml = html; box.innerHTML = html; }
     if (typeof renderPredictionCard === 'function') renderPredictionCard();
@@ -959,9 +960,9 @@ function revealMissionResult(r) {
     const okN = rows.filter(x => x.s.okN > 0).length;
     const STEP = 0.35;
     // 이 차수로 멀리건 사용권이 늘어난 사람
-    const before = g => Math.floor(missionLog(g).filter(x => x.round < r && x.ok).reduce((t, x) => t + x.lv, 0) / MULLIGAN_STEP);
-    const after = g => Math.floor(missionLog(g).filter(x => x.round <= r && x.ok).reduce((t, x) => t + x.lv, 0) / MULLIGAN_STEP);
-    const gained = golfers.filter(g => after(g) > before(g));
+    const before = g => Math.floor(missionPoints(g, undefined, r - 1) / MULLIGAN_STEP);
+    const after = g => Math.floor(missionPoints(g, undefined, r) / MULLIGAN_STEP);
+    const gained = golfers.map(g => ({ g, n: after(g) - before(g) })).filter(x => x.n > 0);
     const kings = missionKings();
     const tail = 0.5 + rows.length * STEP;
     const o = document.createElement('div');
@@ -976,7 +977,7 @@ function revealMissionResult(r) {
             <span class="p">${x.s.pts ? '+' + x.s.pts : '실패'}</span></div>`).join('')}</div>
         <div class="mp-sum" style="animation-delay:${tail}s">
             <span><b>${okN}명 성공</b>${kings.length ? ` · 미션 포인트 1위 <b>${kings.map(escapeHtml).join(', ')} ${missionSeasonPoints(kings[0])}점</b>` : ''}</span>
-            ${gained.map(g => `<span class="mp-gain">🎟️ <b>${escapeHtml(g)}</b> 멀리건 사용권 +1</span>`).join('')}
+            ${gained.map(x => `<span class="mp-gain">🎟️ <b>${escapeHtml(x.g)}</b> 멀리건 사용권 +${x.n}</span>`).join('')}
         </div>
         <div class="mp-tap" style="animation-delay:${tail + 0.5}s">화면을 누르면 넘어갑니다</div>`;
     document.body.appendChild(o);

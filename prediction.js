@@ -1,5 +1,5 @@
 // 라운드 예측. 기록은 수정본을 덧붙여 저장하고 합집합으로 복원한다.
-// 판정·점수는 홀 기록과 기존 계급 이력을 읽어서 계산한다. 미션 포인트와 별개다.
+// 판정·점수는 홀 기록과 기존 계급 이력을 읽어서 계산하고 미션 포인트에 합산한다.
 const PREDICTION_POINTS = 2;
 const PREDICTION_NONE = 'none';
 const PREDICTION_MINE_KEY = 'jtfag_prediction_mine_v1';
@@ -94,6 +94,11 @@ function predictionResult(e) {
 }
 function predictionYear(e) {
     return new Date(e.deadline + 9 * 60 * 60 * 1000).getUTCFullYear();
+}
+function predictionPoints(player, year, throughRound = Infinity) {
+    const rounds = [...new Set(predictionEntries().filter(e => e.player === player && e.round <= throughRound).map(e => e.round))];
+    return rounds.map(r => predictionLatest(r, player)).filter(e => e && (!year || predictionYear(e) === year))
+        .reduce((points, e) => points + predictionResult(e).points, 0);
 }
 function predictionRanks(year) {
     return golfers.map(player => {
@@ -190,19 +195,16 @@ function renderPredictionCard() {
     const draft = predictionDraft && s && predictionDraft.round === s.round && predictionDraft.player === me && !locked ? predictionDraft : null;
     clearTimeout(predictionDeadlineTimer);
     if (s && !locked) predictionDeadlineTimer = setTimeout(renderPredictionCard, Math.min(Math.max(1, s.deadline - Date.now()), 2147483647));
-    const year = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date());
-    const ranks = predictionRanks(Number(year));
     const head = `<button type="button" class="msn-head msn-fold${predictionOpen ? ' open' : ''}" aria-expanded="${predictionOpen}" onclick="togglePrediction()"><span>🔮 라운드 예측</span><span class="msn-sub">${round ? `${round}차 · ${entries.length}/4명` : '일정 대기'}${MSN_CHEVRON}</span></button>`;
     let content = '';
     if (predictionOpen) {
-        content = `<p class="pred-rule">항목별 적중 2점 · 라운드 최대 6점 · 예측 전용 포인트</p>`;
+        content = `<p class="pred-rule">항목별 적중 2점 · 라운드 최대 6점 · 미션 포인트에 합산</p>`;
         if (s) content += `<div class="pred-schedule"><b>${s.round}차 · ${escapeHtml(s.course || '예정 라운드')}</b><span>${locked ? '참여 마감' : '참여 가능'} · ${predictionTime(s.deadline)} 마감</span></div>`;
         else if (!round) content += '<div class="msn-empty">티오프 시각이 포함된 다음 라운드 일정을 등록하면 예측에 참여할 수 있습니다.</div>';
         if (round) content += predictionRoundHtml(round, me);
         if (draft) content += predictionFormHtml(draft);
         else if (s && !locked) content += `<button type="button" class="pred-start" onclick="editPrediction(${s.round})">${predictionLatest(s.round, me) ? '내 예측 수정' : '예측 참여'}</button>`;
         content += '<p class="pred-rule">첫 버디는 1번 홀부터 확인하며 같은 홀의 동시 달성자는 모두 정답입니다. 버디는 파보다 1타 적은 기록만 집계합니다.</p>';
-        content += `<details class="pred-ranking"><summary>${year} 예측 포인트 순위</summary>${ranks.map(x => `<div class="pred-rank${x.player === me ? ' me' : ''}"><span>${1 + ranks.filter(y => y.points > x.points).length}위 ${escapeHtml(x.player)}</span><b>${x.points}점</b></div>`).join('')}</details>`;
         const past = rounds.filter(r => r !== round);
         if (past.length) content += `<button type="button" class="pred-history-toggle" aria-expanded="${predictionHistoryOpen}" onclick="togglePredictionHistory()">지난 예측 ${past.length}라운드 ${predictionHistoryOpen ? '접기' : '보기'}</button>${predictionHistoryOpen ? past.map(r => `<details class="pred-past"><summary>${r}차 예측 결과</summary>${predictionRoundHtml(r, me)}</details>`).join('') : ''}`;
     }
