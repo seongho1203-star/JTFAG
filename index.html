@@ -15,11 +15,47 @@
     <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 환영창은 외부 CSS·라이브러리 다운로드를 기다리지 않고 첫 화면부터 표시한다. -->
+    <style id="greetingStyle">
+        html { background: #f7f7f5; }
+        body { margin: 0; }
+        html.app-starting body > :not(.greet-overlay) { visibility: hidden; }
+        .greet-poster { box-sizing: border-box; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', sans-serif; position: fixed; inset: 0; z-index: 9999; overflow: hidden; color: #ffffff; background: linear-gradient(160deg, var(--g1), var(--g2)); display: flex; flex-direction: column; justify-content: flex-end; padding: 32px 26px calc(56px + env(safe-area-inset-bottom)); opacity: 0; transition: opacity 0.35s ease; cursor: pointer; }
+        .greet-poster.show { opacity: 1; }
+        .greet-poster.hide { opacity: 0; transition-duration: 0.4s; }
+        .greet-poster.early { opacity: 1; transition: none; }
+        .greet-poster.early.hide { opacity: 0; transition: opacity 0.4s ease; }
+        .greet-pic { position: absolute; right: 4vw; top: calc(10vh + env(safe-area-inset-top)); width: min(70vw, 320px); height: auto; object-fit: contain; transform: translateX(70px) scale(0.92); opacity: 0; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease; pointer-events: none; }
+        .greet-poster.show .greet-pic { transform: none; opacity: 1; }
+        .greet-poster.show .greet-pic.wait { transform: translateX(70px) scale(0.92); opacity: 0; }
+        .greet-text { position: relative; }
+        .greet-kick, .greet-name, .greet-msg { transform: translateY(16px); opacity: 0; transition: transform 0.5s ease, opacity 0.5s ease; }
+        .greet-kick { font-size: clamp(0.85rem, 3.6vw, 0.98rem); font-weight: 700; }
+        .greet-name { margin-top: 8px; font-size: clamp(2.4rem, 11vw, 3.4rem); font-weight: 900; line-height: 1.06; letter-spacing: -0.03em; word-break: keep-all; }
+        .greet-msg { margin-top: 14px; font-size: clamp(0.8rem, 3.4vw, 0.9rem); font-weight: 500; }
+        .greet-poster.show .greet-kick { transform: none; opacity: 0.88; transition-delay: 0.2s; }
+        .greet-poster.show .greet-name { transform: none; opacity: 1; transition-delay: 0.3s; }
+        .greet-poster.show .greet-msg { transform: none; opacity: 0.85; transition-delay: 0.4s; }
+        @media (prefers-reduced-motion: reduce) { .greet-pic, .greet-kick, .greet-name, .greet-msg { transition: none; } }
+    </style>
     <script>
-        // 항상 최신 CSS 파일을 불러옵니다
-        document.write('<link rel="stylesheet" href="style.css?ver=' + Math.random() + '">');
+        // 전체 스타일은 병렬로 받는다. 준비될 때까지 환영창만 보이고, 앱 초기화는 이 Promise를 기다린다.
+        window.jtfagStylesReady = new Promise(function (resolve) {
+            document.documentElement.classList.add('app-starting');
+            var css = document.createElement('link');
+            css.rel = 'stylesheet'; css.media = 'print';
+            css.href = 'style.css?ver=' + Math.random();
+            var ready = function () {
+                css.onload = css.onerror = null;
+                css.media = 'all';
+                document.documentElement.classList.remove('app-starting');
+                resolve();
+            };
+            css.onload = ready; css.onerror = ready;
+            document.head.appendChild(css);
+        });
     </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body ontouchstart="">
 <script>
@@ -417,20 +453,20 @@
      먼저 빠지지 않게 한다 — 안 막으면 눌리기 전에 바가 사라진다. -->
 <button type="button" id="moneyDoneBar" onpointerdown="pressMoneyDone(event, true)" onpointerup="pressMoneyDone(event, false)" onpointercancel="pressMoneyDone(event, false)" onpointerleave="pressMoneyDone(event, false)" onclick="finishMoneyInput()">✓ 입력 완료</button>
 
-<!-- 🔥 분리된 4개의 자바스크립트 파일을 순서대로 묶어서 실행합니다 🔥 -->
+<!-- 다운로드는 병렬로 진행하고, defer가 SDK → 각 파일의 실행 순서를 유지한다. -->
 <script>
     const v = Math.random();
-    document.write('<script src="stats.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="stats.js?ver=' + v + '"><\/script>');
     // 골프장 목록만 ?ver를 안 붙인다. 40KB인데 워크플로를 돌릴 때나 바뀌는 파일이라
     // 접속할 때마다 새로 받을 이유가 없다 (Pages 캐시가 10분이라 갱신도 금방 따라온다).
-    document.write('<script src="courses.js"><\/script>');
-    document.write('<script src="api.js?ver=' + v + '"><\/script>');
-    document.write('<script src="money.js?ver=' + v + '"><\/script>');   // 정산 금액 저장소(칸마다 따로)
-    document.write('<script src="calc.js?ver=' + v + '"><\/script>');
-    document.write('<script src="badges.js?ver=' + v + '"><\/script>');   // 뱃지 컬렉션
-    document.write('<script src="mission.js?ver=' + v + '"><\/script>');   // 라운드 미션
-    document.write('<script src="ui.js?ver=' + v + '"><\/script>');
-    document.write('<script src="trip.js?ver=' + v + '"><\/script>');   // 여행 일정
+    document.write('<script defer src="courses.js"><\/script>');
+    document.write('<script defer src="api.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="money.js?ver=' + v + '"><\/script>');   // 정산 금액 저장소(칸마다 따로)
+    document.write('<script defer src="calc.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="badges.js?ver=' + v + '"><\/script>');   // 뱃지 컬렉션
+    document.write('<script defer src="mission.js?ver=' + v + '"><\/script>');   // 라운드 미션
+    document.write('<script defer src="ui.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="trip.js?ver=' + v + '"><\/script>');   // 여행 일정
 </script>
 
 </body>

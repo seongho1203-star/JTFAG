@@ -8,7 +8,8 @@ function parseNumber(val) { if (!val) return 0; const cleaned = String(val).repl
 function formatNumber(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0"; return num.toLocaleString('ko-KR'); }
 function formatFundString(num) { if (num === null || num === undefined || isNaN(num) || num === 0) return "0원"; return num.toLocaleString('ko-KR') + "원"; }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    if (window.jtfagStylesReady) await window.jtfagStylesReady;
     renderSkeleton();
     fetchFromSupabase();
     window._supabase.channel('public:jtfag_league').on('postgres_changes', { event: '*', schema: 'public', table: window.SUPABASE_TABLE }, payload => {
@@ -4156,7 +4157,13 @@ function showPage(name, top) {
     }
 }
 // 새로고침해도 보던 화면에 남는다(앱을 새로 켜면 홈부터).
-try { const p = sessionStorage.getItem('jtfag_page'); if (p !== 'home' && PAGE_ORDER.includes(p)) document.addEventListener('DOMContentLoaded', () => showPage(p)); } catch (e) {}
+try {
+    const p = sessionStorage.getItem('jtfag_page');
+    if (p !== 'home' && PAGE_ORDER.includes(p)) document.addEventListener('DOMContentLoaded', async () => {
+        if (window.jtfagStylesReady) await window.jtfagStylesReady;
+        showPage(p);
+    });
+} catch (e) {}
 
 // 미는 동안만 두 화면을 나란히 펴고(.swiping) .pager를 옆으로 옮긴다.
 // - 들어오는 화면은 지금 보이는 자리(스크롤)에 맞춰 내려 둔다 — 정산·스코어 아래쪽에서 밀어도
