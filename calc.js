@@ -234,7 +234,7 @@ function calculateAndRender() {
 
     if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
     if (matchCardTitle) matchCardTitle.textContent = avgTitleStr;
-    if (avgHeaderTitle) avgHeaderTitle.innerHTML = `${titleStr}<br>평균`;
+    if (avgHeaderTitle) avgHeaderTitle.innerHTML = '최근차수<br>평균';
 
     const rows = document.querySelectorAll('#scoreTbody tr');
     rows.forEach(row => {
