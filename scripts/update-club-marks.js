@@ -238,7 +238,9 @@ async function confirmLogo(club, found, ask=claude) {
     const choice=(result.content || []).find(x=>x.type==='tool_use' && x.name==='select_logo')?.input;
     found.decision={index:Number.isInteger(choice?.index)?choice.index:-1,confirmed:choice?.confirmed===true,colorsValid:!!choice&&COLOR.test(choice.background)&&COLOR.test(choice.ink)};
     if (!choice || choice.confirmed!==true || !Number.isInteger(choice.index) || !found.images[choice.index] || !COLOR.test(choice.background) || !COLOR.test(choice.ink)) return null;
-    return {...found.images[choice.index],background:choice.background,ink:choice.ink};
+    const rgb=[1,3,5].map(i=>parseInt(choice.ink.slice(i,i+2),16));
+    const ink=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>200?'#385c4c':choice.ink;
+    return {...found.images[choice.index],background:choice.background,ink};
 }
 async function update(clubs, known, catalog, state, {now=Date.now(),discover=discoverSite,fallback=discoverApp,collect=collectCandidates,confirm=confirmLogo,saveImage}={}) {
     const added=[];let checked=0;

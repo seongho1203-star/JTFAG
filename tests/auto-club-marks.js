@@ -44,8 +44,13 @@ async function main(){
     assert.match(await discoverApp({name:'신규CC'},async()=>appReply),/id=kr.example.club&hl=ko/);
     const found=await collectCandidates('https://official.example/',async url=>({url,type:url.endsWith('.png')?'image/png':'text/html;charset=utf-8',bytes:url.endsWith('.png')?png:Buffer.from(html)}));
     assert.equal(found.images.length,1);
+    const appFound=await collectCandidates('https://play.google.com/store/apps/details?id=kr.example.club',async url=>({url,type:url.endsWith('.png')?'image/png':'text/html;charset=utf-8',bytes:url.endsWith('.png')?png:Buffer.from('<title>신규CC 예약</title><meta property="og:image" content="https://images.example/club.png"><img src="/google-logo.png">')}));
+    assert.equal(appFound.images.length,1);
+    assert.equal(appFound.images[0].source_url,'https://images.example/club.png','앱 대표 아이콘을 플랫폼 로고와 구분');
     const approved={content:[{type:'tool_use',name:'select_logo',input:{index:0,confirmed:true,background:'#ffffff',ink:'#246842'}}]};
     assert.ok(await confirmLogo({name:'신규CC'},found,async()=>approved));
+    const bright=clone(approved);bright.content[0].input.ink='#FFFFFF';
+    assert.notEqual((await confirmLogo({name:'신규CC'},found,async()=>bright)).ink,'#FFFFFF','흰 화면에서 원형 테두리가 보이는 색으로 조정');
     const rejected=clone(approved);rejected.content[0].input.confirmed=false;
     assert.equal(await confirmLogo({name:'신규CC'},found,async()=>rejected),null);
     const known={기존:{file:'manual.png'}},catalog={version:1,marks:{}},state={},writes=[];
