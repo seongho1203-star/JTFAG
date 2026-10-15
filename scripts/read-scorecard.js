@@ -346,12 +346,13 @@ function formatHoles(arr) {
     return `[${arr.slice(0, 9).join(', ')},   ${arr.slice(9).join(', ')}]`;
 }
 
-function formatRoundBlock(round, data, names) {
+function formatRoundBlock(round, data, names, year) {
     const lines = names.map(n => `            "${n}": ${formatHoles(data.rel[n])}`).join(',\n');
     const guest = data.skipped.length ? `        // 게스트 ${data.skipped.join(', ')}는 기록하지 않는다.\n` : '';
     return `    "${round}": {\n` +
         guest +
         `        course: ${JSON.stringify(data.course)},\n` +
+        (Number.isInteger(year) ? `        year: ${year},\n` : '') +
         `        par: ${formatHoles(data.par)},\n` +
         `        rel: {\n${lines}\n        }\n` +
         `    }`;
@@ -500,7 +501,10 @@ async function processOne(req, names) {
     if (data.skipped.length) console.log(`  게스트 제외: ${data.skipped.join(', ')}`);
 
     const before = fs.readFileSync(STATS_FILE, 'utf8');
-    const after = upsertRound(before, req.round, formatRoundBlock(req.round, data, names));
+    // 특별미션 시즌은 재접속·재판독 시에도 바뀌지 않도록 홀 기록에 남긴다.
+    const previous = loadStats(before).ROUND_HOLES[String(req.round)];
+    const year = previous ? (previous.year || 2026) : (Number.isInteger(req.year) ? req.year : Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date())));
+    const after = upsertRound(before, req.round, formatRoundBlock(req.round, data, names, year));
 
     // 기록 경신은 새 파일 기준으로 찾는다 (파일을 쓰기 전에도 확인할 수 있어 DRY RUN에서도 나온다).
     const records = findRecords(after, req.round, names);

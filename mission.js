@@ -47,6 +47,21 @@ const mHalf = (h, a) => h.par.slice(a, a + 9).reduce((t, p, i) => t + p + h.rel[
 const mGross = h => mHalf(h, 0) + mHalf(h, 9);
 const mBirdie = h => mCount(h, v => v < 0);
 
+// 특별미션은 뽑기와 관계없이 모든 멤버의 홀 기록으로 판정한다.
+// 한 홀은 홀인원·이글·알바트로스 중 해당하는 한 항목에만 가산한다.
+const SPECIAL_MISSION_DEFS = [
+    { id: 'holeInOne', text: '홀인원', pts: 20, how: '한 홀을 1타로 마무리',
+      count: h => mCount(h, (v, i) => h.par[i] + v === 1) },
+    { id: 'cyclingBirdie', text: '싸이클링 버디', pts: 10, how: '한 라운드 파3·4·5에서 각각 버디 이하',
+      count: h => [3, 4, 5].every(p => h.rel.some((v, i) => h.par[i] === p && v < 0)) ? 1 : 0 },
+    { id: 'audiPar', text: '아우디 파', pts: 3, how: '4홀 연속 파 · 연속 구간당 1회',
+      count: h => { let run = 0, n = 0; h.rel.forEach(v => { run = v === 0 ? run + 1 : 0; if (run === 4) n++; }); return n; } },
+    { id: 'eagle', text: '이글', pts: 10, how: '한 홀에서 파보다 2타 적게 · 홀인원 제외',
+      count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) },
+    { id: 'albatross', text: '알바트로스', pts: 20, how: '한 홀에서 파보다 3타 적게 · 홀인원 제외',
+      count: h => mCount(h, (v, i) => v === -3 && h.par[i] + v > 1) }
+];
+
 // 미션 목록(사용자가 정했다 — 처음 아홉에 열하나를 더했다). `w`는 뽑힐 무게 — 전반·후반 42타는 한 가지를 둘로 나눈 것이라 반씩.
 // **`who: true`인 미션은 다른 멤버 한 사람이 대상이다**(사용자 요청 — `김지명 버디2개 이런것도`). 받을 때 대상도 무작위로 정해
 // `rec.who`에 남기고, 글의 `{T}` 자리에 그 이름이 들어간다. 판정은 `judge(내 기록, 대상 기록)`이다.
@@ -216,6 +231,32 @@ function roundHasHoles(round) {
     return typeof ROUND_HOLES !== 'undefined' && !!ROUND_HOLES[String(round)];
 }
 
+function specialMissionYear(round) {
+    const rec = ROUND_HOLES[String(round)] || {};
+    if (Number.isInteger(rec.year)) return rec.year;
+    const entries = Object.values((appData.missions || {})[String(round)] || {});
+    const dated = entries.find(e => e && Number.isInteger(e.y));
+    // 연도 필드 도입 전의 기존 홀 기록(1~10차)은 2026년 기록이다.
+    return dated ? dated.y : 2026;
+}
+
+function specialMissionLog(g) {
+    if (typeof ROUND_HOLES === 'undefined') return [];
+    return Object.keys(ROUND_HOLES).map(Number).filter(r => r > 0 && r <= appData.totalRounds).sort((a, b) => a - b).flatMap(round => {
+        const h = missionHoles(round, g);
+        if (!h || !h.par.every((p, i) => Number.isInteger(p) && Number.isInteger(h.rel[i]) && p + h.rel[i] >= 1)) return [];
+        const y = specialMissionYear(round);
+        return SPECIAL_MISSION_DEFS.flatMap(def => {
+            const count = def.count(h);
+            return count ? [{ round, g, y, id: def.id, text: def.text, count, pts: def.pts * count }] : [];
+        });
+    });
+}
+
+function specialMissionPoints(g, year) {
+    return specialMissionLog(g).filter(x => !year || x.y === year).reduce((sum, x) => sum + x.pts, 0);
+}
+
 // 판정 — state: 'wait'(아직 홀 기록 없음) · 'none'(그 차수에 기록이 없음 = 불참) · 'ok' · 'fail'. 미션 하나마다 한 줄.
 function missionResults(round, g) {
     const e = missionEntry(round, g);
@@ -258,10 +299,10 @@ function missionLog(g) {
 function missionRedraws(g, year) {
     return missionRounds().filter(r => { const e = missionEntry(r, g); return e && e.redrawn && (!year || e.y === year); }).length;
 }
-// 포인트 = 성공한 미션의 별 수 − 다시 뽑기에 쓴 점수
+// 포인트 = 성공한 미션의 별 수 + 특별미션 포인트 − 다시 뽑기에 쓴 점수
 function missionPoints(g, year) {
     const won = missionLog(g).filter(x => x.ok && (!year || x.y === year)).reduce((t, x) => t + x.lv, 0);
-    return Math.max(0, won - missionRedraws(g, year) * REDRAW_COST);
+    return Math.max(0, won + specialMissionPoints(g, year) - missionRedraws(g, year) * REDRAW_COST);
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
 
@@ -413,21 +454,11 @@ function pickWeighted(list) {
 }
 // ── 멤버 미션 난이도 보정(사용자 요청 — 박승수를 이기는 것과 김지명을 이기는 것이 같은 ★이면 형평이 안 맞는다) ──
 // 받을 때 대상 멤버의 실력을 보고 별을 ±1 조정하고, 그 별로 본인 미션을 골라 합 MISSION_LV_MAX 이하를 맞춘다.
-// 실력은 1:1 핸디캡과 같은 잣대 — 넷 다 타수가 있는 가장 최근 연속 두 차수의 평균(내림)이다. 없으면 조정하지 않는다.
+// 실력은 1:1 핸디캡과 같은 잣대 — 넷 다 타수가 있는 가장 최근 연속 세 차수의 평균(내림)이다. 없으면 조정하지 않는다.
 const MISSION_ADJ_STEP = 4;   // 4타 이상 차이면 ±1 — 폭은 ±1까지(사용자 요청 — ±2는 너무 커 조합이 줄었다)
 function missionSkill() {
-    const sc = appData && appData.scores;
-    if (!sc || typeof golfers === 'undefined') return null;
-    const v = (g, r) => parseFloat(sc[g] && sc[g][r]);
-    const full = r => golfers.every(g => v(g, r) > 0);
-    for (let r = (appData.totalRounds || 0) - 1; r >= 1; r--) {
-        if (full(r) && full(r - 1)) {
-            const m = {};
-            golfers.forEach(g => { m[g] = Math.floor((v(g, r) + v(g, r - 1)) / 2); });
-            return m;
-        }
-    }
-    return null;
+    const rounds = latestHandicapRounds();
+    return rounds.length ? handicapAverageAt(rounds[rounds.length - 1]) : null;
 }
 // 멤버 미션의 종류 — 대결(○○보다) · 협동(○○와 함께) · 응원(○○가 해낸다)
 function missionKind(def) {
@@ -719,6 +750,22 @@ function missionLastResultCard() {
     </div>`;
 }
 
+function specialMissionCard(me) {
+    const year = missionYearNow();
+    const log = golfers.includes(me) ? specialMissionLog(me).filter(x => x.y === year) : [];
+    const recent = log.slice().reverse().slice(0, 5);
+    return `<div class="msn-card">
+        <div class="msn-head"><span>특별미션</span><span class="msn-sub">홀 기록 자동 판정</span></div>
+        ${SPECIAL_MISSION_DEFS.map(d => {
+            const count = log.filter(x => x.id === d.id).reduce((sum, x) => sum + x.count, 0);
+            return `<div class="msn-special"><div><b>${escapeHtml(d.text)}</b><small>${escapeHtml(d.how)}${count ? ` · 시즌 ${count}회 달성` : ''}</small></div><span class="msn-pts">+${d.pts}점</span></div>`;
+        }).join('')}
+        ${golfers.includes(me) ? `<div class="msn-special-total">${escapeHtml(me)} · ${year} 시즌 특별미션 ${specialMissionPoints(me, year)}점</div>` : ''}
+        ${recent.map(x => `<div class="msn-special-log"><span>${x.round}차 · ${escapeHtml(x.text)}${x.count > 1 ? ` ${x.count}회` : ''}</span><b>+${x.pts}점</b></div>`).join('')}
+        <div class="msn-foot">미션 수령 없이 모든 멤버에게 적용되며, 기존 홀 기록도 포함합니다. 달성 횟수만큼 미션 포인트에 합산됩니다. 싸이클링 버디는 라운드당 1회, 아우디 파는 연속 구간당 1회 지급합니다. 동일 홀의 홀인원·이글·알바트로스는 중복 지급하지 않습니다.</div>
+    </div>`;
+}
+
 function missionRankCard(me) {
     const year = missionYearNow();
     const rows = golfers.map(g => ({ g, p: missionSeasonPoints(g), m: mulliganInfo(g) }));
@@ -823,7 +870,7 @@ function missionListCard() {
         ${head}
         ${group('본인 미션', '내 기록으로 판정', self)}
         ${group('멤버 미션', '○○ = 무작위로 정해지는 다른 멤버', other)}
-        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MIN}~${MISSION_LV_MAX}개입니다(예: ★★★ + ★ · ★★ + ★ · ★★ + ★★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 목록의 별은 기본 난이도이며, 받을 때 최근 2경기 평균 타수로 실력을 보아 조정합니다 — 본인 미션은 나, 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEP}타 이상 차이 나면 ±1(★1~★3). '보정 없음' 미션은 실력과 관계없이 기본 별 그대로입니다. 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
+        <div class="msn-foot">라운드마다 본인 미션 1개와 멤버 미션 1개를 받으며, 두 미션의 난이도 합은 ★${MISSION_LV_MIN}~${MISSION_LV_MAX}개입니다(예: ★★★ + ★ · ★★ + ★ · ★★ + ★★). 성공한 미션의 별 수만큼 포인트를 얻습니다. '파'는 파 이하(버디 포함), '더블보기'·'트리플 보기'는 그 이상까지 셉니다. 대결 미션은 동률이면 실패이며, 협동 미션은 나와 대상 멤버가 함께 달성해야 합니다. 목록의 별은 기본 난이도이며, 받을 때 최근 3경기 평균 타수로 실력을 보아 조정합니다 — 본인 미션은 나, 대결은 나와 대상 멤버의 차이, 응원은 대상 멤버, 협동은 두 사람의 평균을 넷의 평균과 견주어 ${MISSION_ADJ_STEP}타 이상 차이 나면 ±1(★1~★3). '보정 없음' 미션은 실력과 관계없이 기본 별 그대로입니다. 조정된 별은 받는 순간 고정되며 그만큼 포인트를 얻습니다. 본인 또는 대상 멤버의 기록이 없는 라운드(불참)는 판정하지 않습니다. 받은 미션 중 1개를 포인트 ${REDRAW_COST}점을 사용해 라운드마다 1회 다시 뽑을 수 있습니다.</div>
     </div>`;
 }
 
@@ -831,7 +878,7 @@ function renderMissionPage() {
     const box = document.getElementById('missionPage');
     if (!box || typeof golfers === 'undefined' || missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
-    const html = missionTargetCard(me) + missionLastResultCard() + missionRankCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
+    const html = missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionRankCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
     // 같으면 갈아 끼우지 않는다 — 남의 저장마다 renderAll이 돈다
     if (html === missionLastHtml) return;
     missionLastHtml = html;

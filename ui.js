@@ -2471,23 +2471,18 @@ function renderTable() {
 // 상대 셋마다 가운데에 그 상대와의 통산 승률(`headToHead`), 오른쪽에 받는/주는 타수와 승패를 적는다.
 // (처음엔 가운데가 타수 칸 막대였는데 사용자 요청으로 승률로 바꿨다.)
 // 이름을 아직 안 정한 기기는 첫 사람 기준으로 보여 준다.
-function renderHandicapMatchCard(r1, r2) {
+function renderHandicapMatchCard(rounds) {
     const matchGrid = document.getElementById('matchGrid'); if (!matchGrid) return;
-    const avgScores = {};
-    golfers.forEach(g => {
-        const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r1] : NaN);
-        const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r2] : NaN);
-        if (!isNaN(s1) && !isNaN(s2)) avgScores[g] = Math.floor((s1 + s2) / 2);
-    });
+    const avgScores = rounds.length ? handicapAverageAt(rounds[rounds.length - 1]) : null;
 
     const saved = localStorage.getItem('jtfag_my_name');
     const me = golfers.includes(saved) ? saved : golfers[0];
     const title = document.getElementById('matchCardTitle');
     let html;
-    if (Object.keys(avgScores).length < 4) {
+    if (!avgScores) {
         html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
     } else {
-        if (title) title.textContent = `${me}님 기준 · ${r1 + 1}·${r2 + 1}차 평균 ${avgScores[me]}`;
+        if (title) title.textContent = `${me}님 기준 · ${rounds.map(r => r + 1).join('·')}차 평균 ${avgScores[me]}`;
         const rec = typeof headToHead === 'function' ? headToHead(me, allRoundIdx()) : {};
         html = '';
         golfers.filter(g => g !== me).forEach(opp => {
@@ -2551,7 +2546,7 @@ function openH2HDetail(oppIdx) {
         <div class="h2h-head"><div class="h2h-title">${escapeHtml(me)} <i>vs</i> ${escapeHtml(opp)}</div>
             <div class="h2h-sum">${games.length ? `${w}승 ${l}패${t ? ` ${t}무` : ''} · 승률 <b class="${tone}">${pct}%</b>` : '전적 없음'}</div></div>
         ${rows ? `<div class="h2h-list">${rows}</div>` : ''}
-        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 두 경기 평균의 차이이며, 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 네 명의 타수가 모두 없는 차수는 제외됩니다.</div>
+        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 세 경기 평균의 차이이며, 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2·3차와 네 명의 타수가 모두 없는 차수는 제외됩니다.</div>
         <button type="button" class="bdg-close" onclick="closeH2HDetail()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeH2HDetail(); });
@@ -2990,6 +2985,7 @@ async function handleScorecardUpload(event) {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         round: round + 1,
         url: url,
+        year: (Number(appData.nextRoundNo) === round + 1 && parseInt((appData.nextRoundISO || '').slice(0, 4), 10)) || missionYearNow(),
         time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
         by: localStorage.getItem('jtfag_my_name') || SCORE_OWNER,
         guestTotal: guestTotal,
@@ -3170,7 +3166,8 @@ function closeImageViewModal() {
    같은 자리에 오도록 이동값을 다시 푼다.
 
    무대(.photo-stage)에 `touch-action: none`을 줘야 페이지가 같이 밀리지 않는다.
-   **손을 뗀 자리가 사진 밖이고 움직인 적이 없으면 닫는다** — 끌다가 놓았다고 닫히면 안 된다. */
+   기본 배율에서 아래로 끌면 닫는다. 확대 중에는 기존처럼 사진을 이동한다.
+   손을 뗀 자리가 사진 밖이고 움직인 적이 없어도 닫는다. */
 const photoZoom = {
     bound: false, scale: 1, tx: 0, ty: 0,
     pointers: new Map(), pinch: null, drag: null, moved: false, lastTap: 0
@@ -3187,7 +3184,7 @@ function photoZoomApply(animate) {
 
 function photoZoomReset() {
     photoZoom.scale = 1; photoZoom.tx = 0; photoZoom.ty = 0;
-    photoZoom.pointers.clear(); photoZoom.pinch = null; photoZoom.drag = null; photoZoom.moved = false;
+    photoZoom.pointers.clear(); photoZoom.pinch = null; photoZoom.drag = null; photoZoom.moved = false; photoZoom.lastTap = 0;
     photoZoomApply(false);
 }
 
@@ -3237,8 +3234,9 @@ function initPhotoZoom() {
         // 이미 풀린 포인터면 브라우저가 예외를 던진다. 잡아야 나머지 손가락 처리가 이어진다.
         try { stage.setPointerCapture(e.pointerId); } catch (_) {}
         photoZoom.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, onImg: e.target === img });
-        photoZoom.moved = false;
+        if (photoZoom.pointers.size === 1) photoZoom.moved = false;
         if (photoZoom.pointers.size === 2) {
+            photoZoom.moved = true;
             const [a, b] = two();
             const r = img.getBoundingClientRect();
             photoZoom.pinch = {
@@ -3247,7 +3245,7 @@ function initPhotoZoom() {
             };
             photoZoom.drag = null;
         } else if (photoZoom.pointers.size === 1) {
-            photoZoom.drag = { x: e.clientX, y: e.clientY, tx0: photoZoom.tx, ty0: photoZoom.ty };
+            photoZoom.drag = { x: e.clientX, y: e.clientY, tx0: photoZoom.tx, ty0: photoZoom.ty, dismiss: photoZoom.scale === 1 };
         }
     });
 
@@ -3270,32 +3268,47 @@ function initPhotoZoom() {
             photoZoom.moved = true;
             photoZoomClamp();
             photoZoomApply(false);
-        } else if (photoZoom.pointers.size === 1 && photoZoom.drag && photoZoom.scale > 1) {
+        } else if (photoZoom.pointers.size === 1 && photoZoom.drag) {
             const d = photoZoom.drag;
             const dx = e.clientX - d.x, dy = e.clientY - d.y;
             if (Math.abs(dx) + Math.abs(dy) > 3) photoZoom.moved = true;
-            photoZoom.tx = d.tx0 + dx; photoZoom.ty = d.ty0 + dy;
-            photoZoomClamp();
+            if (photoZoom.scale > 1) {
+                photoZoom.tx = d.tx0 + dx; photoZoom.ty = d.ty0 + dy;
+                photoZoomClamp();
+            } else if (d.dismiss) {
+                const downward = dy > 0 && dy > Math.abs(dx);
+                photoZoom.tx = downward ? dx * 0.25 : 0;
+                photoZoom.ty = downward ? dy : 0;
+            }
             photoZoomApply(false);
         }
     });
 
     const up = e => {
         const p = photoZoom.pointers.get(e.pointerId);
+        const drag = photoZoom.drag;
         photoZoom.pointers.delete(e.pointerId);
         if (photoZoom.pointers.size === 1) {
             // 한 손가락이 남으면 그 자리에서 끌기를 새로 시작한다 — 안 그러면 사진이 튄다.
             const [a] = two();
-            photoZoom.drag = { x: a.x, y: a.y, tx0: photoZoom.tx, ty0: photoZoom.ty };
+            photoZoom.drag = { x: a.x, y: a.y, tx0: photoZoom.tx, ty0: photoZoom.ty, dismiss: false };
             photoZoom.pinch = null;
             return;
         }
         if (photoZoom.pointers.size > 0) return;
         photoZoom.pinch = null; photoZoom.drag = null;
 
+        const dy = drag ? e.clientY - drag.y : 0, dx = drag ? e.clientX - drag.x : 0;
+        const threshold = Math.max(64, Math.min(120, stage.clientHeight * 0.14));
+        if (e.type === 'pointerup' && p && drag && drag.dismiss && photoZoom.scale === 1 && dy >= threshold && dy > Math.abs(dx) * 1.2) {
+            closeImageViewModal();
+            return;
+        }
+        if (e.type === 'pointercancel') photoZoom.moved = true;
+
         if (photoZoom.scale < 1.05) { photoZoom.scale = 1; photoZoom.tx = 0; photoZoom.ty = 0; photoZoomApply(true); }
 
-        if (photoZoom.moved || !p) return;
+        if (photoZoom.moved || !p) { photoZoom.lastTap = 0; return; }
         // 여기부터는 '두드림'이다. 사진 밖이면 닫고, 사진이면 두 번 두드림을 본다.
         if (!p.onImg) { closeImageViewModal(); return; }
         const now = Date.now();
@@ -3391,7 +3404,7 @@ function winRateListHtml(rec) {
 }
 
 /* 골프장별 1:1 승률.
-   핸디캡이 직전 두 차수라 1·2차는 승부가 안 나온다 — 그 골프장에 3차 이후 라운드가
+   핸디캡이 직전 세 차수라 1·2·3차는 승부가 안 나온다 — 그 골프장에 4차 이후 라운드가
    하나도 없으면 목록에 올리지 않는다. 빈 칸을 골라 놓고 '매치 없음'만 보는 건 헛걸음이다. */
 let h2hCourseKey = null;
 
@@ -3431,7 +3444,7 @@ function renderCourseWinRate(name) {
     sel.value = h2hCourseKey;
 
     box.innerHTML = winRateListHtml(cur.rec)
-        + `<div class="winrate-note">핸디캡은 직전 2개 차수 기준으로 산출되므로 1·2차전은 집계에서 제외됩니다.</div>`;
+        + `<div class="winrate-note">핸디캡은 직전 3개 차수 기준으로 산출되므로 1·2·3차전은 집계에서 제외됩니다.</div>`;
 }
 
 function selectCourseWinRate(key, name) {

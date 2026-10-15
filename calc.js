@@ -193,53 +193,57 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     return badges;
 }
 
-function calculateAndRender() {
-    let targetR1 = -1, targetR2 = -1;
-    for (let r = appData.totalRounds - 1; r >= 1; r--) {
-        let completeCurr = true;
-        let completePrev = true;
-        golfers.forEach(g => {
-            const sCurr = appData.scores[g] ? appData.scores[g][r] : "";
-            const sPrev = appData.scores[g] ? appData.scores[g][r - 1] : "";
-            if (sCurr === "" || sCurr === undefined || isNaN(parseFloat(sCurr))) completeCurr = false;
-            if (sPrev === "" || sPrev === undefined || isNaN(parseFloat(sPrev))) completePrev = false;
-        });
+const HANDICAP_ROUNDS = 3;
 
-        if (completeCurr && completePrev) {
-            targetR1 = r - 1;
-            targetR2 = r;
-            break;
+// 정산·맞대결·현재 핸디캡이 같은 세 경기 평균(내림)을 사용한다.
+function handicapAverageAt(end) {
+    if (end < HANDICAP_ROUNDS - 1) return null;
+    const averages = {};
+    for (const g of golfers) {
+        let sum = 0;
+        for (let r = end - HANDICAP_ROUNDS + 1; r <= end; r++) {
+            const score = parseFloat((appData.scores[g] || [])[r]);
+            if (!Number.isFinite(score) || score <= 0) return null;
+            sum += score;
         }
+        averages[g] = Math.floor(sum / HANDICAP_ROUNDS);
     }
+    return averages;
+}
 
-    if (targetR1 === -1) {
-        targetR1 = 0;
-        targetR2 = 1;
+function latestHandicapRounds() {
+    for (let r = appData.totalRounds - 1; r >= HANDICAP_ROUNDS - 1; r--) {
+        if (handicapAverageAt(r)) return Array.from({ length: HANDICAP_ROUNDS }, (_, i) => r - HANDICAP_ROUNDS + 1 + i);
     }
+    return [];
+}
+
+function calculateAndRender() {
+    const targetRounds = latestHandicapRounds();
+    const averages = targetRounds.length ? handicapAverageAt(targetRounds[targetRounds.length - 1]) : null;
 
     const infoText = document.getElementById('infoText');
     const matchCardTitle = document.getElementById('matchCardTitle');
     const avgHeaderTitle = document.getElementById('avgHeaderTitle');
 
-    const titleStr = `${targetR1 + 1}차 & ${targetR2 + 1}차`;
-    const avgTitleStr = `${targetR1 + 1}·${targetR2 + 1}차 평균`;
+    const roundStr = targetRounds.map(r => r + 1).join('·');
+    const titleStr = roundStr ? `${roundStr}차` : '최근 3경기';
+    const avgTitleStr = roundStr ? `${roundStr}차 평균` : '최근 3경기 평균';
 
     if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
-    if (matchCardTitle) matchCardTitle.textContent = `최근 2경기(${targetR1 + 1}·${targetR2 + 1}차) 평균`;
+    if (matchCardTitle) matchCardTitle.textContent = avgTitleStr;
     if (avgHeaderTitle) avgHeaderTitle.innerHTML = avgTitleStr;
 
     const rows = document.querySelectorAll('#scoreTbody tr');
     rows.forEach(row => {
         const name = row.getAttribute('data-name');
-        const s1 = parseFloat(appData.scores[name] ? appData.scores[name][targetR1] : NaN);
-        const s2 = parseFloat(appData.scores[name] ? appData.scores[name][targetR2] : NaN);
 
         const avgCell = row.querySelector('.avg-cell');
         // 값은 알약(.avg-pill) 안에만 넣는다. 칸을 통째로 덮어쓰면 배경 스타일이 날아간다.
         const pill = avgCell ? avgCell.querySelector('.avg-pill') : null;
         if (pill) {
-            if (!isNaN(s1) && !isNaN(s2)) {
-                pill.textContent = `${Math.floor((s1 + s2) / 2)}`;
+            if (averages && averages[name] !== undefined) {
+                pill.textContent = `${averages[name]}`;
                 pill.classList.remove('empty');
             } else {
                 pill.textContent = `-`;
@@ -249,7 +253,7 @@ function calculateAndRender() {
     });
 
     processAllRoundSettlements();
-    renderHandicapMatchCard(targetR1, targetR2);
+    renderHandicapMatchCard(targetRounds);
 }
 
 function processAllRoundSettlements() {
@@ -377,25 +381,10 @@ function processAllRoundSettlements() {
     const historyList = document.getElementById('historyList');
     if (historyList) historyList.innerHTML = "";
 
-    for (let r = 2; r < totalRounds; r++) {
-        const handicapAvg = {};
-        let isComplete = true;
-
-        golfers.forEach(g => {
-            const s1 = parseFloat(appData.scores[g] ? appData.scores[g][r - 2] : NaN);
-            const s2 = parseFloat(appData.scores[g] ? appData.scores[g][r - 1] : NaN);
-            if (isNaN(s1) || isNaN(s2)) isComplete = false;
-            handicapAvg[g] = Math.floor((s1 + s2) / 2);
-        });
-
-        const currentScores = {};
-        golfers.forEach(g => {
-            const sr = parseFloat(appData.scores[g] ? appData.scores[g][r] : NaN);
-            if (isNaN(sr)) isComplete = false;
-            currentScores[g] = sr;
-        });
-
-        if (!isComplete) continue;
+    for (let r = HANDICAP_ROUNDS; r < totalRounds; r++) {
+        const data = h2hRoundData(r);
+        if (!data) continue;
+        const handicapAvg = data.hAvg, currentScores = data.cScore;
 
         const matchResults = {};
         golfers.forEach(g => matchResults[g] = { wins: 0, losses: 0, ties: 0, totalDiff: 0 });
@@ -679,14 +668,14 @@ function getHoleAnalysis(name) {
 }
 
 /* ── 1:1 승률 ─────────────────────────────────────────────────
-   핸디캡을 씌운 맞대결이다. 그 차수 **직전 두 차수**의 평균으로 핸디캡을 내고,
+   핸디캡을 씌운 맞대결이다. 그 차수 **직전 세 차수**의 평균으로 핸디캡을 내고,
    그 차이만큼 내 타수를 깎아 상대의 그 차수 타수와 견준다(적을수록 이긴다).
    같으면 핸디캡이 낮은 쪽(잘 치는 쪽)이 이긴 것으로 본다.
 
    **통산 승률과 골프장별 승률이 이 함수를 같이 쓴다.** 규칙이 두 군데가 되면
    같은 경기를 두고 숫자가 어긋난다. 계산은 여기 한 곳에만 둘 것.
 
-   핸디캡이 직전 두 차수라 **골프장별로 볼 때도 그 두 차수는 골프장을 안 가린다** —
+   핸디캡이 직전 세 차수라 **골프장별로 볼 때도 그 세 차수는 골프장을 안 가린다** —
    핸디캡은 '요즘 얼마나 치는가'이지 그 골프장 실력이 아니기 때문이다.
    덕분에 골프장별 승패를 다 더하면 통산 승패와 정확히 맞는다. */
 function headToHead(name, rounds) {
@@ -700,15 +689,14 @@ function headToHead(name, rounds) {
     return rec;
 }
 
-/* 한 차수의 핸디캡(직전 두 차수 평균 · 내림)과 그 차수 타수. 넷 다 있어야 한 판으로 친다 — 없으면 null. */
+/* 한 차수의 핸디캡(직전 세 차수 평균 · 내림)과 그 차수 타수. 넷 다 있어야 한 판으로 친다 — 없으면 null. */
 function h2hRoundData(r) {
-    if (r < 2) return null;                     // 직전 두 차수가 있어야 핸디캡을 낸다
-    const hAvg = {}, cScore = {};
+    const hAvg = handicapAverageAt(r - 1), cScore = {};
+    if (!hAvg) return null;
     for (const g of golfers) {
         const s = appData.scores[g] || [];
-        const s1 = parseFloat(s[r - 2]), s2 = parseFloat(s[r - 1]), sr = parseFloat(s[r]);
-        if (isNaN(s1) || isNaN(s2) || isNaN(sr)) return null;
-        hAvg[g] = Math.floor((s1 + s2) / 2);
+        const sr = parseFloat(s[r]);
+        if (!Number.isFinite(sr) || sr <= 0) return null;
         cScore[g] = sr;
     }
     return { hAvg, cScore };
