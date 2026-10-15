@@ -133,6 +133,7 @@ function refreshTripPage() {
 // 같은 내용이면 갈아 끼우지 않는다 — 다시 그릴 일이 없는데 DOM을 바꾸면 스크롤만 끊긴다.
 function setTripBody(body, html) {
     watchTripScroll();
+    if (typeof tripSectionHtml === 'function') html = tripSectionHtml() + html;
     if (body._html === html) return;
     body.innerHTML = html;
     body._html = html;
@@ -1225,6 +1226,7 @@ function toggleTripDay(date) {
 function renderTripPage() {
     const body = document.getElementById('tripPage');
     if (!body) return;
+    if (typeof tripSection !== 'undefined' && tripSection === 'passport') { setTripBody(body, passportHtml()); return; }
     let trip = findTrip(tripOpenId);
     if (!trip && tripEditing !== 'new') { trip = activeTrip(); tripOpenId = trip ? trip.id : null; }
     if (tripEditing === 'new') {

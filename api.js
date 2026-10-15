@@ -423,7 +423,9 @@ async function fetchFromSupabase() {
         }
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
         // 미션·멀리건은 더하기만 하는 값 — 낡은 폰이 덮어써 빠진 것을 앞 상태와 이 기기 기록에서 되살린다(mission.js)
-        if (typeof mergeMissionData === 'function' && mergeMissionData(prevData)) syncToSupabase(appData);
+        const predictionsRestored = typeof mergePredictionData === 'function' && mergePredictionData(prevData);
+        const missionsRestored = typeof mergeMissionData === 'function' && mergeMissionData(prevData);
+        if (predictionsRestored || missionsRestored) syncToSupabase(appData);
         isLoaded = true;
         renderNoticeArea();
         renderAll();

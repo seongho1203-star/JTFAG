@@ -1854,3 +1854,84 @@ html, body { overscroll-behavior: none; }
 .celebrate-overlay.on .g3-eagle .eg-wr { animation: g3-flap-r .42s ease-in-out 4 alternate; animation-delay: inherit; transform-origin: 162px 60px; }
 /* 미션 목록 — 실력 보정을 안 하는 미션 표시 */
 .msn-lv-item .msn-fix { font-style: normal; font-size: 0.6rem; font-weight: 700; color: #8a8f94; border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; margin-left: 3px; white-space: nowrap; }
+/* 라운드 예측 — 기존 미션·정산 스타일과 분리한다. */
+.pred-card { border-color: #d9d5e9; }
+.pred-rule { margin: 8px 0 12px; color: #73717e; font-size: .73rem; line-height: 1.6; word-break: keep-all; }
+.pred-schedule { display: flex; flex-direction: column; gap: 4px; padding: 12px; background: #f3f0f9; border-radius: 10px; font-size: .85rem; }
+.pred-schedule span { color: #706384; font-size: .74rem; line-height: 1.5; }
+.pred-form { margin-top: 14px; }
+.pred-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 14px 0 8px; color: #29232f; font-size: .82rem; font-weight: 800; }
+.pred-label small { font-size: .7rem; font-weight: 600; color: #76618c; }
+.pred-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pred-choices button, .pred-actions button, .pred-start { min-height: 40px; padding: 8px; border: 1px solid #e0dce9; border-radius: 10px; color: #5b5269; background: #fff; font: inherit; font-size: .8rem; font-weight: 750; }
+.pred-choices button.selected { background: #ede5f5; border-color: #9a7bb5; color: #613586; box-shadow: inset 0 0 0 1px #9a7bb5; }
+.pred-count { display: flex; align-items: center; gap: 10px; font-size: .85rem; }
+.pred-count input { width: 130px; min-width: 0; height: 42px; box-sizing: border-box; border: 1px solid #d9d1e1; border-radius: 10px; padding: 8px 12px; background: #fff; color: #29232f; font-size: 16px; font-weight: 800; }
+.pred-actions { display: flex; gap: 8px; margin-top: 14px; }
+.pred-actions button { flex: 1; }
+.pred-actions .primary, .pred-start { color: #fff; background: #70508e; border-color: #70508e; }
+.pred-start { width: 100%; margin-top: 12px; }
+.pred-card button:disabled { opacity: .5; }
+.pred-person { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; padding: 12px 0; border-bottom: 1px solid #efedf2; font-size: .8rem; }
+.pred-person > span { color: #8b8791; font-size: .73rem; }
+.pred-person.detail { display: block; }
+.pred-person-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.pred-person-head strong { color: #704c91; }
+.pred-result { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: .76rem; line-height: 1.5; }
+.pred-result > span { min-width: 0; overflow-wrap: anywhere; }
+.pred-result em { flex-shrink: 0; font-size: .71rem; font-style: normal; color: #94909a; }
+.pred-result em.hit { padding: 1px 6px; border-radius: 5px; color: #236c49; background: #eaf5ed; font-weight: 800; }
+.pred-answer { padding: 12px; margin-top: 12px; background: #f7f6f2; border-radius: 10px; font-size: .76rem; line-height: 1.8; word-break: keep-all; }
+.pred-ranking, .pred-past { margin-top: 12px; padding: 11px; background: #f7f7f8; border-radius: 10px; }
+.pred-ranking summary, .pred-past summary { cursor: pointer; font-size: .78rem; font-weight: 800; }
+.pred-rank { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; font-size: .77rem; }
+.pred-rank.me { color: #704c91; }
+.pred-history-toggle { width: 100%; margin-top: 12px; padding: 10px; border: 0; background: transparent; color: #746580; font-size: .77rem; font-weight: 800; }
+
+/* 여행 탭 안의 골프장 여권. 도장은 CSS로 그려 외부 이미지를 요청하지 않는다. */
+.passport-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 14px; background: #eeefec; border-radius: 12px; scroll-margin-top: 80px; }
+.passport-tabs button { flex: 1; min-width: 0; min-height: 38px; padding: 8px 4px; border: 0; border-radius: 9px; background: transparent; color: #767a76; font: inherit; font-size: .82rem; font-weight: 800; }
+.passport-tabs button.on { background: #fff; color: #184d45; box-shadow: 0 1px 4px #0000000d; }
+.passport-cover { padding: 24px; border: 1px solid #355b54; border-radius: 16px; color: #f4e5b2; background: #153e36; }
+.passport-eyebrow { margin: 0 0 14px; font-size: .63rem; font-weight: 800; letter-spacing: .14em; }
+.passport-cover h2 { margin: 0; font-size: 1.7rem; line-height: 1.4; color: #f8edcb; }
+.passport-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #ffffff2b; }
+.passport-totals div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.passport-totals b { font-size: 1.65rem; }
+.passport-totals span { color: #d0dcd3; font-size: .73rem; }
+.passport-sub { margin: 12px 2px 16px; color: #7c817b; font-size: .75rem; line-height: 1.6; word-break: keep-all; }
+.passport-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.passport-stamp { position: relative; min-width: 0; padding: 12px 8px 10px; border: 1px solid #e5e8e0; border-radius: 14px; background: #fffefa; color: #346a60; text-align: center; font: inherit; cursor: pointer; }
+.passport-seal { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 145px; gap: 7px; padding: 12px 5px; border: 2px solid currentColor; border-radius: 45% 45% 42% 42%; box-shadow: inset 0 0 0 3px #fffefa, inset 0 0 0 4px currentColor; }
+.passport-seal-label { display: block; max-width: 100%; font-size: .43rem; font-weight: 800; letter-spacing: .04em; }
+.passport-pin { font-size: 1.5rem; line-height: 1; }
+.passport-seal b { padding: 0 3px; font-size: .83rem; line-height: 1.45; overflow-wrap: anywhere; word-break: keep-all; }
+.passport-seal small { font-size: .6rem; line-height: 1.4; overflow-wrap: anywhere; }
+.passport-visits { display: flex; justify-content: space-between; padding: 10px 4px 0; font-size: .72rem; font-weight: 800; }
+.passport-stamp.tone-1 { color: #3f6292; }
+.passport-stamp.tone-2 { color: #92753d; }
+.passport-stamp.tone-3 { color: #84608b; }
+.passport-new { position: absolute; top: 7px; right: 7px; padding: 3px 5px; border-radius: 5px; background: #b84534; color: #fff; font-size: .55rem; font-weight: 900; }
+.passport-back { padding: 5px 0 15px; background: transparent; border: 0; color: #426a61; font: inherit; font-size: .8rem; font-weight: 800; }
+.passport-detail { padding: 18px 14px; border: 1px solid #e2e7df; border-radius: 16px; background: #fffefa; }
+.passport-detail .passport-eyebrow { color: #8b815e; }
+.passport-detail h2 { margin: 0; font-size: 1.3rem; color: #234c41; overflow-wrap: anywhere; }
+.passport-detail h3 { margin: 22px 0 10px; color: #5b655d; font-size: .83rem; }
+.passport-bests { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.passport-bests > div { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #e9ebe3; border-radius: 10px; background: #f8f8f2; }
+.passport-bests span { font-size: .77rem; color: #777e74; }
+.passport-bests b { color: #244d41; font-size: 1.35rem; }
+.passport-bests small { margin-left: 3px; font-size: .74rem; }
+.passport-history > div { padding: 12px 0; border-bottom: 1px solid #e9ebe3; }
+.passport-history > div > b { display: block; font-size: .8rem; }
+.passport-history > div > span { display: block; margin-top: 4px; color: #7b8278; font-size: .73rem; }
+.passport-scores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; color: #737b70; font-size: .71rem; }
+.passport-scores strong { color: #40563f; font-weight: 800; }
+.passport-plans { margin-top: 18px; padding: 14px; border: 1px dashed #c9d2c5; border-radius: 12px; background: #f7f8f3; }
+.passport-plans summary { color: #69785d; font-size: .8rem; font-weight: 800; cursor: pointer; }
+.passport-plans button { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; padding: 12px 0; border: 0; border-bottom: 1px solid #e1e5da; background: transparent; text-align: left; color: #63705a; font: inherit; font-size: .77rem; }
+.passport-plans button > span { min-width: 0; overflow-wrap: anywhere; }
+.passport-plans small { display: block; margin-top: 4px; color: #89917e; font-size: .69rem; }
+.passport-plans em { flex-shrink: 0; font-size: .68rem; font-style: normal; }
+.passport-trip-link { display: block; width: 100%; padding: 12px; margin-top: 7px; border: 1px solid #dce3d5; border-radius: 9px; background: #f2f5ed; color: #536e48; font: inherit; font-size: .8rem; text-align: left; overflow-wrap: anywhere; }
+.passport-empty { padding: 24px 16px; text-align: center; color: #7c817b; font-size: .8rem; line-height: 1.7; }

@@ -922,11 +922,10 @@ function renderMissionPage() {
     const box = document.getElementById('missionPage');
     if (!box || typeof golfers === 'undefined' || missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
-    const html = missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionRankCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
+    const html = '<div id="predictionHost"></div>' + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionRankCard(me) + missionMulliganCard(me) + missionHistoryCard(me) + missionListCard();
     // 같으면 갈아 끼우지 않는다 — 남의 저장마다 renderAll이 돈다
-    if (html === missionLastHtml) return;
-    missionLastHtml = html;
-    box.innerHTML = html;
+    if (html !== missionLastHtml) { missionLastHtml = html; box.innerHTML = html; }
+    if (typeof renderPredictionCard === 'function') renderPredictionCard();
 }
 
 function selectMissionPerson(name) {
