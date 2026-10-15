@@ -1098,6 +1098,12 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   열린 팝업은 골프장 키로 갱신해 목록 순서가 바뀌어도 같은 골프장을 표시한다. 관련 여행을 열면 팝업을 닫고 여행 일정으로 전환한다.
   출처와 원본 보존 방식은 `assets/club-marks/README.md`에 있다. JNJ는 사용자가 제공한 정남진골프리조트 마크 원본이며, 미등록 골프장은 이름·이니셜로 표시한다.
   파일은 앱에 포함하고 `sw.js`가 `jtfag-club-marks-v1`에 캐시한다. 외부 골프장 홈페이지에 매번 이미지 요청을 보내지 않는다.
+  신규 마크는 `.github/workflows/club-marks.yml` → `scripts/update-club-marks.js`가 자동으로 확인한다. 스코어카드 처리 완료 후와 매일 예약 실행하며, 리그·여행은 조회만 한다.
+  기존 `ANTHROPIC_API_KEY`로 공식 사이트 검색(최대 2회)·HTML 로고 후보·이미지 확인을 거친다. 한 번에 2곳, 실패 시 1일/3회 이후 7일 뒤 재확인하며 불명확하면 이름을 유지한다.
+  래스터는 원본, 외부 참조 없는 SVG는 고정 버전 resvg로 PNG 렌더링한다. 파일명은 내용 SHA-256이며 `assets/club-marks/auto.json`에 연결한다. 기존 6개 수동 마크가 우선이다.
+  앱은 자동 목록을 읽어 도장을 갱신하며 여권이 열려 있으면 1분 간격으로 확인한다. SW는 목록을 갱신하고 새 마크만 캐시하며 오프라인에서는 저장본을 쓴다.
+  자동 커밋은 `GITHUB_TOKEN`이므로 마크가 바뀔 때 Pages 빌드를 명시적으로 요청한다(`pages:write`). 재확인 상태만 바뀌면 배포하지 않는다.
+  자동 수집 검증: `node tests/auto-club-marks.js`(resvg 준비 필요) · 실제 AI·리그 쓰기·알림을 사용하지 않는 가상 응답 검증이다.
   캐시 확인: `node tests/club-marks.js`(마크 파일·캐시 목록 일치, 재다운로드 없음, 오프라인·부분 실패·기존 등급 캐시 보존).
   처음 방문하는 기기는 기존 도장을 조용히 기억하고,
   이후 새로운 골프장만 `NEW`와 짧은 토스트로 알린다(`jtfag_passport_seen_v1`). 상세를 확인하면 `NEW`를 지운다(`jtfag_passport_new_v1`에 읽기 전까지 보관).

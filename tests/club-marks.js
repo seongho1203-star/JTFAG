@@ -9,6 +9,7 @@ const source = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 function worker(cache = new Map()) {
     const handlers = {}, calls = [];
     let offline = false, failed = '', skipped = 0;
+    let catalog={version:1,marks:{}};
     const ctx = { URL, Response, Map, Promise,
         caches: {
             async open(name) {
@@ -22,6 +23,7 @@ function worker(cache = new Map()) {
             calls.push(url);
             if (offline) throw new Error('offline');
             await new Promise(setImmediate);
+            if (url.endsWith('/auto.json')) return new Response(JSON.stringify(catalog), {status:url===failed?404:200,headers:{'content-type':'application/json'}});
             return new Response('mark:' + url, {status: url === failed ? 404 : 200, headers:{'content-type':url.endsWith('.svg') ? 'image/svg+xml' : 'image/png'}});
         },
         self: {
@@ -39,7 +41,7 @@ function worker(cache = new Map()) {
         await Promise.all(waits);
         return response && await response;
     }
-    return {run, fire, calls, cache, offline: () => {offline=true;}, fail: url => {failed=url;}, skipped: () => skipped};
+    return {run, fire, calls, cache, offline: () => {offline=true;}, fail: url => {failed=url;}, skipped: () => skipped, catalog:value=>{catalog=value;}};
 }
 async function main() {
     const app = make();
@@ -73,29 +75,54 @@ async function main() {
     assert.deepEqual(urls.map(u=>u.split('/').pop()).sort(),Array.from(marks).sort(), '화면·서비스워커 파일 목록 일치');
     await w.fire('install');
     assert.equal(w.skipped(),1);
-    assert.equal(w.calls.length, urls.length + 5);
+    assert.equal(w.calls.length, urls.length + 6);
     const count = w.calls.length;
     await w.fire('message',{data:{type:'CACHE_RANK_ICONS'}});
-    assert.equal(w.calls.length,count,'재접속 시 이미지 재다운로드 없음');
+    assert.equal(w.calls.length,count+1,'재접속 시 자동 목록만 확인하고 이미지 재다운로드 없음');
     for (const url of urls) {
         const response = await w.fire('fetch',{request:{method:'GET',url,mode:'no-cors'}});
         assert.equal(await response.text(),'mark:'+url);
     }
-    assert.equal(w.calls.length,count,'도장 표시 시 캐시만 사용');
+    assert.equal(w.calls.length,count+1,'도장 표시 시 캐시만 사용');
     w.offline();
     assert.ok((await w.fire('fetch',{request:{method:'GET',url:urls[0],mode:'no-cors'}})).ok);
-    assert.equal(w.calls.length,count);
+    assert.equal(w.calls.length,count+1);
     assert.equal(await w.fire('fetch',{request:{method:'GET',url:'https://other.example/logo.png',mode:'no-cors'}}),undefined);
     const failed = worker();failed.fail(urls[0]);await failed.fire('install');
     assert.equal(failed.skipped(),1,'한 이미지 오류가 SW 설치를 막지 않음');
     const before = failed.calls.length;
     failed.fail('');await failed.fire('message',{data:{type:'CACHE_RANK_ICONS'}});
-    assert.equal(failed.calls.length,before+1,'빠진 이미지 한 장만 다시 다운로드');
+    assert.equal(failed.calls.length,before+2,'목록 확인 후 빠진 이미지 한 장만 다시 다운로드');
     w.cache.set('jtfag-club-marks-old',new Map());w.cache.set('jtfag-rank-icons-old',new Map());w.cache.set('other-app-cache',new Map());
     await w.fire('activate');
     assert.ok(!w.cache.has('jtfag-club-marks-old'));assert.ok(!w.cache.has('jtfag-rank-icons-old'));
     assert.ok(w.cache.has('other-app-cache'));assert.ok(w.cache.has('jtfag-rank-icons-v1'));assert.ok(w.cache.has('jtfag-club-marks-v1'));
+    const auto=worker(); await auto.fire('install');
+    const file='auto-'+'a'.repeat(64)+'.png', url=auto.run('CLUB_MARK_BASE')+file;
+    auto.catalog({version:1,marks:{'신규골프장':{file},bad:{file:'../../other.js'}}});
+    const initial=auto.calls.length;
+    await auto.fire('message',{data:{type:'CACHE_RANK_ICONS'}});
+    assert.equal(auto.calls.length,initial+2,'새 자동 마크만 추가 저장');
+    await auto.fire('message',{data:{type:'CACHE_RANK_ICONS'}});
+    assert.equal(auto.calls.filter(x=>x===url).length,1,'저장된 자동 마크 재다운로드 없음');
+    auto.offline();
+    assert.equal(await (await auto.fire('fetch',{request:{method:'GET',url,mode:'no-cors'}})).text(),'mark:'+url);
+    const index=await auto.fire('fetch',{request:{method:'GET',url:auto.run('CLUB_MARK_INDEX')+'?ver=1',mode:'cors'}});
+    assert.equal((await index.json()).marks['신규골프장'].file,file,'오프라인에서도 자동 목록 복원');
+    const client=make();let loads=0,refreshes=0;
+    client.ctx.fetch=async()=>{loads++;return {ok:true,json:async()=>({version:1,marks:{'신규골프장':{file,ink:'#246842',background:'#ffffff'},'악성골프장':{file:'https://evil.example/logo.png',ink:'#ffffff',background:'#ffffff'},jnj:{file,ink:'#246842',background:'#ffffff'}}})};};
+    client.ctx.refreshTripPage=()=>{refreshes++;};client.run("tripSection='passport'");
+    await Promise.all([client.run('loadPassportMarks()'),client.run('loadPassportMarks()')]);
+    assert.equal(loads,1);assert.equal(refreshes,1);
+    client.ctx.group={key:'신규골프장',name:'신규골프장CC',visits:[{round:1}]};
+    assert.ok(client.run('passportStampHtml(group,0)').includes(file));
+    assert.equal(client.run("passportMark('악성골프장')"),undefined);
+    assert.equal(client.run("passportMark('jnj').file"),'jnj.jpeg','사용자 제공 기존 마크를 자동 결과로 교체하지 않음');
+    client.ctx.fetch=async()=>{throw new Error('offline');};client.setNow('2026-10-26T06:02:00+09:00');
+    await client.run('loadPassportMarks()');
+    assert.equal(client.run("passportMark('신규골프장').file"),file,'조회 실패 시 이미 받은 목록 유지');
     console.log('PASS: 골프장별 실제 마크 파일·도장 연결·안전한 SVG·캐시 파일 목록 일치');
     console.log('PASS: 최초 저장·재다운로드 없음·오프라인 표시·부분 실패 재시도·등급 이미지와 기존 캐시 보존');
+    console.log('PASS: 신규 자동 마크·목록 갱신·중복 조회 방지·오프라인 복원·외부 경로 거부·기존 마크 우선');
 }
 main().catch(err => { console.error(err);process.exitCode=1; });

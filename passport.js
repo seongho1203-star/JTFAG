@@ -14,6 +14,35 @@ const PASSPORT_MARKS = Object.freeze({
     '무등산': { file: 'mudeungsan.png', ink: '#a88a80', background: '#ffffff' },
     'jnj': { file: 'jnj.jpeg', ink: '#087fab', background: '#ffffff' }
 });
+let passportAutoMarks = Object.create(null);
+let passportMarksPending = false, passportMarksNextCheck = 0, passportMarksTimer = null;
+function passportMark(key) { return PASSPORT_MARKS[key] || passportAutoMarks[key]; }
+async function loadPassportMarks() {
+    if (typeof fetch !== 'function' || passportMarksPending || Date.now() < passportMarksNextCheck) return;
+    passportMarksPending = true;
+    passportMarksNextCheck = Date.now() + 60000;
+    try {
+        const response = await fetch('assets/club-marks/auto.json', {cache:'no-store'});
+        if (!response.ok) throw new Error('마크 목록 조회 실패');
+        const data = await response.json(), marks = Object.create(null);
+        if (data.version !== 1 || !data.marks || typeof data.marks !== 'object' || Array.isArray(data.marks)) throw new Error('마크 목록 형식 오류');
+        for (const [key, mark] of Object.entries(data.marks)) {
+            if (key.length > 100 || ['__proto__','constructor','prototype'].includes(key) || !mark
+                || !/^auto-[a-f0-9]{64}\.(png|jpg|webp)$/.test(mark.file) || !/^#[a-f0-9]{6}$/i.test(mark.ink) || !/^#[a-f0-9]{6}$/i.test(mark.background)) continue;
+            marks[key] = {file:mark.file, ink:mark.ink, background:mark.background};
+        }
+        const changed = JSON.stringify(marks) !== JSON.stringify(passportAutoMarks);
+        passportAutoMarks = marks;
+        if (changed && tripSection === 'passport' && typeof refreshTripPage === 'function') refreshTripPage();
+    } catch (err) {}  // 마크 확인 중에도 도장·방문 기록은 그대로 사용할 수 있다.
+    finally {
+        passportMarksPending = false;
+        clearTimeout(passportMarksTimer);
+        if (tripSection === 'passport') passportMarksTimer = setTimeout(() => {
+            if (tripSection === 'passport' && document.visibilityState !== 'hidden') loadPassportMarks();
+        }, 60000);
+    }
+}
 const passportNewKeys = new Set((() => {
     try { const saved = JSON.parse(localStorage.getItem(PASSPORT_NEW_KEY) || '[]'); return Array.isArray(saved) ? saved.filter(k => typeof k === 'string') : []; }
     catch (err) { return []; }
@@ -131,7 +160,7 @@ function openPassportTrip(index) {
     switchTrip(trip.id);
 }
 function passportMarkHtml(group) {
-    const mark = PASSPORT_MARKS[group.key];
+    const mark = passportMark(group.key);
     const text = group.name.replace(/\s+/g, '');
     const initials = escapeHtml((text.match(/^[a-z0-9]{1,4}/i) || [Array.from(text).slice(0, 2).join('')])[0]);
     return `<span class="passport-mark${mark && mark.symbol ? ' passport-mark-symbol' : ''}"${mark ? ` style="background:${mark.background}"` : ''}>
@@ -141,7 +170,7 @@ function passportMarkHtml(group) {
 }
 function passportStampHtml(group, index) {
     const first = group.visits[0];
-    const mark = PASSPORT_MARKS[group.key];
+    const mark = passportMark(group.key);
     return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}
         <span class="passport-seal"><span class="passport-seal-label">JTFAG</span>${passportMarkHtml(group)}</span>
@@ -172,6 +201,7 @@ function passportDetailHtml(group) {
         ${related.length ? `<h3>관련 여행</h3>${related.map(x => `<button type="button" class="passport-trip-link" onclick="openPassportTrip(${x.index})">${escapeHtml(x.trip.title || '여행')} ›</button>`).join('')}` : ''}</div>`;
 }
 function passportHtml() {
+    loadPassportMarks();
     const data = passportData();
     passportGroupsShown = data.groups;
     passportTripsShown = allTrips();

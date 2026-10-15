@@ -1,0 +1,50 @@
+name: 골프장 마크 자동 등록
+
+on:
+  # 판독과 별도로 실행해 마크 확인 실패가 스코어 저장·알림에 영향을 주지 않는다.
+  workflow_run:
+    workflows: ['스코어카드 판독']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '23 1 * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/update-club-marks.js', '.github/workflows/club-marks.yml']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '확인만 하고 파일·배포 변경하지 않기'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: club-marks
+  cancel-in-progress: false
+
+jobs:
+  marks:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: SVG 마크 렌더러 준비
+        run: npm install --no-save --ignore-scripts @resvg/resvg-js@2.6.2
+      - name: 신규 골프장 공식 마크 확인
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: node scripts/update-club-marks.js

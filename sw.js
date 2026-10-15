@@ -9,7 +9,38 @@ const CLUB_MARK_CACHE_PREFIX = 'jtfag-club-marks-';
 const CLUB_MARK_CACHE = CLUB_MARK_CACHE_PREFIX + 'v1';
 const CLUB_MARK_BASE = new URL('assets/club-marks/v1/', self.registration.scope).href;
 const CLUB_MARK_URLS = ['hampyeong-eliche.png', 'eodeungsan.svg', 'happiness.png', 'gwangju.png', 'mudeungsan.png', 'jnj.jpeg'].map(file => CLUB_MARK_BASE + file);
+const CLUB_MARK_INDEX = new URL('assets/club-marks/auto.json', self.registration.scope).href;
+const AUTO_MARK_FILE = /^auto-[a-f0-9]{64}\.(png|jpg|webp)$/;
 const clubMarkRequests = new Map();
+let clubMarkIndexRequest = null;
+
+async function clubMarkIndex() {
+    if (!clubMarkIndexRequest) {
+        clubMarkIndexRequest = (async () => {
+            let cache;
+            try { cache = await caches.open(CLUB_MARK_CACHE); } catch (e) {}
+            try {
+                const response = await fetch(CLUB_MARK_INDEX, {cache:'no-store',credentials:'same-origin'});
+                if (!response.ok) throw new Error('마크 목록 조회 실패');
+                const data = await response.clone().json();
+                if (data.version !== 1 || !data.marks || typeof data.marks !== 'object' || Array.isArray(data.marks)) throw new Error('마크 목록 형식 오류');
+                if (cache) { try { await cache.put(CLUB_MARK_INDEX,response.clone()); } catch (e) {} }
+                return response;
+            } catch (err) {
+                const saved = cache && await cache.match(CLUB_MARK_INDEX);
+                if (saved) return saved;
+                throw err;
+            }
+        })();
+        clubMarkIndexRequest.then(() => { clubMarkIndexRequest = null; }, () => { clubMarkIndexRequest = null; });
+    }
+    return (await clubMarkIndexRequest).clone();
+}
+async function cacheAutoClubMarks() {
+    const data = await (await clubMarkIndex()).json();
+    const files = Object.values(data.marks).filter(mark => mark && AUTO_MARK_FILE.test(mark.file)).map(mark => CLUB_MARK_BASE + mark.file);
+    return Promise.allSettled(files.map(cachedClubMark));
+}
 
 async function cachedClubMark(url) {
     let cache;
@@ -32,7 +63,7 @@ async function cachedClubMark(url) {
     }
     return (await pending).clone();
 }
-const cacheClubMarks = () => Promise.allSettled(CLUB_MARK_URLS.map(cachedClubMark));
+const cacheClubMarks = () => Promise.allSettled([...CLUB_MARK_URLS.map(cachedClubMark), cacheAutoClubMarks()]);
 
 async function cachedRankIcon(url) {
     let cache;
@@ -80,8 +111,11 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', (event) => {
     if (event.request.method === 'GET' && RANK_ICON_URLS.includes(event.request.url)) {
         event.respondWith(cachedRankIcon(event.request.url));
-    } else if (event.request.method === 'GET' && CLUB_MARK_URLS.includes(event.request.url)) {
+    } else if (event.request.method === 'GET' && (CLUB_MARK_URLS.includes(event.request.url)
+        || event.request.url.startsWith(CLUB_MARK_BASE) && AUTO_MARK_FILE.test(event.request.url.slice(CLUB_MARK_BASE.length)))) {
         event.respondWith(cachedClubMark(event.request.url));
+    } else if (event.request.method === 'GET' && event.request.url.split('?')[0] === CLUB_MARK_INDEX) {
+        event.respondWith(clubMarkIndex());
     } else if (event.request.mode === 'navigate') event.respondWith(fetch(event.request));
 });
 
