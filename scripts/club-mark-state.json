@@ -14,5 +14,25 @@
     "reason": "unverified",
     "checkedAt": 1792076341882,
     "nextTry": 1792162741882
+  },
+  "디오션": {
+    "name": "디오션CC",
+    "attempts": 1,
+    "stage": "no_candidates",
+    "reason": "unverified",
+    "site_url": "https://theoceanresort.co.kr",
+    "candidates": [],
+    "decision": null,
+    "checkedAt": 1792076697474,
+    "nextTry": 1792163097474
+  },
+  "여수경도골프앤리조트": {
+    "name": "여수경도골프앤리조트CC",
+    "attempts": 1,
+    "stage": "download",
+    "reason": "unverified",
+    "site_url": "https://www.yeosucc.co.kr/",
+    "checkedAt": 1792076697474,
+    "nextTry": 1792163097474
   }
 }
