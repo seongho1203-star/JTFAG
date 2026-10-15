@@ -52,10 +52,10 @@ const mBirdie = h => mCount(h, v => v < 0);
 const SPECIAL_MISSION_DEFS = [
     { id: 'holeInOne', text: '홀인원', pts: 20, how: '한 홀을 1타로 마무리',
       count: h => mCount(h, (v, i) => h.par[i] + v === 1) },
-    { id: 'eagle', text: '이글', pts: 10, how: '한 홀에서 파보다 2타 적게 · 홀인원 제외',
-      count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) },
     { id: 'albatross', text: '알바트로스', pts: 20, how: '한 홀에서 파보다 3타 적게 · 홀인원 제외',
-      count: h => mCount(h, (v, i) => v === -3 && h.par[i] + v > 1) }
+      count: h => mCount(h, (v, i) => v === -3 && h.par[i] + v > 1) },
+    { id: 'eagle', text: '이글', pts: 10, how: '한 홀에서 파보다 2타 적게 · 홀인원 제외',
+      count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) }
 ];
 
 // 미션 목록(사용자가 정했다 — 처음 아홉에 열하나를 더했다). `w`는 뽑힐 무게 — 전반·후반 42타는 한 가지를 둘로 나눈 것이라 반씩.
