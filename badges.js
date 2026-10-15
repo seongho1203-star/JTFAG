@@ -423,7 +423,7 @@ function renderBadgePage() {
         <div class="bdg-people">${chips}</div>
         <div class="bdg-card bdg-me">
             <div class="bdg-me-row">
-                <span class="bdg-avatar">${img ? `<img src="${img}" alt="">` : badgeIcon('eagle', 26, '#2b5394')}</span>
+                <span class="bdg-avatar${rankIdx >= 0 ? ' ' + RANK_CONFIG[rankIdx].class : ''}">${img ? `<img src="${img}" alt="">` : badgeIcon('eagle', 26, '#2b5394')}</span>
                 <div class="bdg-me-name"><div class="nm">${escapeHtml(g)}</div><div class="sub">${rankLine}</div></div>
                 <div class="bdg-me-count"><div class="big">${got}<span> / ${total}</span></div><div class="sub">수집 ${pct}%</div></div>
             </div>

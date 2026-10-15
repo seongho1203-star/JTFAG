@@ -1346,6 +1346,10 @@ html, body { overscroll-behavior: none; }
 .bdg-me { padding: 16px; }
 .bdg-me-row { display: flex; align-items: center; gap: 12px; }
 .bdg-avatar { width: 52px; height: 52px; flex: 0 0 auto; border-radius: 26px; border: 2px solid #5b8fd6; background: #eef4fb; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.bdg-avatar.rank-eagle { border: 2px solid #d9b65a; background: #fbf4e0; }
+.bdg-avatar.rank-hawk { border: 2px solid #5b94d6; background: #e6f0fa; }
+.bdg-avatar.rank-crane { border: 2px solid #a57fe0; background: #f1eafb; }
+.bdg-avatar.rank-sparrow { border: 2px solid #a3a8af; background: #eff0f2; }
 .bdg-avatar img { width: 40px; height: 40px; object-fit: contain; }
 .bdg-me-name { flex: 1 1 auto; min-width: 0; }
 .bdg-me-name .nm { font-size: 1.12rem; font-weight: 900; letter-spacing: -0.4px; }
