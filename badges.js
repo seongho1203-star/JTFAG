@@ -11,7 +11,8 @@
 //
 // **전부 기록에서 계산한다 — payload에 새로 저장하는 값이 없다.** 홀 기록(ROUND_STATS) · 타수(appData.scores) ·
 // 계급 이력(golferRankHistory + rankedRoundsList)만 본다. 차수를 지웠다 되살려도 저절로 맞는다.
-// 이 기기에서 이미 본 뱃지(획득 연출용)만 localStorage(`jtfag_badges_seen_{이름}`)에 둔다.
+// 이 기기에서 본 획득 연출은 localStorage(`jtfag_badges_seen_{이름}`),
+// 상세에서 확인한 뱃지는 `jtfag_badges_read_{이름}`에 따로 둔다.
 
 const BADGE_TIERS = {
     // c: 흰 바탕 위 색 · f: 옅은 칠 · d: 어두운 획득 연출 위 색(흰 바탕 색은 어두운 바탕에서 안 읽힌다)
@@ -304,6 +305,32 @@ function badgeIcon(name, size, color, width) {
 let badgeViewName = null;     // 지금 보는 사람. 처음엔 이 기기 주인
 let badgeLastHtml = '';
 
+// NEW 확인 기록은 획득 연출과 구분한다. 단계가 오르면 새 단계는 다시 NEW가 된다.
+const badgeReadMemory = new Map();
+function badgeReadTokens(name) {
+    if (!badgeReadMemory.has(name)) {
+        let saved;
+        try { saved = JSON.parse(localStorage.getItem('jtfag_badges_read_' + name) || '[]'); } catch (e) { saved = []; }
+        badgeReadMemory.set(name, new Set(Array.isArray(saved) ? saved.filter(k => typeof k === 'string') : []));
+    }
+    return badgeReadMemory.get(name);
+}
+
+function badgeReadToken(s) {
+    return s.def.kind === 'tier' ? `t:${s.def.id}:${s.level}` : `l:${s.def.id}`;
+}
+
+function markBadgeRead(name, s) {
+    if (!golfers.includes(name) || !s.earned || s.def.kind === 'title') return false;
+    const read = badgeReadTokens(name);
+    const count = read.size;
+    // 상세 창에는 지금까지 획득한 모든 단계가 보인다.
+    badgeKeysOf([{ items: [s] }]).forEach(k => read.add(k.key));
+    if (count === read.size) return false;
+    try { localStorage.setItem('jtfag_badges_read_' + name, JSON.stringify([...read])); } catch (e) {}
+    return true;
+}
+
 function badgeLatestRound() {
     for (let r = badgeRounds() - 1; r >= 0; r--) if (golfers.some(g => badgeGross(g, r) !== null)) return r;
     return -1;
@@ -322,11 +349,11 @@ function badgeSubText(s) {
     return `${s.holders[0]}${s.holders.length > 1 ? ' 외' : ''} 보유`;
 }
 
-function badgeTileHtml(s, latest) {
+function badgeTileHtml(s, latest, name = badgeViewName) {
     const d = s.def;
     const t = badgeTierOf(s);
     const locked = !s.earned;
-    const isNew = !locked && d.kind !== 'title' && s.round === latest && latest >= 0;
+    const isNew = !locked && d.kind !== 'title' && s.round === latest && latest >= 0 && !badgeReadTokens(name).has(badgeReadToken(s));
     const prog = d.kind === 'tier' && (locked || s.next);
     const target = d.kind === 'tier' ? (locked ? d.steps[0] : s.next) : 0;
     const pct = prog ? Math.min(100, Math.round(s.value / target * 100)) : 0;
@@ -415,7 +442,7 @@ function renderBadgePage() {
         return `<div class="bdg-card bdg-sec${sec.group.id === 'tease' ? ' tease' : ''}">
             <div class="bdg-sec-head"><div><div class="bdg-sec-title">${sec.group.title}</div><div class="bdg-sec-sub">${sec.group.sub}</div></div>
             <div class="bdg-sec-count">${c} / ${sec.items.length}</div></div>
-            <div class="bdg-grid">${sec.items.map(s => badgeTileHtml(s, latest)).join('')}</div>
+            <div class="bdg-grid">${sec.items.map(s => badgeTileHtml(s, latest, g)).join('')}</div>
         </div>`;
     }).join('');
 
@@ -514,6 +541,7 @@ function openBadgeDetail(id) {
     o.addEventListener('click', e => { if (e.target === o) closeBadgeDetail(); });
     document.body.appendChild(o);
     requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
+    if (markBadgeRead(g, s)) renderBadgePage();
 }
 
 // ── 획득 연출 ─────────────────────────────────────────────
