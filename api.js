@@ -145,7 +145,14 @@ function pushSupported() {
 
 async function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return null;
-    try { return await navigator.serviceWorker.register('sw.js'); }
+    try {
+        const reg = await navigator.serviceWorker.register('sw.js');
+        // 설치 때 연결이 끊겼다면 빠진 등급 이미지만 채운다. 저장된 그림은 다시 다운로드하지 않는다.
+        navigator.serviceWorker.ready.then(ready => {
+            if (ready.active) ready.active.postMessage({ type: 'CACHE_RANK_ICONS' });
+        }).catch(() => {});
+        return reg;
+    }
     catch (err) { console.error("서비스워커 등록 실패:", err); return null; }
 }
 

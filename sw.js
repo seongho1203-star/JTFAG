@@ -1,13 +1,57 @@
-// 라운드 알림 수신용 서비스워커.
-// 앱이 닫혀 있어도 브라우저가 이 파일을 깨워 알림을 띄운다.
+// 라운드 알림 수신 + 등급 이미지 전용 캐시.
+// HTML·CSS·JS·정산 데이터는 캐시하지 않아 배포와 실시간 데이터가 바로 반영된다.
+const RANK_ICON_CACHE_PREFIX = 'jtfag-rank-icons-';
+const RANK_ICON_CACHE = RANK_ICON_CACHE_PREFIX + 'v1';  // 같은 주소의 그림을 교체하면 버전을 올린다.
+const RANK_ICON_BASE = 'https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/';
+const RANK_ICON_URLS = ['IMG_8343.png', 'IMG_8331.png', 'IMG_8333.png', 'IMG_8335.png', 'IMG_8606.gif'].map(file => RANK_ICON_BASE + file);
+const rankIconRequests = new Map();
 
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+async function cachedRankIcon(url) {
+    let cache;
+    try {
+        cache = await caches.open(RANK_ICON_CACHE);
+        const saved = await cache.match(url);
+        if (saved) return saved;
+    } catch (e) {}  // 저장 공간을 사용할 수 없는 기기도 그림은 표시한다.
 
-// 크롬이 '설치 가능'으로 판정하려면 fetch 핸들러가 있어야 한다.
-// 일부러 캐시를 두지 않는다 — 캐시하면 코드를 고쳐도 예전 화면이 남는다.
+    let pending = rankIconRequests.get(url);
+    if (!pending) {
+        pending = (async () => {
+            const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (cache && response.ok && (response.headers.get('content-type') || '').startsWith('image/')) {
+                try { await cache.put(url, response.clone()); } catch (e) {}
+            }
+            return response;
+        })();
+        rankIconRequests.set(url, pending);
+        pending.then(() => rankIconRequests.delete(url), () => rankIconRequests.delete(url));
+    }
+    return (await pending).clone();
+}
+
+// 한 장이 실패해도 나머지 그림·서비스워커 설치는 완료한다. 다음 실행 때 빠진 그림만 다시 저장한다.
+const cacheRankIcons = () => Promise.allSettled(RANK_ICON_URLS.map(cachedRankIcon));
+self.addEventListener('install', event => {
+    event.waitUntil(cacheRankIcons().then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', event => {
+    event.waitUntil((async () => {
+        try {
+            const keys = await caches.keys();
+            await Promise.all(keys.filter(key => key.startsWith(RANK_ICON_CACHE_PREFIX) && key !== RANK_ICON_CACHE).map(key => caches.delete(key)));
+        } catch (e) {}
+        await self.clients.claim();
+    })());
+});
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'CACHE_RANK_ICONS') event.waitUntil(cacheRankIcons());
+});
+
+// 등급 이미지는 저장본을 먼저 쓰며, 캐시가 있으면 네트워크 요청·재검증을 하지 않는다.
 self.addEventListener('fetch', (event) => {
-    if (event.request.mode === 'navigate') event.respondWith(fetch(event.request));
+    if (event.request.method === 'GET' && RANK_ICON_URLS.includes(event.request.url)) {
+        event.respondWith(cachedRankIcon(event.request.url));
+    } else if (event.request.mode === 'navigate') event.respondWith(fetch(event.request));
 });
 
 self.addEventListener('push', (event) => {
