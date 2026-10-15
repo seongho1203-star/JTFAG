@@ -52,10 +52,6 @@ const mBirdie = h => mCount(h, v => v < 0);
 const SPECIAL_MISSION_DEFS = [
     { id: 'holeInOne', text: '홀인원', pts: 20, how: '한 홀을 1타로 마무리',
       count: h => mCount(h, (v, i) => h.par[i] + v === 1) },
-    { id: 'cyclingBirdie', text: '싸이클링 버디', pts: 10, how: '한 라운드 파3·4·5에서 각각 버디 이하',
-      count: h => [3, 4, 5].every(p => h.rel.some((v, i) => h.par[i] === p && v < 0)) ? 1 : 0 },
-    { id: 'audiPar', text: '아우디 파', pts: 3, how: '4홀 연속 파 · 연속 구간당 1회',
-      count: h => { let run = 0, n = 0; h.rel.forEach(v => { run = v === 0 ? run + 1 : 0; if (run === 4) n++; }); return n; } },
     { id: 'eagle', text: '이글', pts: 10, how: '한 홀에서 파보다 2타 적게 · 홀인원 제외',
       count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) },
     { id: 'albatross', text: '알바트로스', pts: 20, how: '한 홀에서 파보다 3타 적게 · 홀인원 제외',
@@ -762,7 +758,7 @@ function specialMissionCard(me) {
         }).join('')}
         ${golfers.includes(me) ? `<div class="msn-special-total">${escapeHtml(me)} · ${year} 시즌 특별미션 ${specialMissionPoints(me, year)}점</div>` : ''}
         ${recent.map(x => `<div class="msn-special-log"><span>${x.round}차 · ${escapeHtml(x.text)}${x.count > 1 ? ` ${x.count}회` : ''}</span><b>+${x.pts}점</b></div>`).join('')}
-        <div class="msn-foot">미션 수령 없이 모든 멤버에게 적용되며, 기존 홀 기록도 포함합니다. 달성 횟수만큼 미션 포인트에 합산됩니다. 싸이클링 버디는 라운드당 1회, 아우디 파는 연속 구간당 1회 지급합니다. 동일 홀의 홀인원·이글·알바트로스는 중복 지급하지 않습니다.</div>
+        <div class="msn-foot">미션 수령 없이 모든 멤버에게 적용되며, 기존 홀 기록도 포함합니다. 달성 횟수만큼 미션 포인트에 합산됩니다. 동일 홀의 홀인원·이글·알바트로스는 중복 지급하지 않습니다.</div>
     </div>`;
 }
 
