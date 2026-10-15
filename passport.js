@@ -1,6 +1,6 @@
 // 골프장 여권 — 완료된 홀 기록에서 계산한다. 방문 횟수·최고 타수를 따로 저장하지 않는다.
 let tripSection = 'schedule';
-let passportSelected = '';
+let passportPopup = null;
 let passportGroupsShown = [];
 let passportTripsShown = [];
 const PASSPORT_SEEN_KEY = 'jtfag_passport_seen_v1';
@@ -22,11 +22,6 @@ let passportToastTimer = null;
 function rememberPassportNew() {
     try { localStorage.setItem(PASSPORT_NEW_KEY, JSON.stringify([...passportNewKeys])); } catch (err) {}
 }
-function passportScrollTop() {
-    const nav = document.getElementById('tripSectionNav');
-    if (nav && typeof nav.scrollIntoView === 'function') nav.scrollIntoView({ block: 'start' });
-}
-
 function tripSectionHtml() {
     return `<div id="tripSectionNav" class="passport-tabs" role="group" aria-label="여행 화면 선택">
         <button type="button" class="${tripSection === 'schedule' ? 'on' : ''}" aria-pressed="${tripSection === 'schedule'}" onclick="switchTripSection('schedule')">여행 일정</button>
@@ -36,6 +31,7 @@ function tripSectionHtml() {
 function switchTripSection(section) {
     if (!['schedule', 'passport'].includes(section)) return;
     if (tripEditing) { showToast('⚠️ 편집을 저장하거나 취소한 후 전환해 주세요.'); return; }
+    closePassportDetail(false);
     tripSection = section;
     renderTripPage();
 }
@@ -79,16 +75,58 @@ function passportData() {
 function openPassport(index) {
     const group = passportGroupsShown[index];
     if (!group) return;
-    passportSelected = group.key;
+    if (passportPopup && passportPopup.key === group.key) { refreshPassportDetail(); return; }
+    closePassportDetail(false);
     passportNewKeys.delete(group.key);
     rememberPassportNew();
     renderTripPage();
-    passportScrollTop();
+    const element = document.createElement('div');
+    element.className = 'passport-overlay';
+    element.innerHTML = `<section class="bdg-sheet passport-sheet" role="dialog" aria-modal="true" aria-labelledby="passportDetailTitle">
+        <div class="passport-popup-head"><div><p>골프장 여권</p><h2 id="passportDetailTitle" class="passport-popup-title"></h2></div><button type="button" class="passport-popup-close" aria-label="닫기" onclick="closePassportDetail()">×</button></div>
+        <div class="passport-popup-body"></div>
+        <div class="passport-popup-footer"><button type="button" class="bdg-close" onclick="closePassportDetail()">닫기</button></div>
+    </section>`;
+    passportPopup = { element, key: group.key, title: element.querySelector('.passport-popup-title'), body: element.querySelector('.passport-popup-body'), html: '' };
+    element.addEventListener('click', e => { if (e.target === element && passportPopup && passportPopup.element === element) closePassportDetail(); });
+    element.addEventListener('keydown', e => {
+        if (!passportPopup || passportPopup.element !== element) return;
+        if (e.key === 'Escape') { e.preventDefault(); closePassportDetail(); }
+        if (e.key === 'Tab') {
+            const buttons = [...element.querySelectorAll('button:not(:disabled)')];
+            const edge = e.shiftKey ? buttons[0] : buttons[buttons.length - 1];
+            if (document.activeElement === edge) { e.preventDefault(); buttons[e.shiftKey ? buttons.length - 1 : 0].focus(); }
+        }
+    });
+    document.body.appendChild(element);
+    refreshPassportDetail();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (passportPopup && passportPopup.element === element) element.classList.add('show');
+    }));
+    element.querySelector('.passport-popup-close').focus({ preventScroll: true });
 }
-function closePassportDetail() { passportSelected = ''; renderTripPage(); passportScrollTop(); }
+function closePassportDetail(restoreFocus = true) {
+    if (!passportPopup) return;
+    const { element, key } = passportPopup;
+    passportPopup = null;
+    element.classList.remove('show');
+    setTimeout(() => element.remove(), 260);
+    const stamp = restoreFocus && document.getElementById('passportStamp-' + key);
+    if (stamp) stamp.focus({ preventScroll: true });
+}
+function refreshPassportDetail(groups = passportData().groups) {
+    const popup = passportPopup;
+    if (!popup) return;
+    const group = groups.find(g => g.key === popup.key);
+    if (!group) { closePassportDetail(false); return; }
+    popup.title.textContent = group.name;
+    const html = passportDetailHtml(group);
+    if (popup.html !== html) { popup.html = html; popup.body.innerHTML = html; }
+}
 function openPassportTrip(index) {
     const trip = passportTripsShown[index];
     if (!trip || !findTrip(trip.id)) return;
+    closePassportDetail(false);
     tripSection = 'schedule';
     switchTrip(trip.id);
 }
@@ -104,7 +142,7 @@ function passportMarkHtml(group) {
 function passportStampHtml(group, index) {
     const first = group.visits[0];
     const mark = PASSPORT_MARKS[group.key];
-    return `<button type="button" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-label="${escapeHtml(group.name)} 방문 기록">
+    return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}
         <span class="passport-seal"><span class="passport-seal-label">JTFAG</span>${passportMarkHtml(group)}</span>
         <b class="passport-name">${escapeHtml(group.name)}</b><small class="passport-first">첫 방문 ${first.date || first.round + '차'}</small>
@@ -128,8 +166,7 @@ function passportDetailHtml(group) {
     passportTripsShown.forEach((trip, index) => {
         if (tripDays(trip).some(day => group.visits.some(v => v.date && v.date === day.date && passportClubKey(day.course) === group.key))) related.push({ trip, index });
     });
-    return `<button type="button" class="passport-back" onclick="closePassportDetail()">‹ 도장 모음</button>
-        <div class="passport-detail"><p class="passport-eyebrow">JTFAG GOLF PASSPORT</p><h2>${escapeHtml(group.name)}</h2><p class="passport-sub">${group.visits.length}회 방문 · 첫 방문 ${group.visits[0].date || group.visits[0].round + '차'}</p>
+    return `<div class="passport-detail"><p class="passport-sub">${group.visits.length}회 방문 · 첫 방문 ${group.visits[0].date || group.visits[0].round + '차'}</p>
         <h3>멤버별 개인 최고 기록</h3><div class="passport-bests">${golfers.map(g => `<div><span>${escapeHtml(g)}</span><b>${Number.isFinite(group.best[g]) ? group.best[g] + '<small>타</small>' : '기록 없음'}</b></div>`).join('')}</div>
         <h3>방문 이력</h3><div class="passport-history">${group.visits.slice().reverse().map(v => `<div><b>${v.round}차${v.date ? ' · ' + v.date : ''}</b>${v.sub ? `<span>${escapeHtml(v.sub)}</span>` : ''}<div class="passport-scores">${golfers.map(g => `<span>${escapeHtml(g)} <strong>${v.scores[g]}타</strong></span>`).join('')}</div></div>`).join('')}</div>
         ${related.length ? `<h3>관련 여행</h3>${related.map(x => `<button type="button" class="passport-trip-link" onclick="openPassportTrip(${x.index})">${escapeHtml(x.trip.title || '여행')} ›</button>`).join('')}` : ''}</div>`;
@@ -138,9 +175,7 @@ function passportHtml() {
     const data = passportData();
     passportGroupsShown = data.groups;
     passportTripsShown = allTrips();
-    const selected = data.groups.find(g => g.key === passportSelected);
-    if (selected) return passportDetailHtml(selected);
-    passportSelected = '';
+    refreshPassportDetail(data.groups);
     const upcoming = passportUpcoming(data.groups);
     return `<div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div><div><b>${data.rounds}</b><span>완료 라운드</span></div></div></div>
         <p class="passport-sub">도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>

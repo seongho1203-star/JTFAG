@@ -1905,7 +1905,7 @@ html, body { overscroll-behavior: none; }
 .pred-history-toggle { width: 100%; margin-top: 12px; padding: 10px; border: 0; background: transparent; color: #746580; font-size: .77rem; font-weight: 800; }
 
 /* 여행 탭 안의 골프장 여권. 작은 요약 카드와 캐시된 마크의 원형 도장. */
-.passport-tabs { display: flex; gap: 20px; padding: 0; margin-bottom: 12px; border-bottom: 1px solid #e4e8e2; scroll-margin-top: 80px; }
+.passport-tabs { display: flex; justify-content: center; gap: 20px; padding: 0; margin-bottom: 12px; border-bottom: 1px solid #e4e8e2; scroll-margin-top: 80px; }
 .passport-tabs button { flex: 0 0 auto; min-width: 0; min-height: 36px; padding: 6px 2px 9px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: #858b85; font: inherit; font-size: .76rem; font-weight: 700; }
 .passport-tabs button.on { color: #184d45; border-bottom-color: #184d45; }
 .passport-cover { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e3e9e3; border-radius: 12px; color: #244c42; background: #fff; }
@@ -1933,10 +1933,19 @@ html, body { overscroll-behavior: none; }
 .passport-first { display: block; max-width: 100%; margin-top: 3px; color: #8a9387; font-size: .58rem; line-height: 1.4; overflow-wrap: anywhere; }
 .passport-visits { display: flex; justify-content: center; gap: 4px; padding: 4px 0 0; color: #71816e; font-size: .6rem; font-weight: 700; }
 .passport-new { position: absolute; top: 3px; right: 2px; padding: 2px 4px; border-radius: 4px; background: #b84534; color: #fff; font-size: .48rem; font-weight: 800; }
-.passport-back { padding: 5px 0 15px; background: transparent; border: 0; color: #426a61; font: inherit; font-size: .8rem; font-weight: 800; }
-.passport-detail { padding: 18px 14px; border: 1px solid #e2e7df; border-radius: 16px; background: #fffefa; }
-.passport-detail .passport-eyebrow { color: #8b815e; }
-.passport-detail h2 { margin: 0; font-size: 1.3rem; color: #234c41; overflow-wrap: anywhere; }
+.passport-overlay { position: fixed; inset: 0; z-index: 1500; display: flex; align-items: flex-end; justify-content: center; background: rgba(15, 23, 42, 0); transition: background .22s ease; }
+.passport-overlay.show { background: rgba(15, 23, 42, .55); }
+.passport-sheet { max-height: 88dvh; padding: 0; gap: 0; overflow: hidden; }
+.passport-overlay.show .passport-sheet { transform: none; }
+.passport-popup-head { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 10px; }
+.passport-popup-head > div { min-width: 0; }
+.passport-popup-head p { margin: 0 0 3px; color: #7d8c80; font-size: .68rem; font-weight: 700; }
+.passport-popup-title { margin: 0; color: #244c42; font-size: 1.05rem; overflow-wrap: anywhere; }
+.passport-popup-close { flex: 0 0 36px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f2f2ee; color: #3d4450; font-size: 1.5rem; }
+.passport-popup-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px; }
+.passport-popup-footer { flex-shrink: 0; padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); }
+.passport-popup-footer .bdg-close { width: 100%; height: 40px; border-radius: 11px; font-size: .85rem; }
+.passport-detail { padding: 0; }
 .passport-detail h3 { margin: 22px 0 10px; color: #5b655d; font-size: .83rem; }
 .passport-bests { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .passport-bests > div { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #e9ebe3; border-radius: 10px; background: #f8f8f2; }

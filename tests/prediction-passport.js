@@ -27,7 +27,7 @@ function make() {
         }
         set innerHTML(html) {
             this._html = html;
-            this.nodes = [...html.matchAll(/<(button|input|div|summary|section)\b([^>]*)>/g)].map(x => new Element(x[1], x[2]));
+            this.nodes = [...html.matchAll(/<(button|input|div|summary|section|h2)\b([^>]*)>/g)].map(x => new Element(x[1], x[2]));
         }
         get innerHTML() { return this._html; }
         all() { return this.nodes.flatMap(n => [n, ...n.all()]); }
@@ -229,7 +229,27 @@ async function main() {
     p.ctx.allTrips = () => [{id:'future',title:'예정 여행',days:[{date:'2026-10-27',course:'새 골프장CC'},{date:'2026-10-28',course:'무등산CC'},{date:'2026-10-29',course:'라운드없음CC',golf:'no'}]}];
     let html = q('passportHtml()'); assert.match(html, /새 골프장CC/); assert.doesNotMatch(html, /라운드없음CC/);
     assert.equal(q('passportData().groups.length'), 7, 'scheduled courses never earn stamps');
-    q('openPassport(0)'); html = q('passportHtml()'); assert.match(html, /멤버별 개인 최고 기록/); assert.match(html, /방문 이력/);
+    const collection = q('passportHtml()');
+    q('openPassport(0)');
+    assert.equal(q('passportHtml()'), collection, '팝업을 열어도 도장 모음을 유지');
+    html = q('passportPopup.body.innerHTML'); assert.match(html, /멤버별 개인 최고 기록/); assert.match(html, /방문 이력/);
+    const detail = q('passportPopup');
+    assert.match(detail.element.innerHTML, /role="dialog" aria-modal="true"/);
+    assert.equal(detail.title.textContent, data.groups[0].name);
+    p.frame(); p.frame(); assert.match(detail.element.className, /\bshow\b/);
+    q('openPassport(0)'); assert.equal(q('passportPopup.element'), detail.element, '중복 팝업 없음');
+    const closedTo = {focus() { this.focused = true; }};
+    const originalGet = p.ctx.document.getElementById;
+    p.ctx.document.getElementById = id => id === 'passportStamp-' + detail.key ? closedTo : originalGet(id);
+    q('closePassportDetail()');
+    assert.equal(q('passportPopup'), null);
+    assert.equal(closedTo.focused, true, '선택한 도장으로 포커스 복귀');
+    assert.doesNotMatch(detail.element.className, /\bshow\b/);
+    q('openPassport(0)');
+    const background = q('passportPopup.element');
+    background.events.click({target:background}); assert.equal(q('passportPopup'), null);
+    q('openPassport(0)');
+    q('passportPopup.element').events.keydown({key:'Escape',preventDefault() {}}); assert.equal(q('passportPopup'), null);
     q('closePassportDetail();checkPassportStamps()'); assert.equal(p.toasts.length, 0, 'first device load is quiet');
     q("appData.roundCourses[10]='새로운골프장CC';checkPassportStamps()");
     assert.equal(p.toasts.length, 1); assert.match(p.toasts[0], /새로운골프장/);
@@ -237,7 +257,15 @@ async function main() {
     assert.ok(JSON.parse(p.store.get('jtfag_passport_new_v1')).includes('새로운골프장'));
     q('passportHtml();openPassport(0)');
     assert.ok(!JSON.parse(p.store.get('jtfag_passport_new_v1')).includes('새로운골프장'), 'NEW clears after opening the stamp');
-    q("appData.roundCourses[10]='<script>bad</script>CC';passportSelected=''");
+    // 갱신으로 목록 순서가 바뀌어도 열어 둔 골프장 키를 유지하고, 삭제되면 닫는다.
+    const openedKey = q('passportPopup.key');
+    newHoles(p);
+    q("appData.totalRounds=11;appData.roundCourses[11]='나중방문CC';passportHtml()");
+    assert.equal(q('passportPopup.key'), openedKey);
+    assert.equal(q('passportGroupsShown.findIndex(g=>g.key===passportPopup.key)'), 1, '새 도장이 앞에 추가되어도 기존 골프장 유지');
+    q("appData.roundCourses[10]='나중방문CC';passportHtml()");
+    assert.equal(q('passportPopup'), null, '선택한 골프장이 사라지면 창 닫기');
+    q("appData.roundCourses[10]='<script>bad</script>CC'");
     html = q('passportHtml()'); assert.match(html, /&lt;script&gt;/); assert.doesNotMatch(html, /<script>/);
     q("appData.roundCourses={};appData.courses=[];ROUND_HOLES['1'].course='어등-송정'");
     assert.equal(q('passportCourse(1)'), '', 'sub-course alone is not a club');
@@ -245,6 +273,17 @@ async function main() {
     assert.equal(q('passportData().rounds'), before - 1, 'partial scorecards do not earn stamps');
     console.log('PASS: 완료 라운드만 도장·별칭 병합·클럽 구분·실제 홀 기록의 개인 최고타·입력값 불변');
     console.log('PASS: 예정 방문 분리·날짜 없는 기록·상세 화면·신규 알림 중복 방지·사용자 문구 HTML 이스케이프');
+    const linked = make(), tripsOpened = [];
+    const trip = {id:'visited',title:'JNJ 여행',days:[{date:'2026-10-14',course:'JNJ골프리조트'}]};
+    linked.ctx.allTrips = () => [trip]; linked.ctx.findTrip = id => id === trip.id ? trip : null;
+    linked.ctx.switchTrip = id => tripsOpened.push(id);
+    linked.run("appData.totalRounds=10;appData.roundCourses={10:'JNJ골프리조트'};appData.roundDates={10:'2026-10-14'};tripSection='passport';passportHtml();openPassport(passportGroupsShown.findIndex(g=>g.key==='jnj'))");
+    assert.match(linked.run('passportPopup.body.innerHTML'), /JNJ 여행/);
+    linked.run('openPassportTrip(0)');
+    assert.equal(linked.run('passportPopup'), null);
+    assert.equal(linked.run('tripSection'), 'schedule');
+    assert.deepEqual(tripsOpened, ['visited']);
+    console.log('PASS: 도장 상세 팝업·모음 유지·닫기·포커스 복귀·신규 표시 해제, 재정렬·삭제 갱신·관련 여행 이동');
 }
 if (require.main === module) main().catch(err => { console.error(err); process.exitCode = 1; });
 module.exports = { make, event, setEvent, newHoles };
