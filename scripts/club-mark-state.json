@@ -10,5 +10,21 @@
     "attempts": 1,
     "checkedAt": 1792076061385,
     "nextTry": 1792162461385
+  },
+  "사우스케이프오너스클럽": {
+    "name": "사우스케이프오너스클럽",
+    "attempts": 1,
+    "stage": "no_candidates",
+    "reason": "unverified",
+    "checkedAt": 1792076341882,
+    "nextTry": 1792162741882
+  },
+  "아난티남해": {
+    "name": "아난티 남해 골프클럽",
+    "attempts": 1,
+    "stage": "verify",
+    "reason": "unverified",
+    "checkedAt": 1792076341882,
+    "nextTry": 1792162741882
   }
 }
