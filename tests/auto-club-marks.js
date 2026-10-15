@@ -11,7 +11,7 @@ async function main(){
     assert.equal(clubKey('골프존카운티 무등산CC'),'무등산');
     const payload={roundCourses:{1:'신규CC',2:'기존CC'},courses:['신규 CC'],trips:[{days:[{course:'예정CC'},{course:'미방문CC',golf:'no'}]}]};
     const snapshot=JSON.stringify(payload);
-    assert.deepEqual(registeredClubs(payload,{1:{course:'어등-송정'},2:{course:'추가CC'}}).map(c=>c.key),['신규','기존','추가','예정']);
+    assert.deepEqual(registeredClubs(payload,{1:{course:'어등-송정'},2:{course:'덮어쓴이름CC'},3:{course:'추가CC'}}).map(c=>c.key),['신규','기존','추가','예정']);
     assert.equal(JSON.stringify(payload),snapshot);
     assert.equal(registeredClubs({courses:['__proto__','constructor','<script>CC']},{}).length,0);
     for(const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','172.16.0.1','192.168.0.1','::1','fd00::1'])assert.equal(publicAddress(ip),false,ip);

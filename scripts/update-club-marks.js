@@ -30,7 +30,7 @@ function manualMarks() {
 function registeredClubs(payload, holes) {
     const names = [
         ...Object.values(payload.roundCourses || {}), ...(Array.isArray(payload.courses) ? payload.courses : []),
-        ...Object.values(holes || {}).map(h => h.course),
+        ...Object.entries(holes || {}).filter(([round])=>!((payload.roundCourses || {})[round] || (payload.courses || [])[Number(round)-1])).map(([,h])=>h.course),
         ...(Array.isArray(payload.trips) ? payload.trips : []).flatMap(t => (Array.isArray(t.days) ? t.days : []).filter(d => d && d.golf !== 'no').map(d => d.course))
     ];
     const clubs = new Map();
@@ -141,7 +141,14 @@ async function claude(body, env = process.env, fetcher=fetch) {
     const response = await fetcher('https://api.anthropic.com/v1/messages', {method:'POST',signal:AbortSignal.timeout(180000),
         headers:{'content-type':'application/json','x-api-key':env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'},
         body:JSON.stringify({model:env.CLUB_MARK_MODEL || 'claude-opus-5',max_tokens:1200,...body})});
-    if (!response.ok) throw new Error(`마크 확인 서비스 오류 (${response.status})`);
+    if (!response.ok) {
+        const error=new Error(`마크 확인 서비스 오류 (${response.status})`);
+        const detail=await response.json().catch(()=>({}));
+        const message=String(detail.error?.message || '').toLowerCase();
+        error.reason=/credit|balance/.test(message)?'credits_unavailable':/model/.test(message)?'model_unavailable':/web.?search/.test(message)?'search_unavailable':String(detail.error?.type || 'api_error').slice(0,80);
+        error.status=response.status;
+        throw error;
+    }
     const result = await response.json();
     if (result.type==='error') throw new Error('마크 확인 서비스 오류');
     return result;
@@ -207,9 +214,13 @@ async function update(clubs, known, catalog, state, {now=Date.now(),discover=dis
         if (checked>=2) break;
         if (Object.hasOwn(known,club.key) || Object.hasOwn(catalog.marks,club.key) || Number(state[club.key]?.nextTry)>now) continue;
         checked++;
+        let stage='search';
         try {
             const site=await discover(club);if(!site)throw new Error('공식 마크 미확인');
-            const found=await collect(site),logo=await confirm(club,found);
+            stage='download';
+            const found=await collect(site);
+            stage=found.images.length?'verify':'no_candidates';
+            const logo=await confirm(club,found);
             if(!logo || !imageType(logo.bytes))throw new Error('공식 마크 미확인');
             const file=`auto-${createHash('sha256').update(logo.bytes).digest('hex')}.${logo.ext}`;
             if (!AUTO_FILE.test(file)) throw new Error('공식 마크 미확인');
@@ -219,7 +230,7 @@ async function update(clubs, known, catalog, state, {now=Date.now(),discover=dis
         } catch (err) {
             console.log(`공식 마크 확인 대기: ${club.name} · ${err.message}`);
             const attempts=(Number(state[club.key]?.attempts)||0)+1;
-            state[club.key]={name:club.name,attempts,checkedAt:now,nextTry:now+(attempts<3?DAY:7*DAY)};
+            state[club.key]={name:club.name,attempts,stage,reason:err.reason || 'unverified',...(err.status?{status:err.status}:{}),checkedAt:now,nextTry:now+(attempts<3?DAY:7*DAY)};
         }
     }
     return {added,checked};
