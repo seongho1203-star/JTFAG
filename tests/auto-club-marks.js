@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
-const {clubKey,registeredClubs,publicAddress,publicUrl,publicFetch,candidatesFromHtml,imageType,rasterImage,discoverSite,collectCandidates,confirmLogo,update}=require('../scripts/update-club-marks');
+const {clubKey,registeredClubs,publicAddress,publicUrl,publicFetch,candidatesFromHtml,imageType,rasterImage,discoverSite,discoverApp,collectCandidates,confirmLogo,update}=require('../scripts/update-club-marks');
 const png=fs.readFileSync(path.join(__dirname,'../assets/club-marks/v1/happiness.png'));
 const clone=value=>JSON.parse(JSON.stringify(value));
 async function main(){
@@ -40,6 +40,8 @@ async function main(){
     const referenced={content:[{type:'web_search_tool_result',content:[{type:'web_search_result',url:'https://tour.example/club'}]},{type:'text',text:'{"site_url":"https://club.example/","evidence_url":"https://tour.example/club"}'}]};
     assert.equal(await discoverSite({name:'신규CC'},async()=>referenced,async()=>({url:'https://tour.example/club',type:'text/html',bytes:Buffer.from('<a href="https://club.example/">홈페이지</a>')})),'https://club.example/');
     assert.equal(await discoverSite({name:'신규CC'},async()=>referenced,async()=>({url:'https://tour.example/club',type:'text/html',bytes:Buffer.from('<a href="https://other.example/">다른 홈페이지</a>')})),null,'검색 출처의 실제 링크가 다르면 거부');
+    const appReply={content:[{type:'web_search_tool_result',content:[{type:'web_search_result',url:'https://play.google.com/store/apps/details?id=kr.example.club'}]},{type:'text',text:'{"app_url":"https://play.google.com/store/apps/details?id=kr.example.club"}'}]};
+    assert.match(await discoverApp({name:'신규CC'},async()=>appReply),/id=kr.example.club&hl=ko/);
     const found=await collectCandidates('https://official.example/',async url=>({url,type:url.endsWith('.png')?'image/png':'text/html;charset=utf-8',bytes:url.endsWith('.png')?png:Buffer.from(html)}));
     assert.equal(found.images.length,1);
     const approved={content:[{type:'tool_use',name:'select_logo',input:{index:0,confirmed:true,background:'#ffffff',ink:'#246842'}}]};
@@ -48,7 +50,7 @@ async function main(){
     assert.equal(await confirmLogo({name:'신규CC'},found,async()=>rejected),null);
     const known={기존:{file:'manual.png'}},catalog={version:1,marks:{}},state={},writes=[];
     let searches=0;
-    const options={now:100000,discover:async()=>{searches++;return 'https://official.example/';},collect:async()=>found,confirm:async()=>({...found.images[0],ext:'png',background:'#ffffff',ink:'#246842'}),saveImage:async(file,bytes)=>writes.push({file,bytes})};
+    const options={now:100000,discover:async()=>{searches++;return 'https://official.example/';},fallback:async()=>null,collect:async()=>found,confirm:async()=>({...found.images[0],ext:'png',background:'#ffffff',ink:'#246842'}),saveImage:async(file,bytes)=>writes.push({file,bytes})};
     const clubs=[{key:'기존',name:'기존CC'},{key:'신규',name:'신규CC'}];
     assert.deepEqual(await update(clubs,known,catalog,state,options),{added:['신규CC'],checked:1});
     assert.equal(writes[0].file,'auto-'+createHash('sha256').update(png).digest('hex')+'.png');
@@ -63,6 +65,9 @@ async function main(){
     assert.equal((await update([{key:'대기',name:'대기CC'}],known,retryCatalog,retryState,noLogo)).checked,0,'재확인 대기 기간에는 유료 재시도 없음');
     const capped=await update(['a','b','c'].map(key=>({key,name:key+'CC'})),{}, {version:1,marks:{}},{},noLogo);
     assert.equal(capped.checked,2,'한 번에 최대 두 골프장만 확인');
+    const fallbackCatalog={version:1,marks:{}};
+    const appFallback=await update([{key:'앱골프장',name:'앱골프장CC'}],{},fallbackCatalog,{}, {...options,discover:async()=>null,fallback:async()=>'https://play.google.com/store/apps/details?id=kr.example.club'});
+    assert.equal(appFallback.added.length,1,'홈페이지에서 못 찾으면 공식 예약 앱 아이콘 확인');
     console.log('PASS: 등록 골프장·별칭·예정 일정 수집, 기존 마크 재사용·입력값 불변');
     console.log('PASS: 검색 근거·공식 HTML 후보·이미지 승인·불확실 시 미등록, 공개 URL·리다이렉트·SVG 검증');
     console.log('PASS: 원본/안전한 PNG·내용 해시 파일 저장, 중복 과금 방지·실패 재확인·실행당 상한');
