@@ -2195,7 +2195,7 @@ function paintNearCheck(left) {
         badge.textContent = '✅ 정산 일치';
     } else {
         badge.className = 'near-check bad';
-        badge.textContent = `⚠️ 불일치 ${formatNumber(Math.min(off, per - off))}원`;
+        badge.textContent = '⚠️ 불일치';
     }
 }
 
