@@ -855,11 +855,10 @@ function missionMulliganCard(me) {
     </div>`;
 }
 
-// 접었다 펴는 카드(사용자 요청 — 기록이 쌓이면 화면이 길어진다). 기록은 펴 두고 목록은 접어 두는 것이 처음 모양이고,
-// 기록은 고른 것을 이 기기에 기억한다(jtfag_msn_fold — 기기마다의 편의라 payload에 안 둔다).
-// **미션 목록은 기억하지 않는다 — 앱을 열 때마다 접혀 있다**(사용자 요청 — 한 번 펴 두면 화면이 내내 길었다).
-const MSN_FOLD_DEFAULT = { hist: true, list: false };   // true = 펼침
-const MSN_FOLD_MEMORY = { list: true };                  // 기억하지 않는 칸 — 이번 실행 동안만 펴 둔다
+// 접었다 펴는 카드(사용자 요청 — 기록이 쌓이면 화면이 길어진다).
+// 미션 기록과 목록은 앱을 열 때마다 접혀 있고, 이번 실행 동안만 펼친 상태를 기억한다.
+const MSN_FOLD_DEFAULT = { hist: false, list: false };  // true = 펼침
+const MSN_FOLD_MEMORY = { hist: true, list: true };     // 이번 실행 동안만 펼친 상태를 기억한다
 const MSN_HIST_SHOWN = 5;                                // 기록은 최근 다섯 개까지 펴고 나머지는 `이전 기록 더 보기`
 let missionHistAll = false;
 const msnFoldNow = {};
