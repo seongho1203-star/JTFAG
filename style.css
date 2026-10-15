@@ -418,7 +418,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 /* 니어 — 파3 팟에 남은 잔액과 검산 뱃지. 잔액은 왼쪽에 제목과 붙여 두고
    검산은 오른쪽 끝에 민다. 잃은·딴 금액은 표의 `타수정산` 칸에 사람마다 이미 다 나와 있다. */
 .near-box { display: flex; align-items: baseline; justify-content: flex-start; gap: 7px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
-.near-head { font-size: 0.68rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+.near-head { min-width: 0; font-size: 0.68rem; font-weight: 800; color: var(--text-main); white-space: normal; word-break: keep-all; }
 .near-box b { font-size: 0.72rem; font-weight: 800; color: var(--text-main); white-space: nowrap; }
 /* 검산 뱃지 — 잔액이 한 홀 몫(2만원)의 배수인가. 오른쪽 끝에 붙인다. */
 .near-check { margin-left: auto; padding: 2px 7px; border-radius: 999px; font-size: 0.6rem; font-weight: 800; white-space: nowrap; }
