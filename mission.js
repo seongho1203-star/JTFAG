@@ -852,7 +852,8 @@ function closeMulliganPopup() {
     if (!missionMulliganPopup) return;
     const { element, owner } = missionMulliganPopup;
     missionMulliganPopup = null;
-    element.remove();
+    element.classList.remove('show');
+    setTimeout(() => element.remove(), 260);
     const card = document.querySelector('.msn-point-person[aria-haspopup="dialog"]');
     if (localStorage.getItem('jtfag_my_name') === owner && card) card.focus();
 }
@@ -892,7 +893,10 @@ function openMulliganPopup(name) {
     });
     document.body.appendChild(element);
     refreshMulliganPopup();
-    element.querySelector('.msn-mulligan-close').focus();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (missionMulliganPopup && missionMulliganPopup.element === element) element.classList.add('show');
+    }));
+    element.querySelector('.msn-mulligan-close').focus({ preventScroll: true });
 }
 async function useMulliganFromPopup() {
     const popup = missionMulliganPopup;

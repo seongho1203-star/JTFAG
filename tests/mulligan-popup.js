@@ -7,12 +7,19 @@ const { make } = require('./prediction-passport');
 const tick = () => new Promise(setImmediate);
 
 function setup() {
-    const m = make(), doc = m.ctx.document, children = [], confirms = [], kicks = [];
+    const m = make(), doc = m.ctx.document, children = [], confirms = [], kicks = [], frames = [];
+    m.ctx.requestAnimationFrame = fn => frames.push(fn);
     const page = {innerHTML: ''};
     const ownCard = {focus() { doc.activeElement = this; }};
     // 입력칸이 없는 팝업에 필요한 DOM만 모의한다.
     class Element {
-        constructor() { this.html = ''; this.nodes = []; this.events = {}; this.disabled = false; }
+        constructor() {
+            this.html = ''; this.nodes = []; this.events = {}; this.disabled = false;
+            this.classList = {
+                add: value => { this.className += ' ' + value; },
+                remove: value => { this.className = this.className.split(' ').filter(x => x !== value).join(' '); }
+            };
+        }
         set innerHTML(html) {
             this.html = html;
             this.nodes = [...html.matchAll(/<(button|div)\b([^>]*)>/g)].map(match => {
@@ -40,7 +47,10 @@ function setup() {
     m.ctx.kickScorecardWorkflow = async () => { kicks.push('notify'); return true; };
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../mission.js'), 'utf8'), m.ctx);
     m.run("missionPoints=g=>g==='신성호'?10:0; missionTarget=()=>({round:11,days:0}); appData.mulligans={};");
-    return {...m, page, children, confirms, kicks, ownCard};
+    return {...m, page, children, confirms, kicks, ownCard,
+        frame() { frames.splice(0).forEach(fn => fn()); },
+        finishClose() { m.timers.splice(0).forEach(timer => timer.f()); }
+    };
 }
 function popup(m) { return m.run('missionMulliganPopup'); }
 function click(m, button) { return m.run(button.onclickCode); }
@@ -63,6 +73,9 @@ async function main() {
     run("selectMissionPointPerson('신성호')");
     let p = popup(m);
     assert.equal(m.children.length, 1);
+    assert.doesNotMatch(p.element.className, /\bshow\b/);
+    m.frame(); m.frame();
+    assert.match(p.element.className, /\bshow\b/, '초기 프레임 후 열림 상태로 전환');
     assert.match(p.element.innerHTML, /role="dialog" aria-modal="true"/);
     assert.match(p.element.innerHTML, /<p>신성호<\/p>/);
     assert.match(p.body.innerHTML, /class="big">2<\/span>/);
@@ -106,6 +119,10 @@ async function main() {
 
     // 닫기·배경·Escape, 다시 열 때 최신 사용 현황.
     click(m, close);
+    assert.equal(popup(m), null);
+    assert.equal(m.children.length, 1, '닫힘 전환이 끝나기 전까지 창 유지');
+    assert.doesNotMatch(p.element.className, /\bshow\b/);
+    m.finishClose();
     assert.equal(m.children.length, 0);
     assert.equal(m.ctx.document.activeElement, m.ownCard);
     run("selectMissionPointPerson('신성호')");
@@ -113,9 +130,12 @@ async function main() {
     popup(m).element.events.click({target: popup(m).useButton});
     assert.equal(m.children.length, 1, '창 내부 클릭은 닫지 않음');
     popup(m).element.events.click({target: popup(m).element});
+    m.frame(); m.frame();
+    assert.doesNotMatch(m.children[0].className, /\bshow\b/, '닫은 창은 대기 중인 열림 프레임으로 다시 표시되지 않음');
+    m.finishClose();
     assert.equal(m.children.length, 0);
     run("selectMissionPointPerson('신성호')");
-    key(m, 'Escape'); assert.equal(m.children.length, 0);
+    key(m, 'Escape'); m.finishClose(); assert.equal(m.children.length, 0);
 
     // 실시간 갱신·사용권 없음·이름 변경을 열린 창에 반영한다.
     const live = setup();
@@ -127,6 +147,7 @@ async function main() {
     assert.equal(popup(live).useButton.disabled, false);
     live.store.set('jtfag_my_name', '이관교');
     live.run('renderMissionPage()');
+    live.finishClose();
     assert.equal(live.children.length, 0, '본인 이름이 바뀌면 기존 창 닫기');
     assert.equal(live.saves.length, 0);
 
@@ -138,6 +159,7 @@ async function main() {
     assert.equal(changed.run("mulliganUses('신성호').length + mulliganUses('이관교').length"), 0, '확인 도중 이름 변경 시 사용 차단');
     assert.equal(changed.saves.length, 0);
     assert.equal(changed.kicks.length, 0);
+    changed.finishClose();
     assert.equal(changed.children.length, 0);
     console.log('PASS: 본인 카드만 멀리건 팝업, 타인은 기록 선택, 기존 별도 카드 삭제');
     console.log('PASS: 사용·취소·중복 클릭·라운드당 1회, 저장 확인 후 알림, 실시간 잔여 장수 갱신');

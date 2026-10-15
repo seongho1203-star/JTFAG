@@ -1672,8 +1672,10 @@ html, body { overscroll-behavior: none; }
 .msn-point-value { font-size: 1.25rem; font-weight: 900; line-height: 1.3; font-variant-numeric: tabular-nums; }
 .msn-point-value small { margin-left: 2px; font-size: .62rem; font-weight: 700; opacity: .8; }
 .msn-point-ticket { font-size: .62rem; font-weight: 700; opacity: .8; }
-.msn-mulligan-overlay { position: fixed; inset: 0; z-index: 1500; background: rgba(15, 23, 42, .55); display: flex; align-items: flex-end; justify-content: center; }
-.msn-mulligan-sheet { width: 100%; max-width: 500px; max-height: 88vh; max-height: 88dvh; box-sizing: border-box; background: #fff; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; }
+.msn-mulligan-overlay { position: fixed; inset: 0; z-index: 1500; background: rgba(15, 23, 42, 0); display: flex; align-items: flex-end; justify-content: center; transition: background .22s ease; }
+.msn-mulligan-overlay.show { background: rgba(15, 23, 42, .55); }
+.msn-mulligan-sheet { width: 100%; max-width: 500px; max-height: 88vh; max-height: 88dvh; box-sizing: border-box; background: #fff; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform .26s cubic-bezier(.32, .72, 0, 1); }
+.msn-mulligan-overlay.show .msn-mulligan-sheet { transform: none; }
 .msn-mulligan-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 12px; }
 .msn-mulligan-head p { margin: 0 0 3px; color: #6b7075; font-size: .78rem; font-weight: 700; }
 .msn-mulligan-head h2 { margin: 0; font-size: 1.1rem; }
