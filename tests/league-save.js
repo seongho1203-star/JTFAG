@@ -113,7 +113,8 @@ async function saveCompletion() {
 }
 
 function installConsumer(x,kind) {
-    const ui=source('ui.js'),mission=source('mission.js');
+    // ui.js는 조각(ui-*.js)으로 나뉘어 있다 — 이어 붙여 예전 ui.js처럼 다룬다.
+    const ui=['ui.js',...fs.readdirSync(root).filter(f=>/^ui-.*\.js$/.test(f)).sort()].map(source).join('\n'),mission=source('mission.js');
     const slice=(text,start,end)=>text.slice(text.indexOf(start),text.indexOf(end,text.indexOf(start)));
     const ctx=x.ctx;
     x.storage.set('jtfag_my_name','신성호');

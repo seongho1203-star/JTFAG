@@ -45,8 +45,26 @@ python3 -m http.server 8000        # http://localhost:8000
 모듈 시스템이 없다. 모든 함수와 상태가 전역(window)에 올라가고, `index.html` 하단에서 고정된 순서로 로드된다:
 
 ```
-stats.js → courses.js → api.js → money.js → calc.js → badges.js → prediction.js → mission.js → ui.js → trip.js → passport.js
+stats.js → courses.js → api.js → money.js → calc.js → badges.js → prediction.js → mission.js → ui.js … ui-app.js(열 조각) → trip.js … trip-gora.js(세 조각) → passport.js
 ```
+
+- **`ui.js`와 `trip.js`는 조각으로 나뉘어 있다**(사용자 요청 — 4,500줄·2,100줄 한 파일은 한 곳을 고치다 다른 곳을 깨기 쉽다). 나눈 방법이 핵심이다:
+  **원래 파일을 위에서부터 그대로 잘라 순서대로 이어 둔 것**이라 이어 붙이면 예전 파일과 글자까지 같고(분할 때 확인했다), 전역 함수·변수라 어느 조각에서든 그대로 부른다. 로딩 순서가 곧 원래 순서이므로 **조각 순서를 바꾸지 말 것**.
+  - `ui.js` 진입점(DOMContentLoaded) · 숫자 서식 · 공통 창(비밀번호·이름·확인·메모·공금) · 관리자 인증
+  - `ui-notice.js` 토스트 · 저장 상태 · 실시간 연결 상태 · 공지 카드 · 창 뒤 잠금(`watchOverlays`) · 표 터치 감시
+  - `ui-schedule.js` 일정 창 · 골프장·코스 고르기 · 차수별 골프장 기억 · 일정 저장
+  - `ui-effects.js` `renderAll` · 연출(입장 순서 · 카운트업 · 계급 변동 · 결과 발표 · 독수리 축포 · 대관식)
+  - `ui-money.js` 정산 금액 표 · 찬조 · 니어 잔액 · 금액 잠금과 저장 입구(`updateMoney`) · 보관 용량
+  - `ui-rounds.js` 스코어 표 · 1:1 핸디캡 카드 · 차수 추가·삭제 · 일정 이동 · 알림 받는 기기 창
+  - `ui-scorecard.js` 스코어 등록(사진 판독 요청) · 홀 기록 삭제 · 해외 라운드
+  - `ui-photos.js` 라운드 사진 업로드·삭제 · 사진 크게 보기(`photoZoom`) · 다운로드
+  - `ui-report.js` 기록 창 · 개인 리포트 · 알림 설정 · 관리자 메뉴 · 분석
+  - `ui-app.js` 앱 설치 안내 · 라운드 알림 · 입장 인사말 · 요약 칸 높이 맞춤 · 화면 넘기기(`pagerSwipe`)
+  - `trip.js` 여행 탭 화면 · 위치 · 지도·길찾기 · 일자별 입력 / `trip-travel.js` 여행 기본 정보 · 경비·준비물 · 날씨 / `trip-gora.js` 일본 골프장 찾기(GORA) · `koName`
+  - **이 문서의 `in ui.js`·`in trip.js` 표기는 나누기 전 것이다** — 함수 이름으로 찾을 것(`grep -n "function 이름" ui*.js trip*.js`). 조각 맨 위 두 줄(`// ◇`)이 그 조각의 내용을 적어 둔다.
+  - **조각을 더 나누거나 새로 만들 때**: 맨 앞에서부터 이어 자를 것(중간 것을 뽑아 순서를 바꾸면 안 된다 — 로딩 시점에 도는 코드가 앞 조각의 `const`를 쓴다), 자른 조각마다 `node --check`가 통과해야 하고(함수 한가운데서 자르면 걸린다),
+    `index.html`의 `document.write` 목록에 같은 순서로 넣는다. 로딩 시점에 뒤 조각의 **함수**를 부르는 코드가 없는지도 볼 것(한 파일일 때는 함수가 끌어올려져 됐지만 나뉜 뒤로는 안 된다) — 헤드리스로 접속해 오류가 0인지 확인한다.
+  - 테스트가 ui 소스를 글자로 잘라 쓰는 곳(`tests/league-save.js`)은 `ui*.js`를 이어 붙여 읽는다.
 
 - **`stats.js`** — 홀 단위 스코어 기록. DB에 없는 유일한 데이터로, 스코어카드 사진을 판독해 갱신한다.
   `ROUND_HOLES`(원본, 차수별 18홀 파+파대비타수) → `ROUND_STATS`(차수별 집계) → `CUMULATIVE_STATS`(누적 총합)로

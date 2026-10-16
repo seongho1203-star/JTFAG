@@ -112,7 +112,7 @@ async function openPhone(browser, name) {
   await p.addInitScript(n => { localStorage.setItem('jtfag_my_name', n); }, name);   // 결과 발표 기록이 없으면 처음 보는 기기라 발표 창을 안 띄운다
   p.__name = name;
   pages.push(p);
-  await p.goto('http://localhost:8971/index.html', { waitUntil: 'domcontentloaded' });
+  await p.goto(`http://localhost:${process.env.PORT || 8971}/index.html`, { waitUntil: 'domcontentloaded' });
   return p;
 }
 
@@ -120,6 +120,8 @@ async function settle(p) {
   await p.evaluate(() => { const x = [...document.querySelectorAll('button')].find(e => e.textContent.trim() === '확인'); if (x) x.click(); });
   await sleep(300);
   await p.evaluate(() => { document.querySelectorAll('.celebrate-overlay, .reveal-overlay').forEach(o => o.remove()); });
+  // 금액 칸은 '정산·스코어' 화면에 있다(화면이 나뉜 뒤로 홈에서는 숨겨져 있다).
+  await p.evaluate(() => { if (typeof showPage === 'function') showPage('detail', false); });
 }
 
 const R = 5;  // 지금 정산하는 차수(0부터) = 6차

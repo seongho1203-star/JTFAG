@@ -484,8 +484,21 @@
     document.write('<script defer src="badges.js?ver=' + v + '"><\/script>');   // 뱃지 컬렉션
     document.write('<script defer src="prediction.js?ver=' + v + '"><\/script>'); // 라운드 예측
     document.write('<script defer src="mission.js?ver=' + v + '"><\/script>');   // 라운드 미션
+    // ui.js는 한 파일이 4,500줄이라 열 조각으로 나눴다. 이어 붙이면 예전 ui.js와 글자까지 같다(순서가 곧 의존성이다).
     document.write('<script defer src="ui.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-notice.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-schedule.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-effects.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-money.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-rounds.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-scorecard.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-photos.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-report.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="ui-app.js?ver=' + v + '"><\/script>');
+    // trip.js도 세 조각이다(여행 탭 · 기본 정보·경비 · 일본 골프장 찾기). 이어 붙이면 예전 trip.js와 글자까지 같다.
     document.write('<script defer src="trip.js?ver=' + v + '"><\/script>');   // 여행 일정
+    document.write('<script defer src="trip-travel.js?ver=' + v + '"><\/script>');
+    document.write('<script defer src="trip-gora.js?ver=' + v + '"><\/script>');
     document.write('<script defer src="passport.js?ver=' + v + '"><\/script>'); // 골프장 여권
 </script>
 
