@@ -754,7 +754,12 @@ async function main() {
     // 판독은 됐는데 푸시가 안 되면 앱에는 반영되지 않는다. 그래서 '완료'가 아니라 '실패'로 남긴다.
     if (done.length) {
         try {
-            if (commitAndPush(done)) console.log(`\n${done.join(', ')} 기록을 stats.js에 커밋했습니다.`);
+            if (commitAndPush(done)) {
+                console.log(`\n${done.join(', ')} 기록을 stats.js에 커밋했습니다.`);
+                // 푸시만으로는 아직 앱에 안 보인다 — Pages 배포(약 1분)가 끝나야 타수가 채워진다.
+                // 알림이 그보다 먼저 가면 '등록됐다'는데 타수가 비어 있어, 배포를 기다린 뒤 상태·알림을 보낸다.
+                await waitForDeploy();
+            }
         } catch (err) {
             console.error('푸시 실패:', err.message);
             targets.forEach(req => {
@@ -767,6 +772,26 @@ async function main() {
     if (!DRY_RUN) await writeStatuses(results);
     await notify(targets, results);
     console.log('끝.');
+}
+
+// 방금 푸시한 stats.js가 실제 사이트에 올라올 때까지 기다린다(최대 4분 · 못 기다려도 그냥 진행한다).
+// 사이트의 stats.js를 받아 방금 쓴 파일과 같아지면 배포가 끝난 것이다. 주소는 Actions의 GITHUB_REPOSITORY에서 낸다.
+async function waitForDeploy() {
+    const repo = process.env.GITHUB_REPOSITORY;           // 'owner/name' — Actions 밖에서는 없다
+    if (!repo || DRY_RUN) return;
+    const [owner, name] = repo.split('/');
+    const url = `https://${owner}.github.io/${name}/stats.js`;
+    const want = fs.readFileSync(STATS_FILE, 'utf8').trim();
+    const until = Date.now() + 4 * 60 * 1000;
+    console.log(`Pages 배포를 기다립니다: ${url}`);
+    while (Date.now() < until) {
+        await new Promise(r => setTimeout(r, 8000));
+        try {
+            const res = await fetch(`${url}?cb=${Date.now()}`, { headers: { 'Cache-Control': 'no-cache' } });
+            if (res.ok && (await res.text()).trim() === want) { console.log('  배포가 반영되었습니다.'); return; }
+        } catch (err) { /* 잠깐 안 닿아도 계속 기다린다 */ }
+    }
+    console.log('  배포 확인을 시간 안에 못 했습니다. 그대로 진행합니다.');
 }
 
 // 판독이 끝났다고 알린다. 상태가 확정된 뒤에 보내야 '완료'라고 알려 놓고

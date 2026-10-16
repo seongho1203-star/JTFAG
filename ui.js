@@ -2409,8 +2409,42 @@ function dropRetiredFields() {
     return dropped;
 }
 
+/* 판독이 끝났다고 payload에 적혔는데 이 화면이 읽어 둔 stats.js에는 그 차수가 없는 경우를 찾는다.
+   stats.js는 접속할 때 한 번만 받으므로, 앱을 열어 둔 채로 판독이 끝나면(워크플로가 stats.js를 커밋하고
+   Pages가 배포한 뒤) 상태만 '완료'로 바뀌고 타수 칸은 새로고침하기 전까지 비어 있었다.
+   요청 id는 `Date.now()-…`라 30분 안의 것만 본다(예전 요청 때문에 헛새로고침이 도는 걸 막는다).
+   요청마다 한 번만 시도한다(`jtfag_score_refresh`) — 배포가 아직이면 새로고침해도 같으니 되풀이하지 않는다. */
+function staleScoreRequests() {
+    const now = Date.now(), latest = {};
+    (appData.scoreRequests || []).forEach(r => {
+        if (!r || r.status !== '완료' || r.action === '멀리건') return;
+        latest[r.round] = r;
+    });
+    return Object.values(latest).filter(r => {
+        const at = parseInt(String(r.id || '').split('-')[0], 10);
+        if (!Number.isFinite(at) || now - at > 30 * 60 * 1000) return false;
+        return hasHoleRecord(r.round - 1) === (r.action === '삭제');
+    });
+}
+
+function refreshForFinishedScore() {
+    if (typeof ROUND_HOLES === 'undefined') return;
+    const stale = staleScoreRequests();
+    if (!stale.length) return;
+    let tried = [];
+    try { tried = JSON.parse(localStorage.getItem('jtfag_score_refresh') || '[]'); } catch (e) { tried = []; }
+    const fresh = stale.filter(r => !tried.includes(r.id));
+    if (!fresh.length) return;
+    try { localStorage.setItem('jtfag_score_refresh', JSON.stringify(tried.concat(fresh.map(r => r.id)).slice(-20))); } catch (e) { /* 저장이 막혀도 새로고침은 한다 */ }
+    const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (typing) { showToast("✅ 스코어가 등록되었습니다. 입력을 마치고 새로고침하면 타수가 반영됩니다.", 5000); return; }
+    showToast("✅ 스코어가 등록되어 화면을 새로 불러옵니다.");
+    setTimeout(() => location.reload(), 1200);
+}
+
 // 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
 function applyHoleScores() {
+    refreshForFinishedScore();
     const changed = syncScoresFromHoles();
     const filled = applyRoundCourses();
     const dropped = dropRetiredFields();
