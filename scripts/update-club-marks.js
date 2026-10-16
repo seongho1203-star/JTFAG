@@ -229,6 +229,13 @@ async function collectCandidates(site, get=publicFetch) {
         }
     }
     if (!appPage && candidates.length<2) {
+        // 대표 이미지(og:image)는 로고가 아닐 수도 있으나 이미지 확인 단계에서 걸러진다.
+        for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
+            const a=attrs(m[0]);
+            if(a.property==='og:image' && a.content) try {candidates.push({url:new URL(a.content,page.url).href,label:'공식 페이지 대표 이미지(og:image)',score:1});} catch {}
+        }
+    }
+    if (!appPage && candidates.length<2) {
         // 이전 홈페이지가 frame/메타 이동으로 감싼 경우 실제 첫 화면까지 한 번만 확인한다.
         const pages = [...html.matchAll(/<(?:iframe|frame|a)\b[^>]*>/gi)].map(m=>attrs(m[0])).map(a=>a.src || (/main|index|intro|ci[./]/i.test(a.href || '')?a.href:null)).filter(Boolean);
         for (const value of pages.slice(0,2)) {
@@ -258,6 +265,17 @@ async function confirmLogo(club, found, ask=claude) {
     const ink=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>200?'#385c4c':choice.ink;
     return {...found.images[choice.index],background:choice.background,ink};
 }
+// 안쪽 페이지가 안 열리거나 로고가 없으면 같은 사이트의 첫 화면으로 한 번 더 시도한다.
+async function collectWithRoot(site, collect) {
+    const root = (() => {try {const u=new URL(site);return u.pathname==='/' && !u.search ? null : u.origin+'/';} catch {return null;}})();
+    let found=null,failure=null;
+    try {found=await collect(site);} catch(err) {if(err.status)throw err;failure=err;}
+    if((!found || !found.images.length) && root) {
+        try {const next=await collect(root);if(next.images.length || !found)found=next;} catch(err) {if(err.status)throw err;}
+    }
+    if(!found) throw failure;
+    return found;
+}
 async function update(clubs, known, catalog, state, {now=Date.now(),discover=discoverSite,fallback=discoverApp,collect=collectCandidates,confirm=confirmLogo,saveImage}={}) {
     const added=[];let checked=0;
     for (const club of clubs) {
@@ -269,7 +287,7 @@ async function update(clubs, known, catalog, state, {now=Date.now(),discover=dis
             let logo=null;
             try {
                 site=await discover(club);
-                if(site) {stage='download';found=await collect(site);stage=found.images.length?'verify':'no_candidates';logo=await confirm(club,found);}
+                if(site) {stage='download';found=await collectWithRoot(site,collect);stage=found.images.length?'verify':'no_candidates';logo=await confirm(club,found);}
             } catch(err) {if(err.status)throw err;why=String(err.message||'').slice(0,160);}
             if(!logo) {
                 const app=await fallback(club);
