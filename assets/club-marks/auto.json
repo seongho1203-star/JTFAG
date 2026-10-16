@@ -9,6 +9,24 @@
       "site_url": "https://www.sagewood.co.kr/yeosu/main",
       "source_url": "https://www.sagewood.co.kr/pc/images/common/logo_yeosu_wt.png",
       "added_at": "2026-10-15T15:11:46.915Z"
+    },
+    "기타큐슈": {
+      "file": "auto-10b74db1bf5b7b02ae195f0e65115ecccfcc0ec174ae5a57ac79f348fc6d43e0.png",
+      "background": "#ffffff",
+      "ink": "#1a6b3c",
+      "name": "기타큐슈 컨트리클럽",
+      "site_url": "https://booking.pacificgolf.co.jp/guide/131.html",
+      "source_url": "https://pgm-images.s3-ap-northeast-1.amazonaws.com/images/guide/logo/logo_cid131.png",
+      "added_at": "2026-10-16T00:36:27.902Z"
+    },
+    "우베72": {
+      "file": "auto-94188930d818febece82df576cf9ef08d3f54deedea35ec44aed882146f367f3.png",
+      "background": "#ffffff",
+      "ink": "#1b4d9b",
+      "name": "우베72 컨트리클럽",
+      "site_url": "https://www.ube72cc.com/",
+      "source_url": "https://www.ube72cc.com/wp/wp-content/themes/golf/images/logo_mark.png",
+      "added_at": "2026-10-16T00:36:27.902Z"
     }
   }
 }
