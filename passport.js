@@ -90,9 +90,29 @@ function switchTripSection(section) {
     tripSection = section;
     renderTripPage();
 }
-function passportClubKey(name) {
+function passportBaseKey(name) {
     const k = clubKey(String(name || '').replace(/\s*\([^()]*\)\s*$/, '')).toLocaleLowerCase('en');
     return ({ '골프존카운티무등산': '무등산', '함평다이너스티': '함평엘리체', '사우스케이프': '사우스케이프오너스클럽', '사우스케이프cc': '사우스케이프오너스클럽' })[k] || k;
+}
+// GORA에서 고른 일본 골프장은 일정에 한글 이름(day.course)과 일본어 원문(day.gora.ja)이 함께 남는다.
+// 도장은 일본어 원문을 이름으로 쓰고(지난 방문으로 직접 적은 일본 골프장과 같다) 한글 이름은 그 아래 병기하며, 한글 이름으로 적은 기록도 같은 도장으로 합친다.
+function passportTripJa(day) {
+    const ja = day && day.gora && typeof day.gora.ja === 'string' ? day.gora.ja.trim() : '';
+    return ja && day.course && ja !== String(day.course).trim() ? ja : '';
+}
+function passportAliases() {
+    const map = {};
+    allTrips().forEach(trip => tripDays(trip).forEach(day => {
+        const ja = passportTripJa(day);
+        if (!ja) return;
+        const from = passportBaseKey(day.course), to = passportBaseKey(ja);
+        if (from && to && from !== to) map[from] = to;
+    }));
+    return map;
+}
+function passportClubKey(name) {
+    const k = passportBaseKey(name);
+    return passportAliases()[k] || k;
 }
 function passportCourse(round) {
     const stored = String((appData.roundCourses || {})[round] || (appData.courses || [])[round - 1] || '').trim();
@@ -155,7 +175,8 @@ function passportExtraVisits() {
         if (kind === 'domestic') return;
         tripDays(trip).forEach(day => {
             if (!day.course || noRound(day) || day.date > today) return;
-            visits.push({ src: 'trip', tripId: trip.id, name: String(day.course).replace(/\s*\([^()]*\)\s*$/, '').trim(), date: day.date, country: kind === 'japan' ? 'JP' : 'OTHER' });
+            const ja = passportTripJa(day), shown = ja || String(day.course);
+            visits.push({ src: 'trip', tripId: trip.id, name: shown.replace(/\s*\([^()]*\)\s*$/, '').trim(), ko: ja ? String(day.course).replace(/\s*\([^()]*\)\s*$/, '').trim() : '', date: day.date, country: kind === 'japan' ? 'JP' : 'OTHER' });
         });
     });
     return visits;
