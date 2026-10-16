@@ -336,6 +336,49 @@ async function kickScorecardWorkflow() {
     }
 }
 
+// ── 구글 캘린더 동기화 (다음 라운드 · 여행 일정) ──
+// 일정이 바뀐 저장이 성공하면 Supabase 함수 `calendar-sync`를 부른다. 함수가 DB에서 일정을 직접 읽어
+// 캘린더를 맞추므로 여기서는 '바뀌었다'는 신호만 보낸다(내용은 안 싣는다).
+// 설정 전이든 함수가 죽었든 앱은 그대로 돌아간다 — 오류창을 띄우지 않는다(docs/구글캘린더.md).
+let _calSig = null;       // 마지막으로 맞춘(또는 불러온) 일정의 서명. null이면 아직 기준이 없다.
+let _calTimer = 0;
+let _calOff = false;      // 함수가 없거나 설정 전이면 이 접속 동안은 더 부르지 않는다.
+function calendarSignature(data) {
+    // 캘린더에 실리는 값만 본다 — 경비·준비물을 고칠 때마다 부르지 않으려는 것이다.
+    // 내 로컬 상태끼리만 견주므로 JSON.stringify로 충분하다(DB가 돌려준 값과는 견주지 않는다).
+    const trips = Array.isArray(data && data.trips) ? data.trips.map(t => ({
+        id: t && t.id, title: t && t.title, memo: t && t.memo,
+        days: (t && Array.isArray(t.days) ? t.days : []).map(d => d && ({ date: d.date, course: d.course, tee: d.tee, golf: d.golf, area: d.area, stay: d.stay, memo: d.memo }))
+    })) : [];
+    return JSON.stringify({ d: data && data.nextRoundDate, i: data && data.nextRoundISO, n: data && data.nextRoundNo, t: trips });
+}
+function calendarMaybeChanged(data) {
+    if (_calOff) return;
+    const sig = calendarSignature(data);
+    if (_calSig === null) { _calSig = sig; return; }       // 기준이 없으면 이번 것을 기준으로 삼는다
+    if (sig === _calSig) return;
+    _calSig = sig;
+    clearTimeout(_calTimer);
+    _calTimer = setTimeout(syncGoogleCalendar, 2000);       // 연달아 고치는 동안은 모아서 한 번만
+}
+async function syncGoogleCalendar() {
+    if (_calOff) return false;
+    try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/calendar-sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+            body: '{}'
+        });
+        if (res.status === 404 || res.status === 503) { _calOff = true; return false; }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { console.warn("캘린더 동기화 실패:", res.status, data); return false; }
+        return !!data.synced;
+    } catch (err) {
+        console.warn("캘린더 동기화 실패:", err);
+        return false;
+    }
+}
+
 function getDefaultData() {
     return {
         nextRoundDate: "", clubFund: 0, noticeMemo: "", totalRounds: 4,
@@ -409,6 +452,7 @@ async function fetchFromSupabase() {
         prevData = appData;
         appData = payload;
         leagueReadReady = true;
+        _calSig = calendarSignature(appData);   // 접속 때의 일정을 기준으로 — 이후 바뀐 저장만 캘린더로 보낸다
         if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
         if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
         if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
@@ -480,7 +524,7 @@ async function flushSupabaseSaves() {
                 snap._rev = { by: CLIENT_ID, n: ++_revSeq };
                 const { error } = await window._supabase.from(window.SUPABASE_TABLE).upsert({ id: 1, payload: snap });
                 if (error) { console.error("Save Error:", error); showSaveStatus("⚠️ 저장 실패"); }
-                else { saved = true; showSaveStatus("⚡ 동기화 완료"); }
+                else { saved = true; showSaveStatus("⚡ 동기화 완료"); calendarMaybeChanged(snap); }
             } catch (err) { console.error("Sync Exception:", err); showSaveStatus("⚠️ 저장 실패"); }
             finally { waiters.forEach(resolve => resolve(saved)); }
         }
