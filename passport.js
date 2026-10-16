@@ -272,44 +272,22 @@ function passportTilt(key) {  // 같은 골프장은 늘 같은 각도로 찍힌
 }
 const passportWhen = v => v.round ? (v.date || v.round + '차') : (v.date || '날짜 미상');
 const passportRingWhen = v => v.round ? v.round + '차' : (v.date ? v.date.slice(0, 7).replace('-', '.') : 'PAST');
-// 도장 질감은 미리 만든 이미지(assets/stamp-texture.png)를 마스크로 얹는다 — 실행 중에 filter를 계산하지 않아 안드로이드에서도 가볍다.
-// 이미지를 확인한 뒤에만 .stamp-tex를 붙인다(받지 못하면 마스크 없이 매끈한 도장 — 마스크 이미지가 깨지면 도장이 통째로 사라지므로).
-const PASSPORT_TEXTURE = 'assets/stamp-texture.png';
-try {
-    if (typeof Image === 'function' && typeof document !== 'undefined') {
-        const tex = new Image();
-        tex.onload = () => document.documentElement.classList.add('stamp-tex');
-        tex.src = PASSPORT_TEXTURE;
-    }
-} catch (err) {}
-// 중앙 날짜 띠의 글자 — 첫 방문 날짜(2026.09.12), 날짜가 없으면 차수, 그것도 없으면 `날짜 미상`.
-const passportBandText = v => passportWhen(v).replace(/-/g, '.');
 function passportStampHtml(group, index) {
     const first = group.visits[0], n = group.visits.length, tag = PASSPORT_COUNTRY_TAG[group.country];
     const mark = passportMark(group.key), ink = mark ? mark.ink : '#667b70';
     const ring = passportRingName(group.name), id = 'passportRing' + index;
-    const tilt = passportTilt(group.key), press = ((tilt + 20) * 47) % 360;
-    const skip = 'stroke-dasharray="318 9 190 14 51"';
     return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${ink}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}${tag ? `<span class="passport-country">${tag}</span>` : ''}
-        <span class="passport-seal" style="--tilt:${tilt}deg;--tx:${(tilt + 20) * 2.5}%;--ty:${(((tilt + 20) * 37) % 41) * 2.4}%" aria-hidden="true">
-            <svg viewBox="0 0 200 200" focusable="false"><defs><path id="${id}t" d="M29 100 A71 71 0 0 1 171 100"/><path id="${id}b" d="M18 100 A82 82 0 0 0 182 100"/>
-                <linearGradient id="${id}g" gradientTransform="rotate(${press} .5 .5)"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient>
-                <mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200"><rect width="200" height="200" fill="url(#${id}g)"/></mask></defs>
-                <g mask="url(#${id}m)">
-                    <circle cx="100" cy="100" r="93" fill="none" stroke="currentColor" stroke-width="7" opacity=".6" ${skip}/>
-                    <circle cx="100" cy="100" r="89.6" fill="none" stroke="currentColor" stroke-width="1.5" ${skip}/><circle cx="100" cy="100" r="96.4" fill="none" stroke="currentColor" stroke-width="1.8" ${skip}/>
-                    <circle cx="100" cy="100" r="85" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 3.2"/>
-                    <circle cx="100" cy="100" r="62" fill="none" stroke="currentColor" stroke-width="5" opacity=".6"/><circle cx="100" cy="100" r="59.6" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="100" cy="100" r="64.4" fill="none" stroke="currentColor" stroke-width="1.4"/>
-                    <text class="passport-ring-name" font-size="${(ring.size * .94).toFixed(1)}" text-anchor="middle"><textPath href="#${id}t" startOffset="50%">${escapeHtml(ring.text)}</textPath></text>
-                    <text class="passport-ring-sub" font-size="10" text-anchor="middle" dominant-baseline="hanging"><textPath href="#${id}b" startOffset="50%">FIRST ${passportRingWhen(first)} · ${n} VISIT${n > 1 ? 'S' : ''}</textPath></text>
-                </g>
+        <span class="passport-seal" style="--tilt:${passportTilt(group.key)}deg" aria-hidden="true">
+            <svg viewBox="0 0 200 200" focusable="false"><defs><path id="${id}t" d="M24 100 A76 76 0 0 1 176 100"/><path id="${id}b" d="M17 100 A83 83 0 0 0 183 100"/></defs>
+                <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="3.5"/>
+                <circle cx="100" cy="100" r="89" fill="none" stroke="currentColor" stroke-width="1"/>
+                <circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="2"/>
+                <text class="passport-ring-name" font-size="${ring.size.toFixed(1)}" text-anchor="middle"><textPath href="#${id}t" startOffset="50%">${escapeHtml(ring.text)}</textPath></text>
+                <text class="passport-ring-sub" font-size="10.5" text-anchor="middle" dominant-baseline="hanging"><textPath href="#${id}b" startOffset="50%">FIRST ${passportRingWhen(first)} · ${n} VISIT${n > 1 ? 'S' : ''}</textPath></text>
+                <path d="M13 100l4-3v6zM187 100l-4-3v6z" fill="currentColor"/>
             </svg>
             <span class="passport-core"${mark ? ` style="background:${mark.background}"` : ''}>${passportMarkHtml(group)}</span>
-            <svg class="passport-band" viewBox="0 0 200 200" focusable="false"><g mask="url(#${id}m)" transform="rotate(-5 100 133)">
-                <rect x="42" y="119" width="116" height="29" rx="3" fill="#fff" stroke="currentColor" stroke-width="2.6"/><rect x="45.5" y="122.5" width="109" height="22" rx="1.5" fill="none" stroke="currentColor" stroke-width=".9"/>
-                <text class="passport-band-text" x="100" y="140.2" font-size="${passportBandText(first).length > 8 ? '16.5' : '17.5'}" text-anchor="middle">${escapeHtml(passportBandText(first))}</text>
-            </g></svg>
         </span>
         <b class="passport-name">${escapeHtml(group.name)}</b>${passportKoOf(group) ? `<small class="passport-ko">${escapeHtml(passportKoOf(group))}</small>` : ''}<small class="passport-first">첫 방문 ${passportWhen(first)}</small>
         <span class="passport-visits">${n}회 방문 <span aria-hidden="true">›</span></span>
