@@ -23,5 +23,13 @@
     "site_url": "https://theoceanresort.co.kr/main/golfMain.do?PID=04",
     "checkedAt": 1792077106915,
     "nextTry": 1792163506915
+  },
+  "가고시마국제": {
+    "name": "가고시마국제 컨트리클럽",
+    "attempts": 1,
+    "stage": "search",
+    "reason": "unverified",
+    "checkedAt": 1792111223950,
+    "nextTry": 1792197623950
   }
 }
