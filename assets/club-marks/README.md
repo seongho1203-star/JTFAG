@@ -10,6 +10,8 @@
 | 광주 | `v1/gwangju.png` | [공식 홈페이지](https://www.kjcc.co.kr/index.asp) · [원본](https://www.kjcc.co.kr/images/logo.png) |
 | 무등산 | `v1/mudeungsan.png` | [골프장 공식 예약 앱](https://play.google.com/store/apps/details?id=kr.co.teins.mudeungsancc) |
 | JNJ(정남진골프리조트) | `v1/jnj.jpeg` | 사용자가 제공한 마크 `IMG_9255.jpeg` 원본 |
+| 여수 디오션CC | `v1/ocean.jpeg` | 사용자가 제공한 마크(여백만 잘라냄) |
+| 남해 사우스케이프 | `v1/southcape.jpeg` | 사용자가 제공한 마크(앱 아이콘의 둥근 테두리와 여백을 잘라내고 SC 글자만 남김) |
 
 어등산 SVG는 원본 path를 유지하고 viewBox만 왼쪽 심벌 영역으로 좁혔다. 광주 마크는 원본 파일을 유지하고 CSS로 왼쪽 심벌 영역을 표시한다. 나머지 PNG는 내려받은 원본 그대로다.
 

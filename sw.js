@@ -8,7 +8,7 @@ const rankIconRequests = new Map();
 const CLUB_MARK_CACHE_PREFIX = 'jtfag-club-marks-';
 const CLUB_MARK_CACHE = CLUB_MARK_CACHE_PREFIX + 'v1';
 const CLUB_MARK_BASE = new URL('assets/club-marks/v1/', self.registration.scope).href;
-const CLUB_MARK_URLS = ['hampyeong-eliche.png', 'eodeungsan.svg', 'happiness.png', 'gwangju.png', 'mudeungsan.png', 'jnj.jpeg'].map(file => CLUB_MARK_BASE + file);
+const CLUB_MARK_URLS = ['hampyeong-eliche.png', 'eodeungsan.svg', 'happiness.png', 'gwangju.png', 'mudeungsan.png', 'jnj.jpeg', 'ocean.jpeg', 'southcape.jpeg'].map(file => CLUB_MARK_BASE + file);
 const CLUB_MARK_INDEX = new URL('assets/club-marks/auto.json', self.registration.scope).href;
 const AUTO_MARK_FILE = /^auto-[a-f0-9]{64}\.(png|jpg|webp)$/;
 const clubMarkRequests = new Map();

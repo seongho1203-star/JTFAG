@@ -12,7 +12,9 @@ const PASSPORT_MARKS = Object.freeze({
     '해피니스': { file: 'happiness.png', ink: '#174d82', background: '#073c78' },
     '광주': { file: 'gwangju.png', ink: '#b56920', background: '#283c2f', symbol: true },
     '무등산': { file: 'mudeungsan.png', ink: '#a88a80', background: '#ffffff' },
-    'jnj': { file: 'jnj.jpeg', ink: '#087fab', background: '#ffffff' }
+    'jnj': { file: 'jnj.jpeg', ink: '#087fab', background: '#ffffff' },
+    '디오션': { file: 'ocean.jpeg', ink: '#2b6cb0', background: '#ffffff' },
+    '사우스케이프오너스클럽': { file: 'southcape.jpeg', ink: '#4a413e', background: '#ffffff' }
 });
 let passportAutoMarks = Object.create(null);
 let passportMarksPending = false, passportMarksNextCheck = 0, passportMarksTimer = null;
@@ -66,7 +68,7 @@ function switchTripSection(section) {
 }
 function passportClubKey(name) {
     const k = clubKey(String(name || '').replace(/\s*\([^()]*\)\s*$/, '')).toLocaleLowerCase('en');
-    return ({ '골프존카운티무등산': '무등산', '함평다이너스티': '함평엘리체' })[k] || k;
+    return ({ '골프존카운티무등산': '무등산', '함평다이너스티': '함평엘리체', '사우스케이프': '사우스케이프오너스클럽', '사우스케이프cc': '사우스케이프오너스클럽' })[k] || k;
 }
 function passportCourse(round) {
     const stored = String((appData.roundCourses || {})[round] || (appData.courses || [])[round - 1] || '').trim();
