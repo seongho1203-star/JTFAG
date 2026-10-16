@@ -1,4 +1,4 @@
-// 골프장 여권 — 완료된 홀 기록에서 계산한다. 방문 횟수·최고 타수를 따로 저장하지 않는다.
+// 스탬프(골프장 도장 모음) — 완료된 홀 기록에서 계산한다. 방문 횟수·최고 타수를 따로 저장하지 않는다.
 let tripSection = 'schedule';
 let passportPopup = null;
 let passportGroupsShown = [];
@@ -80,7 +80,7 @@ function rememberPassportNew() {
 function tripSectionHtml() {
     return `<div id="tripSectionNav" class="passport-tabs" role="group" aria-label="여행 화면 선택">
         <button type="button" class="${tripSection === 'schedule' ? 'on' : ''}" aria-pressed="${tripSection === 'schedule'}" onclick="switchTripSection('schedule')">여행 일정</button>
-        <button type="button" class="${tripSection === 'passport' ? 'on' : ''}" aria-pressed="${tripSection === 'passport'}" onclick="switchTripSection('passport')">골프장 여권</button>
+        <button type="button" class="${tripSection === 'passport' ? 'on' : ''}" aria-pressed="${tripSection === 'passport'}" onclick="switchTripSection('passport')">스탬프</button>
     </div>`;
 }
 function switchTripSection(section) {
@@ -201,7 +201,7 @@ function openPassport(index) {
     const element = document.createElement('div');
     element.className = 'passport-overlay';
     element.innerHTML = `<section class="bdg-sheet passport-sheet" role="dialog" aria-modal="true" aria-labelledby="passportDetailTitle">
-        <div class="passport-popup-head"><div><p>골프장 여권</p><h2 id="passportDetailTitle" class="passport-popup-title"></h2></div><button type="button" class="passport-popup-close" aria-label="닫기" onclick="closePassportDetail()">×</button></div>
+        <div class="passport-popup-head"><div><p>스탬프</p><h2 id="passportDetailTitle" class="passport-popup-title"></h2></div><button type="button" class="passport-popup-close" aria-label="닫기" onclick="closePassportDetail()">×</button></div>
         <div class="passport-popup-body"></div>
         <div class="passport-popup-footer"><button type="button" class="bdg-close" onclick="closePassportDetail()">닫기</button></div>
     </section>`;
@@ -324,11 +324,11 @@ function passportHtml() {
     refreshPassportDetail(data.groups);
     const upcoming = passportUpcoming(data.groups);
     const mrz = [
-        'P<KOR<JTFAG<<GOLF<PASSPORT'.padEnd(44, '<'),
+        'P<KOR<JTFAG<<GOLF<STAMP'.padEnd(44, '<'),
         (String(data.rounds).padStart(4, '0') + '<' + data.groups.length + '<<KOR').padEnd(44, '<')
     ];
     return `<div class="passport-book">
-        <div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG · PASSPORT</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div></div></div>
+        <div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG · STAMP</p><h2>스탬프</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div></div></div>
         ${data.groups.length ? `<div class="passport-page"><span class="passport-page-no" aria-hidden="true">PAGE 01</span><div class="passport-grid">${data.groups.map(passportStampHtml).join('')}</div></div>
         <p class="passport-sub">도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>` : '<div class="passport-empty">첫 라운드의 스코어카드가 등록되면 골프장 도장이 찍힙니다.</div>'}
         <button type="button" class="passport-add" onclick="openPassportAdd()">＋ 지난 방문 추가</button>
