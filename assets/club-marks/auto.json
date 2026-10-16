@@ -36,6 +36,15 @@
       "site_url": "https://www.asahicc.jp/",
       "source_url": "https://www.asahicc.jp/images/header/logo.png",
       "added_at": "2026-10-16T00:40:23.950Z"
+    },
+    "남국": {
+      "file": "auto-7cd7ee49f277188a88671c5803942f9e51e109f0000b56d260cf06744b3b51c1.png",
+      "background": "#ffffff",
+      "ink": "#1a1a4a",
+      "name": "남국컨트리클럽",
+      "site_url": "https://nangoku-cc.com/",
+      "source_url": "https://nangoku-cc.com/images/common/logo.png",
+      "added_at": "2026-10-16T00:41:35.534Z"
     }
   }
 }

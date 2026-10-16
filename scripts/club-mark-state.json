@@ -31,5 +31,13 @@
     "reason": "unverified",
     "checkedAt": 1792111223950,
     "nextTry": 1792197623950
+  },
+  "체리시사이드": {
+    "name": "체리 시사이드 골프클럽",
+    "attempts": 1,
+    "stage": "search",
+    "reason": "unverified",
+    "checkedAt": 1792111295534,
+    "nextTry": 1792197695534
   }
 }
