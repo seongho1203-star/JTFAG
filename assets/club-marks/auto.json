@@ -54,6 +54,24 @@
       "site_url": "https://nangoku-cc.com/",
       "source_url": "https://nangoku-cc.com/images/common/logo.png",
       "added_at": "2026-10-16T00:42:39.498Z"
+    },
+    "チェリーゴルフ鹿児島シーサイドコース": {
+      "file": "auto-31c72bf3e8c0723617ef2063543b844f2a01d2d284f6e78f85121f466c17dcda.png",
+      "background": "#FFFFFF",
+      "ink": "#F27BB0",
+      "name": "チェリーゴルフ鹿児島シーサイドコース",
+      "site_url": "https://cherry-group.jp/course_kagoshima/",
+      "source_url": "https://cherry-group.jp/course_kagoshima/images/course-logo.png?v=20260810-kagoshima-official-logo-1",
+      "added_at": "2026-10-16T00:47:43.351Z"
+    },
+    "鹿児島国際ゴルフ倶楽部": {
+      "file": "auto-d1fddbc00d040f6f38057ac1c41ee99af0d0e60ecb11354e7d8b780f1d3528a9.png",
+      "background": "#1A1A1A",
+      "ink": "#385c4c",
+      "name": "鹿児島国際ゴルフ倶楽部",
+      "site_url": "https://kokusaigolf.com/",
+      "source_url": "https://kokusaigolf.com/images/common/logo.png",
+      "added_at": "2026-10-16T00:47:43.351Z"
     }
   }
 }
