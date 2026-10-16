@@ -244,7 +244,7 @@ function passportRingName(name) {
 function passportTilt(key) {  // 같은 골프장은 늘 같은 각도로 찍힌다
     let sum = 0;
     for (const ch of String(key)) sum = (sum * 31 + ch.charCodeAt(0)) % 997;
-    return (sum % 31) - 15;
+    return (sum % 41) - 20;
 }
 const passportWhen = v => v.round ? (v.date || v.round + '차') : (v.date || '날짜 미상');
 const passportRingWhen = v => v.round ? v.round + '차' : (v.date ? v.date.slice(0, 7).replace('-', '.') : 'PAST');
