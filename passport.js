@@ -304,7 +304,7 @@ function passportHtml() {
         (String(data.rounds).padStart(4, '0') + '<' + data.groups.length + '<<KOR').padEnd(44, '<')
     ];
     return `<div class="passport-book">
-        <div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG · PASSPORT</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div><div><b>${data.rounds}</b><span>완료 라운드</span></div></div></div>
+        <div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG · PASSPORT</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div></div></div>
         ${data.groups.length ? `<div class="passport-page"><span class="passport-page-no" aria-hidden="true">PAGE 01</span><div class="passport-grid">${data.groups.map(passportStampHtml).join('')}</div></div>
         <p class="passport-sub">도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>` : '<div class="passport-empty">첫 라운드의 스코어카드가 등록되면 골프장 도장이 찍힙니다.</div>'}
         <button type="button" class="passport-add" onclick="openPassportAdd()">＋ 지난 방문 추가</button>

@@ -10,6 +10,23 @@ function formatFinalBalance(v) {
     return (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만";
 }
 
+// 홈의 합산 금액은 기본으로 접혀 있고(●●●●), 누르면 네 칸이 함께 펼쳐진다(사용자 요청). 앱을 열 때마다 접힌 채로 시작한다.
+let summaryTotalsShown = false;
+const SUMMARY_MASK = '●●●●';
+function toggleSummaryTotals() {
+    summaryTotalsShown = !summaryTotalsShown;
+    document.querySelectorAll('.summary-item .final-box').forEach(box => {
+        box.setAttribute('aria-expanded', String(summaryTotalsShown));
+        const total = box.querySelector('.final-total'), label = box.querySelector('.final-label');
+        if (label) label.textContent = summaryTotalsShown ? '합산 ▴' : '합산 ▾';
+        if (!total) return;
+        total.classList.toggle('masked', !summaryTotalsShown);
+        total.style.color = summaryTotalsShown ? (total.dataset.color || '') : '';
+        total.textContent = summaryTotalsShown ? formatFinalBalance(parseFloat(total.dataset.final) || 0) : SUMMARY_MASK;
+    });
+    if (summaryTotalsShown && typeof runFinalCountUp === 'function') runFinalCountUp();
+}
+
 // 그 차수의 정산이 끝났는가 — 남은 금액이 적혀야 끝난 것이다(사용자 요청 — 시작 금액만 적었을 때
 // 통합 정산 요약 합산에 `-30만`처럼 바로 반영되어 동반자들이 오해했다).
 // 시작 금액만 있으면 아직 게임 중이라 요약·표의 타수정산·니어 잔액에서 모두 빼 둔다.
@@ -605,8 +622,10 @@ function processAllRoundSettlements() {
                         <div class="detail-line"><span class="label">찬조</span> <span class="val${donation ? ' donate' : ''}">${donationText}</span></div>
                     </div>
                     <div class="sum-badges">${summaryBadgesHtml}</div>
-                    <div class="final-label">합산</div>
-                    <div class="final-total" data-final="${finalBalance}" style="color: ${finalColor};">${finalText}</div>
+                    <div class="final-box" role="button" tabindex="0" aria-expanded="${summaryTotalsShown}" aria-label="합산 금액 ${summaryTotalsShown ? '접기' : '펼치기'}" onclick="toggleSummaryTotals()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSummaryTotals();}">
+                        <div class="final-label">${summaryTotalsShown ? '합산 ▴' : '합산 ▾'}</div>
+                        <div class="final-total${summaryTotalsShown ? '' : ' masked'}" data-final="${finalBalance}" data-color="${finalColor}"${summaryTotalsShown ? ` style="color: ${finalColor};"` : ''}>${summaryTotalsShown ? finalText : SUMMARY_MASK}</div>
+                    </div>
                 </div>
             `;
         });

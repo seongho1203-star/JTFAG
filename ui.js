@@ -1370,10 +1370,16 @@ function animateFinalTotals() {
     if (countUpStarted || entranceBlocked()) return;
     if (document.querySelectorAll('.final-total[data-final]').length === 0) return;
     countUpStarted = performance.now();
-
+    if (typeof summaryTotalsShown !== 'undefined' && !summaryTotalsShown) return;   // 접혀 있으면 펼칠 때 돈다
+    runFinalCountUp();
+}
+// 합산 금액을 0에서 실제 값까지 굴린다. 펼치는 순간에도 쓴다(toggleSummaryTotals).
+function runFinalCountUp() {
+    const startedAt = performance.now();
     const DURATION = 700;
     const step = (now) => {
-        const t = Math.min(1, (now - countUpStarted) / DURATION);
+        if (typeof summaryTotalsShown !== 'undefined' && !summaryTotalsShown) return;
+        const t = Math.min(1, (now - startedAt) / DURATION);
         const eased = 1 - Math.pow(1 - t, 3);   // 끝에서 부드럽게 멎는다
         // 다시 그려지면 예전 칸은 사라지므로 매 프레임 새로 찾는다.
         document.querySelectorAll('.final-total[data-final]').forEach(el => {

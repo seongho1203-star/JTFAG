@@ -1028,6 +1028,10 @@ body { background: var(--bg-main); padding: 8px 8px calc(24px + env(safe-area-in
 .summary-item .detail-line .val.donate { color: #7a3fa8; }
 .sum-badges { display: flex; flex-direction: column; gap: 5px; font-size: clamp(0.56rem, 2.4vw, 0.66rem); min-height: calc(2 * var(--chip-h, 1.35em + 12px) + 5px); }
 .sum-badges .season-badge { margin: 0; font-size: 1em; height: var(--chip-h, auto); padding: 6px 3px; display: flex; align-items: center; justify-content: center; text-align: center; white-space: normal; word-break: keep-all; line-height: 1.35; letter-spacing: -0.2px; border-radius: 10px; }
+.final-box { margin-top: auto; display: flex; flex-direction: column; gap: 2px; cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 8px; }
+.final-box:focus-visible { outline: 2px solid var(--primary-gold); outline-offset: 1px; }
+.final-box .final-label { margin-top: 0; }
+.summary-item .final-total.masked { color: #9aa0a6; letter-spacing: 2px; font-size: clamp(0.7rem, 3vw, 0.85rem); line-height: 1.4; }
 .final-label { margin-top: auto; text-align: center; font-size: clamp(0.6rem, 2.4vw, 0.68rem); color: var(--text-sub); font-weight: 500; }
 .summary-item .final-total { margin: -8px 0 0 0; padding: 0; border: none; text-align: center; font-size: clamp(0.88rem, 3.8vw, 1.05rem); font-weight: 800; letter-spacing: -0.4px; }
 .summary-item.skeleton { border-radius: 10px; }
