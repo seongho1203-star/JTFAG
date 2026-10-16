@@ -168,14 +168,36 @@ function passportMarkHtml(group) {
         <span class="passport-mark-fallback"${mark ? ' hidden' : ''}>${initials}</span>
     </span>`;
 }
+// 도장 둘레 글자 — 이름이 길수록(일본 골프장 등) 글자를 줄여 호 안에 맞춘다.
+function passportRingName(name) {
+    const chars = Array.from(String(name || '').replace(/\s+/g, ' ').trim());
+    const text = (chars.length > 18 ? chars.slice(0, 17).join('') + '…' : chars.join('')).replace(/(\S)(CC|GC)$/i, '$1 $2');
+    return { text, size: Math.max(9, Math.min(17, 190 / (Array.from(text).length * 1.12))) };
+}
+function passportTilt(key) {  // 같은 골프장은 늘 같은 각도로 찍힌다
+    let sum = 0;
+    for (const ch of String(key)) sum = (sum * 31 + ch.charCodeAt(0)) % 997;
+    return (sum % 11) - 5;
+}
 function passportStampHtml(group, index) {
-    const first = group.visits[0];
-    const mark = passportMark(group.key);
-    return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${mark ? mark.ink : '#667b70'}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
+    const first = group.visits[0], n = group.visits.length;
+    const mark = passportMark(group.key), ink = mark ? mark.ink : '#667b70';
+    const ring = passportRingName(group.name), id = 'passportRing' + index;
+    return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${ink}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
         ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}
-        <span class="passport-seal"><span class="passport-seal-label">JTFAG</span>${passportMarkHtml(group)}</span>
+        <span class="passport-seal" style="--tilt:${passportTilt(group.key)}deg" aria-hidden="true">
+            <svg viewBox="0 0 200 200" focusable="false"><defs><path id="${id}t" d="M24 100 A76 76 0 0 1 176 100"/><path id="${id}b" d="M17 100 A83 83 0 0 0 183 100"/></defs>
+                <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="3.5"/>
+                <circle cx="100" cy="100" r="89" fill="none" stroke="currentColor" stroke-width="1"/>
+                <circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="2"/>
+                <text class="passport-ring-name" font-size="${ring.size.toFixed(1)}" text-anchor="middle"><textPath href="#${id}t" startOffset="50%">${escapeHtml(ring.text)}</textPath></text>
+                <text class="passport-ring-sub" font-size="10.5" text-anchor="middle" dominant-baseline="hanging"><textPath href="#${id}b" startOffset="50%">FIRST ${first.round}차 · ${n} VISIT${n > 1 ? 'S' : ''}</textPath></text>
+                <path d="M13 100l4-3v6zM187 100l-4-3v6z" fill="currentColor"/>
+            </svg>
+            <span class="passport-core"${mark ? ` style="background:${mark.background}"` : ''}>${passportMarkHtml(group)}</span>
+        </span>
         <b class="passport-name">${escapeHtml(group.name)}</b><small class="passport-first">첫 방문 ${first.date || first.round + '차'}</small>
-        <span class="passport-visits">${group.visits.length}회 방문 <span aria-hidden="true">›</span></span>
+        <span class="passport-visits">${n}회 방문 <span aria-hidden="true">›</span></span>
     </button>`;
 }
 function passportUpcoming(groups) {
@@ -207,11 +229,18 @@ function passportHtml() {
     passportTripsShown = allTrips();
     refreshPassportDetail(data.groups);
     const upcoming = passportUpcoming(data.groups);
-    return `<div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div><div><b>${data.rounds}</b><span>완료 라운드</span></div></div></div>
-        <p class="passport-sub">도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>
-        ${data.groups.length ? `<div class="passport-grid">${data.groups.map(passportStampHtml).join('')}</div>` : '<div class="passport-empty">첫 라운드의 스코어카드가 등록되면 골프장 도장이 찍힙니다.</div>'}
+    const mrz = [
+        'P<KOR<JTFAG<<GOLF<PASSPORT'.padEnd(44, '<'),
+        (String(data.rounds).padStart(4, '0') + '<' + data.groups.length + '<<KOR').padEnd(44, '<')
+    ];
+    return `<div class="passport-book">
+        <div class="passport-cover"><div class="passport-heading"><p class="passport-eyebrow">JTFAG · PASSPORT</p><h2>골프장 여권</h2></div><div class="passport-totals"><div><b>${data.groups.length}</b><span>방문 골프장</span></div><div><b>${data.rounds}</b><span>완료 라운드</span></div></div></div>
+        ${data.groups.length ? `<div class="passport-page"><span class="passport-page-no" aria-hidden="true">PAGE 01</span><div class="passport-grid">${data.groups.map(passportStampHtml).join('')}</div></div>
+        <p class="passport-sub">도장을 선택하면 방문 기록을 확인할 수 있습니다.</p>` : '<div class="passport-empty">첫 라운드의 스코어카드가 등록되면 골프장 도장이 찍힙니다.</div>'}
         ${data.unnamed ? `<p class="passport-sub">골프장 미지정 ${data.unnamed}라운드는 골프장 등록 후 도장에 반영됩니다.</p>` : ''}
-        ${upcoming.length ? `<details class="passport-plans"><summary>방문 예정 · ${upcoming.length}곳</summary>${upcoming.map(x => `<button type="button" onclick="openPassportTrip(${x.index})"><span>${escapeHtml(x.name)}<small>${x.date}</small></span><em>방문 예정 ›</em></button>`).join('')}</details>` : ''}`;
+        ${upcoming.length ? `<details class="passport-plans"><summary>방문 예정 · ${upcoming.length}곳</summary>${upcoming.map(x => `<button type="button" onclick="openPassportTrip(${x.index})"><span>${escapeHtml(x.name)}<small>${x.date}</small></span><em>방문 예정 ›</em></button>`).join('')}</details>` : ''}
+        <p class="passport-mrz" aria-hidden="true">${mrz.map(escapeHtml).join('<br>')}</p>
+    </div>`;
 }
 function checkPassportStamps() {
     if (typeof isLoaded !== 'undefined' && !isLoaded) return;
