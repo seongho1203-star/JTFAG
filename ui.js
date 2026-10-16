@@ -2833,6 +2833,13 @@ async function openScoreRequestModal() {
         if (el) el.value = '';
     });
     toggleGuestInput();
+    // 해외 라운드 표시와 고른 사진도 매번 새로 정한다.
+    const ov = document.getElementById('scorecardOverseas');
+    if (ov) ov.checked = false;
+    overseasFront = null; overseasBack = null;
+    const ovCourse = document.getElementById('scorecardOverseasCourse');
+    if (ovCourse) ovCourse.value = '';
+    toggleOverseas();
     renderScoreRequestModal();
     document.getElementById('scoreRequestModal').classList.add('active');
 }
@@ -2846,7 +2853,7 @@ function toggleGuestInput() {
 
 function closeScoreRequestModal() { document.getElementById('scoreRequestModal').classList.remove('active'); }
 
-function selectScorecardRound(r) { selectedScorecardRound = r; renderScoreRequestModal(); }
+function selectScorecardRound(r) { selectedScorecardRound = r; renderScoreRequestModal(); paintOverseas(); }
 
 function renderScoreRequestModal() {
     const select = document.getElementById('scoreRequestRound');
@@ -3030,6 +3037,115 @@ async function handleScorecardUpload(event) {
 
     // 예약 실행을 기다리지 않고 지금 판독을 시작시킨다.
     // 실패해도 등록은 이미 끝났고 예약 실행이 그물로 남아 있으므로 조용히 넘어간다.
+    if (await kickScorecardWorkflow()) {
+        showToast("🚀 판독을 시작했습니다. 1~2분 뒤 새로고침하면 타수가 반영됩니다.");
+    }
+}
+
+/* 해외 라운드 — 태블릿 스코어가 전반(OUT)·후반(IN) 두 화면으로 나뉘어 찍힌다.
+   사진 두 장을 모두 고른 뒤 한 번에 요청 하나로 남긴다(`req.url` = 전반, `req.url2` = 후반, `req.overseas`).
+   판독은 scripts/read-scorecard.js의 `processOverseas()`가 한다 — 영문 이름은 성으로 우리 넷에 붙인다. */
+let overseasFront = null, overseasBack = null;
+
+function overseasOn() {
+    const el = document.getElementById('scorecardOverseas');
+    return !!(el && el.checked);
+}
+
+function toggleOverseas() {
+    const on = overseasOn();
+    const box = document.getElementById('scorecardOverseasBox');
+    if (box) box.style.display = on ? '' : 'none';
+    // 해외에서는 게스트 입력(국내 카드의 합계 열쇠)과 일반 업로드 단추를 감춘다.
+    ['scorecardGuestCheckRow', 'scorecardGuestBox', 'scorecardPickBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (on) el.style.display = 'none';
+        else el.style.display = id === 'scorecardGuestBox' ? (document.getElementById('scorecardHasGuest').checked ? '' : 'none') : '';
+    });
+    paintOverseas();
+}
+
+function handleOverseasPick(which, event) {
+    const input = event.target;
+    const file = (input.files || [])[0];
+    input.value = '';
+    if (!file) return;
+    if (which === 'front') overseasFront = file; else overseasBack = file;
+    paintOverseas();
+}
+
+function paintOverseas() {
+    const f = document.getElementById('scorecardFrontBtn');
+    const b = document.getElementById('scorecardBackBtn');
+    const go = document.getElementById('scorecardOverseasSubmit');
+    if (!f || !b || !go) return;
+    f.classList.toggle('done', !!overseasFront);
+    b.classList.toggle('done', !!overseasBack);
+    f.textContent = overseasFront ? '✓ 전반 선택됨 (재선택)' : '📷 전반 (OUT)';
+    b.textContent = overseasBack ? '✓ 후반 선택됨 (재선택)' : '📷 후반 (IN)';
+    const ready = !!(overseasFront && overseasBack) && selectedScorecardRound !== -1;
+    go.disabled = !ready;
+    go.textContent = ready
+        ? `${selectedScorecardRound + 1}차 해외 스코어 등록`
+        : (!overseasFront && !overseasBack ? '전반·후반 사진을 선택하세요'
+            : (!overseasFront ? '전반 사진을 선택하세요' : '후반 사진을 선택하세요'));
+}
+
+let overseasBusy = false;
+async function submitOverseasScorecard() {
+    if (overseasBusy) return;
+    if (selectedScorecardRound === -1) { showToast("⚠️ 차수를 먼저 선택해 주세요."); return; }
+    if (!overseasFront || !overseasBack) { showToast("⚠️ 전반·후반 사진을 모두 선택해 주세요."); return; }
+    const round = selectedScorecardRound;
+    const course = (document.getElementById('scorecardOverseasCourse').value || '').trim().slice(0, 40);
+
+    overseasBusy = true;
+    const go = document.getElementById('scorecardOverseasSubmit');
+    if (go) go.disabled = true;
+    let urlFront, urlBack;
+    try {
+        showToast("⏳ 전반 사진을 업로드 중입니다...");
+        urlFront = await uploadPhotoBlob(await compressImageToBlob(overseasFront, SCORECARD_MAX_PX, SCORECARD_QUALITY), round);
+        showToast("⏳ 후반 사진을 업로드 중입니다...");
+        urlBack = await uploadPhotoBlob(await compressImageToBlob(overseasBack, SCORECARD_MAX_PX, SCORECARD_QUALITY), round);
+    } catch (err) {
+        console.error("해외 스코어카드 업로드 실패:", err);
+        showToast("⚠️ 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        overseasBusy = false; paintOverseas();
+        return;
+    }
+
+    const now = new Date();
+    saveState();
+    if (!appData.scoreRequests) appData.scoreRequests = [];
+    appData.scoreRequests.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        round: round + 1,
+        overseas: true,                 // 이게 있으면 url(전반) · url2(후반) 두 장을 합쳐 읽는다
+        url: urlFront,
+        url2: urlBack,
+        course: course,
+        year: (Number(appData.nextRoundNo) === round + 1 && parseInt((appData.nextRoundISO || '').slice(0, 4), 10)) || missionYearNow(),
+        time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        by: localStorage.getItem('jtfag_my_name') || SCORE_OWNER,
+        status: '대기',
+        note: ''
+    });
+    pruneScoreRequests();
+
+    const saved = await syncToSupabase(appData);
+    overseasBusy = false;
+    renderScoreRequestModal();
+    if (!saved) {
+        showToast("⚠️ 스코어카드 요청 저장에 실패했습니다. 서버 연결 상태를 확인해 주세요.", 5000);
+        paintOverseas();
+        return;
+    }
+    // 등록이 끝났으니 고른 사진을 비운다 — 다음 차수에 같은 사진이 또 올라가지 않게.
+    overseasFront = null; overseasBack = null;
+    paintOverseas();
+    showToast(`✅ ${round + 1}차 해외 스코어카드를 등록했습니다. 판독 완료 후 타수가 자동 반영됩니다.`);
     if (await kickScorecardWorkflow()) {
         showToast("🚀 판독을 시작했습니다. 1~2분 뒤 새로고침하면 타수가 반영됩니다.");
     }

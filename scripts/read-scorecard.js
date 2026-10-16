@@ -11,6 +11,9 @@
 //   · 파 합계가 68~74인가
 //   · 우리 4명이 모두 나왔는가 (5인 플레이의 게스트는 여기서 걸러진다)
 // 하나라도 어긋나면 그 요청은 '실패'로 남기고 stats.js는 그대로 둔다.
+//
+// 해외 라운드(req.overseas)는 전반·후반 사진 두 장을 따로 읽어 합친다 — 아래 processOverseas().
+// 카드에 타수 합계가 없어 합계 검산 대신 같은 사진을 여러 번 읽어 일치를 본다.
 
 const fs = require('fs');
 const vm = require('vm');
@@ -92,6 +95,51 @@ const SCHEMA = {
     additionalProperties: false
 };
 
+// ── 해외 라운드(태블릿 스코어 화면, 전반·후반 두 장) ──────────────────────
+// 영문 이름은 성으로 우리 넷에 붙인다. 우리 넷은 성이 다 다르다.
+// 골퍼가 바뀌면 이 표도 고칠 것(키는 payload.scores의 이름과 같아야 한다).
+const OVERSEAS_SURNAMES = { LEE: '이관교', KIM: '김지명', SHIN: '신성호', PARK: '박승수' };
+const OVERSEAS_PAR_MIN = 66, OVERSEAS_PAR_MAX = 76;   // 국내(68~74)보다 조금 넓게 본다
+const HALF = 9;
+
+const SYSTEM_HALF = `당신은 골프 스코어 화면(태블릿) 사진을 판독하는 도구다.
+한 장에는 9홀(전반 OUT 1~9번 또는 후반 IN 10~18번)만 나온다. 사진에 보이는 숫자를 그대로 옮겨 적을 뿐, 추정하거나 보정하지 않는다.
+
+- firstHole: 이 화면 맨 앞 홀의 번호. 전반이면 1, 후반이면 10.
+- par: 이 화면의 홀 9개의 파. 홀 번호 아래에 "4/9"처럼 적혀 있으면 앞의 숫자(4)가 파이고 뒤의 숫자는 난이도 순번이다.
+- players[].strokes: 그 사람이 이 9홀에서 친 실제 타수 9개. 왼쪽 홀부터 순서대로.
+  숫자의 색(파랑·빨강·검정)은 의미가 없으니 무시하고 숫자만 읽는다.
+  칸이 비어 있거나, 효과 그림·글자에 가려 확실히 안 읽히면 지어내지 말고 그 칸에 0을 적는다.
+- 오른쪽의 HALF·TOTAL 칸이나 아래 입력 패널에 보이는 숫자는 퍼트 수·포인트·현재 입력값이다. 타수가 아니니 절대 옮기지 마라.
+- NiceBirdie! 같은 효과 글자와 노란 강조 열은 무시한다.
+- playerCount: 이름이 올라 있는 사람 수를 먼저 센다. players의 개수와 반드시 같아야 한다.
+- 사진에 있는 사람은 한 명도 빼지 말고 모두 players에 넣는다.
+- 이름은 화면에 적힌 그대로 적는다(영문일 수 있다). 철자가 흐리면 보이는 대로 적는다.`;
+
+const SCHEMA_HALF = {
+    type: 'object',
+    properties: {
+        course: { type: 'string', description: '골프장·코스 이름이 화면에 보이면 적고, 안 보이면 빈 문자열.' },
+        firstHole: { type: 'integer', description: '맨 앞 홀 번호. 전반 1, 후반 10.' },
+        playerCount: { type: 'integer', description: '이름이 올라 있는 사람 수. players의 개수와 같아야 한다.' },
+        par: { type: 'array', items: { type: 'integer' }, description: '이 화면 9홀의 파, 9개.' },
+        players: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string' },
+                    strokes: { type: 'array', items: { type: 'integer' }, description: '이 화면 9홀의 실제 타수, 9개. 안 읽히면 0.' }
+                },
+                required: ['name', 'strokes'],
+                additionalProperties: false
+            }
+        }
+    },
+    required: ['course', 'firstHole', 'playerCount', 'par', 'players'],
+    additionalProperties: false
+};
+
 async function readPayload() {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.1&select=payload`, { headers });
     if (!res.ok) throw new Error(`리그 데이터 조회 실패: ${res.status} ${await res.text()}`);
@@ -153,6 +201,88 @@ async function readScorecard(image, names) {
     const text = response.content.find(b => b.type === 'text');
     if (!text) throw new Error('판독 결과가 비어 있습니다.');
     return JSON.parse(text.text);
+}
+
+async function readHalf(image) {
+    const response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 6000,
+        output_config: { format: { type: 'json_schema', schema: SCHEMA_HALF } },
+        system: SYSTEM_HALF,
+        messages: [{
+            role: 'user',
+            content: [
+                { type: 'image', source: { type: 'base64', media_type: image.media, data: image.data } },
+                { type: 'text', text: '이 화면 한 장(9홀)을 판독해라.' }
+            ]
+        }]
+    });
+    if (response.stop_reason === 'refusal') throw new Error('판독이 거부되었습니다.');
+    const text = response.content.find(b => b.type === 'text');
+    if (!text) throw new Error('판독 결과가 비어 있습니다.');
+    return JSON.parse(text.text);
+}
+
+// 영문 이름의 성 조각으로 우리 넷 중 하나를 고른다. 못 붙이면 null(게스트로 친다).
+// "LEE KWANKYO"·"Kwankyo Lee"·"K. LEE"처럼 성이 어느 자리에 있어도, 철자가 조금 달라도 성으로만 본다.
+// 둘 이상 걸리면 찍지 않고 Error.
+function surnameGolfer(raw, names) {
+    const tokens = String(raw || '').toUpperCase().split(/[^A-Z]+/).filter(Boolean);
+    const hits = new Set();
+    tokens.forEach(t => { const g = OVERSEAS_SURNAMES[t]; if (g && names.includes(g)) hits.add(g); });
+    if (hits.size > 1) throw new Error(`"${raw}"이(가) ${[...hits].join('·')} 중 누구인지 식별할 수 없습니다.`);
+    return hits.size === 1 ? [...hits][0] : null;
+}
+
+// 한 장(9홀)을 검산해 {firstHole, par, byGolfer:{이름:[9타수]}, skipped}로 돌려준다.
+function validateHalf(read, names, label) {
+    if (read.firstHole !== 1 && read.firstHole !== 10) throw new Error(`${label}: 시작 홀이 ${read.firstHole}번으로 읽혔습니다. 전반(1번~) 또는 후반(10번~) 화면이어야 합니다.`);
+    const par = read.par;
+    if (!Array.isArray(par) || par.length !== HALF) throw new Error(`${label}: 파가 ${Array.isArray(par) ? par.length : 0}홀만 읽혔습니다.`);
+    if (par.some(p => !Number.isInteger(p) || p < 3 || p > 6)) throw new Error(`${label}: 파 값에 오류가 있습니다.`);
+
+    const players = Array.isArray(read.players) ? read.players : [];
+    const readNames = players.map(p => String(p.name || '').trim()).filter(Boolean);
+    if (read.playerCount !== players.length) {
+        throw new Error(`${label}: 화면에는 ${read.playerCount}명이나 ${players.length}명만 판독되었습니다. 읽은 이름: ${readNames.join(', ') || '없음'}`);
+    }
+
+    const byGolfer = {};
+    const skipped = [];
+    players.forEach(p => {
+        const g = surnameGolfer(p.name, names);
+        if (!g) { if (String(p.name || '').trim()) skipped.push(String(p.name).trim()); return; }
+        if (byGolfer[g]) throw new Error(`${label}: ${g}이(가) 화면에 두 번 나옵니다. 이름을 식별할 수 없습니다.`);
+        const st = p.strokes;
+        if (!Array.isArray(st) || st.length !== HALF) throw new Error(`${label}: ${g}의 타수가 ${Array.isArray(st) ? st.length : 0}홀만 읽혔습니다.`);
+        const blank = st.findIndex(s => !Number.isInteger(s) || s < 1);
+        if (blank !== -1) throw new Error(`${label}: ${g}의 ${read.firstHole + blank}번홀 타수가 비어 있거나 읽히지 않았습니다. 라운드가 끝난 화면으로 다시 찍어 주세요.`);
+        if (st.some(s => s > 15)) throw new Error(`${label}: ${g}의 타수 값에 오류가 있습니다.`);
+        byGolfer[g] = st;
+    });
+    const missing = names.filter(n => !byGolfer[n]);
+    if (missing.length) {
+        throw new Error(`${label}: ${missing.join(', ')}의 기록을 찾을 수 없습니다. 화면에서 읽은 이름: ${readNames.join(', ') || '없음'}`);
+    }
+    return { firstHole: read.firstHole, par, byGolfer, skipped, course: String(read.course || '').trim(), readNames };
+}
+
+// 합계 검산이 불가능한 화면이라(HALF·TOTAL 칸은 퍼트 수) 같은 사진을 두 번 읽어 서로 맞는지로 대신한다.
+// 어긋나면 한 번 더 읽어 둘이 맞는 쪽을 쓰고, 그래도 안 맞으면 찍지 않고 실패시킨다.
+const sameHalf = (a, b) => JSON.stringify([a.firstHole, a.par, names4(a)]) === JSON.stringify([b.firstHole, b.par, names4(b)]);
+const names4 = h => Object.keys(h.byGolfer).sort().map(n => [n, h.byGolfer[n]]);
+
+async function readHalfChecked(image, names, label) {
+    const reads = [];
+    for (let i = 0; i < 3; i++) {
+        const half = validateHalf(await readHalf(image), names, label);
+        reads.push(half);
+        if (i >= 1) {
+            const match = reads.slice(0, i).find(r => sameHalf(r, half));
+            if (match) return half;
+        }
+    }
+    throw new Error(`${label}: 같은 사진을 세 번 읽었는데 결과가 서로 달라 확정할 수 없습니다. 사진을 더 선명하게(화면 정면, 반사 없이) 다시 찍어 주세요.`);
 }
 
 const squeeze = s => String(s == null ? '' : s).replace(/\s+/g, '');
@@ -468,6 +598,45 @@ function upsertRound(source, round, block) {
     return source.slice(0, objOpen + 1) + trimmed + ',\n\n' + block + '\n' + source.slice(objClose);
 }
 
+async function processOverseas(req, names) {
+    console.log(`\n▸ ${req.round}차 해외 (${req.time}, ${req.by}) 판독 시작 · 전반·후반 두 장`);
+    for (const k of ['url', 'url2']) {
+        if (typeof req[k] !== 'string' || !/^https?:\/\//.test(req[k])) throw new Error('사진 주소가 올바르지 않습니다.');
+    }
+    const [imgA, imgB] = [await fetchImage(req.url), await fetchImage(req.url2)];
+    const a = await readHalfChecked(imgA, names, '전반 사진');
+    const b = await readHalfChecked(imgB, names, '후반 사진');
+
+    // 어느 사진이 전반이든 시작 홀 번호로 순서를 정한다. 같은 쪽을 두 번 올렸으면 여기서 걸린다.
+    if (a.firstHole === b.firstHole) {
+        throw new Error(`두 사진이 모두 ${a.firstHole === 1 ? '전반(1~9번홀)' : '후반(10~18번홀)'}으로 읽혔습니다. 전반·후반 사진을 각각 올려 주세요.`);
+    }
+    const [front, back] = a.firstHole === 1 ? [a, b] : [b, a];
+    if (a.firstHole !== 1) console.log('  (전반·후반 사진이 서로 바뀌어 올라와 시작 홀 번호로 바로잡았습니다.)');
+
+    const par = [...front.par, ...back.par];
+    const parSum = par.reduce((x, y) => x + y, 0);
+    if (parSum < OVERSEAS_PAR_MIN || parSum > OVERSEAS_PAR_MAX) {
+        throw new Error(`파 합계가 ${parSum}입니다(허용 ${OVERSEAS_PAR_MIN}~${OVERSEAS_PAR_MAX}). 판독 오류로 보입니다.`);
+    }
+
+    const rel = {};
+    names.forEach(n => {
+        const strokes = [...front.byGolfer[n], ...back.byGolfer[n]];
+        const sum = strokes.reduce((x, y) => x + y, 0);
+        if (sum < 50 || sum > 160) throw new Error(`${n}: 합계가 ${sum}타입니다. 판독 오류로 보입니다.`);
+        rel[n] = strokes.map((st, i) => st - par[i]);
+    });
+
+    const skipped = [...new Set([...front.skipped, ...back.skipped])];
+    const course = String(req.course || front.course || back.course || '').trim();
+    const data = { course, par, rel, skipped };
+
+    const totals = names.map(n => `${n} ${par.reduce((x, p, i) => x + p + rel[n][i], 0)}타`).join(' · ');
+    console.log(`  판독: ${course || '코스 미상'} / ${totals}`);
+    return writeRound(req, names, data, totals);
+}
+
 async function processOne(req, names) {
     if (!Number.isInteger(req.round) || req.round < 1 || req.round > 99) throw new Error(`차수(${req.round})가 올바르지 않습니다.`);
 
@@ -478,6 +647,8 @@ async function processOne(req, names) {
         console.log(`\n▸ ${req.round}차 멀리건 사용 알림 (${req.time}, ${req.by})`);
         return { totals: `${req.by || '동반자'}님이 ${req.round}차 라운드에서 멀리건을 사용했습니다.`, skipped: [], records: [], written: false };
     }
+
+    if (req.overseas) return processOverseas(req, names);
 
     console.log(`\n▸ ${req.round}차 (${req.time}, ${req.by}) 판독 시작`);
     if (typeof req.url !== 'string' || !/^https?:\/\//.test(req.url)) throw new Error('사진 주소가 올바르지 않습니다.');
@@ -499,7 +670,11 @@ async function processOne(req, names) {
     console.log(`  사진 속 이름: ${data.readNames.join(', ')}`);
     console.log(`  판독: ${data.course || '코스 미상'} / ${totals}`);
     if (data.skipped.length) console.log(`  게스트 제외: ${data.skipped.join(', ')}`);
+    return writeRound(req, names, data, totals);
+}
 
+// 검산을 통과한 한 차수를 stats.js에 쓴다. 국내·해외가 같이 쓴다.
+function writeRound(req, names, data, totals) {
     const before = fs.readFileSync(STATS_FILE, 'utf8');
     // 특별미션 시즌은 재접속·재판독 시에도 바뀌지 않도록 홀 기록에 남긴다.
     const previous = loadStats(before).ROUND_HOLES[String(req.round)];

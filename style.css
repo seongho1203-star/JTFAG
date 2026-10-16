@@ -486,6 +486,11 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 #scorecardPickBtn:disabled { opacity: 0.45; }
 /* 홀 기록 삭제. 사진 올리기 버튼과 급을 달리해 눈에 덜 띄게 두되,
    지울 게 있는 차수에서만 나오므로 숨겨 두지는 않는다. */
+.scorecard-text-input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: var(--input-bg); color: var(--text-main); font-weight: 700; font-size: 16px; box-sizing: border-box; }
+.scorecard-half-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.scorecard-half-btn { padding: 12px 6px; border: 1px solid rgba(184, 134, 11, 0.45); border-radius: 10px; background: var(--gold-light); color: var(--text-main); font-weight: 800; font-size: clamp(0.74rem, 2.9vw, 0.84rem); word-break: keep-all; }
+.scorecard-half-btn.done { background: #dcfce7; border-color: #86efac; color: #166534; }
+.scorecard-half-btn:disabled, #scorecardOverseasSubmit:disabled { opacity: 0.55; }
 .scorecard-del-btn { width: 100%; margin-top: 7px; padding: 8px; background: #ffffff; color: #dc2626; border: 1px solid #fecaca; border-radius: 10px; font-weight: 800; font-size: clamp(0.7rem, 2.8vw, 0.78rem); }
 .scorecard-del-btn:active { background: #fef2f2; }
 .scorecard-log { margin-top: 12px; }

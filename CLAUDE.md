@@ -130,6 +130,17 @@ GitHub Actions (read-scorecard.yml) → scripts/read-scorecard.js
 - **판독이 끝나면 알림이 간다.** 성공은 네 명 모두에게, 실패는 사진을 올린 사람(`req.by`)에게만.
   상태를 payload에 확정한 **뒤에** 보낸다 — 그래야 '완료'라고 알려 놓고 실제로는
   푸시가 실패한 경우가 안 생긴다. 알림이 실패해도 판독 결과는 뒤집지 않는다.
+- **해외 라운드는 전반·후반 사진 두 장으로 올린다**(사용자 요청 — 해외 골프장은 영문 이름의 태블릿 스코어 화면이 전반(OUT)·후반(IN)으로 나뉘어 찍힌다).
+  등록 창의 `해외 라운드 (전반·후반 사진 2장)`를 체크하면 게스트 입력·일반 업로드 단추가 숨고 `전반`·`후반` 단추와 선택 입력 `골프장`이 나온다.
+  **두 장을 모두 고른 뒤 한 번에 등록한다** → 요청 하나에 `{overseas: true, url(전반), url2(후반), course?}`가 실린다(`submitOverseasScorecard()` in ui.js).
+  현장에서 바로 올려 처리하는 흐름이라 귀국 후 따로 할 일이 없다. 판독은 `processOverseas()`(scripts/read-scorecard.js)가 맡고 쓰는 길(`writeRound()`)은 국내와 같다.
+  - **이름은 영문 성으로 붙인다**(`OVERSEAS_SURNAMES` — LEE→이관교 · KIM→김지명 · SHIN→신성호 · PARK→박승수). 대소문자·철자·성의 위치(`LEE KWANKYO`·`Kwankyo Lee`)는 상관없고
+    성 조각만 본다. **골퍼나 성이 바뀌면 그 표도 고칠 것.** 성이 둘 이상 걸리면 찍지 않고 실패시키고, 우리 넷이 아닌 이름은 게스트로 제외한다.
+  - **화면의 `HALF`·`TOTAL` 칸은 퍼트 수다** — 카드에 타수 합계가 없어 국내의 '카드 합계 = 18홀 합' 검산을 쓸 수 없다. 그래서 프롬프트가 그 칸·아래 입력 패널을 옮기지 못하게 막고
+    **같은 사진을 두 번 읽어 서로 같은지**로 대신 검산한다(`readHalfChecked()` — 다르면 한 번 더 읽어 둘이 맞는 쪽을 쓰고, 세 번 다 다르면 실패). 비어 있거나 가려진 칸은 0으로 받아 거절한다.
+    합계 검산보다 약하므로 처음 몇 번은 결과를 눈으로 확인할 것.
+  - **시작 홀 번호(`firstHole` 1/10)로 전반·후반을 가린다** — 바꿔 올려도 바로잡고, 같은 쪽을 두 번 올리면 실패. 파 합계 허용 범위는 국내(68~74)보다 넓은 **66~76**이다(`OVERSEAS_PAR_MIN/MAX`).
+  - 헤드리스 검증은 `node tests/overseas-scorecard.js`(가짜 SDK·가짜 서버·임시 저장소 — 실제 AI·DB·git 원격을 쓰지 않는다).
 - 필요한 Secret은 `ANTHROPIC_API_KEY` · `SUPABASE_URL` · `SUPABASE_SERVICE_KEY`
   그리고 알림용 `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`.
   워크플로가 `stats.js`를 커밋하므로 `permissions: contents: write`가 있어야 한다.
