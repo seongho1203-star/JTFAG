@@ -264,13 +264,13 @@ async function update(clubs, known, catalog, state, {now=Date.now(),discover=dis
         if (checked>=2) break;
         if (Object.hasOwn(known,club.key) || Object.hasOwn(catalog.marks,club.key) || Number(state[club.key]?.nextTry)>now) continue;
         checked++;
-        let stage='search',site=null,found=null;
+        let stage='search',site=null,found=null,why='';
         try {
             let logo=null;
             try {
                 site=await discover(club);
                 if(site) {stage='download';found=await collect(site);stage=found.images.length?'verify':'no_candidates';logo=await confirm(club,found);}
-            } catch(err) {if(err.status)throw err;}
+            } catch(err) {if(err.status)throw err;why=String(err.message||'').slice(0,160);}
             if(!logo) {
                 const app=await fallback(club);
                 if(app) {site=app;stage='app_download';found=await collect(app);stage=found.images.length?'app_verify':'app_no_candidates';logo=await confirm(club,found);}
@@ -284,7 +284,7 @@ async function update(clubs, known, catalog, state, {now=Date.now(),discover=dis
         } catch (err) {
             console.log(`공식 마크 확인 대기: ${club.name} · ${err.message}`);
             const attempts=(Number(state[club.key]?.attempts)||0)+1;
-            state[club.key]={name:club.name,attempts,stage,reason:err.reason || 'unverified',...(err.status?{status:err.status}:{}),...(site?{site_url:site}:{}),...(found?{candidates:found.images.map(i=>({source_url:i.source_url,label:i.label})),decision:found.decision || null}:{}),checkedAt:now,nextTry:now+(attempts<3?DAY:7*DAY)};
+            state[club.key]={name:club.name,attempts,stage,reason:err.reason || 'unverified',...(why?{why}:{}),...(err.status?{status:err.status}:{}),...(site?{site_url:site}:{}),...(found?{candidates:found.images.map(i=>({source_url:i.source_url,label:i.label})),decision:found.decision || null}:{}),checkedAt:now,nextTry:now+(attempts<3?DAY:7*DAY)};
         }
     }
     return {added,checked};

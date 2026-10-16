@@ -1,29 +1,4 @@
 {
-  "사우스케이프오너스클럽": {
-    "name": "사우스케이프오너스클럽",
-    "attempts": 1,
-    "stage": "no_candidates",
-    "reason": "unverified",
-    "checkedAt": 1792076341882,
-    "nextTry": 1792162741882
-  },
-  "아난티남해": {
-    "name": "아난티 남해 골프클럽",
-    "attempts": 1,
-    "stage": "verify",
-    "reason": "unverified",
-    "checkedAt": 1792076341882,
-    "nextTry": 1792162741882
-  },
-  "디오션": {
-    "name": "디오션CC",
-    "attempts": 1,
-    "stage": "download",
-    "reason": "unverified",
-    "site_url": "https://theoceanresort.co.kr/main/golfMain.do?PID=04",
-    "checkedAt": 1792077106915,
-    "nextTry": 1792163506915
-  },
   "가고시마국제": {
     "name": "가고시마국제 컨트리클럽",
     "attempts": 1,
