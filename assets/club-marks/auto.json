@@ -81,6 +81,24 @@
       "site_url": "https://play.google.com/store/apps/details?id=com.theananti.magicapp&hl=ko",
       "source_url": "https://play-lh.googleusercontent.com/u8HqQ51pKU_kFFpEgcWK-gXTx8Vp73I-oNHCY0PCWQ3yaEEDF8628ocieUbaG3KyN9qlNyHs8YrbYTGRSyoSuw=s0-br30",
       "added_at": "2026-10-16T00:53:12.298Z"
+    },
+    "北九州カントリー倶楽部": {
+      "file": "auto-10b74db1bf5b7b02ae195f0e65115ecccfcc0ec174ae5a57ac79f348fc6d43e0.png",
+      "background": "#FFFFFF",
+      "ink": "#1B5E20",
+      "name": "北九州カントリー倶楽部",
+      "site_url": "https://booking.pacificgolf.co.jp/guide/131.html",
+      "source_url": "https://pgm-images.s3-ap-northeast-1.amazonaws.com/images/guide/logo/logo_cid131.png",
+      "added_at": "2026-10-16T01:18:19.457Z"
+    },
+    "宇部７２カントリークラブ": {
+      "file": "auto-94188930d818febece82df576cf9ef08d3f54deedea35ec44aed882146f367f3.png",
+      "background": "#FFFFFF",
+      "ink": "#1B4D2B",
+      "name": "宇部７２カントリークラブ",
+      "site_url": "https://www.ube72cc.com/",
+      "source_url": "https://www.ube72cc.com/wp/wp-content/themes/golf/images/logo_mark.png",
+      "added_at": "2026-10-16T01:18:19.457Z"
     }
   }
 }
