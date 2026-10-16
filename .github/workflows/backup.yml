@@ -1,0 +1,38 @@
+name: 리그 데이터 백업
+
+on:
+  schedule:
+    # 매일 한국시간 새벽 4시 17분 (= 전날 UTC 19시 17분). 정각을 피했다 — 예약이 몰리는 시각이면 GitHub이 뒤로 민다.
+    - cron: '17 19 * * *'
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: '직접 백업이면 manual (어제와 내용이 같아도 남긴다)'
+        type: choice
+        options: [daily, manual]
+        default: manual
+
+# 앱 데이터는 읽기만 하고 jtfag_backups 표에만 쓴다. 저장소에는 아무것도 커밋하지 않는다.
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: 백업
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          BACKUP_KIND: ${{ inputs.kind || 'daily' }}
+        run: node scripts/backup.js

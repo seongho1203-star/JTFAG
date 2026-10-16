@@ -1,0 +1,47 @@
+name: 백업 되살리기
+
+# 수동으로만 돈다. 쓰는 법은 docs/백업.md.
+#  1) backup_id를 비운 채 실행 → 최근 백업 목록이 로그에 나온다.
+#  2) 번호(또는 latest)를 넣고 dry_run을 켠 채 실행 → 무엇이 바뀌는지만 보여 준다.
+#  3) dry_run을 끄고 실행 → 되살린다. 고치기 직전 상태는 자동으로 백업된다.
+on:
+  workflow_dispatch:
+    inputs:
+      backup_id:
+        description: '되살릴 백업 번호 (latest = 가장 최근, 비우면 목록만 보여 줌)'
+        type: string
+        default: ''
+      include_money:
+        description: '정산 금액(jtfag_money)도 백업 시점으로 되돌림'
+        type: boolean
+        default: false
+      dry_run:
+        description: '실제로 고치지 않고 확인만'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: 되살리기
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          BACKUP_ID: ${{ inputs.backup_id }}
+          INCLUDE_MONEY: ${{ inputs.include_money && '1' || '' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: node scripts/restore-backup.js

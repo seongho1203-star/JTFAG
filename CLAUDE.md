@@ -692,6 +692,21 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   목록에서 통째로 사라진 적이 있다** (파일은 Storage에 남아 있어 `scripts/restore-photos.js`로
   되살렸다). 이 확인창을 빼지 말 것. 골프장 이름은 사용자가 적은 글이라 `escapeHtml()`을 거친다.
 
+### 백업 (`scripts/backup.js` · `scripts/restore-backup.js` · `supabase/backup.sql`)
+
+사용자 요청 — 앱 전체가 `jtfag_league` 한 줄이라 잘못 덮어쓰면 되돌릴 길이 없었다(금액이 지워져 따로 뗀 일 · 사진 목록이 사라진 일). 켜는 법·되살리는 법은 `docs/백업.md`.
+
+- **하루 한 번 `jtfag_backups`에 남긴다**(`.github/workflows/backup.yml` · 한국 04:17). `payload`와 `jtfag_money` 전체 줄을 함께. 앱은 이 표를 **읽지도 쓰지도 못한다**
+  (정책을 일부러 안 만들었고 anon 권한도 걷었다) — 정산 금액·개인 정보가 그대로 들어 있어서다. 서비스 키(`SUPABASE_SERVICE_KEY`)만 닿는다.
+- **내용이 같으면 새로 안 남긴다.** 지문(`digestOf`)은 키 순서를 가리지 않고 `_rev`를 뺀다 — payload는 jsonb라 읽을 때마다 키 순서가 달라지고, `_rev`는 저장할 때마다 바뀌어
+  그대로 견주면 매번 다른 백업이 된다(앞의 'JSON.stringify로 payload를 견주지 말 것'과 같은 함정).
+- **비었거나 망가진 payload는 백업하지 않고 실패한다**(`validPayload` — 앱의 `fetchFromSupabase()` 검사와 같은 잣대). 그걸 남기면 좋은 백업을 밀어낸다. 실패하면 GitHub이 메일을 보낸다.
+- **보관**(`pickExpired`): 30일 지난 것은 지우되 일요일(KST) 것·`manual`·`pre-restore`는 180일, 최근 5개는 늘 남긴다.
+- **되살리기는 손으로만**(`restore-backup.yml`): 번호 없이 = 목록만 · `dry_run` 기본 켬 · 고치기 **직전 상태를 먼저 `pre-restore`로 백업** · 쓸 때 `_rev.by`를 `workflow`로 바꾼다
+  (안 바꾸면 마지막에 쓴 사람의 앱이 자기 메아리로 착각해 혼자 못 본다 — read-scorecard.js와 같다). **금액(`jtfag_money`)은 `include_money`를 켤 때만** 덮어쓰고 지우지는 않는다.
+- 스코어(`stats.js`)는 저장소 파일이라 이 백업에 없다 — 깃 기록으로 되돌린다.
+- 검증: `node tests/backup.js`(가짜 PostgREST 서버에 스크립트를 진짜로 돌린다 — 중복 건너뛰기 · 정리 · 거절 · 복구). **실제 DB로는 아직 못 돌렸다** — `backup.sql`을 올린 뒤 `Run workflow`(manual)로 한 번 확인할 것.
+
 ### 정산 · 등급 규칙
 
 `processAllRoundSettlements()` (calc.js)가 핵심 로직이다.
