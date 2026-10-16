@@ -1929,11 +1929,15 @@ html, body { overscroll-behavior: none; }
 .passport-stamp { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 2px 0 4px; border: 0; background: transparent; color: var(--passport-ink, #346a60); text-align: center; font: inherit; cursor: pointer; }
 .passport-seal { position: relative; display: block; width: 100%; max-width: 112px; aspect-ratio: 1 / 1; transform: rotate(var(--tilt, 0deg)); mix-blend-mode: multiply; }
 .passport-seal svg { display: block; width: 100%; height: 100%; }
-.passport-ring-name { fill: currentColor; font-weight: 800; letter-spacing: .08em; }
-.passport-ring-sub { fill: currentColor; font-weight: 700; letter-spacing: .1em; }
+.passport-seal .passport-band { position: absolute; inset: 0; pointer-events: none; }
+.passport-band-text { fill: currentColor; font-weight: 900; letter-spacing: .06em; }
+/* 질감 이미지는 받은 것을 확인한 뒤(.stamp-tex)에만 얹는다. 위치는 골프장마다 달라 같은 무늬가 반복돼 보이지 않는다. */
+.stamp-tex .passport-seal { -webkit-mask: url(assets/stamp-texture.png) var(--tx, 0%) var(--ty, 0%) / 150% 150% no-repeat; mask: url(assets/stamp-texture.png) var(--tx, 0%) var(--ty, 0%) / 150% 150% no-repeat; }
+.passport-ring-name { fill: currentColor; font-weight: 900; letter-spacing: .09em; }
+.passport-ring-sub { fill: currentColor; font-weight: 800; letter-spacing: .1em; }
 .passport-core { position: absolute; inset: 21%; display: flex; border-radius: 50%; overflow: hidden; background: #fff; }
-.passport-core .passport-mark { box-sizing: border-box; flex: 1 1 auto; width: 100%; max-width: none; height: 100%; padding: 6%; border-radius: 0; background: transparent; }
-.passport-core .passport-mark-symbol { flex: none; width: 64%; height: 64%; margin: auto; padding: 0; justify-content: flex-start; }
+.passport-core .passport-mark { box-sizing: border-box; flex: 1 1 auto; width: 100%; max-width: none; height: 100%; padding: 8% 12% 38%; border-radius: 0; background: transparent; }
+.passport-core .passport-mark-symbol { flex: none; width: 52%; height: 52%; margin: 10% auto auto; padding: 0; justify-content: flex-start; }
 .passport-core .passport-mark-symbol img { width: auto; height: 100%; max-width: none; }
 .passport-core .passport-mark-fallback { background: #fff; color: currentColor; font-size: 1.15rem; }
 .passport-mark { display: flex; align-items: center; justify-content: center; overflow: hidden; }
