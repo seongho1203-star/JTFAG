@@ -124,7 +124,7 @@ function openPredictionPopup() {
     const element = document.createElement('div');
     element.className = 'pred-overlay';
     element.innerHTML = `<section class="pred-sheet" role="dialog" aria-modal="true" aria-labelledby="predictionTitle">
-        <div class="pred-popup-head"><h2 id="predictionTitle">라운드 예측</h2><button type="button" class="pred-popup-close" aria-label="닫기" onclick="closePredictionPopup()">×</button></div>
+        <div class="pred-popup-head"><h2 id="predictionTitle">${s ? s.round + '차 ' : ''}라운드 예측</h2><button type="button" class="pred-popup-close" aria-label="닫기" onclick="closePredictionPopup()">×</button></div>
         <div class="pred-popup-body"></div><div class="pred-popup-footer"></div>
     </section>`;
     predictionPopup = { element, owner: me, body: element.querySelector('.pred-popup-body'), footer: element.querySelector('.pred-popup-footer'), html: '', actions: '' };
@@ -254,7 +254,7 @@ function renderPredictionCard() {
     clearTimeout(predictionDeadlineTimer);
     if (s && !locked) predictionDeadlineTimer = setTimeout(renderPredictionCard, Math.min(Math.max(1, s.deadline - Date.now()), 2147483647));
     const label = !locked ? (predictionLatest(s.round, me) ? '수정하기' : '참여하기') : round ? '결과보기' : '참여하기';
-    const html = `<div class="msn-card pred-card"><div class="pred-summary"><span class="pred-title">라운드 예측</span><span class="pred-status">${round ? `${round}차 · ${entries.length}/4명 참여${locked ? ' · 마감' : ''}` : '일정 대기'}</span></div><button type="button" class="pred-participate" aria-haspopup="dialog" onclick="openPredictionPopup()">${label}</button></div>`;
+    const html = `<div class="msn-card pred-card"><div class="pred-summary"><span class="pred-title">${round ? round + '차 ' : ''}라운드 예측</span><span class="pred-status">${round ? `${entries.length}/4명 참여${locked ? ' · 마감' : ''}` : '일정 대기'}</span></div><button type="button" class="pred-participate" aria-haspopup="dialog" onclick="openPredictionPopup()">${label}</button></div>`;
     if (host._html !== html) { host.innerHTML = html; host._html = html; }
     const popup = predictionPopup;
     if (!popup) return;

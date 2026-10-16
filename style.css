@@ -1952,6 +1952,8 @@ html, body { overscroll-behavior: none; }
 .passport-popup-head > div { min-width: 0; }
 .passport-popup-head p { margin: 0 0 3px; color: #7d8c80; font-size: .68rem; font-weight: 700; }
 .passport-popup-title { margin: 0; color: #244c42; font-size: 1.05rem; overflow-wrap: anywhere; }
+.passport-ko { display: block; margin-top: 2px; color: #5d7468; font-size: .75rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; word-break: keep-all; }
+.passport-name + .passport-ko { margin-top: 1px; font-size: .62rem; font-weight: 600; color: #5d7468; }
 .passport-popup-close { flex: 0 0 36px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f2f2ee; color: #3d4450; font-size: 1.5rem; }
 .passport-popup-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px; }
 .passport-popup-footer { flex-shrink: 0; padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); }

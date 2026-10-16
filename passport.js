@@ -91,10 +91,32 @@ const PASSPORT_COUNTRY_TAG = Object.freeze({ JP: 'JAPAN', OTHER: 'OVERSEAS' });
 function passportPastList() {
     const list = Array.isArray(appData.passportPast) ? appData.passportPast : [];
     return list.filter(p => p && typeof p.id === 'string' && ID_RE.test(p.id) && typeof p.name === 'string' && p.name.trim())
-        .map(p => ({ id: p.id, name: p.name.trim().slice(0, 40), date: ISO_RE.test(p.date) ? p.date : '', country: PASSPORT_COUNTRY[p.country] ? p.country : 'OTHER' }));
+        .map(p => ({ id: p.id, name: p.name.trim().slice(0, 40), ko: typeof p.ko === 'string' ? p.ko.trim().slice(0, 40) : '', date: ISO_RE.test(p.date) ? p.date : '', country: PASSPORT_COUNTRY[p.country] ? p.country : 'OTHER' }));
 }
+// 일본어(가나·한자)로만 적힌 골프장 이름 뒤에 한글 이름을 붙여 보여 준다. 직접 적은 한글 이름이 먼저고, 없으면 사전과 가나 표기로 옮긴다.
+// 사전에 없는 한자가 남으면 틀린 이름을 보이느니 아무것도 안 보인다. 저장하지 않고 그릴 때마다 셈한다(사전이 늘면 예전 기록도 따라온다).
+const PASSPORT_JA_RE = /[぀-ヿ㐀-鿿]/, PASSPORT_HANGUL_RE = /[가-힣]/;
+const PASSPORT_JA_WORDS = [
+    ['北九州', '기타큐슈'], ['九州', '규슈'], ['四国', '시코쿠'], ['関東', '간토'], ['関西', '간사이'],
+    ['札幌', '삿포로'], ['仙台', '센다이'], ['横浜', '요코하마'], ['名古屋', '나고야'], ['神戸', '고베'], ['那覇', '나하'], ['糸島', '이토시마'],
+    ['別府', '벳푸'], ['湯布院', '유후인'], ['指宿', '이부스키'], ['霧島', '기리시마'], ['阿蘇', '아소'], ['箱根', '하코네'], ['軽井沢', '가루이자와'],
+    ['淡路', '아와지'], ['琵琶湖', '비와코'], ['金沢', '가나자와'], ['富士', '후지'], ['桜島', '사쿠라지마'], ['屋久島', '야쿠시마'], ['種子島', '다네가시마'],
+    ['国際', '국제'], ['南国', '난고쿠'], ['太平洋', '다이헤이요'], ['平和', '헤이와'], ['日本', '일본'], ['中央', '주오'], ['桜', '사쿠라'],
+    ['ゴルフ場', '골프장'], ['ゴルフ倶楽部', '골프클럽'], ['ゴルフ俱楽部', '골프클럽'], ['倶楽部', '클럽'], ['俱楽部', '클럽']
+];
+let passportJaDict = null;
+function passportKoName(name) {
+    const src = String(name || '').trim();
+    if (!src || !PASSPORT_JA_RE.test(src) || PASSPORT_HANGUL_RE.test(src) || typeof koName !== 'function' || typeof JP_PREFS === 'undefined') return '';
+    if (!passportJaDict) passportJaDict = [...JP_PREFS.map((p, i) => [p, JP_PREFS_KO[i]]), ...PASSPORT_JA_WORDS].sort((a, b) => b[0].length - a[0].length);
+    let s = src;
+    passportJaDict.forEach(([ja, ko]) => { s = s.split(ja).join(` ${ko} `); });
+    const out = koName(s);
+    return out && out !== src ? out : '';
+}
+const passportKoOf = group => group.ko || passportKoName(group.name);
 function passportExtraVisits() {
-    const visits = passportPastList().map(p => ({ src: 'past', id: p.id, name: p.name, date: p.date, country: p.country }));
+    const visits = passportPastList().map(p => ({ src: 'past', id: p.id, name: p.name, ko: p.ko, date: p.date, country: p.country }));
     const today = kstToday();
     allTrips().forEach(trip => {
         const kind = tripKind(trip);
@@ -126,6 +148,7 @@ function passportData() {
         if (!key) return;
         const known = groups.has(key);
         if (!known) groups.set(key, { key, name: extra.name, country: extra.country, visits: [], best: {} });
+        if (extra.ko && !groups.get(key).ko) groups.get(key).ko = extra.ko;
         groups.get(key).visits.push({ round: null, date: extra.date, sub: '', scores: {}, src: extra.src, id: extra.id, tripId: extra.tripId });
     });
     groups.forEach(g => g.visits.sort((a, b) => passportVisitRank(a) - passportVisitRank(b) || (a.round || 0) - (b.round || 0) || a.date.localeCompare(b.date)));
@@ -183,6 +206,8 @@ function refreshPassportDetail(groups = passportData().groups) {
     const group = groups.find(g => g.key === popup.key);
     if (!group) { closePassportDetail(false); return; }
     popup.title.textContent = group.name;
+    const ko = passportKoOf(group);
+    if (ko) { const small = document.createElement('small'); small.className = 'passport-ko'; small.textContent = ko; popup.title.appendChild(small); }
     const html = passportDetailHtml(group);
     if (popup.html !== html) { popup.html = html; popup.body.innerHTML = html; }
 }
@@ -232,7 +257,7 @@ function passportStampHtml(group, index) {
             </svg>
             <span class="passport-core"${mark ? ` style="background:${mark.background}"` : ''}>${passportMarkHtml(group)}</span>
         </span>
-        <b class="passport-name">${escapeHtml(group.name)}</b><small class="passport-first">첫 방문 ${passportWhen(first)}</small>
+        <b class="passport-name">${escapeHtml(group.name)}</b>${passportKoOf(group) ? `<small class="passport-ko">${escapeHtml(passportKoOf(group))}</small>` : ''}<small class="passport-first">첫 방문 ${passportWhen(first)}</small>
         <span class="passport-visits">${n}회 방문 <span aria-hidden="true">›</span></span>
     </button>`;
 }
@@ -330,6 +355,7 @@ function openPassportAdd() {
     o.innerHTML = `<div class="bdg-sheet trip-sheet" role="dialog" aria-label="지난 방문 추가"><div class="bdg-grip"></div>
         <div class="trip-sheet-head">지난 방문 추가</div>
         <label class="trip-field">골프장 이름<input type="text" id="passportAddName" maxlength="40" autocomplete="off"></label>
+        <label class="trip-field">한글 이름 (선택)<input type="text" id="passportAddKo" maxlength="40" autocomplete="off"></label>
         <div class="trip-field">국가
             <div class="trip-kind-row">${Object.entries(PASSPORT_COUNTRY).map(([k, v]) => `<label class="trip-kind"><input type="radio" name="passportAddCountry" value="${k}"${k === 'JP' ? ' checked' : ''}><span>${v}</span></label>`).join('')}</div>
         </div>
@@ -345,7 +371,7 @@ function openPassportAdd() {
 }
 function savePassportAdd() {
     const val = id => ((document.getElementById(id) || {}).value || '').trim();
-    const name = val('passportAddName'), date = val('passportAddDate');
+    const name = val('passportAddName'), date = val('passportAddDate'), ko = PASSPORT_HANGUL_RE.test(name) ? '' : val('passportAddKo');
     const countryEl = document.querySelector('input[name="passportAddCountry"]:checked');
     const country = countryEl && PASSPORT_COUNTRY[countryEl.value] ? countryEl.value : 'JP';
     if (!name) { showToast('⚠️ 골프장 이름을 입력해 주세요.'); return; }
@@ -355,7 +381,7 @@ function savePassportAdd() {
     if (passportPastList().some(p => passportClubKey(p.name) === key && p.date === date)) { showToast('⚠️ 같은 날짜의 같은 골프장이 이미 등록되어 있습니다.'); return; }
     const id = 'pp' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     closePassportAdd();
-    editPassportPast(list => { list.push({ id, name, date, country }); }, `✅ ${name} 방문을 등록했습니다.`);
+    editPassportPast(list => { list.push(ko ? { id, name, ko, date, country } : { id, name, date, country }); }, `✅ ${name} 방문을 등록했습니다.`);
     renderTripPage();
 }
 async function deletePassportPast(id) {
