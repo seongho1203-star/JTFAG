@@ -31,6 +31,7 @@ function registeredClubs(payload, holes) {
     const names = [
         ...Object.values(payload.roundCourses || {}), ...(Array.isArray(payload.courses) ? payload.courses : []),
         ...Object.entries(holes || {}).filter(([round])=>!((payload.roundCourses || {})[round] || (payload.courses || [])[Number(round)-1])).map(([,h])=>h.course),
+        ...(Array.isArray(payload.passportPast) ? payload.passportPast : []).map(p => p && p.name),
         ...(Array.isArray(payload.trips) ? payload.trips : []).flatMap(t => (Array.isArray(t.days) ? t.days : []).filter(d => d && d.golf !== 'no').map(d => d.course))
     ];
     const clubs = new Map();

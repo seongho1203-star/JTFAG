@@ -1941,6 +1941,9 @@ html, body { overscroll-behavior: none; }
 .passport-first { display: block; max-width: 100%; margin-top: 2px; color: #5d7b70; font-size: .56rem; line-height: 1.4; overflow-wrap: anywhere; }
 .passport-visits { display: flex; justify-content: center; gap: 4px; padding: 3px 0 0; color: #3d6659; font-size: .6rem; font-weight: 700; }
 .passport-new { position: absolute; top: 2px; right: 4px; z-index: 1; padding: 2px 4px; border-radius: 4px; background: #b84534; color: #fff; font-size: .48rem; font-weight: 800; }
+.passport-country { position: absolute; top: 2px; left: 4px; z-index: 1; padding: 1px 4px; border: 1px solid currentColor; border-radius: 4px; background: rgba(255, 255, 255, .8); font-family: ui-monospace, Menlo, monospace; font-size: .46rem; font-weight: 700; letter-spacing: .08em; }
+.passport-add { display: block; width: 100%; margin-top: 12px; padding: 11px 12px; border: 1px dashed rgba(19, 66, 56, .4); border-radius: 12px; background: rgba(255, 255, 255, .5); color: #2d5d51; font: inherit; font-size: .76rem; font-weight: 800; cursor: pointer; }
+.passport-del { margin-top: 8px; padding: 6px 10px; border: 1px solid #ecd0cb; border-radius: 8px; background: #fff; color: #b84534; font: inherit; font-size: .7rem; font-weight: 700; cursor: pointer; }
 .passport-mrz { margin: 16px 0 0; overflow: hidden; color: #5d7b70; font-family: ui-monospace, Menlo, monospace; font-size: .5rem; line-height: 1.45; letter-spacing: .06em; white-space: nowrap; }
 .passport-overlay { position: fixed; inset: 0; z-index: 1500; display: flex; align-items: flex-end; justify-content: center; background: rgba(15, 23, 42, 0); transition: background .22s ease; }
 .passport-overlay.show { background: rgba(15, 23, 42, .55); }

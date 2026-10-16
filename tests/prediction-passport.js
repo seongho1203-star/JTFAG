@@ -60,7 +60,7 @@ function make() {
         syncToSupabase: data => new Promise(resolve => saves.push({ data: plain(data), resolve })),
         escapeHtml: value => String(value == null ? '' : value).replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x])),
         tripEditing: null, renderTripPage() {}, refreshTripPage() {}, switchTrip() {}, findTrip: () => null,
-        allTrips: () => [], tripDays: t => t.days || [], noRound: d => d.golf === 'no',
+        allTrips: () => [], tripKind: x => (x && x.kind) || 'domestic', ID_RE: /^[A-Za-z0-9_-]+$/, ISO_RE: /^\d{4}-\d{2}-\d{2}$/, saveState() {}, historyStack: [], tripDays: t => t.days || [], noRound: d => d.golf === 'no',
         kstToday: () => '2026-10-26', subCourseOf: () => '',
         MSN_CHEVRON: '<svg></svg>' };
     ctx.window = ctx; vm.createContext(ctx);
@@ -229,6 +229,28 @@ async function main() {
     p.ctx.allTrips = () => [{id:'future',title:'예정 여행',days:[{date:'2026-10-27',course:'새 골프장CC'},{date:'2026-10-28',course:'무등산CC'},{date:'2026-10-29',course:'라운드없음CC',golf:'no'}]}];
     let html = q('passportHtml()'); assert.match(html, /새 골프장CC/); assert.doesNotMatch(html, /라운드없음CC/);
     assert.equal(q('passportData().groups.length'), 7, 'scheduled courses never earn stamps');
+    // 해외 여행의 지난 라운드·직접 등록한 지난 방문은 스코어 없이 도장으로 남는다(국내 여행·미래·라운드 없음은 제외).
+    p.ctx.allTrips = () => [{id:'jp1',title:'일본 여행',kind:'japan',days:[{date:'2026-10-20',course:'가고시마 컨트리클럽'},{date:'2026-10-26',course:'오늘CC'},{date:'2026-10-27',course:'내일CC'},{date:'2026-10-21',course:'쉬는날CC',golf:'no'}]},{id:'kr1',title:'국내',days:[{date:'2026-10-20',course:'국내여행CC'}]}];
+    let abroad = q('passportData()'), names = abroad.groups.map(g => g.key);
+    assert.ok(names.includes('가고시마') && names.includes('오늘'), 'past/today overseas trip rounds stamp automatically');
+    for (const no of ['내일', '쉬는날', '국내여행']) assert.ok(!names.includes(no), no + ' must not stamp');
+    assert.equal(abroad.groups.find(g => g.key === '오늘').country, 'JP');
+    assert.equal(abroad.groups[0].visits[0].src, 'trip', 'overseas trip groups lead the page');
+    q("appData.passportPast=[{id:'pp1',name:'가고시마 컨트리클럽',date:'2024-05-10',country:'JP'},{id:'pp2',name:'오사카GC',date:'',country:'JP'},{id:'bad id',name:'무시',date:'',country:'JP'}]");
+    abroad = q('passportData()');
+    const kago = abroad.groups.find(g => g.key === '가고시마');
+    assert.deepEqual(plain(kago.visits.map(v => v.src)), ['past', 'trip'], 'past visits come before trip rounds');
+    assert.ok(abroad.groups.find(g => g.key === '오사카') && !abroad.groups.find(g => g.name === '무시'), 'invalid ids are ignored');
+    html = q('passportHtml()'); assert.match(html, /JAPAN/); assert.match(html, /지난 방문 추가/); assert.match(html, /FIRST 2024\.05/);
+    q('passportHtml()'); q(`openPassport(${q('passportGroupsShown').findIndex(g => g.key === '오사카')})`);
+    html = q('passportPopup.body.innerHTML'); assert.match(html, /타수 기록은 없습니다/); assert.match(html, /deletePassportPast\('pp2'\)/); assert.doesNotMatch(html, /멤버별 개인 최고 기록/);
+    q('closePassportDetail(false)');
+    const savesBefore = p.saves.length;
+    q("editPassportPast(l => { l.push({id:'pp3',name:'신규CC',date:'',country:'JP'}); }, '추가')");
+    assert.equal(p.saves.length, savesBefore + 1); assert.equal(q('appData.passportPast.length'), 4);
+    q("editPassportPast(l => { l.splice(0, l.length); })"); assert.equal(q('appData.passportPast'), undefined, 'empty list removes the key');
+    p.toasts.length = 0;
+    p.ctx.allTrips = () => [{id:'future',title:'예정 여행',days:[{date:'2026-10-27',course:'새 골프장CC'},{date:'2026-10-28',course:'무등산CC'},{date:'2026-10-29',course:'라운드없음CC',golf:'no'}]}];
     const collection = q('passportHtml()');
     q('openPassport(0)');
     assert.equal(q('passportHtml()'), collection, '팝업을 열어도 도장 모음을 유지');
