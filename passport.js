@@ -16,7 +16,30 @@ const PASSPORT_MARKS = Object.freeze({
     '디오션': { file: 'ocean.jpeg', ink: '#2b6cb0', background: '#ffffff' },
     '사우스케이프오너스클럽': { file: 'southcape.jpeg', ink: '#4a413e', background: '#ffffff' }
 });
-let passportAutoMarks = Object.create(null);
+// 자동 수집 마크 목록은 이 기기에도 남긴다 — 여권을 처음 그릴 때 네트워크를 기다리지 않고 바로 마크가 보인다(서비스워커 그림 캐시와 한 쌍).
+const PASSPORT_MARKS_KEY = 'jtfag_passport_marks_v1';
+const passportMarkOk = (key, mark) => !(key.length > 100 || ['__proto__', 'constructor', 'prototype'].includes(key) || !mark
+    || !/^auto-[a-f0-9]{64}\.(png|jpg|webp)$/.test(mark.file) || !/^#[a-f0-9]{6}$/i.test(mark.ink) || !/^#[a-f0-9]{6}$/i.test(mark.background));
+let passportAutoMarks = (() => {
+    const marks = Object.create(null);
+    try {
+        const saved = JSON.parse(localStorage.getItem(PASSPORT_MARKS_KEY) || '{}');
+        if (saved && typeof saved === 'object' && !Array.isArray(saved)) for (const [key, mark] of Object.entries(saved)) if (passportMarkOk(key, mark)) marks[key] = { file: mark.file, ink: mark.ink, background: mark.background };
+    } catch (err) {}
+    return marks;
+})();
+// 마크 그림을 미리 풀어 둔다. 서비스워커가 저장본을 바로 내주므로 네트워크 요청이 없고, 도장을 그릴 때 이미 디코딩되어 있다.
+const passportWarmed = new Map();
+function passportPreloadMarks() {
+    const files = [...Object.values(PASSPORT_MARKS), ...Object.values(passportAutoMarks)].map(m => m.file);
+    files.forEach(file => {
+        if (passportWarmed.has(file) || typeof Image !== 'function') return;
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = 'assets/club-marks/v1/' + file;
+        passportWarmed.set(file, img);
+    });
+}
 let passportMarksPending = false, passportMarksNextCheck = 0, passportMarksTimer = null;
 function passportMark(key) { return PASSPORT_MARKS[key] || passportAutoMarks[key]; }
 async function loadPassportMarks() {
@@ -29,12 +52,13 @@ async function loadPassportMarks() {
         const data = await response.json(), marks = Object.create(null);
         if (data.version !== 1 || !data.marks || typeof data.marks !== 'object' || Array.isArray(data.marks)) throw new Error('마크 목록 형식 오류');
         for (const [key, mark] of Object.entries(data.marks)) {
-            if (key.length > 100 || ['__proto__','constructor','prototype'].includes(key) || !mark
-                || !/^auto-[a-f0-9]{64}\.(png|jpg|webp)$/.test(mark.file) || !/^#[a-f0-9]{6}$/i.test(mark.ink) || !/^#[a-f0-9]{6}$/i.test(mark.background)) continue;
+            if (!passportMarkOk(key, mark)) continue;
             marks[key] = {file:mark.file, ink:mark.ink, background:mark.background};
         }
         const changed = JSON.stringify(marks) !== JSON.stringify(passportAutoMarks);
         passportAutoMarks = marks;
+        if (changed) { try { localStorage.setItem(PASSPORT_MARKS_KEY, JSON.stringify(marks)); } catch (err) {} }
+        passportPreloadMarks();
         if (changed && tripSection === 'passport' && typeof refreshTripPage === 'function') refreshTripPage();
     } catch (err) {}  // 마크 확인 중에도 도장·방문 기록은 그대로 사용할 수 있다.
     finally {
@@ -231,7 +255,7 @@ function passportMarkHtml(group) {
     const text = group.name.replace(/\s+/g, '');
     const initials = escapeHtml((text.match(/^[a-z0-9]{1,4}/i) || [Array.from(text).slice(0, 2).join('')])[0]);
     return `<span class="passport-mark${mark && mark.symbol ? ' passport-mark-symbol' : ''}"${mark ? ` style="background:${mark.background}"` : ''}>
-        ${mark ? `<img src="assets/club-marks/v1/${mark.file}" alt="${escapeHtml(group.name)} 마크" width="128" height="96" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false">` : ''}
+        ${mark ? `<img src="assets/club-marks/v1/${mark.file}" alt="${escapeHtml(group.name)} 마크" width="128" height="96" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false">` : ''}
         <span class="passport-mark-fallback"${mark ? ' hidden' : ''}>${initials}</span>
     </span>`;
 }
@@ -399,3 +423,5 @@ async function deletePassportPast(id) {
     editPassportPast(list => { const i = list.findIndex(p => p && p.id === id); if (i < 0) return false; list.splice(i, 1); }, '삭제했습니다.');
     renderTripPage();
 }
+// 앱을 연 뒤 잠시 쉬었다가(첫 화면을 방해하지 않게) 마크 목록과 그림을 미리 받아 둔다 — 여권 탭을 열 때는 이미 저장본이 있다.
+setTimeout(() => { passportPreloadMarks(); loadPassportMarks(); }, 2500);
