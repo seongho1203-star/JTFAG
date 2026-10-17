@@ -1755,6 +1755,36 @@ html, body { overscroll-behavior: none; }
    transform·opacity만 움직이고 모든 애니메이션은 횟수가 정해져 끝난다. 크기는 무대 폭 기준(cqw)이고 무대는 세로 1:2.05로 가운데 둔다.
    앱의 `* { font-family … !important }`를 이기려고 글꼴 줄에 !important를 붙였다(제목은 Black Han Sans · 연출 때만 불러온다). */
 .celebrate-overlay.g3-host { background: #000; display: block; }
+/* 3연속 전용 MP4. 9:16 화면을 통째로 맞춰 제목·이름이 짧은 화면에서도 겹치지 않는다. */
+.celebrate-overlay.eagle-film { background:#020302; display:flex; padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); box-sizing:border-box; }
+.eagle-film-stage { position:relative; width:min(100vw, calc((100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * .5625)); aspect-ratio:9 / 16; container-type:inline-size; overflow:hidden; background:#050605; color:#f5e6c5; }
+.eagle-film-poster, .eagle-film-video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+.eagle-film-video { opacity:0; pointer-events:none; }
+.eagle-film.ready .eagle-film-video { opacity:1; }
+.eagle-film.still .eagle-film-video { visibility:hidden; }
+.eagle-film-award { position:absolute; left:5%; right:5%; top:85.4%; text-align:center; opacity:0; transform:translateY(10px); transition:opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1); pointer-events:none; }
+.eagle-film.award-show .eagle-film-award { opacity:1; transform:none; }
+.eagle-film-award strong { display:block; font-size:7.3cqw; line-height:1.15; font-weight:800; letter-spacing:.16em; padding-left:.16em; color:#fff3d9; }
+.eagle-film-award small { display:block; margin-top:1.4cqw; font-size:2.5cqw; letter-spacing:.1em; color:#b9a987; }
+.eagle-film-rounds { display:flex; justify-content:center; gap:3.3cqw; margin-top:2.4cqw; color:#e0c793; font-size:2.6cqw; font-weight:500; }
+.eagle-film-rounds span { white-space:nowrap; }
+.eagle-film-cover { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#040504; opacity:1; transition:opacity .4s ease; }
+.eagle-film-cover > span { font-family:Georgia,serif !important; letter-spacing:.25em; padding-left:.25em; color:#eed8a8; font-size:7cqw; }
+.eagle-film-cover > small { margin-top:12px; font-family:Georgia,serif !important; font-size:2.2cqw; letter-spacing:.4em; color:#a58e60; }
+.eagle-film.ready .eagle-film-cover, .eagle-film.still .eagle-film-cover { opacity:0; pointer-events:none; }
+.eagle-film.awaiting .eagle-film-cover { opacity:1; pointer-events:auto; }
+.eagle-film-play { display:none; margin-top:30px; padding:12px 22px; border:1px solid #a2864e; border-radius:30px; color:#f7e4ba; background:#1b1810; font-size:.85rem; cursor:pointer; }
+.eagle-film.awaiting .eagle-film-play { display:block; }
+.eagle-film-tools { position:absolute; z-index:2; inset:12px 12px auto; display:flex; justify-content:space-between; align-items:center; pointer-events:none; }
+.eagle-film-tools button { min-width:44px; min-height:44px; padding:10px 14px; border:1px solid #ffffff20; border-radius:24px; background:#050605aa; color:#e9ddc2; font-size:11px; cursor:pointer; pointer-events:auto; }
+.eagle-film-tools .eagle-film-close { padding:10px; font-size:16px; margin-left:auto; }
+.eagle-film-tools button:focus-visible, .eagle-film-play:focus-visible { outline:2px solid #f4cb76; outline-offset:3px; }
+.eagle-film-progress { position:absolute; inset:auto 0 0; height:2px; background:#c5a25920; pointer-events:none; }
+.eagle-film-progress i { display:block; height:100%; background:#d7b570; transform:scaleX(0); transform-origin:left; }
+.eagle-film-emblem { display:none; position:absolute; top:54%; width:100%; text-align:center; color:#ebcb83; font-size:12cqw; line-height:1.4; }
+.eagle-film-emblem b { font-size:16cqw; }
+.eagle-film.no-poster.still .eagle-film-emblem { display:block; }
+@media (prefers-reduced-motion:reduce) { .eagle-film-award, .eagle-film-cover { transition:none; } }
 .g3 { --f-display: "Black Han Sans", "Pretendard", "Apple SD Gothic Neo", sans-serif; --f-serif: "Cinzel", "Times New Roman", serif; --f-body: "Pretendard", -apple-system, "Apple SD Gothic Neo", sans-serif; }
 .g3-eagle.g3-photo { width: 56cqw; margin-left: -28cqw; top: 15.5%; }
 .g3-disc { width: 56cqw; height: 56cqw; border-radius: 50%; overflow: hidden; background: #1a1206;

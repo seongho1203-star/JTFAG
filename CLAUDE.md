@@ -999,7 +999,8 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
     다시 보려면 뱃지를 누르거나, 관리자 메뉴 → `🎬 연출 다시 보기`(`resetEffectSeen()`)로
     표시를 지우고 새로고침한다. 그 버튼은 **`jtfag_eagle_*` · `jtfag_rank_*` ·
     `jtfag_result_seen`만 지운다** — `jtfag_my_name`이나 앱 데이터는 건드리지 않는다.
-  - **축포는 `대관식`이다**(`celebrateEagleStreak()` in ui.js · `.g3-*` in style.css 맨 아래 · 사용자 요청 — `독수리3연속하기 쉽지않잖아. 그래서 엄청 웅장하게`
+  - **3연속은 전용 시네마틱 영상이다**(`eagle-film.js` · `celebrateEagleStreak()`에서 3연속만 분기 · 사용자 요청 — `웅장하고 딱봐도 멋있다라고 할수있는 영상`). `assets/celebrations/eagle-three-v1/eagle-three.mp4`(12초·720×1280·H.264/AAC)를 재생하고 7.5초부터 실제 이름·차수·타수를 겹친다. 무음 재시도·재생 버튼·동작 줄이기/오류 포스터·종료 시 다운로드/소리 해제를 갖췄다. 서비스워커는 처음 볼 때 저장하며 Safari Range 요청도 처리한다. 일반 접속 시 MP4 사전 다운로드는 하지 않는다. 생성 원본·프롬프트·글꼴 라이선스는 같은 디렉터리, 재현 스크립트는 `scripts/render-eagle-film.py`, 검증은 `tests/eagle-film.js`다. 기존 확인 기록·계급 계산은 바꾸지 않는다.
+  - **4연속 이상 축포는 기존 `대관식`이다**(`celebrateEagleStreak()` in ui-effects.js · `.g3-*` in style.css · 사용자 요청 — `독수리3연속하기 쉽지않잖아. 그래서 엄청 웅장하게`
     → 시안 `독수리 3연속 대관식`(아티팩트)을 보고 `이대로 넣어줘`). 예전의 독수리 도장 줄·시네마 밴드 축포는 걷어냈다 — 되살리지 말 것.
     차례(약 9초): 어둠 속 금빛 한 줄 + `JTFAG · HALL OF FAME` → 검은 막이 위아래로 열림(금빛 하늘·회전 빛줄기) →
     **우승 메달이 연속한 차수마다 하나씩 내리꽂힘**(차수 번호 + 그 차수 타수 · `eagleStreakRounds()` — `rankedRoundsList` 끝에서 연속수만큼) →

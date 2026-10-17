@@ -429,8 +429,10 @@ function loadEagleFonts() {
 }
 
 function celebrateEagleStreak(name, streak) {
+    if (typeof closeEagleFilm === 'function') closeEagleFilm(true);
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();
+    if (streak === 3 && typeof showEagleFilm === 'function') return showEagleFilm(name, eagleStreakRounds(name, streak));
     loadEagleFonts();
 
     const tier = eagleTier(streak);

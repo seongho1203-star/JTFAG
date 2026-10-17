@@ -13,6 +13,54 @@ const CLUB_MARK_INDEX = new URL('assets/club-marks/auto.json', self.registration
 const AUTO_MARK_FILE = /^auto-[a-f0-9]{64}\.(png|jpg|webp)$/;
 const clubMarkRequests = new Map();
 let clubMarkIndexRequest = null;
+// 축하 영상은 처음 재생할 때만 저장한다. 일반 접속 시 MP4를 미리 받지 않는다.
+const EAGLE_FILM_CACHE_PREFIX = 'jtfag-eagle-film-';
+const EAGLE_FILM_CACHE = EAGLE_FILM_CACHE_PREFIX + 'v1';
+const EAGLE_FILM_URLS = ['eagle-three.mp4', 'poster.jpg'].map(file => new URL('assets/celebrations/eagle-three-v1/' + file, self.registration.scope).href);
+const eagleFilmRequests = new Map();
+
+async function cachedEagleFilm(request) {
+    const url = request.url;
+    let cache, response;
+    try { cache = await caches.open(EAGLE_FILM_CACHE); response = await cache.match(url); } catch (e) {}
+    if (!response) {
+        let pending = eagleFilmRequests.get(url);
+        if (!pending) {
+            pending = (async () => {
+                // Safari는 첫 요청부터 Range를 보낸다. 전체 원본을 한 번 저장한 뒤 필요한 구간을 돌려준다.
+                const original = await fetch(url, {credentials:'same-origin'});
+                const mime = original.headers.get('content-type') || '';
+                if (cache && original.status === 200 && /^(video\/mp4|image\/jpeg)(;|$)/i.test(mime)) {
+                    try { await cache.put(url, original.clone()); } catch (e) {}
+                }
+                return original;
+            })();
+            eagleFilmRequests.set(url, pending);
+            pending.then(() => eagleFilmRequests.delete(url), () => eagleFilmRequests.delete(url));
+        }
+        response = (await pending).clone();
+    }
+    const range = request.headers.get('range');
+    if (!range || response.status !== 200) return response;
+    const bytes = await response.arrayBuffer();
+    const length = bytes.byteLength;
+    const match = /^bytes=(\d*)-(\d*)$/i.exec(range);
+    let start = NaN, end = NaN;
+    if (match && (match[1] || match[2])) {
+        start = match[1] ? Number(match[1]) : Math.max(0, length - Number(match[2]));
+        end = match[1] && match[2] ? Math.min(length - 1, Number(match[2])) : length - 1;
+        if (!match[1] && Number(match[2]) === 0) start = length;
+    }
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start >= length || end < start) {
+        return new Response(null, {status:416,headers:{'Content-Range':`bytes */${length}`}});
+    }
+    const headers = new Headers(response.headers);
+    headers.delete('Content-Encoding');
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('Content-Range', `bytes ${start}-${end}/${length}`);
+    headers.set('Content-Length', String(end - start + 1));
+    return new Response(bytes.slice(start, end + 1), {status:206,headers});
+}
 
 async function clubMarkIndex() {
     if (!clubMarkIndexRequest) {
@@ -98,7 +146,8 @@ self.addEventListener('activate', event => {
         try {
             const keys = await caches.keys();
             await Promise.all(keys.filter(key => (key.startsWith(RANK_ICON_CACHE_PREFIX) && key !== RANK_ICON_CACHE)
-                || (key.startsWith(CLUB_MARK_CACHE_PREFIX) && key !== CLUB_MARK_CACHE)).map(key => caches.delete(key)));
+                || (key.startsWith(CLUB_MARK_CACHE_PREFIX) && key !== CLUB_MARK_CACHE)
+                || (key.startsWith(EAGLE_FILM_CACHE_PREFIX) && key !== EAGLE_FILM_CACHE)).map(key => caches.delete(key)));
         } catch (e) {}
         await self.clients.claim();
     })());
@@ -116,6 +165,8 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(cachedClubMark(event.request.url));
     } else if (event.request.method === 'GET' && event.request.url.split('?')[0] === CLUB_MARK_INDEX) {
         event.respondWith(clubMarkIndex());
+    } else if (event.request.method === 'GET' && EAGLE_FILM_URLS.includes(event.request.url)) {
+        event.respondWith(cachedEagleFilm(event.request));
     } else if (event.request.mode === 'navigate') event.respondWith(fetch(event.request));
 });
 
