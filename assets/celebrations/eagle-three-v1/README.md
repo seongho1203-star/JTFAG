@@ -4,7 +4,9 @@
 
 어둠 속 독수리 눈빛 → 세 번의 금빛 표시 → 후광과 펼친 날개 → 금빛 `3연속 독수리` 타이틀로 이어진다. 카메라 이동·입자·빛·문자를 합성한 모션 영상이며, 키프레임 두 장은 내장 **image_gen** 도구로 생성했다. CLI/API 대체 경로는 사용하지 않았다. 효과음·짧은 팡파르는 별도 외부 샘플을 사용하지 않고 합성했다.
 
-달성자의 이름과 실제 차수·타수는 파일에 고정하지 않는다. `eagle-film.js`가 현재 앱 기록을 읽어 7.5초부터 표시한다. 기존 1회 자동 축하·뱃지 재생·관리자 미리보기에서 3연속만 이 영상을 사용한다. 4연속 이상은 기존 대관식이다.
+달성자의 이름과 실제 차수·타수는 파일에 고정하지 않는다. `eagle-film.js`가 현재 앱 기록을 읽어 7.5초부터 표시한다. 기존 1회 자동 축하·뱃지 재생·관리자 미리보기에서 3·4·5연속이 각각 해당 영상을 사용한다. 6연속 이상은 기존 대관식이다.
+
+4연속은 `../eagle-four-v1/`의 불꽃빛 영상, 5연속은 `../eagle-five-v1/`의 금빛·보랏빛 영상이다. 두 영상은 같은 생성 원본에서 별도의 영상 색보정·입자·효과음과 정확한 숫자로 렌더링했다. 생성 원본을 변경하거나 다른 이미지를 추가 생성하지 않았다.
 
 ## 재생
 
@@ -16,12 +18,14 @@
 
 ```bash
 python3 scripts/render-eagle-film.py
+python3 scripts/render-eagle-film.py --streak 4
+python3 scripts/render-eagle-film.py --streak 5
 node tests/eagle-film.js
 ```
 
 렌더링에는 Python의 Pillow·numpy·scipy, ffmpeg가 필요하다. 테스트는 가상 DOM·영상 이벤트·캐시로 재생 흐름을 확인하고, ffprobe/ffmpeg로 최종 파일과 디코딩을 검증한다. 서버 데이터 쓰기·알림 발송은 없다.
 
-`source/eagle-hero.png`, `source/eagle-eye.png`는 생성된 원본이다. 원본은 변경하지 않고 영상 안에서 카메라 움직임을 합성한다. `source/Cinzel.ttf`와 `source/BlackHanSans.ttf`는 Google Fonts의 해당 글자만 남긴 프로젝트용 부분집합이다. 내부 글꼴 이름은 각각 JTFAG Film Serif / JTFAG Film Display로 바꿨다. SIL Open Font License는 나란히 보관했다. 앱 재생에는 외부 폰트를 요청하지 않는다.
+`source/eagle-hero.png`, `source/eagle-eye.png`는 세 영상이 공유하는 생성 원본이다. 원본은 변경하지 않고 영상 안에서 카메라 움직임을 합성한다. `source/Cinzel.ttf`와 `source/BlackHanSans.ttf`는 Google Fonts의 해당 글자(숫자 3·4·5 포함)만 남긴 프로젝트용 부분집합이다. 내부 글꼴 이름은 각각 JTFAG Film Serif / JTFAG Film Display로 바꿨다. SIL Open Font License는 나란히 보관했다. 앱 재생에는 외부 폰트를 요청하지 않는다.
 
 - Cinzel 원본: https://github.com/google/fonts/tree/main/ofl/cinzel
 - Black Han Sans 원본: https://github.com/google/fonts/tree/main/ofl/blackhansans

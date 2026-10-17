@@ -131,7 +131,21 @@ async function main() {
     v.emit('waiting');assert.equal(m.timers.size,0,'닫힌 영상의 늦은 대기 이벤트 무시');
     m.run('checkEagleStreakCelebration()');assert.equal(m.overlays.length,0,'한 번 본 자동 축하는 재생하지 않음');
     m.run("celebrateEagleStreak('신성호',3)");await tick();assert.equal(m.overlays.length,1,'직접 다시 보기 가능');
-    m.run("celebrateEagleStreak('신성호',4)");assert.equal(m.run('eagleFilm'),null);assert.ok(m.overlays[0].classList.contains('g3-host'),'4연속 기존 대관식 유지');
+    m.run("celebrateEagleStreak('신성호',4)");await tick();
+    assert.ok(m.run('eagleFilm.video.src').endsWith('eagle-four-v1/eagle-four.mp4'));
+    assert.ok(m.run("eagleFilm.overlay.classList.contains('tier-4')"));assert.match(m.run('eagleFilm.overlay.html'),/불패의 군림 · 4경기/);
+    m.run("rankedRoundsList=[0,1,2,3,4];appData.scores['신성호']=[80,81,79,78,77];celebrateEagleStreak('신성호',5)");await tick();
+    assert.ok(m.run('eagleFilm.video.src').endsWith('eagle-five-v1/eagle-five.mp4'));
+    assert.match(m.run('eagleFilm.overlay.html'),/JTFAG 전설 · 5경기/);
+    assert.equal((m.run('eagleFilm.overlay.html').match(/<span>\d+차/g)||[]).length,5,'5연속 실제 차수 5개 표시');
+    assert.match(m.run('eagleFilm.overlay.html'),/5차 · 77타/);
+    m.run("celebrateEagleStreak('신성호',6)");assert.equal(m.run('eagleFilm'),null);assert.ok(m.overlays[0].classList.contains('g3-host'),'6연속 이상 기존 대관식 유지');
+    for(const streak of [4,5]) {
+        const next=app();next.ctx.fixtureStreak=streak;
+        next.run("golferRankHistory['신성호']=Array(fixtureStreak).fill(0);checkEagleStreakCelebration()");await tick();
+        assert.equal(next.storage.get(`jtfag_eagle_신성호_${streak}`),'1');
+        assert.match(next.run('eagleFilm.overlay.attributes["aria-label"]'),new RegExp(`${streak}연속`));
+    }
     const blocked=app({mode:'no-audio',gesture:true});blocked.run("celebrateEagleStreak('신성호',3)");await tick();
     assert.deepEqual(blocked.plays,[false,true],'소리 차단 시 무음으로 자동 재시도');
     assert.equal(blocked.run('eagleFilm.video.muted'),true);
@@ -150,7 +164,7 @@ async function main() {
     assert.equal(race.overlays.length,0);assert.equal(race.timers.size,0,'즉시 닫아도 타이머·소리·다운로드가 남지 않음');
     const stalled=app();stalled.run("celebrateEagleStreak('신성호',3)");await tick();
     stalled.run('eagleFilm.video').emit('waiting');stalled.timer(8000);assert.ok(stalled.run('eagleFilm.still'),'재생 중 긴 버퍼링도 완성 장면으로 대체');
-    console.log('PASS: 자동 1회·수동 재생·4연속 유지·무음 재시도·버튼 재생·이름 시점·종료/실패/동작 줄이기·정리');
+    console.log('PASS: 3·4·5연속별 영상/색/숫자/실제 차수·자동 1회·수동 재생·6연속 유지·무음/실패 대체·종료 정리');
 
     const w=worker();let r=await w.request('bytes=0-1');assert.equal(r.status,206);assert.equal(await r.text(),'01');
     assert.equal(r.headers.get('content-range'),'bytes 0-1/10');assert.equal(r.headers.get('content-length'),'2');
@@ -165,17 +179,28 @@ async function main() {
     const quota=worker({quota:true});assert.equal((await quota.request('bytes=0-1')).status,206,'저장 공간 오류에도 재생');
     const missing=worker({status:404});assert.equal((await missing.request()).status,404);assert.equal(missing.cache.size,0);
     const concurrent=worker();await Promise.all([concurrent.request('bytes=0-1'),concurrent.request('bytes=5-')]);assert.equal(concurrent.calls.length,1);
+    const all=worker();assert.equal(all.urls.length,6);
+    for(const url of all.urls) {
+        assert.ok(fs.existsSync(path.join(root,new URL(url).pathname.replace('/JTFAG/',''))));
+        assert.equal((await all.request(null,url)).status,200);
+    }
+    all.offline();
+    for(const url of all.urls.filter(u=>u.endsWith('.mp4'))) assert.equal((await all.request('bytes=0-1',url)).status,206);
+    assert.equal(all.calls.length,6,'세 버전 영상·포스터가 각각 1회만 저장되고 재사용');
     console.log('PASS: iPhone Range 206·열린/접미 구간·416·중복 다운로드 방지·오프라인·저장 실패');
 
-    const file=path.join(root,'assets/celebrations/eagle-three-v1/eagle-three.mp4');
+    for(const [streak,id] of [[3,'three'],[4,'four'],[5,'five']]) {
+    const file=path.join(root,`assets/celebrations/eagle-${id}-v1/eagle-${id}.mp4`);
     const probe=spawnSync('ffprobe',['-v','error','-show_format','-show_streams','-of','json',file],{encoding:'utf8'});
     assert.equal(probe.status,0,probe.stderr);const media=JSON.parse(probe.stdout);
     assert.equal(Number(media.format.duration),12);assert.ok(Number(media.format.size)<3_000_000);
+    assert.match(media.format.tags.title,new RegExp(`${streak}연속`));
     const video=media.streams.find(s=>s.codec_type==='video'), audio=media.streams.find(s=>s.codec_type==='audio');
     assert.equal(video.codec_name,'h264');assert.equal(video.width,720);assert.equal(video.height,1280);assert.equal(video.pix_fmt,'yuv420p');assert.equal(audio.codec_name,'aac');
     const b=fs.readFileSync(file);assert.ok(b.indexOf('moov')<b.indexOf('mdat'),'faststart metadata precedes video');
     const decoded=spawnSync('ffmpeg',['-v','error','-i',file,'-f','null','-'],{encoding:'utf8'});
     assert.equal(decoded.status,0,decoded.stderr);assert.equal(decoded.stderr,'','전체 영상·효과음 디코딩 오류 없음');
-    console.log('PASS: 12초·720×1280·H.264/AAC·빠른 시작·3MB 미만·전체 디코딩');
+    }
+    console.log('PASS: 세 영상 모두 12초·720×1280·H.264/AAC·빠른 시작·각 3MB 미만·전체 디코딩');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

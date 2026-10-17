@@ -16,7 +16,8 @@ let clubMarkIndexRequest = null;
 // 축하 영상은 처음 재생할 때만 저장한다. 일반 접속 시 MP4를 미리 받지 않는다.
 const EAGLE_FILM_CACHE_PREFIX = 'jtfag-eagle-film-';
 const EAGLE_FILM_CACHE = EAGLE_FILM_CACHE_PREFIX + 'v1';
-const EAGLE_FILM_URLS = ['eagle-three.mp4', 'poster.jpg'].map(file => new URL('assets/celebrations/eagle-three-v1/' + file, self.registration.scope).href);
+const EAGLE_FILM_URLS = ['three', 'four', 'five'].flatMap(id => [`eagle-${id}.mp4`, 'poster.jpg']
+    .map(file => new URL(`assets/celebrations/eagle-${id}-v1/${file}`, self.registration.scope).href));
 const eagleFilmRequests = new Map();
 
 async function cachedEagleFilm(request) {

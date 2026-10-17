@@ -1,5 +1,9 @@
-// 독수리 3연속 전용 시네마틱. 점수·계급·연출 확인 기록은 읽기만 한다.
-const EAGLE_FILM_BASE = 'assets/celebrations/eagle-three-v1/';
+// 독수리 3·4·5연속 시네마틱. 점수·계급·연출 확인 기록은 읽기만 한다.
+const EAGLE_FILMS = Object.freeze({
+    3:{id:'three',title:'명예의 전당'},
+    4:{id:'four',title:'불패의 군림'},
+    5:{id:'five',title:'JTFAG 전설'}
+});
 let eagleFilm = null;
 
 function closeEagleFilm(immediate = false) {
@@ -20,20 +24,23 @@ function closeEagleFilm(immediate = false) {
     else setTimeout(finish, 300);
 }
 
-function showEagleFilm(name, rounds) {
+function showEagleFilm(name, rounds, streak = 3) {
+    const film = EAGLE_FILMS[streak];
+    if (!film) return;
+    const base = `assets/celebrations/eagle-${film.id}-v1/`;
     closeEagleFilm(true);
     const overlay = document.createElement('div');
-    overlay.className = 'celebrate-overlay eagle-film';
+    overlay.className = `celebrate-overlay eagle-film tier-${streak}`;
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', `${name} · 독수리 3연속 축하 영상`);
+    overlay.setAttribute('aria-label', `${name} · 독수리 ${streak}연속 축하 영상`);
     overlay.innerHTML = `<div class="eagle-film-stage">
-        <img class="eagle-film-poster" src="${EAGLE_FILM_BASE}poster.jpg" alt="">
-        <div class="eagle-film-emblem" aria-hidden="true">3연속<br><b>독수리</b></div>
+        <img class="eagle-film-poster" src="${base}poster.jpg" alt="">
+        <div class="eagle-film-emblem" aria-hidden="true">${streak}연속<br><b>독수리</b></div>
         <video class="eagle-film-video" playsinline webkit-playsinline muted preload="auto" disablepictureinpicture disableremoteplayback aria-hidden="true"></video>
         <div class="eagle-film-award">
-            <strong>${escapeHtml(name)}</strong><small>3경기 연속 독수리 계급 달성</small>
-            <div class="eagle-film-rounds">${rounds.slice(-3).map(r => `<span>${escapeHtml(r.no)}차${r.score ? ` · ${escapeHtml(r.score)}타` : ''}</span>`).join('')}</div>
+            <strong>${escapeHtml(name)}</strong><small>${film.title} · ${streak}경기 연속 독수리 계급</small>
+            <div class="eagle-film-rounds">${rounds.slice(-streak).map(r => `<span>${escapeHtml(r.no)}차${r.score ? ` · ${escapeHtml(r.score)}타` : ''}</span>`).join('')}</div>
         </div>
         <div class="eagle-film-cover"><span>JTFAG</span><small>HALL OF FAME</small>
             <button type="button" class="eagle-film-play">영상 재생</button></div>
@@ -152,7 +159,7 @@ function showEagleFilm(name, rounds) {
     else {
         video.muted = true;
         video.defaultMuted = true;
-        video.src = EAGLE_FILM_BASE + 'eagle-three.mp4';
+        video.src = base + `eagle-${film.id}.mp4`;
         later('load', still, 12000);
         // 뱃지·미리보기에서 직접 누른 경우에는 원본 효과음도 함께 시작한다.
         start(!!(navigator.userActivation && navigator.userActivation.isActive));
