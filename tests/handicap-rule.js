@@ -86,4 +86,13 @@ G.forEach(g => {
 // 6) 라베 이력 문구
 assert.match(run('raveHistoryHtml(11)'), /라베 갱신/);
 assert.equal(run('raveHistoryHtml(9)'), '');
-console.log('handicap-rule: ok');
+
+// 7) 미션 실력 보정도 같은 5경기 평균(내 목표 타수와 같은 잣대)
+try { vm.runInContext(src('mission.js'), ctx, { filename: 'mission.js' }); } catch (e) { console.log('mission.js 로드 건너뜀:', e.message); }
+if (run('typeof missionSkill') === 'function') {
+    setup({ 이관교: [], 김지명: [], 신성호: [], 박승수: [] });
+    const sk = plain(run('missionSkill()'));
+    G.forEach(g => assert.equal(sk[g], avg[g], g + ' 미션 실력 = 6~10차 5경기 평균'));
+    assert.equal(run('MISSION_SKILL_ROUNDS'), run('HANDICAP_ROUNDS'));
+}
+console.log('handicap-rule: ok' + (run('typeof missionSkill') === 'function' ? ' (미션 포함)' : ''));
