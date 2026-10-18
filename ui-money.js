@@ -318,19 +318,19 @@ function renderDonateRow() {
 }
 
 /* ── 라베 갱신 지급 ──────────────────────────────────────────────
-   11차부터 개인 최저타(라베)를 줄이면 줄인 타수 1타당 1만원을 **공금에서** 준다(사용자 규칙).
+   11차부터 개인 최저타(라베)를 줄이면 줄인 타수 1타당 1만원을 **동반자가 각자** 준다(사용자 규칙 — 공금이 아니다).
    내역은 calc.js의 computeRaveAwards()가 기록에서 매번 셈한다 — 여기는 보여 주기만 한다.
-   **정산 금액(시작·남은)에는 섞지 않는다.** 공금에서 따로 나가는 돈이라 섞으면 니어 검산이 어긋난다.
-   공금 잔액은 자동으로 줄이지 않는다 — 지급한 뒤 공지 카드의 공금 칸에서 `사용`으로 적는다. */
+   **정산 금액(시작·남은)에는 섞지 않는다.** 선수끼리 따로 주고받는 돈이라 섞으면 니어 검산이 어긋난다.
+   공금 잔액은 건드리지 않는다. */
 function paintRaveBox() {
     const box = document.getElementById('raveBox');
     if (!box) return;
     if (selectedMoneyRoundIdx + 1 < RAVE_FROM_ROUND) { box.innerHTML = ''; return; }
     const list = (typeof raveAwards !== 'undefined' ? raveAwards : []).filter(a => a.round === selectedMoneyRoundIdx);
-    const total = list.reduce((t, a) => t + a.pay, 0);
-    const html = `<span class="near-head">🏆 라베 갱신 지급(공금)</span>`
+    const total = list.reduce((t, a) => t + a.total, 0);
+    const html = `<span class="near-head">🏆 라베 갱신 지급(동반자)</span>`
         + (list.length
-            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타, ${a.prev - a.score}타 단축) ${formatNumber(a.pay)}원`).join('<br>')}</span><span class="near-check ok">합계 ${formatNumber(total)}원</span>`
+            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타, ${a.prev - a.score}타 단축) 동반자 ${a.payers}명 × ${formatNumber(a.pay)}원`).join('<br>')}</span><span class="near-check ok">수령 합계 ${formatNumber(total)}원</span>`
             : `<span class="near-check none">갱신 없음</span>`);
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }

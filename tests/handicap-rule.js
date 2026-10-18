@@ -85,6 +85,8 @@ G.forEach(g => {
 });
 // 6) 라베 이력 문구
 assert.match(run('raveHistoryHtml(11)'), /라베 갱신/);
+assert.deepEqual(rave.filter(a => a.round === 11).map(a => [a.payers, a.total]), [[3, 60000], [3, 60000], [3, 60000]], '동반자 셋이 각자 낸다');
+assert.doesNotMatch(run('raveHistoryHtml(11)'), /공금/);
 assert.equal(run('raveHistoryHtml(9)'), '');
 
 // 7) 미션 실력 보정도 같은 5경기 평균(내 목표 타수와 같은 잣대)

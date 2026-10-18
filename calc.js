@@ -288,7 +288,8 @@ function calculateAndRender() {
     renderHandicapMatchCard(targetRounds);
 }
 
-/* 라베(개인 최저타) 갱신 — 11차부터 종전 개인 최저타(1~직전 차수 전체)보다 줄인 타수 1타당 1만원을 공금에서 준다.
+/* 라베(개인 최저타) 갱신 — 11차부터 종전 개인 최저타(1~직전 차수 전체)보다 줄인 타수 1타당 1만원을 동반자(나머지 셋)가 각자 준다 — 공금에서 나가지 않는다.
+   pay = 동반자 한 사람이 낼 금액, total = 받는 사람이 받을 합계.
    **저장하지 않고 기록(appData.scores)에서 그때그때 셈한다** — 타수를 고치면 지급 내역도 따라온다.
    종전 기록이 없는 첫 경기·타수가 비었거나 0 이하인 칸은 건너뛴다. 같은 타수는 갱신이 아니다. */
 function computeRaveAwards() {
@@ -300,7 +301,9 @@ function computeRaveAwards() {
             const v = parseFloat(sc[r]);
             if (!Number.isFinite(v) || v <= 0) continue;
             if (r + 1 >= RAVE_FROM_ROUND && best !== Infinity && v < best) {
-                out.push({ round: r, name: g, score: v, prev: best, pay: (best - v) * RAVE_PAY_PER_STROKE });
+                const pay = (best - v) * RAVE_PAY_PER_STROKE;
+                const payers = golfers.length - 1;
+                out.push({ round: r, name: g, score: v, prev: best, pay, payers, total: pay * payers });
             }
             if (v < best) best = v;
         }
@@ -311,7 +314,7 @@ function computeRaveAwards() {
 function raveHistoryHtml(r) {
     const list = raveAwards.filter(a => a.round === r);
     if (!list.length) return '';
-    return `<div class="hm-rave">${list.map(a => `🏆 라베 갱신 · <b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타) → 공금 ${a.pay / 10000}만원 지급`).join('<br>')}</div>`;
+    return `<div class="hm-rave">${list.map(a => `🏆 라베 갱신 · <b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타) → 동반자 ${a.payers}명이 각 ${a.pay / 10000}만원씩 (합계 ${a.total / 10000}만원)`).join('<br>')}</div>`;
 }
 
 function processAllRoundSettlements() {

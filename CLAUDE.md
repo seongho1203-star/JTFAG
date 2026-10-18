@@ -919,10 +919,11 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   정산·스코어의 안내 줄은 저장 상태 칩과 한 줄에 들어가게 `💡 5경기 평균 = 내 목표 타수`로 짧게 둔다(범위는 홈 카드·표 머리에 있다). 하극상(불사조)·타수정산의 후핸디(타당 2천원)는 여전히 1:1 핸디 차이를 쓴다.
   **미션의 실력 보정(`missionSkill()`)도 같은 5경기 평균이다**(`MISSION_SKILL_ROUNDS` 5 — calc.js `HANDICAP_ROUNDS`와 같은 값이니 함께 고칠 것 · 사용자 요청 — 미션도 최근 5경기 기준). 4타 이상 ±1 잣대(`MISSION_ADJ_STEP`)는 그대로 둔다 — 10차 기준 넷의 평균 대비 차이가 3경기보다 조금 줄 뿐 ±1이 걸리는 조합은 같다. `내 평균 돌파`는 5경기 평균 기준 성공률 15%(3경기 기준 18%)로 ★★★ 그대로. **이미 받은 미션의 기준 평균(`rec.avg`)은 받을 때 고정된 값이라 안 바뀐다.**
   현재 목표 타수 표시는 `latestHandicapRounds()`(가장 최근 연속 5개 차수)에서 낸다.
-- **라베(개인 최저타) 갱신 상금 — 11차부터, 종전 최저타(1~직전 차수 전체)보다 줄인 타수 1타당 1만원을 공금에서 준다**(`RAVE_FROM_ROUND`·`RAVE_PAY_PER_STROKE` in api.js ·
-  `computeRaveAwards()` in calc.js · 사용자 규칙). 종전 기록이 없는 첫 경기·같은 타수는 갱신이 아니다. **저장하지 않고 `appData.scores`에서 매번 셈한다**(타수를 고치면 따라온다).
-  정산 탭의 `🏆 라베 갱신 지급(공금)` 줄(`paintRaveBox()` in ui-money.js)과 계급 이력(`raveHistoryHtml()`)에 보인다.
-  **정산 금액(시작·남은)에는 섞지 않고 공금 잔액도 자동으로 안 줄인다** — 지급한 뒤 공지 카드 공금 칸에서 `사용`으로 적는다(자동 차감은 공금 로그·금액 보호 규칙과 얽혀 하지 않았다).
+- **라베(개인 최저타) 갱신 상금 — 11차부터, 종전 최저타(1~직전 차수 전체)보다 줄인 타수 1타당 1만원을 동반자(나머지 셋)가 각자 준다**(`RAVE_FROM_ROUND`·`RAVE_PAY_PER_STROKE` in api.js ·
+  `computeRaveAwards()` in calc.js · 사용자 규칙 — 처음엔 공금에서 주는 것으로 만들었다가 동반자 합의로 **동반자 각자 지급**으로 바꿨다. 공금 지급으로 되돌리지 말 것).
+  항목은 `{round, name, score, prev, pay(동반자 한 사람이 낼 금액), payers(낼 사람 수 = 3), total(받을 합계)}`. 종전 기록이 없는 첫 경기·같은 타수는 갱신이 아니다. **저장하지 않고 `appData.scores`에서 매번 셈한다**(타수를 고치면 따라온다).
+  정산 탭의 `🏆 라베 갱신 지급(동반자)` 줄(`paintRaveBox()` in ui-money.js)과 계급 이력(`raveHistoryHtml()`)에 보인다.
+  **정산 금액(시작·남은)에도 공금 잔액에도 섞지 않는다** — 선수끼리 따로 주고받는 돈이다.
   '타당'은 줄인 타수 1타당으로 읽었다 — 다른 뜻(갱신 때마다 정액 등)이면 `computeRaveAwards()`만 고치면 된다.
 - 뱃지 판정은 `getGolferBadgesArray()`. 싱글(79타 이하) 등 일부는 스코어에서, 버디/파 최다 등은 `CUMULATIVE_STATS`에서 나온다.
   - **불사조 = 하극상 승수 1위**(`upsetWins` in `processAllRoundSettlements()` · `golferUpsetWins`). 차수마다 1:1에서 이긴 상대가

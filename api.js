@@ -34,7 +34,7 @@ function rankPenaltyAt(roundIdx, rankIdx) {
     return roundIdx + 1 >= RANK_PENALTY_NEW_FROM_ROUND ? RANK_PENALTY_NEW[rankIdx] : RANK_CONFIG[rankIdx].penalty;
 }
 
-/* 라베(개인 최저타) 갱신 상금 — 11차부터, 종전 최저보다 줄인 타수 1타당 1만원을 공금에서 준다. */
+/* 라베(개인 최저타) 갱신 상금 — 11차부터, 종전 최저보다 줄인 타수 1타당 1만원을 동반자(나머지 셋)가 각자 준다(공금이 아니다). */
 const RAVE_FROM_ROUND = 11;
 const RAVE_PAY_PER_STROKE = 10000;
 
