@@ -2030,3 +2030,24 @@ html, body { overscroll-behavior: none; }
 .match-vs .vs-name small { display: block; margin-top: 1px; font-size: clamp(0.56rem, 2.3vw, 0.62rem); font-weight: 600; color: var(--text-sub); letter-spacing: -0.2px; }
 /* 저장 상태 칩과 한 줄: 안내 글은 안 쪼개고, 상태 문구가 긴 오류일 때만 칩이 아랫줄로 내려간다(.info-card의 wrap은 그대로) */
 .info-text { white-space: nowrap; flex: 0 1 auto; }
+
+/* 홈 · 내 목표 타수 카드 — 큰 목표 타수 · 목표 달성 횟수 · 최근 5경기 목표 대비 칩 · 멤버 목표 한 줄.
+   초록은 목표 달성(0 이하), 빨강은 목표 초과. 후핸디·승률은 보이지 않는다. */
+.goal-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 4px 8px; }
+.goal-num, .goal-hit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.goal-num b { font-size: clamp(1.9rem, 8.5vw, 2.3rem); font-weight: 900; line-height: 1; color: var(--primary-gold); letter-spacing: -1px; }
+.goal-hit b { font-size: clamp(1.15rem, 5vw, 1.4rem); font-weight: 900; line-height: 1; color: var(--text-main); }
+.goal-num span, .goal-hit span { font-size: clamp(0.6rem, 2.5vw, 0.66rem); color: var(--text-sub); font-weight: 600; line-height: 1.35; white-space: nowrap; }
+.goal-cap { display: flex; justify-content: space-between; gap: 8px; padding: 0 4px 5px; font-size: clamp(0.62rem, 2.5vw, 0.68rem); font-weight: 700; color: var(--text-sub); }
+.goal-recent { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.goal-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 5px; border-radius: 10px; min-width: 0; }
+.goal-chip i { font-style: normal; font-size: clamp(0.56rem, 2.3vw, 0.62rem); font-weight: 600; color: var(--text-sub); }
+.goal-chip b { font-size: clamp(0.92rem, 4vw, 1.05rem); font-weight: 800; font-variant-numeric: tabular-nums; }
+.goal-chip.ok { background: rgba(22, 163, 74, 0.1); }
+.goal-chip.ok b { color: var(--accent-green); }
+.goal-chip.miss { background: rgba(194, 69, 59, 0.09); }
+.goal-chip.miss b { color: #c2453b; }
+.goal-none { grid-column: 1 / -1; text-align: center; color: var(--text-sub); font-size: 0.74rem; padding: 8px 0; }
+.goal-others { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 9px; padding: 8px 4px 0; border-top: 1px solid var(--line); font-size: clamp(0.66rem, 2.7vw, 0.74rem); font-weight: 600; color: var(--text-main); }
+.goal-others span { color: var(--text-sub); font-size: clamp(0.58rem, 2.4vw, 0.64rem); }
+.goal-others b { font-weight: 800; }

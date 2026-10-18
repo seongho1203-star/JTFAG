@@ -141,11 +141,18 @@ function renderTable() {
     });
 }
 
-// 홈 · 통합 정산 요약 아래(사용자 요청으로 정산·스코어에서 옮겼다).
-// **이 기기 주인 기준 대결표다**(사용자가 시안 다섯 중 B를 골랐다 — 아티팩트 `JTFAG 핸디캡 시안`).
-// 상대 셋마다 가운데에 그 상대와의 통산 승률(`headToHead`), 오른쪽에 받는/주는 타수와 승패를 적는다.
-// (처음엔 가운데가 타수 칸 막대였는데 사용자 요청으로 승률로 바꿨다.)
+// 홈 · 통합 정산 요약 아래 — **내 목표 타수 카드**다(사용자 요청 — 11차부터 계급이 '내 목표와의 싸움'이라 상대에게 받는 타수는 의미가 없다).
+// 큰 숫자는 다음 라운드 내 목표 타수(최근 5경기 평균), 아래에 최근 5경기 목표 대비 타수와 목표 달성 횟수, 한 줄로 멤버들의 목표 타수.
+// **후핸디(받음·줌)와 1:1 승률은 일부러 안 보인다.** 목표 달성은 목표 대비 0 이하다.
+// 최근 경기의 목표 대비는 모두 '5경기 평균 기준'으로 다시 셈한다 — 10차까지 실제 정산은 2경기 기준이었으므로 참고 값이다(그 정산은 안 바뀐다).
 // 이름을 아직 안 정한 기기는 첫 사람 기준으로 보여 준다.
+function goalNetAt(name, r) {
+    const avg = handicapAverageAt(r - 1, HANDICAP_ROUNDS);
+    const score = parseFloat(((appData.scores || {})[name] || [])[r]);
+    if (!avg || !Number.isFinite(score) || score <= 0) return null;
+    return { r, score, target: avg[name], net: score - avg[name] };
+}
+
 function renderHandicapMatchCard(rounds) {
     const matchGrid = document.getElementById('matchGrid'); if (!matchGrid) return;
     const avgScores = rounds.length ? handicapAverageAt(rounds[rounds.length - 1]) : null;
@@ -157,27 +164,21 @@ function renderHandicapMatchCard(rounds) {
     if (!avgScores) {
         html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
     } else {
-        if (title) title.textContent = `내 목표 타수 ${avgScores[me]} · ${roundRangeText(rounds)}`;   // 한 줄에 들어가게 짧게 — 이 카드는 늘 이 기기 주인 기준이다
-        const rec = typeof headToHead === 'function' ? headToHead(me, allRoundIdx()) : {};
-        html = '';
-        golfers.filter(g => g !== me).forEach(opp => {
-            const diff = avgScores[me] - avgScores[opp];      // 양수면 내가 받는다
-            const abs = Math.abs(diff);
-            const cls = diff > 0 ? 'get' : diff < 0 ? 'give' : 'even';
-            const label = diff > 0 ? `${abs}타 받음` : diff < 0 ? `${abs}타 줌` : '스크래치';
-            const r = rec[opp] || { w: 0, l: 0, t: 0 };
-            const n = r.w + r.l + r.t;
-            const recText = n ? `${r.w}승 ${r.l}패${r.t ? ` ${r.t}무` : ''}` : '전적 없음';
-            // 가운데는 그 상대와의 통산 승률 — 무승부는 반 승으로 센다.
-            const pct = n ? Math.round((r.w + r.t / 2) / n * 100) : null;
-            const tone = pct === null ? 'none' : pct > 50 ? 'up' : pct < 50 ? 'down' : 'flat';
-            const mid = pct === null ? `<span class="vs-pct none">-</span><span class="vs-rate"></span>`
-                : `<span class="vs-pct ${tone}">승률 <b>${pct}%</b></span>`
-                + `<span class="vs-rate"><i class="w" style="width:${r.w / n * 100}%"></i><i class="t" style="width:${r.t / n * 100}%"></i></span>`;
-            html += `<div class="match-vs" role="button" onclick="openH2HDetail(${golfers.indexOf(opp)})"><span class="vs-name">${escapeHtml(opp)}<small>목표 ${avgScores[opp]}</small></span>`
-                + `<span class="vs-mid">${mid}</span>`
-                + `<span class="vs-val ${cls}">${label}<span class="vs-rec">${recText}</span></span></div>`;
-        });
+        if (title) title.textContent = `${me} · ${roundRangeText(rounds)} 평균`;
+        const recent = [];
+        for (let r = 0; r < appData.totalRounds; r++) { const g = goalNetAt(me, r); if (g) recent.push(g); }
+        const last = recent.slice(-5);
+        const hit = last.filter(g => g.net <= 0).length;
+        const mean = last.length ? last.reduce((t, g) => t + g.net, 0) / last.length : null;
+        const sign = n => (n > 0 ? '+' : '') + n;
+        const chips = last.length ? last.map(g => `<div class="goal-chip ${g.net <= 0 ? 'ok' : 'miss'}"><i>${g.r + 1}차</i><b>${sign(g.net)}</b></div>`).join('')
+            : `<div class="goal-none">비교할 기록이 아직 없습니다.</div>`;
+        const others = golfers.filter(g => g !== me).map(g => `${escapeHtml(g)} <b>${avgScores[g]}</b>`).join(' · ');
+        html = `<div class="goal-top"><div class="goal-num"><b>${avgScores[me]}</b><span>다음 라운드<br>내 목표 타수</span></div>`
+            + `<div class="goal-hit"><b>${last.length ? `${hit}/${last.length}` : '-'}</b><span>목표 달성<br>(목표 대비 0 이하)</span></div></div>`
+            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수</span>${mean === null ? '' : `<span>평균 ${sign(Math.round(mean * 10) / 10)}</span>`}</div>`
+            + `<div class="goal-recent">${chips}</div>`
+            + `<div class="goal-others"><span>멤버 목표 타수</span>${others}</div>`;
     }
     if (matchGrid._html !== html) { matchGrid.innerHTML = html; matchGrid._html = html; }
 }
