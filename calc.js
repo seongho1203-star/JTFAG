@@ -314,7 +314,7 @@ function computeRaveAwards() {
 function raveHistoryHtml(r) {
     const list = raveAwards.filter(a => a.round === r);
     if (!list.length) return '';
-    return `<div class="hm-rave">${list.map(a => `🏆 라베 갱신 · <b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타) → 동반자 ${a.payers}명이 각 ${a.pay / 10000}만원씩 (합계 ${a.total / 10000}만원)`).join('<br>')}</div>`;
+    return `<div class="hm-rave">${list.map(a => `🏆 라베 갱신 · <b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타)`).join('<br>')}</div>`;
 }
 
 function processAllRoundSettlements() {
