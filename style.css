@@ -2029,9 +2029,9 @@ html, body { overscroll-behavior: none; }
 .reason-box:empty { display: none; }
 .reason-box .near-head { white-space: nowrap; }
 .reason-list { display: flex; flex-wrap: nowrap; gap: 4px; min-width: 0; }
-.reason-chip { display: inline-flex; align-items: center; gap: 0; padding: 0 1px 0 7px; border-radius: 999px; background: #eef2f7; color: var(--text-main); font-size: clamp(0.58rem, 2.5vw, 0.66rem); font-weight: 700; white-space: nowrap; }
+.reason-chip { display: inline-flex; align-items: center; gap: 0; padding: 0 1px 0 7px; border-radius: 999px; background: #eef2f7; color: var(--text-main); font-size: 0.66rem; font-weight: 700; white-space: nowrap; }
 .reason-x { border: 0; background: transparent; color: #94a3b8; font-size: 0.58rem; padding: 0 3px; min-width: 18px; min-height: 24px; cursor: pointer; line-height: 1; }
-.reason-add { margin-left: auto; border: 0; background: transparent; color: var(--primary-gold); font-size: clamp(0.58rem, 2.5vw, 0.66rem); font-weight: 800; padding: 4px 0 4px 2px; min-height: 24px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.reason-add { margin-left: auto; border: 0; background: transparent; color: var(--primary-gold); font-size: 0.66rem; font-weight: 800; padding: 4px 0 4px 2px; min-height: 24px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 @media (max-width: 340px) { .reason-box { padding: 4px 7px; gap: 4px 3px; } .reason-box .near-head { font-size: 0.6rem; } .reason-chip { padding-left: 5px; font-size: 0.56rem; } .reason-list { gap: 3px; } .reason-x { min-width: 14px; padding: 0 2px; } }
 .rave-box .near-head { white-space: nowrap; }
 .rave-box .rave-list { min-width: 0; font-size: 0.68rem; font-weight: 600; color: var(--text-main); line-height: 1.5; white-space: nowrap; }
