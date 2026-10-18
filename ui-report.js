@@ -63,8 +63,8 @@ function renderCourseGoal(name) {
 
     const mean = Math.round(cur.games.reduce((t, g) => t + g.net, 0) / cur.games.length * 10) / 10;
     const tone = n => (n <= 0 ? '#16a34a' : '#dc2626');
-    box.innerHTML = cur.games.map(g => `<div style="display:flex; width:100%;"><span>${g.r + 1}차</span> <span>${g.score}타 · 목표 ${g.target}</span> <b style="color:${tone(g.net)};">${signNum(g.net)}</b></div>`).join('')
-        + `<div style="display:flex; width:100%;"><span>평균</span> <span></span> <b style="color:${tone(mean)};">${signNum(mean)}</b></div>`
+    box.innerHTML = cur.games.map(g => `<div class="goal-row"><span>${g.r + 1}차</span> <span>${g.score}타 · 목표 ${g.target}</span> <b style="color:${tone(g.net)};">${signNum(g.net)}</b></div>`).join('')
+        + `<div class="goal-row"><span>평균</span> <span></span> <b style="color:${tone(mean)};">${signNum(mean)}</b></div>`
         + `<div class="winrate-note">목표는 그 경기 직전 5경기 평균입니다. 직전 5경기가 없는 1~5차 경기는 제외됩니다.</div>`;
 }
 

@@ -2051,3 +2051,9 @@ html, body { overscroll-behavior: none; }
 .goal-others { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 9px; padding: 8px 4px 0; border-top: 1px solid var(--line); font-size: clamp(0.66rem, 2.7vw, 0.74rem); font-weight: 600; color: var(--text-main); }
 .goal-others span { color: var(--text-sub); font-size: clamp(0.58rem, 2.4vw, 0.64rem); }
 .goal-others b { font-weight: 800; }
+
+/* 골프장별 목표 대비 — 한 줄을 3칸(차수 · 타수·목표 · 목표 대비)으로 고정해 가운데 칸이 글자 길이에 따라 밀리지 않게 한다 */
+.winrate-list .goal-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; width: 100%; }
+.winrate-list .goal-row > :first-child { text-align: left; }
+.winrate-list .goal-row > :nth-child(2) { text-align: center; padding: 0 6px; }
+.winrate-list .goal-row > :last-child { text-align: right; }
