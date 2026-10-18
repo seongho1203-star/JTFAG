@@ -2025,3 +2025,8 @@ html, body { overscroll-behavior: none; }
 .rave-box { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 7px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .rave-box:empty { display: none; }
 .rave-box .rave-list { min-width: 0; font-size: 0.68rem; font-weight: 600; color: var(--text-main); line-height: 1.5; word-break: keep-all; }
+
+/* 홈 1:1 카드 — 상대 이름 아래에 그 사람의 목표 타수를 작게 적는다(받는 타수 = 내 목표 − 상대 목표) */
+.match-vs .vs-name small { display: block; margin-top: 1px; font-size: clamp(0.56rem, 2.3vw, 0.62rem); font-weight: 600; color: var(--text-sub); letter-spacing: -0.2px; }
+/* 저장 상태 칩과 한 줄: 안내 글은 안 쪼개고, 상태 문구가 긴 오류일 때만 칩이 아랫줄로 내려간다(.info-card의 wrap은 그대로) */
+.info-text { white-space: nowrap; flex: 0 1 auto; }

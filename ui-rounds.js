@@ -157,7 +157,7 @@ function renderHandicapMatchCard(rounds) {
     if (!avgScores) {
         html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
     } else {
-        if (title) title.textContent = `${me}님 내 목표 타수 ${avgScores[me]} · ${roundRangeText(rounds)} 평균`;
+        if (title) title.textContent = `내 목표 타수 ${avgScores[me]} · ${roundRangeText(rounds)}`;   // 한 줄에 들어가게 짧게 — 이 카드는 늘 이 기기 주인 기준이다
         const rec = typeof headToHead === 'function' ? headToHead(me, allRoundIdx()) : {};
         html = '';
         golfers.filter(g => g !== me).forEach(opp => {
@@ -174,7 +174,7 @@ function renderHandicapMatchCard(rounds) {
             const mid = pct === null ? `<span class="vs-pct none">-</span><span class="vs-rate"></span>`
                 : `<span class="vs-pct ${tone}">승률 <b>${pct}%</b></span>`
                 + `<span class="vs-rate"><i class="w" style="width:${r.w / n * 100}%"></i><i class="t" style="width:${r.t / n * 100}%"></i></span>`;
-            html += `<div class="match-vs" role="button" onclick="openH2HDetail(${golfers.indexOf(opp)})"><span class="vs-name">${escapeHtml(opp)}</span>`
+            html += `<div class="match-vs" role="button" onclick="openH2HDetail(${golfers.indexOf(opp)})"><span class="vs-name">${escapeHtml(opp)}<small>목표 ${avgScores[opp]}</small></span>`
                 + `<span class="vs-mid">${mid}</span>`
                 + `<span class="vs-val ${cls}">${label}<span class="vs-rec">${recText}</span></span></div>`;
         });

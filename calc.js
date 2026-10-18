@@ -262,7 +262,7 @@ function calculateAndRender() {
     const titleStr = roundStr ? `최근 ${HANDICAP_ROUNDS}경기(${roundStr})` : `최근 ${HANDICAP_ROUNDS}경기`;
     const avgTitleStr = roundStr ? `${roundStr} 평균` : `최근 ${HANDICAP_ROUNDS}경기 평균`;
 
-    if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 평균</b>이 다음 라운드 내 목표 타수입니다`;
+    if (infoText) infoText.innerHTML = `💡 <b>${HANDICAP_ROUNDS}경기 평균</b> = 내 목표 타수`;   // 저장 상태 칩과 한 줄에 들어가게 짧게 적는다(범위는 홈 카드·표 머리에 있다)
     if (matchCardTitle) matchCardTitle.textContent = avgTitleStr;
     if (avgHeaderTitle) avgHeaderTitle.innerHTML = '내 목표<br>타수';
 
