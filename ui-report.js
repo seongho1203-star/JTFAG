@@ -3,66 +3,74 @@
 function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
 function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
-/* ── 1:1 승률 보여주기 ──────────────────────────────────────────
-   통산과 골프장별이 같은 모양으로 나와야 견주기 쉽다. 그래서 그리는 것도 한 함수다. */
-function winRateListHtml(rec) {
-    let html = "", any = false;
-    for (const opp in rec) {
-        const n = rec[opp].w + rec[opp].l + rec[opp].t;
-        if (!n) continue;
-        any = true;
-        html += `<div class="slot-roll" style="display:flex; animation-delay: 0.3s; width: 100%;"><span>vs ${opp}</span> <b style="color:#b8860b;">승률 ${Math.round((rec[opp].w / n) * 100)}%</b> <span>(${rec[opp].w}승 ${rec[opp].t}무 ${rec[opp].l}패)</span></div>`;
-    }
-    return any ? html : "<div style='text-align:center; color:#94a3b8;'>진행된 매치가 없습니다.</div>";
+/* ── 내 목표 달성 기록 ──────────────────────────────────────────
+   11차 규칙에 맞춰 1:1 승률 두 카드를 바꿨다(사용자 요청 — 계급이 '내 목표 타수와의 싸움'이라 상대와의 승패는 의미가 약하다).
+   목표 대비 = 그 경기 타수 − 직전 5경기 평균(내 목표 타수). **모두 5경기 기준으로 다시 셈한 참고 값이다** —
+   10차까지 실제 정산은 2경기 기준이었고 그 정산은 안 바뀐다. 직전 5경기가 없는 1~5차 경기는 빠진다.
+   셈은 ui-rounds.js의 goalNetAt() 한 곳이다(홈 카드와 같은 함수). 예전 승률 계산(headToHead)은 calc.js에 남아 있다. */
+const signNum = n => (n > 0 ? '+' : '') + n;
+
+function goalGames(name, rounds) {
+    return rounds.map(r => goalNetAt(name, r)).filter(Boolean);
 }
 
-/* 골프장별 1:1 승률.
-   1~10차는 기존 두 경기 기준을 보존한다. 1·2차는 승부가 안 나온다 — 그 골프장에 3차 이후 라운드가
-   하나도 없으면 목록에 올리지 않는다. 빈 칸을 골라 놓고 '매치 없음'만 보는 건 헛걸음이다. */
-let h2hCourseKey = null;
+function goalSummaryHtml(name) {
+    const games = goalGames(name, allRoundIdx());
+    if (!games.length) return "<div style='text-align:center; color:#94a3b8; font-size:0.75rem;'>목표와 견줄 기록이 아직 없습니다. 직전 5경기가 쌓인 6차부터 나옵니다.</div>";
+    const hit = games.filter(g => g.net <= 0).length;
+    const mean = Math.round(games.reduce((t, g) => t + g.net, 0) / games.length * 10) / 10;
+    const best = games.reduce((m, g) => (g.net < m.net ? g : m), games[0]);
+    const tone = n => (n <= 0 ? '#16a34a' : '#dc2626');
+    return `<div class="stat-grid">
+        <div class="stat-box"><div class="stat-label">목표 달성</div><div class="stat-val" style="color:#b8860b;">${hit}/${games.length}<small style="font-size:0.6rem; font-weight:700;"> (${Math.round(hit / games.length * 100)}%)</small></div></div>
+        <div class="stat-box"><div class="stat-label">평균 목표 대비</div><div class="stat-val" style="color:${tone(mean)};">${signNum(mean)}</div></div>
+        <div class="stat-box"><div class="stat-label">가장 앞선 경기</div><div class="stat-val" style="color:${tone(best.net)};">${signNum(best.net)}<small style="font-size:0.6rem; font-weight:700;"> (${best.r + 1}차)</small></div></div>
+    </div>
+    <div class="winrate-note">목표 달성은 목표 대비 0 이하입니다. 목표는 직전 5경기 평균(소수점 버림)이며, 10차까지는 5경기 기준으로 다시 셈한 참고 값입니다.</div>`;
+}
 
-function courseWinRateOptions(name) {
+/* 골프장별 목표 대비 — 그 골프장에서 친 경기마다 타수 · 목표 · 목표 대비. 직전 5경기가 있는 경기만 올린다. */
+let goalCourseKey = null;
+
+function goalCourseOptions(name) {
     return roundsByCourse()
-        .map(c => ({ ...c, rec: headToHead(name, c.rounds) }))
-        .map(c => {
-            const played = Object.values(c.rec).reduce((m, v) => Math.max(m, v.w + v.l + v.t), 0);
-            return { ...c, played };
-        })
-        .filter(c => c.played > 0);
+        .map(c => ({ ...c, games: goalGames(name, c.rounds) }))
+        .filter(c => c.games.length > 0);
 }
 
-function renderCourseWinRate(name) {
-    const box = document.getElementById('courseWinRate');
-    const sel = document.getElementById('courseWinRateSelect');
+function renderCourseGoal(name) {
+    const box = document.getElementById('courseGoal');
+    const sel = document.getElementById('courseGoalSelect');
     if (!box || !sel) return;
 
-    const list = courseWinRateOptions(name);
+    const list = goalCourseOptions(name);
     if (list.length === 0) {
         sel.style.display = 'none';
-        box.innerHTML = "<div style='text-align:center; color:#94a3b8;'>골프장별 승률을 산출할 기록이 없습니다.</div>";
+        box.innerHTML = "<div style='text-align:center; color:#94a3b8;'>골프장별 목표 대비를 낼 기록이 없습니다.</div>";
         return;
     }
     sel.style.display = '';
 
-    // 고른 곳이 없거나 사라졌으면 라운드가 가장 많은 곳부터 보여 준다.
-    if (!list.some(c => c.label.replace(/\s+/g, '') === h2hCourseKey)) {
-        h2hCourseKey = list.slice().sort((a, b) => b.played - a.played)[0].label.replace(/\s+/g, '');
+    // 고른 곳이 없거나 사라졌으면 경기가 가장 많은 곳부터 보여 준다.
+    const keyOf = c => c.label.replace(/\s+/g, '');
+    if (!list.some(c => keyOf(c) === goalCourseKey)) {
+        goalCourseKey = keyOf(list.slice().sort((a, b) => b.games.length - a.games.length)[0]);
     }
-    const cur = list.find(c => c.label.replace(/\s+/g, '') === h2hCourseKey);
+    const cur = list.find(c => keyOf(c) === goalCourseKey);
 
-    sel.innerHTML = list.map(c => {
-        const key = c.label.replace(/\s+/g, '');
-        return `<option value="${escapeHtml(key)}"${key === h2hCourseKey ? ' selected' : ''}>${escapeHtml(c.label)} (${c.played}경기)</option>`;
-    }).join('');
-    sel.value = h2hCourseKey;
+    sel.innerHTML = list.map(c => `<option value="${escapeHtml(keyOf(c))}"${keyOf(c) === goalCourseKey ? ' selected' : ''}>${escapeHtml(c.label)} (${c.games.length}경기)</option>`).join('');
+    sel.value = goalCourseKey;
 
-    box.innerHTML = winRateListHtml(cur.rec)
-        + `<div class="winrate-note">1~10차는 기존 2경기, ${HANDICAP_RULE_FROM_ROUND}차부터 직전 5경기 평균 기준입니다. 1·2차전과 산출에 필요한 기록이 없는 차수는 집계에서 제외됩니다.</div>`;
+    const mean = Math.round(cur.games.reduce((t, g) => t + g.net, 0) / cur.games.length * 10) / 10;
+    const tone = n => (n <= 0 ? '#16a34a' : '#dc2626');
+    box.innerHTML = cur.games.map(g => `<div style="display:flex; width:100%;"><span>${g.r + 1}차</span> <span>${g.score}타 · 목표 ${g.target}</span> <b style="color:${tone(g.net)};">${signNum(g.net)}</b></div>`).join('')
+        + `<div style="display:flex; width:100%;"><span>평균</span> <span></span> <b style="color:${tone(mean)};">${signNum(mean)}</b></div>`
+        + `<div class="winrate-note">목표는 그 경기 직전 5경기 평균입니다. 직전 5경기가 없는 1~5차 경기는 제외됩니다.</div>`;
 }
 
-function selectCourseWinRate(key, name) {
-    h2hCourseKey = key;
-    renderCourseWinRate(name);
+function selectCourseGoal(key, name) {
+    goalCourseKey = key;
+    renderCourseGoal(name);
 }
 
 function openPersonalReport(name) {
@@ -89,9 +97,8 @@ function openPersonalReport(name) {
     const rankCounts = [0, 0, 0, 0]; (golferRankHistory[name] || []).forEach(r => rankCounts[r]++);
     const badgeHtmlWithDesc = (golferBadgesMap[name] || []).map((b, idx) => `<div class="badge-desc-item slot-roll" style="animation-delay: ${idx * 0.1}s;"><div style="flex-shrink:0;">${b.html}</div><div class="badge-desc-text">${b.desc}</div></div>`).join('');
     
-    // 통산 승률. 계산은 calc.js의 headToHead() 한 곳에만 있다 —
-    // 골프장별 승률이 같은 함수를 쓰므로 규칙이 어긋날 자리가 없다.
-    const winRateHtml = winRateListHtml(headToHead(name, allRoundIdx()));
+    // 목표 달성 기록 — 셈은 goalNetAt() 한 곳(홈 카드와 같다).
+    const goalHtml = goalSummaryHtml(name);
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : { "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "김지명": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "신성호": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 }, "박승수": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 } };
 
@@ -126,18 +133,18 @@ function openPersonalReport(name) {
             <div class="stat-box"><div class="stat-label">${iC}학</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[2]}" data-suffix="회" style="color:#a855f7; animation-delay: 0.3s;">0회</div></div>
             <div class="stat-box"><div class="stat-label">${iS}참새</div><div class="stat-val slot-roll count-up" data-val="${rankCounts[3]}" data-suffix="회" style="color:#64748b; animation-delay: 0.4s;">0회</div></div>
         </div></div>
-        <div class="report-section"><div class="report-title">⚔️ 1:1 통산 승률</div><div class="winrate-list">${winRateHtml}</div></div>
+        <div class="report-section"><div class="report-title">🎯 내 목표 달성 기록</div>${goalHtml}</div>
         <div class="report-section">
             <div class="report-title report-title-row">
-                <span>🏌️ 골프장별 1:1 승률</span>
-                <select class="course-wr-select" id="courseWinRateSelect"
-                        onchange="selectCourseWinRate(this.value, '${escapeHtml(name)}')"></select>
+                <span>🏌️ 골프장별 목표 대비</span>
+                <select class="course-wr-select" id="courseGoalSelect"
+                        onchange="selectCourseGoal(this.value, '${escapeHtml(name)}')"></select>
             </div>
-            <div class="winrate-list" id="courseWinRate"></div>
+            <div class="winrate-list" id="courseGoal"></div>
         </div>
         </div>
     `;
-    renderCourseWinRate(name);
+    renderCourseGoal(name);
     switchReportTab('record');
     
     document.getElementById('personalReportModal').classList.add('active');
