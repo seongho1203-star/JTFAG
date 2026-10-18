@@ -2024,9 +2024,8 @@ html, body { overscroll-behavior: none; }
 .hm-rave { margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: var(--gold-light); color: var(--primary-gold); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
 .rave-box { display: flex; align-items: center; flex-wrap: nowrap; gap: 4px 6px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .rave-box:empty { display: none; }
-.rave-box .near-head { white-space: nowrap; font-size: clamp(0.58rem, 2.7vw, 0.68rem); }
-.rave-box .near-check { padding: 2px 6px; }
-.rave-box .rave-list { min-width: 0; font-size: clamp(0.56rem, 2.6vw, 0.66rem); font-weight: 600; color: var(--text-main); line-height: 1.5; white-space: nowrap; }
+.rave-box .near-head { white-space: nowrap; }
+.rave-box .rave-list { min-width: 0; font-size: 0.68rem; font-weight: 600; color: var(--text-main); line-height: 1.5; white-space: nowrap; }
 
 /* 홈 1:1 카드 — 상대 이름 아래에 그 사람의 목표 타수를 작게 적는다(받는 타수 = 내 목표 − 상대 목표) */
 .match-vs .vs-name small { display: block; margin-top: 1px; font-size: clamp(0.56rem, 2.3vw, 0.62rem); font-weight: 600; color: var(--text-sub); letter-spacing: -0.2px; }

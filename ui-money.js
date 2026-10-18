@@ -331,7 +331,7 @@ function paintRaveBox() {
     const man = n => `${formatNumber(n / 10000)}만원`;
     const html = `<span class="near-head">🏆 라베 갱신</span>`
         + (list.length
-            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.prev}→${a.score}타 · 동반자 ${a.payers}×${man(a.pay)}`).join('<br>')}</span><span class="near-check ok">합계 ${man(total)}</span>`
+            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.prev}→${a.score}타`).join('<br>')}</span><span class="near-check ok">합계 ${man(total)}</span>`
             : `<span class="near-check none">갱신 없음</span>`);
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
