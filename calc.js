@@ -210,11 +210,24 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     return badges;
 }
 
-const HANDICAP_ROUNDS = 3;
-// 규칙 변경 전 확정된 1~10차 정산은 직전 2경기 기준을 유지한다.
-const THREE_GAME_HANDICAP_FROM_ROUND = 11;  // 1부터 시작하는 차수
+// 내 목표 타수 = 직전 5경기 평균(내림). 11차부터 적용한다(사용자 결정 — 3경기 → 5경기).
+// 규칙 변경 전 확정된 1~10차 정산은 직전 2경기 기준을 그대로 유지한다.
+const HANDICAP_ROUNDS = 5;
+const LEGACY_HANDICAP_ROUNDS = 2;
+const HANDICAP_RULE_FROM_ROUND = 11;  // 1부터 시작하는 차수 — 이 차수부터 5경기 평균 · 보정타수 순위 · 새 계급벌금
 
-// 현재 핸디캡은 세 경기, 과거 정산은 해당 차수에 적용된 경기 수로 평균을 낸다.
+// r(0부터)차수의 핸디캡을 낼 때 쓰는 경기 수
+function handicapCountFor(r) { return r + 1 < HANDICAP_RULE_FROM_ROUND ? LEGACY_HANDICAP_ROUNDS : HANDICAP_ROUNDS; }
+
+// 이어진 차수는 `6~10차`로, 아니면 `6·8·9차`로 적는다.
+function roundRangeText(rounds) {
+    if (!rounds.length) return '';
+    const nos = rounds.map(r => r + 1);
+    const run = nos.every((n, i) => i === 0 || n === nos[i - 1] + 1);
+    return (run && nos.length > 2 ? `${nos[0]}~${nos[nos.length - 1]}` : nos.join('·')) + '차';
+}
+
+// 현재 목표 타수는 직전 다섯 경기, 과거 정산은 해당 차수에 적용된 경기 수로 평균을 낸다.
 function handicapAverageAt(end, count = HANDICAP_ROUNDS) {
     if (end < count - 1) return null;
     const averages = {};
@@ -245,13 +258,13 @@ function calculateAndRender() {
     const matchCardTitle = document.getElementById('matchCardTitle');
     const avgHeaderTitle = document.getElementById('avgHeaderTitle');
 
-    const roundStr = targetRounds.map(r => r + 1).join('·');
-    const titleStr = roundStr ? `${roundStr}차` : '최근 3경기';
-    const avgTitleStr = roundStr ? `${roundStr}차 평균` : '최근 3경기 평균';
+    const roundStr = roundRangeText(targetRounds);
+    const titleStr = roundStr ? `최근 ${HANDICAP_ROUNDS}경기(${roundStr})` : `최근 ${HANDICAP_ROUNDS}경기`;
+    const avgTitleStr = roundStr ? `${roundStr} 평균` : `최근 ${HANDICAP_ROUNDS}경기 평균`;
 
-    if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 스코어 기준 1:1 핸디캡 산출</b>`;
+    if (infoText) infoText.innerHTML = `💡 <b>${titleStr} 평균</b>이 다음 라운드 내 목표 타수입니다`;
     if (matchCardTitle) matchCardTitle.textContent = avgTitleStr;
-    if (avgHeaderTitle) avgHeaderTitle.innerHTML = '최근차수<br>평균';
+    if (avgHeaderTitle) avgHeaderTitle.innerHTML = '내 목표<br>타수';
 
     const rows = document.querySelectorAll('#scoreTbody tr');
     rows.forEach(row => {
@@ -275,12 +288,40 @@ function calculateAndRender() {
     renderHandicapMatchCard(targetRounds);
 }
 
+/* 라베(개인 최저타) 갱신 — 11차부터 종전 개인 최저타(1~직전 차수 전체)보다 줄인 타수 1타당 1만원을 공금에서 준다.
+   **저장하지 않고 기록(appData.scores)에서 그때그때 셈한다** — 타수를 고치면 지급 내역도 따라온다.
+   종전 기록이 없는 첫 경기·타수가 비었거나 0 이하인 칸은 건너뛴다. 같은 타수는 갱신이 아니다. */
+function computeRaveAwards() {
+    const out = [];
+    golfers.forEach(g => {
+        const sc = (appData.scores && appData.scores[g]) || [];
+        let best = Infinity;
+        for (let r = 0; r < (appData.totalRounds || 0); r++) {
+            const v = parseFloat(sc[r]);
+            if (!Number.isFinite(v) || v <= 0) continue;
+            if (r + 1 >= RAVE_FROM_ROUND && best !== Infinity && v < best) {
+                out.push({ round: r, name: g, score: v, prev: best, pay: (best - v) * RAVE_PAY_PER_STROKE });
+            }
+            if (v < best) best = v;
+        }
+    });
+    return out;
+}
+
+function raveHistoryHtml(r) {
+    const list = raveAwards.filter(a => a.round === r);
+    if (!list.length) return '';
+    return `<div class="hm-rave">${list.map(a => `🏆 라베 갱신 · <b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타) → 공금 ${a.pay / 10000}만원 지급`).join('<br>')}</div>`;
+}
+
 function processAllRoundSettlements() {
     const totalRounds = appData.totalRounds;
     const totalRankProfit = {};
     const roundRankProfit = {};
     golferRankHistory = {}; 
     rankedRoundsList = [];
+    roundNetInfo = {};
+    raveAwards = computeRaveAwards();
     golferSingleMap = {};
     golferReboundMap = {};
     golferPhoenixWins = {};
@@ -448,7 +489,18 @@ function processAllRoundSettlements() {
             globalTies[g] += matchResults[g].ties;
         });
 
+        // 11차부터는 내 목표 타수와의 싸움이다 — 오늘 타수 − 내 목표 타수(보정타수)가 낮은 순서,
+        // 같으면 목표 타수가 낮은(잘 치는) 사람이 앞이다. 위 1:1 맞대결의 승수 순위와 결과가 같지만
+        // (차이만큼 타수를 깎아 견주는 것이 곧 보정타수 비교다) 화면과 설명을 한 줄로 하려고 직접 낸다.
+        // 그전 차수는 예전처럼 승수 → 타수 합 순서로 그대로 둔다.
+        const useNet = r + 1 >= HANDICAP_RULE_FROM_ROUND;
+        const netOf = g => currentScores[g] - handicapAvg[g];
+        if (useNet) {
+            roundNetInfo[r] = {};
+            golfers.forEach(g => { roundNetInfo[r][g] = { score: currentScores[g], target: handicapAvg[g], net: netOf(g) }; });
+        }
         const sortedGolfers = [...golfers].sort((a, b) => {
+            if (useNet) return (netOf(a) - netOf(b)) || (handicapAvg[a] - handicapAvg[b]);
             if (matchResults[b].wins !== matchResults[a].wins) {
                 return matchResults[b].wins - matchResults[a].wins;
             }
@@ -463,7 +515,7 @@ function processAllRoundSettlements() {
 
         sortedGolfers.forEach((golferName, index) => {
             const rankInfo = RANK_CONFIG[index];
-            const profit = rankInfo.penalty;
+            const profit = rankPenaltyAt(r, index);
             
             totalRankProfit[golferName] += profit;
             roundRankProfit[golferName][r] = profit;
@@ -472,11 +524,13 @@ function processAllRoundSettlements() {
             // 타수가 덜 채워진 차수는 건너뛰므로 totalRounds - 1과 다를 수 있다.
             lastRankedRound = r;
 
+            const ni = roundNetInfo[r] && roundNetInfo[r][golferName];
+            const netTag = ni ? `<small class="hm-net">목표 ${ni.target} · ${ni.net > 0 ? '+' : ''}${ni.net}</small>` : '';
             const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
 
             roundHistoryHtml += `
                 <div class="history-member">
-                    <span style="font-weight:700; color:var(--text-main);">${golferName}</span>
+                    <span style="font-weight:700; color:var(--text-main);">${golferName}${netTag}</span>
                     <div style="display:flex; align-items:center; gap:2px;">
                         <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
                         <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
@@ -486,7 +540,7 @@ function processAllRoundSettlements() {
         });
 
         rankedRoundsList.push(r);
-        roundHistoryHtml += `</div></div>`;
+        roundHistoryHtml += `</div>${raveHistoryHtml(r)}</div>`;
         if (historyList) historyList.innerHTML += roundHistoryHtml;
     }
 
@@ -689,7 +743,7 @@ function getHoleAnalysis(name) {
 }
 
 /* ── 1:1 승률 ─────────────────────────────────────────────────
-   핸디캡을 씌운 맞대결이다. 1~10차는 기존 직전 두 차수, 11차부터 직전 세 차수의 평균으로 핸디캡을 내고,
+   핸디캡을 씌운 맞대결이다. 1~10차는 기존 직전 두 차수, 11차부터 직전 다섯 차수의 평균으로 핸디캡을 내고,
    그 차이만큼 내 타수를 깎아 상대의 그 차수 타수와 견준다(적을수록 이긴다).
    같으면 핸디캡이 낮은 쪽(잘 치는 쪽)이 이긴 것으로 본다.
 
@@ -712,7 +766,7 @@ function headToHead(name, rounds) {
 
 /* 해당 차수의 규칙으로 핸디캡(평균 · 내림)과 타수를 낸다. 과거 정산·맞대결은 함께 보존한다. */
 function h2hRoundData(r) {
-    const count = r + 1 < THREE_GAME_HANDICAP_FROM_ROUND ? 2 : HANDICAP_ROUNDS;
+    const count = handicapCountFor(r);
     const hAvg = handicapAverageAt(r - 1, count), cScore = {};
     if (!hAvg) return null;
     for (const g of golfers) {

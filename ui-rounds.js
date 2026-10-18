@@ -157,7 +157,7 @@ function renderHandicapMatchCard(rounds) {
     if (!avgScores) {
         html = `<div class="match-empty">스코어를 먼저 입력해 주세요.</div>`;
     } else {
-        if (title) title.textContent = `${me}님 기준 · ${rounds.map(r => r + 1).join('·')}차 평균 ${avgScores[me]}`;
+        if (title) title.textContent = `${me}님 내 목표 타수 ${avgScores[me]} · ${roundRangeText(rounds)} 평균`;
         const rec = typeof headToHead === 'function' ? headToHead(me, allRoundIdx()) : {};
         html = '';
         golfers.filter(g => g !== me).forEach(opp => {
@@ -221,7 +221,7 @@ function openH2HDetail(oppIdx) {
         <div class="h2h-head"><div class="h2h-title">${escapeHtml(me)} <i>vs</i> ${escapeHtml(opp)}</div>
             <div class="h2h-sum">${games.length ? `${w}승 ${l}패${t ? ` ${t}무` : ''} · 승률 <b class="${tone}">${pct}%</b>` : '전적 없음'}</div></div>
         ${rows ? `<div class="h2h-list">${rows}</div>` : ''}
-        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 경기 평균의 차이이며, 1~10차는 기존 2경기, ${THREE_GAME_HANDICAP_FROM_ROUND}차부터 3경기 기준을 적용합니다. 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 산출에 필요한 기록이 없는 차수는 제외됩니다.</div>
+        <div class="h2h-foot">큰 숫자는 보정 타수(${escapeHtml(me)} : ${escapeHtml(opp)})입니다. 핸디캡은 해당 차수 직전 경기 평균의 차이이며, 1~10차는 기존 2경기, ${HANDICAP_RULE_FROM_ROUND}차부터 5경기 기준을 적용합니다. 받는 타수를 뺀 보정 타수로 승패를 가립니다. 1·2차와 산출에 필요한 기록이 없는 차수는 제외됩니다.</div>
         <button type="button" class="bdg-close" onclick="closeH2HDetail()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeH2HDetail(); });

@@ -25,6 +25,19 @@ const RANK_CONFIG = {
     3: { name: "참새", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
 };
 
+/* 계급벌금 — 11차부터 독수리 2만 · 매 3만 · 학 4만 · 참새 6만(합 15만)이다.
+   이미 정산이 끝난 1~10차는 위 RANK_CONFIG의 예전 금액(0/4/6/10만)을 그대로 쓴다.
+   금액을 읽는 곳은 `rankPenaltyAt()` 하나다 — RANK_CONFIG[i].penalty를 직접 읽으면 11차부터 어긋난다. */
+const RANK_PENALTY_NEW_FROM_ROUND = 11;   // 1부터 시작하는 차수
+const RANK_PENALTY_NEW = [-20000, -30000, -40000, -60000];
+function rankPenaltyAt(roundIdx, rankIdx) {
+    return roundIdx + 1 >= RANK_PENALTY_NEW_FROM_ROUND ? RANK_PENALTY_NEW[rankIdx] : RANK_CONFIG[rankIdx].penalty;
+}
+
+/* 라베(개인 최저타) 갱신 상금 — 11차부터, 종전 최저보다 줄인 타수 1타당 1만원을 공금에서 준다. */
+const RAVE_FROM_ROUND = 11;
+const RAVE_PAY_PER_STROKE = 10000;
+
 /* 독수리 연속 달성 축포에 쓸 **큰** 그림.
    비워 두면 앱이 직접 그린다(`eagleSvg()` in ui.js).
    주소를 넣으면 그걸 대신 띄운다 — GIF · APNG · WebP · PNG 아무거나 된다.
@@ -407,6 +420,8 @@ let historyStack = [];
 let selectedMoneyRoundIdx = -1;
 let cachedRoundRankProfit = {}; 
 let golferRankHistory = {}; 
+let roundNetInfo = {};   // 11차부터 보정타수 순위의 근거 — roundNetInfo[차수][이름] = {score, target, net}
+let raveAwards = [];     // 라베 갱신 기록 [{round, name, score, prev, pay}] — calc.js가 기록에서 매번 셈한다
 let rankedRoundsList = [];   // 계급이 매겨진 차수(0부터). golferRankHistory[이름][i]가 rankedRoundsList[i]차다 — 뱃지 컬렉션이 '몇 차 획득'을 낸다
 let golferBadgesMap = {}; 
 let golferPhoenixWins = {}; 

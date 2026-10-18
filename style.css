@@ -2018,3 +2018,10 @@ html, body { overscroll-behavior: none; }
 .passport-plans em { flex-shrink: 0; font-size: .68rem; font-style: normal; }
 .passport-trip-link { display: block; width: 100%; padding: 12px; margin-top: 7px; border: 1px solid #dce3d5; border-radius: 9px; background: #f2f5ed; color: #536e48; font: inherit; font-size: .8rem; text-align: left; overflow-wrap: anywhere; }
 .passport-empty { padding: 24px 16px; text-align: center; color: #7c817b; font-size: .8rem; line-height: 1.7; }
+
+/* 11차부터: 계급 이력의 목표 대비 타수 · 라베 갱신 지급 (사용자 규칙 — 내 목표 타수와의 싸움) */
+.history-member > span:first-child .hm-net { display: block; font-size: 0.56rem; font-weight: 700; color: var(--text-sub); letter-spacing: -0.3px; }
+.hm-rave { margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: var(--gold-light); color: var(--primary-gold); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
+.rave-box { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 7px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.rave-box:empty { display: none; }
+.rave-box .rave-list { min-width: 0; font-size: 0.68rem; font-weight: 600; color: var(--text-main); line-height: 1.5; word-break: keep-all; }

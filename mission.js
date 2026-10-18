@@ -496,9 +496,14 @@ function pickWeighted(list) {
 // 받을 때 대상 멤버의 실력을 보고 별을 ±1 조정하고, 그 별로 본인 미션을 골라 합 MISSION_LV_MAX 이하를 맞춘다.
 // 실력은 1:1 핸디캡과 같은 잣대 — 넷 다 타수가 있는 가장 최근 연속 세 차수의 평균(내림)이다. 없으면 조정하지 않는다.
 const MISSION_ADJ_STEP = 4;   // 4타 이상 차이면 ±1 — 폭은 ±1까지(사용자 요청 — ±2는 너무 커 조합이 줄었다)
+// 핸디캡(내 목표 타수)이 11차부터 5경기 평균이 되어도 미션은 예전 그대로 최근 3경기를 본다 — 미션 규칙은 바뀐 것이 없다.
+const MISSION_SKILL_ROUNDS = 3;
 function missionSkill() {
-    const rounds = latestHandicapRounds();
-    return rounds.length ? handicapAverageAt(rounds[rounds.length - 1]) : null;
+    for (let r = (appData.totalRounds || 0) - 1; r >= MISSION_SKILL_ROUNDS - 1; r--) {
+        const avg = handicapAverageAt(r, MISSION_SKILL_ROUNDS);
+        if (avg) return avg;
+    }
+    return null;
 }
 // 멤버 미션의 종류 — 대결(○○보다) · 협동(○○와 함께) · 응원(○○가 해낸다)
 function missionKind(def) {

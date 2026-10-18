@@ -57,7 +57,7 @@ function renderCourseWinRate(name) {
     sel.value = h2hCourseKey;
 
     box.innerHTML = winRateListHtml(cur.rec)
-        + `<div class="winrate-note">1~10차는 기존 2경기, ${THREE_GAME_HANDICAP_FROM_ROUND}차부터 직전 3경기 평균 기준입니다. 1·2차전과 산출에 필요한 기록이 없는 차수는 집계에서 제외됩니다.</div>`;
+        + `<div class="winrate-note">1~10차는 기존 2경기, ${HANDICAP_RULE_FROM_ROUND}차부터 직전 5경기 평균 기준입니다. 1·2차전과 산출에 필요한 기록이 없는 차수는 집계에서 제외됩니다.</div>`;
 }
 
 function selectCourseWinRate(key, name) {

@@ -170,6 +170,9 @@ function revealRoundResult(roundIdx, order) {
     };
     const picOf = r => { const m = /src="([^"]+)"/.exec(RANK_CONFIG[r].icon || ''); return m ? m[1] : ''; };
     const grossOf = name => (appData.scores[name] && appData.scores[name][roundIdx]) || '';
+    // 11차부터는 목표 타수와 견준 값(보정타수)도 함께 적는다.
+    const netOf = name => (roundNetInfo[roundIdx] && roundNetInfo[roundIdx][name]) || null;
+    const netText = name => { const n = netOf(name); return n ? `(${n.net > 0 ? '+' : ''}${n.net})` : ''; };
 
     const STEP = 0.45;                                  // 줄 하나가 올라오는 간격(초)
     const rest = order.slice(1);
@@ -180,7 +183,7 @@ function revealRoundResult(roundIdx, order) {
             <span class="rp-place">${i + 2}</span>
             ${pic ? `<img class="rp-pic" src="${pic}" alt="">` : ''}
             <span class="rp-name">${escapeHtml(name)}</span>
-            <span class="rp-meta">${g !== '' ? g + '타 · ' : ''}${RANK_CONFIG[r].name}</span>
+            <span class="rp-meta">${g !== '' ? g + '타' + netText(name) + ' · ' : ''}${RANK_CONFIG[r].name}</span>
         </div>`;
     });
     const winAt = 0.4 + rest.length * STEP + 0.25;       // 마지막 줄이 뜬 뒤 우승자
@@ -200,7 +203,7 @@ function revealRoundResult(roundIdx, order) {
             <div class="rp-win" style="animation-delay:${winAt + 0.3}s">
                 <div class="rp-kick">🏆 ${roundIdx + 1}차전 우승</div>
                 <div class="rp-champ">${escapeHtml(champ)}님</div>
-                <div class="rp-sub">${cg !== '' ? cg + '타 · ' : ''}${RANK_CONFIG[cr].name}</div>
+                <div class="rp-sub">${cg !== '' ? cg + '타' + netText(champ) + ' · ' : ''}${RANK_CONFIG[cr].name}</div>
             </div>
             <div class="rp-rows">${rows.join('')}</div>
             <div class="rp-tap" style="animation-delay:${winAt + 0.9}s">화면을 누르면 넘어갑니다</div>
