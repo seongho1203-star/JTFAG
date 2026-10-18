@@ -253,6 +253,8 @@ function addRound() {
     if (!appData.roundMoney) appData.roundMoney = []; appData.roundMoney.push(newRoundMoney);
     // 같은 번호의 차수를 예전에 지운 적이 있으면 테이블에 그때 금액이 남아 있다. 새 경기라 비운다.
     if (typeof clearMoneyRound === 'function') clearMoneyRound(appData.totalRounds - 1);
+    // 예전에 지운 같은 번호 차수의 차액 사유(캐디 팁·니어)가 남아 있으면 새 경기에 되살아나지 않게 비운다.
+    if (appData.diffReasons) delete appData.diffReasons[String(appData.totalRounds)];
     selectedMoneyRoundIdx = appData.totalRounds - 1;
     syncToSupabase(appData); renderAll(); showToast(`➕ ${appData.totalRounds}차전이 추가되었습니다.`);
     setTimeout(() => { const wrapper = document.getElementById('tableWrapper'); if(wrapper) wrapper.scrollTo({ left: wrapper.scrollWidth + 1000, behavior: 'smooth' }); }, 150);

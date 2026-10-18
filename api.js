@@ -411,7 +411,9 @@ function getDefaultData() {
         roundCourses: {},
         // 그 라운드에 돈 9홀 코스(`마제스티-펠리스`). 클럽 이름과 섞으면
         // 날씨 좌표와 골프장별 승률 묶음이 깨져서 따로 둔다.
-        roundSubCourses: {}
+        roundSubCourses: {},
+        // 차수별 차액 사유(캐디 팁·니어) — {"11": {tip, near}} (원). 정산 일치 검산에만 쓴다.
+        diffReasons: {}
     };
 }
 

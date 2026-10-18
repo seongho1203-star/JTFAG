@@ -311,6 +311,7 @@ function renderDonateRow() {
             <b id="nearCarry">0원</b>
             <span id="nearCheck" class="near-check"></span>
         </div>
+        <div class="reason-box" id="reasonBox"></div>
         <div class="rave-box" id="raveBox"></div>`;
     paintDonateSum();
     paintNearBox();
@@ -367,6 +368,7 @@ function nearPotPerHole() { return NEAR_PER_PERSON * golfers.length; }   // 한 
 function paintNearBox() {
     const el = document.getElementById('nearCarry');
     if (!el) return;
+    paintReasonBox();
 
     // 화면에는 타수정산 합계를 그대로 표시한다. 잃은 돈이 딴 돈보다 많으면 음수다.
     // 스코어 입력 대기면 계급이 안 정해져 합계를 셀 수 없다.
@@ -421,13 +423,162 @@ function paintNearCheck(left) {
 
     // 니어로 낸 돈도 잃은 돈에 들어 있으므로, 딴 돈과 잃은 돈의 합이 정확히 0이어야 한다(사용자 규칙).
     // 0이 아니면 — 2만원의 배수라도 — 누군가의 시작·남은 금액이 잘못 적힌 것이다.
-    if (left === 0) {
+    // 다만 캐디 팁·남은 니어처럼 **나간 돈**을 차액 사유로 적어 두었으면 그만큼은 설명된 것으로 본다(사용자 요청).
+    const explained = diffReasonTotal(selectedMoneyRoundIdx);
+    const rest = left + explained;       // 0이면 차액이 사유로 다 설명된 것
+    if (rest === 0) {
         badge.className = 'near-check ok';
-        badge.textContent = '✅ 정산 일치';
+        badge.textContent = explained ? '✅ 일치 · 사유 반영' : '✅ 정산 일치';
     } else {
         badge.className = 'near-check bad';
-        badge.textContent = '⚠️ 불일치';
+        badge.textContent = !explained ? '⚠️ 불일치'
+            : `⚠️ 불일치 · ${formatNumber(Math.abs(rest))}원 ${rest < 0 ? '남음' : '초과'}`;
     }
+}
+
+/* ── 차액 사유 (캐디 팁 · 니어) ──────────────────────────────────────
+   타수정산 합이 0이 아닌 까닭이 캐디 팁이나 남은 니어 돈일 수 있다. 그 금액을 적어 두면
+   `타수정산 합 + 사유 합 = 0`일 때 '일치 · 사유 반영'으로 본다. 사유는 **나간 돈만** 받는다 —
+   딴 돈이 더 많은 차액(+)은 사유로 설명할 수 없다.
+
+   **적는 것은 이 기기 주인(SCORE_OWNER)뿐이다**(사용자 요청 — 스코어 등록 버튼과 같은 기기).
+   jtfag_my_name은 보안이 아니라 실수 방지 장치다.
+   값은 `payload.diffReasons[차수 번호(1부터)] = {tip, near}`(원)다. 항목마다 금액 하나 — 다시 적으면 덮는다.
+   **정산 금액(시작·남은)·공금·니어 잔액 계산에는 섞지 않는다.** 검산 표시에만 쓴다. */
+const DIFF_REASONS = { tip: '캐디 팁', near: '니어' };
+
+function diffReasonsOf(r) {
+    const m = appData.diffReasons && appData.diffReasons[String(r + 1)];
+    const out = {};
+    Object.keys(DIFF_REASONS).forEach(k => { const v = Number(m && m[k]) || 0; if (v > 0) out[k] = v; });
+    return out;
+}
+function diffReasonTotal(r) {
+    const m = diffReasonsOf(r);
+    return Object.keys(m).reduce((a, k) => a + m[k], 0);
+}
+function canEditDiffReason() {
+    return localStorage.getItem('jtfag_my_name') === SCORE_OWNER;
+}
+
+function paintReasonBox() {
+    const box = document.getElementById('reasonBox');
+    if (!box) return;
+    const r = selectedMoneyRoundIdx;
+    const owner = canEditDiffReason();
+    const m = diffReasonsOf(r);
+    const keys = Object.keys(m);
+    // 적은 것도 없고 적을 수도 없으면 줄을 아예 안 그린다.
+    const html = (!keys.length && !owner) ? '' :
+        `<span class="near-head">차액 사유</span><span class="reason-list">`
+        + keys.map(k => `<span class="reason-chip">${DIFF_REASONS[k]} ${formatNumber(m[k])}원`
+            + (owner ? `<button type="button" class="reason-x" aria-label="${DIFF_REASONS[k]} 삭제" onclick="removeDiffReason(${r}, '${k}')">✕</button>` : '')
+            + `</span>`).join('')
+        + `</span>`
+        + (owner ? `<button type="button" class="reason-add" onclick="openDiffReason(${r})">＋ 사유 추가</button>` : '');
+    if (box._html !== html) { box.innerHTML = html; box._html = html; }
+}
+
+// 값을 바꾸는 입구는 이 함수 하나다. 같은 값이면 저장하지 않는다(실시간 이벤트가 되돌아오는 구조라 헛저장을 만들지 않는다).
+function setDiffReason(r, kind, amount) {
+    if (!canEditDiffReason() || !DIFF_REASONS[kind]) return;
+    const key = String(r + 1);
+    const cur = (appData.diffReasons && appData.diffReasons[key] && Number(appData.diffReasons[key][kind])) || 0;
+    const next = Math.max(0, Math.round(Number(amount) || 0));
+    if (cur === next) return;
+    saveState();
+    if (!appData.diffReasons) appData.diffReasons = {};
+    const entry = Object.assign({}, appData.diffReasons[key] || {});
+    if (next) entry[kind] = next; else delete entry[kind];
+    if (Object.keys(entry).length) appData.diffReasons[key] = entry; else delete appData.diffReasons[key];
+    syncToSupabase(appData);
+    paintNearBox();
+    showToast(next ? `${r + 1}차 ${DIFF_REASONS[kind]} ${formatNumber(next)}원 저장됨` : `${r + 1}차 ${DIFF_REASONS[kind]} 사유 삭제됨`);
+}
+
+async function openDiffReason(r) {
+    if (!canEditDiffReason()) return;
+    const res = await showDiffReasonPrompt(r, diffReasonsOf(r));
+    if (res) setDiffReason(r, res.kind, res.amount);
+}
+
+async function removeDiffReason(r, kind) {
+    if (!canEditDiffReason()) return;
+    const amt = diffReasonsOf(r)[kind] || 0;
+    const ok = await showConfirmPrompt(`${r + 1}차 ${DIFF_REASONS[kind]} ${formatNumber(amt)}원 사유를<br>삭제하시겠습니까?`, '삭제');
+    if (ok) setDiffReason(r, kind, 0);
+}
+
+// 항목(캐디 팁/니어)을 고르고 금액을 적는 창. 취소하면 null, 저장하면 {kind, amount}.
+// `.modal-overlay` 클래스를 쓰지 않고 스스로 스타일을 지정한다(닫히면 visibility:hidden이라 인라인 opacity로는 안 보인다).
+function showDiffReasonPrompt(r, current) {
+    return new Promise((resolve) => {
+        let kind = Object.keys(DIFF_REASONS).find(k => !current[k]) || 'tip';
+        const overlay = document.createElement('div');
+        overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
+        const box = document.createElement('div');
+        box.style.cssText = "background:#ffffff; border:1px solid #e6e6e2; border-radius:12px; padding:20px; width:100%; max-width:280px; box-shadow:0 15px 40px rgba(0,0,0,0.2); transform:scale(0.9); transition:transform 0.2s; text-align:center;";
+        const head = document.createElement('div');
+        head.innerHTML = `차액 사유 입력<div style="color:#94a3b8; font-size:0.72rem; font-weight:700; margin-top:3px;">${r + 1}차 · 타수정산 합과의 차이를 설명하는 금액</div>`;
+        head.style.cssText = "color:#16181a; font-size:0.9rem; margin-bottom:12px; font-weight:800; word-break:keep-all;";
+
+        const tabRow = document.createElement('div');
+        tabRow.style.cssText = "display:flex; gap:5px; margin-bottom:12px;";
+        const tabs = {};
+        Object.keys(DIFF_REASONS).forEach(k => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.textContent = DIFF_REASONS[k];
+            b.style.cssText = "flex:1; padding:7px 0; border-radius:6px; border:1px solid #e6e6e2; background:#ffffff; color:#6b7075; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:inherit;";
+            b.onclick = () => setKind(k);
+            tabs[k] = b; tabRow.appendChild(b);
+        });
+
+        const label = document.createElement('div');
+        label.textContent = '금액';
+        label.style.cssText = "color:#94a3b8; font-size:0.72rem; font-weight:700; text-align:left; margin-bottom:4px;";
+        const input = document.createElement('input');
+        input.type = 'text'; input.inputMode = 'numeric'; input.placeholder = '0';
+        input.style.cssText = "width:100%; padding:10px; border-radius:8px; border:1px solid #e6e6e2; background:#f7f7f5; color:#16181a; font-size:1rem; font-weight:800; text-align:center; outline:none; font-family:inherit; margin-bottom:6px;";
+        const note = document.createElement('div');
+        note.style.cssText = "color:#94a3b8; font-size:0.68rem; font-weight:700; min-height:15px; margin-bottom:10px;";
+
+        const row = document.createElement('div'); row.style.cssText = "display:flex; gap:8px;";
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '취소';
+        cancelBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#f2f2ee; color:#3a3f44; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit;";
+        const okBtn = document.createElement('button');
+        okBtn.textContent = '저장';
+        okBtn.style.cssText = "flex:1; padding:10px; border-radius:6px; border:none; background:#2b5394; color:#ffffff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
+        row.appendChild(cancelBtn); row.appendChild(okBtn);
+
+        [head, tabRow, label, input, note, row].forEach(el => box.appendChild(el));
+        overlay.appendChild(box); document.body.appendChild(overlay);
+
+        function setKind(k) {
+            kind = k;
+            Object.keys(tabs).forEach(x => {
+                const on = x === k;
+                tabs[x].style.background = on ? '#2b5394' : '#ffffff';
+                tabs[x].style.color = on ? '#ffffff' : '#6b7075';
+                tabs[x].style.borderColor = on ? '#2b5394' : '#e6e6e2';
+            });
+            input.value = current[k] ? formatNumber(current[k]) : '';
+            note.textContent = current[k] ? '이미 적힌 금액입니다. 저장하면 이 금액으로 바뀌고, 0이면 삭제됩니다.' : '';
+            input.focus();
+        }
+        setKind(kind);
+        setTimeout(() => { overlay.style.opacity = '1'; box.style.transform = 'scale(1)'; input.focus(); }, 10);
+
+        function cleanup(v) {
+            overlay.style.opacity = '0'; box.style.transform = 'scale(0.9)';
+            setTimeout(() => { overlay.remove(); resolve(v); }, 200);
+        }
+        const submit = () => cleanup({ kind, amount: parseNumber(input.value) });
+        cancelBtn.onclick = () => cleanup(null);
+        okBtn.onclick = submit;
+        input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
+    });
 }
 
 // 이 차수에 모인 찬조. 0이면 아무것도 안 적는다 — 늘 '0원'이 붙어 있으면 잡음이다.
