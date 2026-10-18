@@ -411,11 +411,8 @@ function paintNearCheck(left) {
         badge.textContent = '미입력';
         return;
     }
-    // 시작 금액만 적은 사람이 있으면 아직 게임 중이라 잔액이 맞을 수 없다 — 불일치로 겁주지 않는다.
-    const playing = golfers.some(g => {
-        const m = round[g] || {};
-        return (Number(m.start) || 0) !== 0 && !moneySettled(m);
-    });
+    // 네 명이 모두 남은 금액을 적기 전에는 합이 맞을 수 없다(사용자 요청) — 불일치로 겁주지 않고 '입력 중'으로 둔다.
+    const playing = golfers.some(g => !moneySettled(round[g]));
     if (playing) {
         badge.className = 'near-check none';
         badge.textContent = '입력 중';
