@@ -328,9 +328,10 @@ function paintRaveBox() {
     if (selectedMoneyRoundIdx + 1 < RAVE_FROM_ROUND) { box.innerHTML = ''; return; }
     const list = (typeof raveAwards !== 'undefined' ? raveAwards : []).filter(a => a.round === selectedMoneyRoundIdx);
     const total = list.reduce((t, a) => t + a.total, 0);
-    const html = `<span class="near-head">🏆 라베 갱신 지급(동반자)</span>`
+    const man = n => `${formatNumber(n / 10000)}만원`;
+    const html = `<span class="near-head">🏆 라베 갱신</span>`
         + (list.length
-            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타, ${a.prev - a.score}타 단축) 동반자 ${a.payers}명 × ${formatNumber(a.pay)}원`).join('<br>')}</span><span class="near-check ok">수령 합계 ${formatNumber(total)}원</span>`
+            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.prev}→${a.score}타 · 동반자 ${a.payers}×${man(a.pay)}`).join('<br>')}</span><span class="near-check ok">합계 ${man(total)}</span>`
             : `<span class="near-check none">갱신 없음</span>`);
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
