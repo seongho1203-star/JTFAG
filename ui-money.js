@@ -475,7 +475,7 @@ function paintReasonBox() {
             + (owner ? `<button type="button" class="reason-x" aria-label="${DIFF_REASONS[k]} 삭제" onclick="removeDiffReason(${r}, '${k}')">✕</button>` : '')
             + `</span>`).join('')
         + `</span>`
-        + (owner ? `<button type="button" class="reason-add" onclick="openDiffReason(${r})">＋ 사유 추가</button>` : '');
+        + (owner ? `<button type="button" class="reason-add" onclick="openDiffReason(${r})">+추가</button>` : '');
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
 
