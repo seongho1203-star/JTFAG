@@ -338,10 +338,13 @@ function missionLog(g) {
 function missionRedraws(g, year, throughRound = Infinity) {
     return missionRounds().filter(r => { const e = missionEntry(r, g); return r <= throughRound && e && e.redrawn && (!year || e.y === year); }).length;
 }
-// 포인트 = 미션 성공 + 특별미션 + 예측 적중 − 다시 뽑기. 시즌 순위·사용권·다시 뽑기가 모두 이 값을 쓴다.
+// 라운드 예측(prediction.js)은 숨겨 두고 포인트 연결도 끊었다(사용자 결정 — 멀리건이 너무 많이 나온다는 동반자 의견).
+// 코드·기록은 지우지 않았다. true로 바꾸면 화면과 포인트 합산이 함께 되살아난다.
+let PREDICTION_ENABLED = false;
+// 포인트 = 미션 성공 + 특별미션 − 다시 뽑기(+ 예측 적중은 PREDICTION_ENABLED일 때만). 시즌 순위·사용권·다시 뽑기가 모두 이 값을 쓴다.
 function missionPoints(g, year, throughRound = Infinity) {
     const won = missionLog(g).filter(x => x.ok && x.round <= throughRound && (!year || x.y === year)).reduce((t, x) => t + x.lv, 0);
-    const predicted = typeof predictionPoints === 'function' ? predictionPoints(g, year, throughRound) : 0;
+    const predicted = PREDICTION_ENABLED && typeof predictionPoints === 'function' ? predictionPoints(g, year, throughRound) : 0;
     return Math.max(0, won + specialMissionPoints(g, year, throughRound) + predicted - missionRedraws(g, year, throughRound) * REDRAW_COST);
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
@@ -988,10 +991,10 @@ function renderMissionPage() {
     const box = document.getElementById('missionPage');
     if (!box || typeof golfers === 'undefined' || missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
-    const html = missionPointCards(me) + '<div id="predictionHost"></div>' + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionHistoryCard(me) + missionListCard();
+    const html = missionPointCards(me) + (PREDICTION_ENABLED ? '<div id="predictionHost"></div>' : '') + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionHistoryCard(me) + missionListCard();
     // 같으면 갈아 끼우지 않는다 — 남의 저장마다 renderAll이 돈다
     if (html !== missionLastHtml) { missionLastHtml = html; box.innerHTML = html; }
-    if (typeof renderPredictionCard === 'function') renderPredictionCard();
+    if (PREDICTION_ENABLED && typeof renderPredictionCard === 'function') renderPredictionCard();
     refreshMulliganPopup();
 }
 

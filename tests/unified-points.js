@@ -8,6 +8,7 @@ const source = name => fs.readFileSync(path.resolve(__dirname, '..', name), 'utf
 const plain = value => JSON.parse(JSON.stringify(value));
 const m = make(), run = m.run;
 vm.runInContext(source('mission.js'), m.ctx);
+run('PREDICTION_ENABLED=true'); // 예측은 기본이 숨김·연결 끊김이라, 이 앞부분은 켠 상태의 합산 규칙을 본다
 newHoles(m);
 run(`missionLog=g=>g==='신성호'?[{ok:true,round:10,y:2026,lv:4},{ok:true,round:12,y:2027,lv:3}]:[];
     specialMissionLog=g=>g==='신성호'?[{round:9,y:2026,pts:10}]:[];
@@ -76,6 +77,7 @@ console.log('PASS: 통합 포인트로 사용권·다시 뽑기·미션왕 계�
 const c = make();
 vm.runInContext(source('calc.js'), c.ctx);
 vm.runInContext(source('mission.js'), c.ctx);
+c.run('PREDICTION_ENABLED=true');
 c.ctx.document.querySelector = () => null;
 c.ctx.document.querySelectorAll = () => [];
 newHoles(c);
@@ -86,3 +88,19 @@ setEvent(c, event(c));
 c.run('processAllRoundSettlements()');
 assert.deepEqual(snapshot(), financial);
 console.log('PASS: 예측 적중 점수가 기존 계급·금액 정산과 원본 정산 입력값에 영향 없음');
+
+// 기본(숨김) 상태: 예측 기록이 있어도 포인트·사용권에 안 들어가고 화면에도 안 나온다.
+const off = make();
+vm.runInContext(source('mission.js'), off.ctx);
+newHoles(off);
+off.run(`missionLog=g=>g==='신성호'?[{ok:true,round:10,y:2026,lv:4}]:[];specialMissionLog=()=>[];missionRounds=()=>[];missionEntry=()=>null;`);
+setEvent(off, event(off));
+assert.equal(off.run('PREDICTION_ENABLED'), false);
+assert.equal(off.run("predictionPoints('신성호')"), 6, '예측 기록·계산은 그대로 남아 있다');
+assert.equal(off.run("missionPoints('신성호')"), 4, '예측 점수는 미션 포인트에 합산되지 않는다');
+const offBox = {innerHTML:''};
+off.ctx.document.getElementById = id => id === 'missionPage' ? offBox : null;
+for (const name of ['missionTargetCard','missionLastResultCard','specialMissionCard','missionHistoryCard','missionListCard']) off.ctx[name] = () => `<div data-test="${name}"></div>`;
+off.run('renderMissionPage()');
+assert.doesNotMatch(offBox.innerHTML, /predictionHost/, '예측 칸이 화면에 없다');
+console.log('PASS: 예측 숨김 — 화면에서 빠지고 포인트·사용권에 합산되지 않음(기록은 보존)');
