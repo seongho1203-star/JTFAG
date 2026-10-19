@@ -12,11 +12,13 @@ function updateScoreRequestBtn() {
 
 // 올릴 차수는 거의 항상 '방금 친 차수'다. 홀 기록이 아직 없는 마지막 차수를
 // 미리 골라 둬, 차수가 몇 개든 열자마자 사진만 올리면 되게 한다.
+// 표에 아직 없는 '다음 차수'(totalRounds)도 고를 수 있다 — 홀 기록이 들어오면 차수가 저절로 만들어진다
+// (appendRoundFromHoles). 마지막 차수에 이미 기록이 있으면 새 차수가 기본이다.
 function defaultScorecardRound() {
     for (let r = appData.totalRounds - 1; r >= 0; r--) {
         if (!hasHoleRecord(r)) return r;
     }
-    return appData.totalRounds - 1;
+    return appData.totalRounds;
 }
 
 async function openScoreRequestModal() {
@@ -61,8 +63,9 @@ function renderScoreRequestModal() {
     // 차수가 몇 개가 되든 창 크기가 그대로인 드롭다운으로 고른다.
     // 홀 기록이 이미 있는 차수는 ✓로 표시해, 다시 올리는 건지 알 수 있게 한다.
     let optionHtml = "";
-    for (let r = 0; r < appData.totalRounds; r++) {
-        optionHtml += `<option value="${r}"${selectedScorecardRound === r ? ' selected' : ''}>${r + 1}차${hasHoleRecord(r) ? ' ✓ 기록 있음' : ''}</option>`;
+    for (let r = 0; r <= appData.totalRounds && r < 99; r++) {
+        const tag = r >= appData.totalRounds ? ' (신규)' : (hasHoleRecord(r) ? ' ✓ 기록 있음' : '');
+        optionHtml += `<option value="${r}"${selectedScorecardRound === r ? ' selected' : ''}>${r + 1}차${tag}</option>`;
     }
     select.innerHTML = optionHtml;
     select.value = String(selectedScorecardRound);
