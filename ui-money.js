@@ -512,7 +512,7 @@ function showMismatchPicker(r, need) {
    jtfag_my_name은 보안이 아니라 실수 방지 장치다.
    값은 `payload.diffReasons[차수 번호(1부터)] = {tip, near}`(원)다. 항목마다 금액 하나 — 다시 적으면 덮는다.
    **정산 금액(시작·남은)·공금·니어 잔액 계산에는 섞지 않는다.** 검산 표시에만 쓴다. */
-const DIFF_REASONS = { tip: '캐디 팁', near: '니어', done: '정산 완료' };
+const DIFF_REASONS = { tip: '캐디 팁', near: '니어' };
 
 function diffReasonsOf(r) {
     const m = appData.diffReasons && appData.diffReasons[String(r + 1)];
