@@ -23,7 +23,7 @@ function clubKey(name) {
     return Object.hasOwn(aliases,key)?aliases[key]:key;
 }
 function manualMarks() {
-    const context = vm.createContext({localStorage:{getItem:()=>null}});
+    const context = vm.createContext({localStorage:{getItem:()=>null}, setTimeout:()=>0, clearTimeout:()=>{}});
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'passport.js'), 'utf8'), context);
     return vm.runInContext('PASSPORT_MARKS', context);
 }
