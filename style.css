@@ -2097,4 +2097,5 @@ html, body { overscroll-behavior: none; }
 .sc-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .sc-legend .sc-s { min-width: 12px; height: 12px; font-size: 0; }
 
-.gal-round { font-size: inherit; color: var(--primary-gold); }
+.goal-chip.tap { cursor: pointer; }
+.goal-chip.tap:active { opacity: 0.7; }

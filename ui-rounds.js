@@ -172,7 +172,7 @@ function renderHandicapMatchCard(rounds) {
         const hit = last.filter(g => g.net <= 0).length;
         const mean = last.length ? last.reduce((t, g) => t + g.net, 0) / last.length : null;
         const sign = n => (n > 0 ? '+' : '') + n;
-        const chips = last.length ? last.map(g => `<div class="goal-chip ${g.net <= 0 ? 'ok' : 'miss'}"><i>${g.r + 1}차</i><b>${sign(g.net)}</b></div>`).join('')
+        const chips = last.length ? last.map(g => `<div class="goal-chip tap ${g.net <= 0 ? 'ok' : 'miss'}" role="button" onclick="openMyScorecard(${g.r}, '${me}')"><i>${g.r + 1}차</i><b>${sign(g.net)}</b></div>`).join('')
             : `<div class="goal-none">비교할 기록이 아직 없습니다.</div>`;
         const others = golfers.filter(g => g !== me).map(g => `${escapeHtml(g)} <b>${avgScores[g]}</b>`).join(' · ');
         html = `<div class="goal-top"><div class="goal-num"><b>${avgScores[me]}</b><span>다음 라운드<br>내 목표 타수</span></div>`
@@ -483,7 +483,7 @@ function syncScheduleFromTrips() {
 }
 
 let selectedPhotoRoundIdx = -1;
-function openRoundPhotoModal(r) { selectedPhotoRoundIdx = r; document.getElementById('roundPhotoTitle').innerHTML = `📸 <span class="header-round-title tap gal-round" onclick="openMyScorecard(${selectedPhotoRoundIdx})">${r + 1}차전</span> 갤러리`; renderRoundPhotos(); document.getElementById('roundPhotoModal').classList.add('active'); }
+function openRoundPhotoModal(r) { selectedPhotoRoundIdx = r; document.getElementById('roundPhotoTitle').innerHTML = `📸 ${r + 1}차전 갤러리`; renderRoundPhotos(); document.getElementById('roundPhotoModal').classList.add('active'); }
 function closeRoundPhotoModal() { document.getElementById('roundPhotoModal').classList.remove('active'); }
 
 /* ── 알림 받는 기기 ───────────────────────────────────────────────
