@@ -232,10 +232,8 @@ function openH2HDetail(oppIdx) {
 }
 
 /* ── 차수를 누르면 스코어카드 ───────────────────────────────────────
-   표 머리의 `N차`를 누르면 그 라운드 홀별 기록을 본다(사용자 요청 — 본인 스코어카드). 이름 칩으로 다른 사람 것도 본다.
+   목표 타수 카드의 최근 경기 칩을 누르면 그 라운드 홀별 기록을 본다(사용자 요청 — 본인 스코어만 보이고 다른 사람 것은 안 보인다).
    원본은 stats.js의 ROUND_HOLES뿐이라 저장하는 것이 없다(par + rel = 타수). 홀 기록이 없는 차수는 알려 준다. */
-let scorecardView = { r: -1, name: '' };
-
 function closeMyScorecard() {
     const o = document.querySelector('.sc-overlay');
     if (!o) return;
@@ -262,28 +260,25 @@ function scHalf(par, rel, from) {
 
 function openMyScorecard(r, who) {
     const saved = typeof myGolferName === 'function' ? myGolferName() : '';
-    const name = golfers.includes(who) ? who : (scorecardView.r === r && golfers.includes(scorecardView.name) ? scorecardView.name : (saved || golfers[0]));
+    const name = golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]);
     const rec = typeof ROUND_HOLES !== 'undefined' ? ROUND_HOLES[String(r + 1)] : null;
     if (!rec || !rec.par || !rec.rel || !rec.rel[name] || rec.par.length !== 18) {
         showToast(`${r + 1}차는 홀별 기록이 아직 없습니다. 스코어를 등록하면 볼 수 있습니다.`);
         return;
     }
-    scorecardView = { r, name };
     closeMyScorecard();
     const par = rec.par, rel = rec.rel[name];
     const total = par.reduce((t, p, i) => t + p + rel[i], 0), parTotal = par.reduce((t, p) => t + p, 0);
     const diff = total - parTotal;
     const count = f => rel.filter(f).length;
-    const chips = golfers.filter(g => rec.rel[g]).map(g => `<button type="button" class="sc-chip${g === name ? ' on' : ''}" onclick="openMyScorecard(${r}, '${g}')">${escapeHtml(g)}</button>`).join('');
     const club = (appData.courses && appData.courses[r]) || '';
     const sub = typeof subCourseOf === 'function' ? subCourseOf(r) : '';
     const o = document.createElement('div');
     o.className = 'bdg-sheet-overlay sc-overlay';
     o.innerHTML = `<div class="bdg-sheet sc-sheet" role="dialog" aria-label="${r + 1}차 스코어카드">
         <div class="bdg-grip"></div>
-        <div class="sc-head"><div class="sc-title">${r + 1}차 스코어카드</div>
+        <div class="sc-head"><div class="sc-title">${r + 1}차 스코어카드 · ${escapeHtml(name)}</div>
             <div class="sc-sub">${escapeHtml([club, sub].filter(Boolean).join(' · ')) || '&nbsp;'}</div></div>
-        <div class="sc-chips">${chips}</div>
         <div class="sc-total"><b>${total}</b>타 <span class="${diff > 0 ? 'over' : diff < 0 ? 'under' : ''}">${diff === 0 ? '이븐파' : `${diff > 0 ? '+' : ''}${diff}`}</span></div>
         ${scHalf(par, rel, 0)}${scHalf(par, rel, 9)}
         <div class="sc-legend"><span><i class="sc-s birdie">·</i>버디 ${count(v => v === -1)}</span><span><i class="sc-s eagle">·</i>이글 이상 ${count(v => v <= -2)}</span><span>파 ${count(v => v === 0)}</span><span><i class="sc-s bogey">·</i>보기 ${count(v => v === 1)}</span><span><i class="sc-s double">·</i>더블 이상 ${count(v => v >= 2)}</span></div>
