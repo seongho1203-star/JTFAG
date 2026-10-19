@@ -307,7 +307,7 @@ function renderDonateRow() {
             }).join('') + `</div>
         </div>
         <div class="near-box">
-            <span class="near-head">🎯 계급·타수정산 일치 여부</span>
+            <span class="near-head">🎯 정산 일치 여부</span>
             <b id="nearCarry">0원</b>
             <span id="nearCheck" class="near-check"></span>
         </div>
