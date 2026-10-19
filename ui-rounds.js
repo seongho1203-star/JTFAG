@@ -72,15 +72,76 @@ function refreshForFinishedScore() {
 }
 
 // 값이 달라졌을 때만 저장한다. 4명이 동시에 접속해도 첫 한 명만 쓰고 나머지는 조용하다.
+/* ── 스코어카드가 곧 차수를 만든다 ─────────────────────────────────
+   사용자 요청 — 일정만 입력하고 스코어는 사진으로 자동 등록하면 `+ 차수 추가`와 골프장 입력이 필요 없게.
+   ① 홀 기록(ROUND_HOLES)이 있는 차수가 표에 없으면 접속 때 만든다(`appendRoundFromHoles()`).
+   ② 골프장 칸이 비어 있으면 스코어카드에 인쇄된 클럽 이름으로 채운다(`fillCoursesFromHoles()` — 일정에서 정한 이름이 먼저다).
+   ③ 일정이 붙은 차수의 기록이 들어오면 끝난 일정이므로 다음 라운드 칸을 비운다(`clearFinishedSchedule()`).
+   셋 다 ROUND_HOLES(원본)에서 파생되므로 여러 폰이 동시에 해도 같은 결과로 모이고, 바뀐 게 있을 때만 true를 돌려 헛저장이 없다.
+   **금액 줄은 비우지 않는다**(addRound와 다른 점) — 다른 폰이 방금 적은 금액을 지울 수 있다. */
+function appendRoundFromHoles() {
+    if (typeof ROUND_HOLES === 'undefined') return false;
+    const nums = Object.keys(ROUND_HOLES).map(k => parseInt(k, 10)).filter(n => n > 0 && n <= 60);
+    const max = nums.length ? Math.max(...nums) : 0;
+    if (max <= appData.totalRounds) return false;
+    const wasLast = selectedMoneyRoundIdx === appData.totalRounds - 1;
+    const from = appData.totalRounds;
+    if (!appData.courses) appData.courses = [];
+    if (!appData.roundPhotos) appData.roundPhotos = [];
+    if (!appData.roundMoney) appData.roundMoney = [];
+    if (!appData.scores) appData.scores = {};
+    for (let n = from + 1; n <= max; n++) {
+        appData.totalRounds = n;
+        appData.courses[n - 1] = roundCourseMap()[n] || '';
+        appData.roundPhotos[n - 1] = [];
+        const money = {}; golfers.forEach(g => money[g] = { start: 0, end: 0 });
+        appData.roundMoney[n - 1] = money;
+        golfers.forEach(g => { if (!appData.scores[g]) appData.scores[g] = []; appData.scores[g][n - 1] = ""; });
+    }
+    if (wasLast) selectedMoneyRoundIdx = appData.totalRounds - 1;
+    if (typeof overlayMoney === 'function') overlayMoney();
+    showToast(`➕ 스코어카드 기록에 맞춰 ${from + 1}${max > from + 1 ? `~${max}` : ''}차를 자동 생성했습니다.`);
+    return true;
+}
+
+function fillCoursesFromHoles() {
+    if (typeof ROUND_HOLES === 'undefined' || typeof parseStatsCourse !== 'function') return false;
+    if (!appData.courses) appData.courses = [];
+    let changed = false;
+    for (let r = 0; r < appData.totalRounds; r++) {
+        if (String(appData.courses[r] || '').trim() || !hasHoleRecord(r)) continue;
+        const club = parseStatsCourse(ROUND_HOLES[String(r + 1)].course).club;
+        if (club) { appData.courses[r] = club; changed = true; }
+    }
+    return changed;
+}
+
+function clearFinishedSchedule() {
+    const no = parseInt(appData.nextRoundNo, 10) || 0;
+    if (!no || !hasHoleRecord(no - 1)) return false;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(appData.nextRoundISO || ''))) {
+        if (!appData.roundDates) appData.roundDates = {};
+        if (!appData.roundDates[no]) appData.roundDates[no] = appData.nextRoundISO;   // 스탬프용 날짜는 남긴다
+    }
+    appData.nextRoundDate = '';
+    delete appData.nextRoundISO;
+    delete appData.nextRoundNo;
+    delete appData.nextRoundSrc;
+    return true;
+}
+
 function applyHoleScores() {
     refreshForFinishedScore();
+    const added = appendRoundFromHoles();   // 스코어카드가 있는데 표에 없는 차수를 만든다
     const changed = syncScoresFromHoles();
     const filled = applyRoundCourses();
+    const filledHoles = fillCoursesFromHoles();   // 일정에서 정한 이름이 없으면 카드에 인쇄된 클럽 이름
     const dropped = dropRetiredFields();
     const settled = settleScheduleRound();   // 지운 차수에 남아 있던 일정을 마지막 차수로
+    const finished = clearFinishedSchedule();   // 기록이 들어온 차수의 일정은 끝난 일정이다
     const tripSched = syncScheduleFromTrips();   // 여행에 잡힌 라운드를 다음 라운드 일정으로
     const seeded = typeof seedTrips === 'function' && seedTrips();   // 여행 일정(trip.js) — 처음 한 번만
-    if (changed || filled || dropped || settled || seeded || tripSched) syncToSupabase(appData);
+    if (added || changed || filled || filledHoles || dropped || settled || finished || seeded || tripSched) syncToSupabase(appData);
 }
 
 function toggleScoreEdit() {
@@ -355,6 +416,8 @@ async function removeRound() {
     if (appData.totalRounds <= 2) { showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다."); return; }
 
     const r = appData.totalRounds - 1;
+    // 홀 기록이 있는 차수는 접속할 때 다시 만들어진다(appendRoundFromHoles) — 지워 봐야 되살아나므로 먼저 홀 기록을 지우게 한다.
+    if (hasHoleRecord(r)) { showToast(`⚠️ ${r + 1}차는 스코어카드 기록이 있어 삭제할 수 없습니다. 스코어 등록 창에서 홀 기록을 먼저 삭제해 주세요.`); return; }
     const course = (appData.courses && appData.courses[r] || '').trim();
     const photos = (appData.roundPhotos && appData.roundPhotos[r] || []).length;
     const scored = golfers.filter(g => {
