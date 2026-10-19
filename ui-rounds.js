@@ -177,7 +177,7 @@ function renderHandicapMatchCard(rounds) {
         const others = golfers.filter(g => g !== me).map(g => `${escapeHtml(g)} <b>${avgScores[g]}</b>`).join(' · ');
         html = `<div class="goal-top"><div class="goal-num"><b>${avgScores[me]}</b><span>다음 라운드<br>내 목표 타수</span></div>`
             + `<div class="goal-hit"><b>${last.length ? `${hit}/${last.length}` : '-'}</b><span>목표 달성<br>(목표 대비 0 이하)</span></div></div>`
-            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수</span>${mean === null ? '' : `<span>평균 ${sign(Math.round(mean * 10) / 10)}</span>`}</div>`
+            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수${mean === null ? '' : ` · 평균 ${sign(Math.round(mean * 10) / 10)}`}</span><button type="button" class="goal-all" onclick="openMyScorecardList('${me}')">전체 ›</button></div>`
             + `<div class="goal-recent">${chips}</div>`
             + `<div class="goal-others"><span>멤버 목표 타수</span>${others}</div>`;
     }
@@ -239,6 +239,35 @@ function closeMyScorecard() {
     if (!o) return;
     o.classList.remove('show', 'sc-overlay');
     setTimeout(() => o.remove(), 220);
+}
+
+/* 내 스코어카드 전체 목록(사용자 요청 — 최근 5경기 칩 밖의 지난 차수도 보려고). 홀 기록이 있는 차수만, 최신 차수가 위.
+   줄을 누르면 openMyScorecard()가 열리고, 그 함수가 `.sc-overlay`를 먼저 닫으므로 이 창도 같은 클래스를 달아 저절로 닫힌다. */
+function openMyScorecardList(who) {
+    const saved = typeof myGolferName === 'function' ? myGolferName() : '';
+    const name = golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]);
+    const holes = typeof ROUND_HOLES !== 'undefined' ? ROUND_HOLES : {};
+    const rows = [];
+    for (let r = appData.totalRounds - 1; r >= 0; r--) {
+        const rec = holes[String(r + 1)];
+        if (!rec || !rec.par || rec.par.length !== 18 || !rec.rel || !rec.rel[name]) continue;
+        const total = rec.par.reduce((t, p, i) => t + p + rec.rel[name][i], 0), diff = total - rec.par.reduce((t, p) => t + p, 0);
+        const club = (appData.courses && appData.courses[r]) || '';
+        rows.push(`<button type="button" class="sc-row" onclick="openMyScorecard(${r}, '${name}')"><i>${r + 1}차</i><span>${escapeHtml(club) || '&nbsp;'}</span><b>${total}타</b><em class="${diff > 0 ? 'over' : diff < 0 ? 'under' : ''}">${diff === 0 ? 'E' : (diff > 0 ? '+' : '') + diff}</em></button>`);
+    }
+    if (!rows.length) { showToast('홀별 기록이 등록된 경기가 아직 없습니다.'); return; }
+    closeMyScorecard();
+    const o = document.createElement('div');
+    o.className = 'bdg-sheet-overlay sc-overlay';
+    o.innerHTML = `<div class="bdg-sheet sc-sheet" role="dialog" aria-label="내 스코어카드 전체">
+        <div class="bdg-grip"></div>
+        <div class="sc-head"><div class="sc-title">내 스코어카드 · ${escapeHtml(name)}</div><div class="sc-sub">${rows.length}경기 · 누르면 홀별 기록</div></div>
+        <div class="sc-list">${rows.join('')}</div>
+        <button type="button" class="bdg-close" onclick="closeMyScorecard()">닫기</button>
+    </div>`;
+    o.addEventListener('click', e => { if (e.target === o) closeMyScorecard(); });
+    document.body.appendChild(o);
+    requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
 }
 
 function scHalf(par, rel, from) {
