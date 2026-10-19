@@ -2096,3 +2096,5 @@ html, body { overscroll-behavior: none; }
 .sc-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 0.66rem; color: var(--text-sub); font-weight: 700; }
 .sc-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .sc-legend .sc-s { min-width: 12px; height: 12px; font-size: 0; }
+
+.gal-round { font-size: inherit; color: var(--primary-gold); }

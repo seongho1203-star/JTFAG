@@ -537,14 +537,13 @@ function paintReasonBox() {
     const owner = canEditDiffReason();
     const m = diffReasonsOf(r);
     const keys = Object.keys(m);
-    // 적은 것도 없고 적을 수도 없으면 줄을 아예 안 그린다.
-    const html = (!keys.length && !owner) ? '' :
+    // 적은 사유가 없으면 줄을 아예 안 그린다(사유는 불일치 팝업에서 자동으로 받는다).
+    const html = !keys.length ? '' :
         `<span class="near-head">차액 사유</span><span class="reason-list">`
         + keys.map(k => `<span class="reason-chip">${DIFF_REASONS[k]} ${formatNumber(m[k])}원`
             + (owner ? `<button type="button" class="reason-x" aria-label="${DIFF_REASONS[k]} 삭제" onclick="removeDiffReason(${r}, '${k}')">✕</button>` : '')
             + `</span>`).join('')
-        + `</span>`
-        + (owner ? `<button type="button" class="reason-add" onclick="openDiffReason(${r})">+추가</button>` : '');
+        + `</span>`;
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
 
