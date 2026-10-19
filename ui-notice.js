@@ -112,6 +112,13 @@ function noticeScheduleHtml(text) {
 function renderNoticeArea() {
     const dateDisplay = document.getElementById('nextRoundDisplay');
     if (dateDisplay) { dateDisplay.innerHTML = appData.nextRoundDate ? (ddayBadgeHtml() + noticeScheduleHtml(withWeekday(appData.nextRoundDate))) : `일정 등록하기`; checkWeather(appData.nextRoundDate); }
+    // 머리말에 몇 차 라운드인지 적는다(사용자 요청 — `다음 라운드 11차`). 일정이 없으면 예전 그대로다.
+    const label = document.querySelector('.notice-next label');
+    if (label) {
+        const no = parseInt(appData.nextRoundNo, 10);
+        const html = appData.nextRoundDate && no > 0 ? `다음 라운드 <b class="sched-no">${no}차</b>` : '다음 라운드';
+        if (label._html !== html) { label.innerHTML = html; label._html = html; }
+    }
     updateLockUI();
 }
 

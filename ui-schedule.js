@@ -116,14 +116,24 @@ function subCourseMap() {
 
    괄호가 있으면 그 안이 코스다. 없으면 `어등-송정`처럼 코스만 적힌 경우라
    **하이픈으로 이어진 것만** 코스로 본다(골프장 이름 하나만 적힌 걸 코스로 오해하지 않게). */
+/* 스코어카드에 인쇄된 코스 글을 `{club, sub}`로 가른다. 표기가 제각각이라 셋을 받는다 —
+   `함평엘리체 (마제스티-펠리스)`(괄호) · `JNJ 진-정` · `무등산 인왕봉-천왕봉`(클럽 이름 뒤 띄어쓰기) · `어등-송정`(코스만).
+   **하이픈이 든 마지막 마디만 코스로 본다**(골프장 이름 하나만 적힌 걸 코스로 오해하지 않게).
+   예전엔 `JNJ 진-정` 통째가 코스가 되어 칩에 `JNJ 진`·`정`이 뜨고 클럽 이름이 코스에 섞였다. */
+function parseStatsCourse(text) {
+    const t = String(text || '').trim();
+    if (!t) return { club: '', sub: '' };
+    const paren = t.match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+    if (paren) return { club: paren[1].trim(), sub: paren[2].trim() };
+    const sp = t.lastIndexOf(' ');
+    if (sp > 0 && t.slice(sp + 1).includes('-')) return { club: t.slice(0, sp).trim(), sub: t.slice(sp + 1).trim() };
+    return t.includes('-') ? { club: '', sub: t } : { club: '', sub: '' };
+}
+
 function subCourseFromStats(roundIdx) {
     if (typeof ROUND_HOLES === 'undefined') return '';
     const rec = ROUND_HOLES[String(roundIdx + 1)];
-    const text = String((rec && rec.course) || '').trim();
-    if (!text) return '';
-    const paren = text.match(/\(([^()]+)\)\s*$/);
-    if (paren) return paren[1].trim();
-    return text.includes('-') ? text : '';
+    return parseStatsCourse(rec && rec.course).sub;
 }
 
 /* 사람이 일정에서 정한 값이 먼저다. 없으면 스코어카드에서 읽은 값을 쓴다.
@@ -153,16 +163,24 @@ function paintSubCourse(r) {
 /* 그 클럽에서 전에 쓴 코스 이름들. `마제스티-펠리스`처럼 붙여 적은 것도 쪼개서 센다 —
    기록에서 뽑으므로 표에 없는 골프장이라도 한 번 쳐 넣으면 다음부터 목록에 오른다. */
 function pastSubCourses(club) {
-    const key = String(club || '').replace(/\s+/g, '');
+    const key = typeof clubKey === 'function' ? clubKey(club) : String(club || '').replace(/\s+/g, '');
     if (!key) return [];
     const clubs = roundCourseMap(), seen = new Set();
+    const keyOf = v => typeof clubKey === 'function' ? clubKey(v) : String(v || '').replace(/\s+/g, '');
     // 차수를 하나씩 훑는다 — 일정에서 정한 것과 스코어카드에서 읽은 것을 같이 본다.
     // subCourseOf()가 그 우선순위를 이미 알고 있으므로 여기서 다시 가리지 않는다.
+    // **골프장 이름은 clubKey로 견준다** — `무등산CC`(일정)와 `무등산`(스코어카드)이 같은 곳이다.
     for (let r = 0; r < (appData.totalRounds || 0); r++) {
-        const c = String(clubs[r + 1] || (appData.courses && appData.courses[r]) || '').replace(/\s+/g, '');
+        const c = keyOf(clubs[r + 1] || (appData.courses && appData.courses[r]));
         if (c !== key) continue;
         splitSubCourse(subCourseOf(r)).forEach(v => seen.add(v));
     }
+    // 스코어카드에 클럽 이름이 함께 인쇄된 기록(`JNJ 진-정`)은 차수의 골프장 칸과 상관없이 그 클럽의 코스로 모은다 —
+    // 코스 표에 없는 골프장도 스코어를 등록하는 순간 저절로 코스가 등록된다(사용자 요청).
+    if (typeof ROUND_HOLES !== 'undefined') Object.keys(ROUND_HOLES).forEach(n => {
+        const parsed = parseStatsCourse(ROUND_HOLES[n] && ROUND_HOLES[n].course);
+        if (parsed.club && keyOf(parsed.club) === key) splitSubCourse(parsed.sub).forEach(v => seen.add(v));
+    });
     return [...seen];
 }
 
@@ -371,6 +389,7 @@ function saveSchedule() {
     // 차수를 지웠다 다시 만들어도 roundCourses에 남아 있어 이름이 돌아온다.
     const roundNo = parseInt(document.getElementById('schRound').value, 10) || (appData.totalRounds + 1);
     appData.nextRoundNo = roundNo;
+    delete appData.nextRoundSrc;   // 직접 저장했으니 여행에서 자동으로 올린 일정이 아니다
     if (!appData.roundDates) appData.roundDates = {};
     appData.roundDates[roundNo] = appData.nextRoundISO;
     roundCourseMap()[roundNo] = course;

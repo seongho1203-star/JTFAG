@@ -78,8 +78,9 @@ function applyHoleScores() {
     const filled = applyRoundCourses();
     const dropped = dropRetiredFields();
     const settled = settleScheduleRound();   // 지운 차수에 남아 있던 일정을 마지막 차수로
+    const tripSched = syncScheduleFromTrips();   // 여행에 잡힌 라운드를 다음 라운드 일정으로
     const seeded = typeof seedTrips === 'function' && seedTrips();   // 여행 일정(trip.js) — 처음 한 번만
-    if (changed || filled || dropped || settled || seeded) syncToSupabase(appData);
+    if (changed || filled || dropped || settled || seeded || tripSched) syncToSupabase(appData);
 }
 
 function toggleScoreEdit() {
@@ -122,7 +123,7 @@ function renderTable() {
     for (let r = 0; r < appData.totalRounds; r++) {
         // 골프장은 사람이 여기서 치지 않는다 — 일정에서 차수를 고르면 저절로 채워진다.
         // 칸을 눌렀을 때 그 차수 일정이 열리게 해 둔다(고칠 길이 있어야 한다).
-        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot" onclick="openScheduleForRound(${r})"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${escapeHtml((appData.courses && appData.courses[r]) || "")}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
+        headerHtml += `<th><div class="header-round-title tap" onclick="openMyScorecard(${r})">${r + 1}차</div><div class="course-slot" onclick="openScheduleForRound(${r})"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${escapeHtml((appData.courses && appData.courses[r]) || "")}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
@@ -226,6 +227,69 @@ function openH2HDetail(oppIdx) {
         <button type="button" class="bdg-close" onclick="closeH2HDetail()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeH2HDetail(); });
+    document.body.appendChild(o);
+    requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
+}
+
+/* ── 차수를 누르면 스코어카드 ───────────────────────────────────────
+   표 머리의 `N차`를 누르면 그 라운드 홀별 기록을 본다(사용자 요청 — 본인 스코어카드). 이름 칩으로 다른 사람 것도 본다.
+   원본은 stats.js의 ROUND_HOLES뿐이라 저장하는 것이 없다(par + rel = 타수). 홀 기록이 없는 차수는 알려 준다. */
+let scorecardView = { r: -1, name: '' };
+
+function closeMyScorecard() {
+    const o = document.querySelector('.sc-overlay');
+    if (!o) return;
+    o.classList.remove('show', 'sc-overlay');
+    setTimeout(() => o.remove(), 220);
+}
+
+function scHalf(par, rel, from) {
+    const cells = [], parRow = [], scoreRow = [];
+    let parSum = 0, sum = 0;
+    for (let i = from; i < from + 9; i++) {
+        const p = par[i], strokes = p + rel[i];
+        parSum += p; sum += strokes;
+        const cls = rel[i] <= -2 ? 'eagle' : rel[i] === -1 ? 'birdie' : rel[i] === 0 ? 'par' : rel[i] === 1 ? 'bogey' : 'double';
+        cells.push(`<th>${i + 1}</th>`);
+        parRow.push(`<td>${p}</td>`);
+        scoreRow.push(`<td><span class="sc-s ${cls}">${strokes}</span></td>`);
+    }
+    const label = from === 0 ? 'OUT' : 'IN';
+    return `<table class="sc-table"><tr><th class="sc-lab">홀</th>${cells.join('')}<th class="sc-tot">${label}</th></tr>`
+        + `<tr><th class="sc-lab">파</th>${parRow.join('')}<td class="sc-tot">${parSum}</td></tr>`
+        + `<tr><th class="sc-lab">타수</th>${scoreRow.join('')}<td class="sc-tot"><b>${sum}</b></td></tr></table>`;
+}
+
+function openMyScorecard(r, who) {
+    const saved = typeof myGolferName === 'function' ? myGolferName() : '';
+    const name = golfers.includes(who) ? who : (scorecardView.r === r && golfers.includes(scorecardView.name) ? scorecardView.name : (saved || golfers[0]));
+    const rec = typeof ROUND_HOLES !== 'undefined' ? ROUND_HOLES[String(r + 1)] : null;
+    if (!rec || !rec.par || !rec.rel || !rec.rel[name] || rec.par.length !== 18) {
+        showToast(`${r + 1}차는 홀별 기록이 아직 없습니다. 스코어를 등록하면 볼 수 있습니다.`);
+        return;
+    }
+    scorecardView = { r, name };
+    closeMyScorecard();
+    const par = rec.par, rel = rec.rel[name];
+    const total = par.reduce((t, p, i) => t + p + rel[i], 0), parTotal = par.reduce((t, p) => t + p, 0);
+    const diff = total - parTotal;
+    const count = f => rel.filter(f).length;
+    const chips = golfers.filter(g => rec.rel[g]).map(g => `<button type="button" class="sc-chip${g === name ? ' on' : ''}" onclick="openMyScorecard(${r}, '${g}')">${escapeHtml(g)}</button>`).join('');
+    const club = (appData.courses && appData.courses[r]) || '';
+    const sub = typeof subCourseOf === 'function' ? subCourseOf(r) : '';
+    const o = document.createElement('div');
+    o.className = 'bdg-sheet-overlay sc-overlay';
+    o.innerHTML = `<div class="bdg-sheet sc-sheet" role="dialog" aria-label="${r + 1}차 스코어카드">
+        <div class="bdg-grip"></div>
+        <div class="sc-head"><div class="sc-title">${r + 1}차 스코어카드</div>
+            <div class="sc-sub">${escapeHtml([club, sub].filter(Boolean).join(' · ')) || '&nbsp;'}</div></div>
+        <div class="sc-chips">${chips}</div>
+        <div class="sc-total"><b>${total}</b>타 <span class="${diff > 0 ? 'over' : diff < 0 ? 'under' : ''}">${diff === 0 ? '이븐파' : `${diff > 0 ? '+' : ''}${diff}`}</span></div>
+        ${scHalf(par, rel, 0)}${scHalf(par, rel, 9)}
+        <div class="sc-legend"><span><i class="sc-s birdie">·</i>버디 ${count(v => v === -1)}</span><span><i class="sc-s eagle">·</i>이글 이상 ${count(v => v <= -2)}</span><span>파 ${count(v => v === 0)}</span><span><i class="sc-s bogey">·</i>보기 ${count(v => v === 1)}</span><span><i class="sc-s double">·</i>더블 이상 ${count(v => v >= 2)}</span></div>
+        <button type="button" class="bdg-close" onclick="closeMyScorecard()">닫기</button>
+    </div>`;
+    o.addEventListener('click', e => { if (e.target === o) closeMyScorecard(); });
     document.body.appendChild(o);
     requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
 }
@@ -358,6 +422,63 @@ function settleScheduleRound() {
     const last = appData.totalRounds;
     if (next !== last + 1 || !roundIsEmpty(last - 1)) return false;
     moveScheduleTo(next, last);
+    return true;
+}
+
+/* ── 여행에 잡힌 라운드를 다음 라운드 일정에 자동 반영 ─────────────────
+   사용자 요청 — 여행 일정에 골프장·날짜를 적어 두었는데 일정을 따로 또 등록해야 했다.
+   **일정이 비었거나 지났거나 그 차수가 이미 기록된 때**, 오늘 이후 가장 이른 여행 라운드를 다음 라운드로 올린다.
+   사람이 잡아 둔 앞으로의 일정이 있으면 건드리지 않는다(그게 더 늦은 날짜여도 마찬가지 — 일부러 잡은 것일 수 있다).
+   자동으로 올린 일정에는 `nextRoundSrc`(`여행id|날짜`)를 남겨, 그 여행 날의 골프장·티오프를 고치면 따라가게 한다.
+   일정 창에서 직접 저장하면 이 표시가 지워진다(saveSchedule). 값이 그대로면 아무것도 안 하므로 헛저장이 없다. */
+function tripRoundText(day, club) {
+    const m = parseInt(day.date.slice(5, 7), 10), d = parseInt(day.date.slice(8, 10), 10);
+    const tee = String(day.tee || '').match(/(?:(오전|오후)\s*)?(\d{1,2})\s*(?::|시)\s*(\d{2})?/);
+    if (!tee) return `${m}월 ${d}일 ${club}`;
+    let h = parseInt(tee[2], 10); const mm = tee[3] || '00';
+    const ap = tee[1] || (h >= 12 ? '오후' : '오전');
+    if (h > 12) h -= 12;
+    return `${m}월 ${d}일 ${ap} ${h}:${mm} ${club}`;
+}
+
+function syncScheduleFromTrips() {
+    if (typeof allTrips !== 'function' || typeof tripDays !== 'function') return false;
+    const today = kstToday();
+    const golfDays = [];
+    allTrips().forEach(trip => tripDays(trip).forEach(day => {
+        if (day.date < today || !String(day.course || '').trim() || noRound(day)) return;
+        golfDays.push({ trip, day });
+    }));
+    golfDays.sort((a, b) => a.day.date < b.day.date ? -1 : a.day.date > b.day.date ? 1 : 0);
+
+    const nowNo = parseInt(appData.nextRoundNo, 10) || 0;
+    const iso = String(appData.nextRoundISO || '');
+    const recorded = nowNo > 0 && hasHoleRecord(nowNo - 1);
+    const valid = !!appData.nextRoundDate && /^\d{4}-\d{2}-\d{2}$/.test(iso) && iso >= today && !recorded;
+    const [srcId, srcDate] = String(appData.nextRoundSrc || '').split('|');
+    const linked = srcId ? golfDays.find(g => g.trip.id === srcId && g.day.date === srcDate) : null;
+
+    let pick = null;
+    if (linked && valid) pick = linked;                       // 여행에서 올린 일정 — 여행 칸을 고치면 따라간다
+    else if (!valid) {
+        // 이미 스코어가 기록된 날은 다음 라운드가 아니다(여행 첫날을 치고 둘째 날로 넘어갈 때).
+        pick = golfDays.find(g => !(typeof hasHoleRecord === 'function' && Object.keys(appData.roundDates || {}).some(n => appData.roundDates[n] === g.day.date && hasHoleRecord(Number(n) - 1)))) || null;
+    }
+    if (!pick) return false;
+
+    const club = String(pick.day.course).replace(/\s*\([^()]*\)\s*$/, '').trim();
+    let no = nowNo > 0 && valid ? nowNo : appData.totalRounds + 1;
+    if (!(nowNo > 0 && valid) && appData.totalRounds > 0 && roundIsEmpty(appData.totalRounds - 1)) no = appData.totalRounds;
+    const text = tripRoundText(pick.day, club);
+    const src = `${pick.trip.id}|${pick.day.date}`;
+    const clubs = roundCourseMap(), dates = appData.roundDates || (appData.roundDates = {});
+    if (appData.nextRoundDate === text && appData.nextRoundISO === pick.day.date && appData.nextRoundNo === no
+        && appData.nextRoundSrc === src && clubs[no] === club && dates[no] === pick.day.date) return false;
+
+    appData.nextRoundDate = text; appData.nextRoundISO = pick.day.date; appData.nextRoundNo = no; appData.nextRoundSrc = src;
+    dates[no] = pick.day.date; clubs[no] = club;
+    delete subCourseMap()[no];
+    if (no <= appData.totalRounds) { if (!appData.courses) appData.courses = []; appData.courses[no - 1] = club; }
     return true;
 }
 

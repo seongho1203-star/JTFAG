@@ -2067,3 +2067,32 @@ html, body { overscroll-behavior: none; }
 .winrate-list .goal-row > :first-child { text-align: left; }
 .winrate-list .goal-row > :nth-child(2) { text-align: center; padding: 0 6px; }
 .winrate-list .goal-row > :last-child { text-align: right; }
+
+/* 홈 카드 머리말의 차수 표시 */
+.notice-next .sched-no { margin-left: 4px; color: var(--primary-gold); font-weight: 900; }
+
+/* 차수를 누르면 뜨는 스코어카드 */
+.header-round-title.tap { cursor: pointer; text-decoration: underline; text-decoration-color: #c6ccd6; text-underline-offset: 3px; }
+.sc-sheet { gap: 10px; }
+.sc-head { text-align: center; }
+.sc-title { font-size: 1.05rem; font-weight: 900; }
+.sc-sub { font-size: 0.72rem; color: var(--text-sub); font-weight: 700; margin-top: 3px; }
+.sc-chips { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.sc-chip { border: 1px solid var(--line); background: #fff; color: var(--text-sub); border-radius: 999px; padding: 5px 12px; font-size: 0.74rem; font-weight: 800; font-family: inherit; min-height: 30px; }
+.sc-chip.on { background: var(--primary-gold); border-color: var(--primary-gold); color: #fff; }
+.sc-total { text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); }
+.sc-total b { font-size: 1.9rem; color: var(--text-main); font-weight: 900; margin-right: 2px; }
+.sc-total .over { color: #c2453b; font-weight: 800; } .sc-total .under { color: var(--accent-green); font-weight: 800; }
+.sc-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.sc-table th, .sc-table td { text-align: center; padding: 6px 0; font-size: 0.72rem; font-weight: 700; border-bottom: 1px solid var(--line); }
+.sc-table tr:first-child th { color: var(--text-sub); font-size: 0.66rem; }
+.sc-table .sc-lab { width: 34px; text-align: left; color: var(--text-sub); font-size: 0.66rem; }
+.sc-table .sc-tot { width: 40px; background: #f5f6f8; font-weight: 800; }
+.sc-s { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; font-weight: 800; }
+.sc-s.birdie { border-radius: 50%; background: #dcfce7; color: #15803d; }
+.sc-s.eagle { border-radius: 50%; background: #fde68a; color: #92400e; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #d9a21b; }
+.sc-s.bogey { border-radius: 4px; background: #f1f5f9; color: #475569; }
+.sc-s.double { border-radius: 4px; background: #fee2e2; color: #b91c1c; }
+.sc-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 0.66rem; color: var(--text-sub); font-weight: 700; }
+.sc-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.sc-legend .sc-s { min-width: 12px; height: 12px; font-size: 0; }
