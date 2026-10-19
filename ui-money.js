@@ -588,7 +588,16 @@ async function removeDiffReason(r, kind) {
     if (!canEditDiffReason()) return;
     const amt = diffReasonsOf(r)[kind] || 0;
     const ok = await showConfirmPrompt(`${r + 1}차 ${DIFF_REASONS[kind]} ${formatNumber(amt)}원 사유를<br>삭제하시겠습니까?`, '삭제');
-    if (ok) setDiffReason(r, kind, 0);
+    if (!ok) return;
+    forgetMismatchAsked(r);      // 잘못 고른 사유를 지우면 같은 차액이라도 팝업이 다시 떠서 바로 다른 사유를 고를 수 있다
+    setDiffReason(r, kind, 0);
+}
+function forgetMismatchAsked(r) {
+    try {
+        const asked = JSON.parse(sessionStorage.getItem('jtfag_mismatch_asked') || '{}');
+        Object.keys(asked).forEach(k => { if (k.startsWith(`${r}:`)) delete asked[k]; });
+        sessionStorage.setItem('jtfag_mismatch_asked', JSON.stringify(asked));
+    } catch (e) { /* 기록이 없으면 처음부터 다시 묻는다 */ }
 }
 
 // 항목(캐디 팁/니어)을 고르고 금액을 적는 창. 취소하면 null, 저장하면 {kind, amount}.
