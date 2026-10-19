@@ -424,7 +424,10 @@ function paintNearCheck(left) {
     // 니어로 낸 돈도 잃은 돈에 들어 있으므로, 딴 돈과 잃은 돈의 합이 정확히 0이어야 한다(사용자 규칙).
     // 0이 아니면 — 2만원의 배수라도 — 누군가의 시작·남은 금액이 잘못 적힌 것이다.
     // 다만 캐디 팁·남은 니어처럼 **나간 돈**을 차액 사유로 적어 두었으면 그만큼은 설명된 것으로 본다(사용자 요청).
-    const explained = diffReasonTotal(selectedMoneyRoundIdx);
+    // 사유는 '모자란 돈(합이 −)'만 설명한다. 금액을 바로잡아 합이 0 이상이 되면 옛 사유는 쓸모가 없어져, 그대로 두면
+    // 0에 사유가 더해져 도리어 `초과`로 불일치가 뜬다(사용자 제보) — 합이 −가 아니면 사유를 무시하고, 이 기기 주인이면 걷는다.
+    let explained = diffReasonTotal(selectedMoneyRoundIdx);
+    if (left >= 0 && explained) { clearStaleReasons(selectedMoneyRoundIdx); explained = 0; }
     const rest = left + explained;       // 0이면 차액이 사유로 다 설명된 것
     if (rest === 0) {
         badge.className = 'near-check ok';
@@ -524,7 +527,17 @@ function diffReasonTotal(r) {
 function diffRestOf(r) {
     if (!roundScored(r)) return 0;
     const sum = golfers.reduce((a, g) => a + strokeDiffOf(g, r), 0);
-    return sum + diffReasonTotal(r);
+    return sum < 0 ? sum + diffReasonTotal(r) : sum;     // 합이 −가 아니면 옛 사유는 없는 것으로 본다
+}
+// 금액을 바로잡아 더는 모자라지 않는데 남아 있는 사유를 걷는다(이 기기 주인만 · 조용히 · 있을 때만 저장).
+function clearStaleReasons(r) {
+    if (!canEditDiffReason()) return;
+    const key = String(r + 1);
+    if (!appData.diffReasons || !appData.diffReasons[key]) return;
+    saveState();
+    delete appData.diffReasons[key];
+    syncToSupabase(appData);
+    paintNearBox();
 }
 function canEditDiffReason() {
     return localStorage.getItem('jtfag_my_name') === SCORE_OWNER;
