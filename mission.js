@@ -557,28 +557,42 @@ function pickMissionPair(me) {
     return a ? { a, b } : null;
 }
 
-// 슬롯처럼 미션 이름이 몇 번 바뀌다 멈춘다 — 글자만 바꾸므로 그리기 비용이 없다.
-function rollMission(boxIds, btnId, busyText, finish) {
+// 슬롯처럼 미션 이름이 빠르게 바뀌다 점점 느려지며 멈춘다 — 글자만 바꾸므로 그리기 비용이 없다.
+// 간격이 매번 조금씩 늘어나(첫 50ms → 마지막 400ms쯤) 끝으로 갈수록 긴장감이 생긴다.
+// total은 멈출 때까지의 대략적인 시간(ms), ratio는 간격이 늘어나는 비율이다.
+function rollMission(boxIds, btnId, busyText, finish, total = 3200, ratio = 1.13) {
     const boxes = boxIds.map(id => document.getElementById(id)).filter(Boolean);
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const done = () => {
-        if (missionRoll) clearInterval(missionRoll.timer);
+        if (missionRoll) clearTimeout(missionRoll.timer);
         missionRoll = null;
         missionLanded = Date.now();
         missionLastHtml = '';
         renderMissionPage();
+        try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) { /* 진동이 안 되는 기기는 그냥 넘어간다 */ }
         finish();
     };
     if (!boxes.length || reduce) { done(); return; }
-    let i = 0;
+    // 간격표를 미리 만든다 — 합이 total에 닿을 때까지 50ms에서 시작해 ratio배씩 늘린다
+    const delays = [];
+    for (let d = 50, sum = 0; sum < total; d *= ratio) { delays.push(Math.round(d)); sum += d; }
     const btn = btnId && document.getElementById(btnId);
     if (btn) { btn.disabled = true; btn.textContent = busyText; }
     boxes.forEach(b => b.classList.add('rolling'));
-    missionRoll = { timer: setInterval(() => { i++; boxes.forEach((b, k) => { b.textContent = missionText(MISSION_DEFS[(i * 7 + 3 + k * 5) % MISSION_DEFS.length], null); }); }, 85) };
-    setTimeout(done, 1300);
+    missionRoll = { timer: 0 };
+    let i = 0;
+    const step = () => {
+        boxes.forEach((b, k) => { b.textContent = missionText(MISSION_DEFS[(i * 7 + 3 + k * 5) % MISSION_DEFS.length], null); });
+        // 느려지는 끝 다섯 번은 톡톡 진동을 준다(진동이 되는 기기만)
+        if (i >= delays.length - 5) { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* 무시 */ } }
+        const wait = delays[i++];
+        if (i >= delays.length) { missionRoll.timer = setTimeout(done, wait); return; }
+        missionRoll.timer = setTimeout(step, wait);
+    };
+    step();
 }
 
-let missionRoll = null;      // 뽑는 중이면 { timer } — 그동안은 화면을 다시 그리지 않는다
+let missionRoll = null;      // 뽑는 중이면 { timer(setTimeout 번호) } — 그동안은 화면을 다시 그리지 않는다
 let missionLanded = 0;       // 막 뽑힌 미션에 한 번만 붙이는 연출 시각
 
 // 미션 받기 — 본인 미션 + 멤버 미션 두 개를 한 번에. 한 번 받으면 못 바꾼다(다시 뽑기 1회만).
@@ -635,7 +649,7 @@ async function redrawMission(i) {
     writeMine(m => { m.missions[t.round] = raw; });
     syncToSupabase(appData);
     rollMission(['msnRoll' + i], 'msnRedraw' + i, '다시 뽑는 중…', () =>
-        showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`));
+        showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`), 2400, 1.14);
 }
 
 // 관리자 메뉴 → `🎯 미션 차수 초기화`(사용자 요청 — `미션도 관리자모드에서 차수 리셋기능`). 고른 차수의 미션(다시 뽑기 포함)을
