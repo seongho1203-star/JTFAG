@@ -564,7 +564,7 @@ function pickMissionPair(me) {
 const ROLL_EASE = 'cubic-bezier(0.45, 0.5, 0.2, 1)';
 const ROLL_MS = 4200;          // 첫 칸이 멈출 때까지
 const ROLL_STAGGER = 700;      // 다음 칸마다 더 걸리는 시간
-const ROLL_ITEMS = 44;         // 띠에 늘어놓는 이름 수 — 많을수록 처음이 빠르게 보인다
+const ROLL_ITEMS = 72;         // 띠에 늘어놓는 이름 수 — 많을수록 처음이 빠르게 보인다
 function rollMission(boxIds, btnId, busyText, finish, finals, ms = ROLL_MS) {
     const boxes = boxIds.map(id => document.getElementById(id));
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -636,7 +636,7 @@ function drawMission() {
     appData.missions[t.round][me] = rec;
     writeMine(m => { m.missions[t.round] = rec; });
     syncToSupabase(appData);
-    rollMission(['msnRoll0', 'msnRoll1'], 'msnDrawBtn', '미션 뽑는 중…', () =>
+    rollMission(['msnRoll0', 'msnRoll1'], 'msnDrawBtn', '미션 뽑는 중', () =>
         showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a.def, rec.ms[0])} · ${missionText(p.b.def, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`),
         [{ text: missionText(p.a.def, rec.ms[0]), who: false }, { text: missionText(p.b.def, rec.ms[1]), who: true }]);
 }
@@ -672,7 +672,7 @@ async function redrawMission(i) {
     raw.re = re;
     writeMine(m => { m.missions[t.round] = raw; });
     syncToSupabase(appData);
-    rollMission(['msnRoll' + i], 'msnRedraw' + i, '다시 뽑는 중…', () =>
+    rollMission(['msnRoll' + i], 'msnRedraw' + i, '다시 뽑는 중', () =>
         showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`),
         [{ text: missionText(def, re), who: !!def.who }], 3200);
 }
