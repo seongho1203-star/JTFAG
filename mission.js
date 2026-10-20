@@ -576,6 +576,57 @@ const ROLL_EASE = 'cubic-bezier(0.2, 0.6, 0.4, 1)';
 const ROLL_MS = 4200;          // 첫 칸이 멈출 때까지
 const ROLL_STAGGER = 700;      // 다음 칸마다 더 걸리는 시간
 const ROLL_ITEMS = 72;         // 띠에 늘어놓는 이름 수 — 많을수록 처음이 빠르게 보인다
+/* 룰렛 소리(사용자 요청 — `미션돌때 롤렛사운드가 났으면 좋겠어`). 파일 없이 WebAudio로 만든다(`eagleDrums()`와 같은 방식).
+   칸이 한 줄 넘어갈 때마다 짧은 `틱`을 낸다 — 시각은 움직임 곡선(`ROLL_EASE`)을 거꾸로 풀어 미리 계산해
+   한꺼번에 예약하므로 화면의 움직임과 어긋나지 않고, 처음엔 촘촘하다 점점 성겨진다. 멈추는 순간은 `띵`.
+   - 미션 받기 단추를 누른 그 손짓 안에서 불리므로 자동 재생 제한에 안 걸린다. 막혀도 그림은 그대로 돈다.
+   - 폰이 무음 모드면 웹 소리는 안 난다(`까꿍` 소리와 같다). 동작 줄이기 설정이면 애초에 안 돈다. */
+let rollAudioCtx = null;
+function rollBezierTimes(n) {       // 진행률 k/n이 되는 시각(0~1, 전체 시간 대비) — 곡선은 ROLL_EASE와 같은 값
+    const x1 = 0.2, y1 = 0.6, x2 = 0.4, y2 = 1;
+    const bez = (s, a, b) => 3 * (1 - s) * (1 - s) * s * a + 3 * (1 - s) * s * s * b + s * s * s;
+    const out = [];
+    for (let k = 1; k <= n; k++) {
+        const p = k / n;
+        let lo = 0, hi = 1;
+        for (let i = 0; i < 30; i++) { const mid = (lo + hi) / 2; if (bez(mid, y1, y2) < p) lo = mid; else hi = mid; }
+        out.push(bez((lo + hi) / 2, x1, x2));
+    }
+    return out;
+}
+function playRollSound(durs) {
+    try {
+        if (document.hidden) return;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!rollAudioCtx) rollAudioCtx = new AC();
+        const ctx = rollAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        const t0 = ctx.currentTime + 0.05;
+        const times = rollBezierTimes(ROLL_ITEMS - 1);
+        const tone = (at, freq, len, vol, type) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = type; o.frequency.setValueAtTime(freq, at);
+            o.frequency.exponentialRampToValueAtTime(freq * 0.7, at + len);
+            g.gain.setValueAtTime(0.0001, at);
+            g.gain.exponentialRampToValueAtTime(vol, at + 0.003);
+            g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(at); o.stop(at + len + 0.02);
+        };
+        durs.forEach((d, k) => {
+            const base = k === 0 ? 1500 : 1150;                  // 둘째 칸은 한 음 낮게 — 두 소리가 겹쳐도 갈린다
+            times.forEach((tf, i) => {
+                const last = i >= times.length - 6;              // 멈추기 직전 몇 번은 또렷하게
+                tone(t0 + tf * d / 1000, base * (0.96 + Math.random() * 0.08), last ? 0.035 : 0.02, last ? 0.16 : 0.09, 'square');
+            });
+            const end = t0 + d / 1000;                            // 멈추는 순간 `띵`
+            tone(end, k === 0 ? 880 : 740, 0.5, 0.2, 'sine');
+            tone(end, k === 0 ? 1320 : 1110, 0.35, 0.1, 'sine');
+        });
+    } catch (e) { /* 소리가 안 되는 기기는 그림만 돈다 */ }
+}
+
 function rollMission(boxIds, btnId, busyText, finish, finals, ms = ROLL_MS) {
     const boxes = boxIds.map(id => document.getElementById(id));
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -612,6 +663,7 @@ function rollMission(boxIds, btnId, busyText, finish, finals, ms = ROLL_MS) {
         box.style.margin = -pad + 'px 0';
         return { strip: box.firstChild, h, pad, dur: ms + k * ROLL_STAGGER };
     });
+    playRollSound(strips.map(o => o.dur));
     // 한 프레임 뒤에 transition을 건다 — 처음 자리가 먼저 그려져야 움직임이 시작된다
     requestAnimationFrame(() => requestAnimationFrame(() => {
         strips.forEach(o => {
