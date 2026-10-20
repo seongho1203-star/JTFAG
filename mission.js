@@ -559,12 +559,12 @@ function pickMissionPair(me) {
 
 // 룰렛처럼 미션 이름이 세로로 빠르게 흘러가다 점점 느려지며, 진짜 뽑힌 미션 위에서 멈춘다(사용자 요청 — `롤렛처럼`).
 // 칸마다 이름 띠(reel)를 깔고 transform만 움직인다 — 띠의 맨 끝이 실제 결과라 멈춘 자리가 곧 뽑힌 미션이다.
-// 빠르게 출발해 끝에서 아주 느리게 닿도록 곡선을 잡았고(`ROLL_EASE`), 두 번째 칸은 조금 더 늦게 멈춘다.
+// 빠르게 돌다가(약 1.3초) 끝에서 아주 느리게 닿도록 곡선을 잡았고(`ROLL_EASE`), 두 번째 칸은 조금 더 늦게 멈춘다.
 // finals[k] = { text, who } — 칸마다 멈출 글자와, 띠를 채울 후보의 종류(멤버 미션인지).
-const ROLL_EASE = 'cubic-bezier(0.08, 0.72, 0.12, 1)';
-const ROLL_MS = 3200;          // 첫 칸이 멈출 때까지
+const ROLL_EASE = 'cubic-bezier(0.45, 0.5, 0.2, 1)';
+const ROLL_MS = 4200;          // 첫 칸이 멈출 때까지
 const ROLL_STAGGER = 700;      // 다음 칸마다 더 걸리는 시간
-const ROLL_ITEMS = 26;         // 띠에 늘어놓는 이름 수 — 많을수록 처음이 빠르게 보인다
+const ROLL_ITEMS = 44;         // 띠에 늘어놓는 이름 수 — 많을수록 처음이 빠르게 보인다
 function rollMission(boxIds, btnId, busyText, finish, finals, ms = ROLL_MS) {
     const boxes = boxIds.map(id => document.getElementById(id));
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -674,7 +674,7 @@ async function redrawMission(i) {
     syncToSupabase(appData);
     rollMission(['msnRoll' + i], 'msnRedraw' + i, '다시 뽑는 중…', () =>
         showToast(`🎯 미션을 다시 뽑았습니다 · ${missionText(def, re)} (포인트 ${REDRAW_COST}점 사용)`),
-        [{ text: missionText(def, re), who: !!def.who }], 2400);
+        [{ text: missionText(def, re), who: !!def.who }], 3200);
 }
 
 // 관리자 메뉴 → `🎯 미션 차수 초기화`(사용자 요청 — `미션도 관리자모드에서 차수 리셋기능`). 고른 차수의 미션(다시 뽑기 포함)을
