@@ -1621,6 +1621,11 @@ html, body { overscroll-behavior: none; }
 .msn-roll { display: flex; align-items: center; gap: 10px; min-height: 34px; }
 .msn-roll-text { font-size: 0.95rem; font-weight: 800; color: #3d4450; }
 .msn-roll-text.rolling { color: #2b5394; }
+/* 룰렛 띠 — 세로로 흘러가다 멈춘다. transform만 움직이고 위아래는 살짝 흐리게 가린다 */
+.reel-host { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; color: #2b5394;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 76%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 76%, transparent 100%); position: relative; z-index: 1; }
+.reel-strip { display: block; will-change: transform; }
+.reel-it { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .msn-draw-btn { width: 100%; height: 44px; border: none; border-radius: 12px; background: #2b5394; color: #ffffff; font-family: inherit; font-size: 0.95rem; font-weight: 900; }
 .msn-draw-btn:disabled { opacity: 0.7; }
 .msn-note { font-size: 0.7rem; color: #6b7075; text-align: center; word-break: keep-all; }
