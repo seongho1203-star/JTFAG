@@ -399,10 +399,15 @@ function saveSchedule() {
         if (!appData.courses) appData.courses = [];
         appData.courses[roundNo - 1] = course;
     }
+    // 새 일정이 '아직 없는 다음 차수'면 그 차수를 미리 만든다 — 경기 전에 시작 금액을 적을 수 있게.
+    delete appData.autoRoundOff;
+    const created = typeof ensureScheduledRound === 'function' && ensureScheduledRound(true);
 
     syncToSupabase(appData); renderNoticeArea(); renderAll(); closeScheduleModal();
-    showToast(roundNo <= appData.totalRounds
-        ? `✅ ${roundNo}차 일정을 저장했습니다. 스코어표 골프장도 반영했습니다.`
-        : `✅ ${roundNo}차 일정을 저장했습니다. 차수 생성 시 골프장이 자동 반영됩니다.`);
+    showToast(created
+        ? `✅ ${roundNo}차 일정을 저장했습니다. ${roundNo}차 정산을 미리 생성했습니다.`
+        : roundNo <= appData.totalRounds
+            ? `✅ ${roundNo}차 일정을 저장했습니다. 스코어표 골프장도 반영했습니다.`
+            : `✅ ${roundNo}차 일정을 저장했습니다. 차수 생성 시 골프장이 자동 반영됩니다.`);
 }
 

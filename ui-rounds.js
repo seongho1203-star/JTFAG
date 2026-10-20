@@ -141,7 +141,8 @@ function applyHoleScores() {
     const finished = clearFinishedSchedule();   // 기록이 들어온 차수의 일정은 끝난 일정이다
     const tripSched = syncScheduleFromTrips();   // 여행에 잡힌 라운드를 다음 라운드 일정으로
     const seeded = typeof seedTrips === 'function' && seedTrips();   // 여행 일정(trip.js) — 처음 한 번만
-    if (added || changed || filled || filledHoles || dropped || settled || finished || seeded || tripSched) syncToSupabase(appData);
+    const pre = ensureScheduledRound();   // 다음 일정이 붙은 새 차수를 미리 만든다(시작 금액 입력용)
+    if (added || changed || filled || filledHoles || dropped || settled || finished || seeded || tripSched || pre) syncToSupabase(appData);
 }
 
 function toggleScoreEdit() {
@@ -445,6 +446,8 @@ async function removeRound() {
     if (appData.roundMoney && appData.roundMoney.length > 0) appData.roundMoney.pop();
     if (selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
     const moved = carryScheduleAfterRemove(r + 1);
+    // 일정이 지운 차수에 그대로 남았으면 접속할 때 다시 만들어지지 않게 표시한다(ensureScheduledRound).
+    if (!moved && parseInt(appData.nextRoundNo, 10) === r + 1) appData.autoRoundOff = r + 1;
     syncToSupabase(appData); renderAll();
     showToast(`➖ ${r + 1}차전 데이터가 삭제되었습니다.` + (moved ? ` 일정은 ${appData.totalRounds}차로 이동했습니다.` : ''));
 }
@@ -501,6 +504,40 @@ function carryScheduleAfterRemove(deleted) {
     const last = appData.totalRounds;
     if (!roundIsEmpty(last - 1)) return false;
     moveScheduleTo(deleted, last);
+    return true;
+}
+
+/* 일정이 '아직 없는 다음 차수'에 잡히면 그 차수를 미리 만든다.
+   사용자 요청 — 10차가 끝나고 11차 일정을 등록하면 게임을 시작하기 전에 차수별 정산에서
+   시작 금액부터 입력할 수 있어야 한다(예전엔 스코어카드가 올라오거나 `+ 차수 추가`를 눌러야 생겼다).
+   - 일정이 정확히 `totalRounds + 1`에 붙어 있을 때만 만든다. 몇 차수씩 건너뛰어 만들지 않는다.
+   - **마지막 차수가 비어 있으면 만들지 않는다** — 그 경우는 `settleScheduleRound()`가 일정을 마지막
+     차수로 옮기는 몫이다(두 규칙이 맞서면 만들었다 옮겼다 한다).
+   - 금액 줄은 비우지 않는다(`appendRoundFromHoles()`와 같다 — 다른 폰이 방금 적은 금액을 지울 수 있다).
+   - **직접 지운 차수는 되살리지 않는다**: `removeRound()`가 `autoRoundOff`에 번호를 남기고,
+     일정을 새로 저장하면(`saveSchedule()`) 지운다. 안 그러면 지울 때마다 접속하면 되살아난다.
+   - 값이 그대로면 false를 돌려 헛저장이 없다. 되살아난 같은 번호의 차액 사유는 비운다. */
+function ensureScheduledRound(quiet) {
+    const no = parseInt(appData.nextRoundNo, 10);
+    if (!no || !String(appData.nextRoundDate || '').trim()) return false;
+    if (parseInt(appData.autoRoundOff, 10) && parseInt(appData.autoRoundOff, 10) !== no) delete appData.autoRoundOff;
+    if (no !== appData.totalRounds + 1 || parseInt(appData.autoRoundOff, 10) === no) return false;
+    if (appData.totalRounds < 1 || roundIsEmpty(appData.totalRounds - 1)) return false;
+    const wasLast = selectedMoneyRoundIdx === appData.totalRounds - 1;
+    if (!appData.courses) appData.courses = [];
+    if (!appData.roundPhotos) appData.roundPhotos = [];
+    if (!appData.roundMoney) appData.roundMoney = [];
+    if (!appData.scores) appData.scores = {};
+    appData.totalRounds = no;
+    appData.courses[no - 1] = roundCourseMap()[no] || '';
+    appData.roundPhotos[no - 1] = [];
+    const money = {}; golfers.forEach(g => money[g] = { start: 0, end: 0 });
+    appData.roundMoney[no - 1] = money;
+    golfers.forEach(g => { if (!appData.scores[g]) appData.scores[g] = []; appData.scores[g][no - 1] = ""; });
+    if (appData.diffReasons) delete appData.diffReasons[String(no)];
+    if (wasLast) selectedMoneyRoundIdx = appData.totalRounds - 1;
+    if (typeof overlayMoney === 'function') overlayMoney();
+    if (!quiet) showToast(`➕ ${no}차 일정에 맞춰 ${no}차를 미리 생성했습니다. 정산 금액을 입력할 수 있습니다.`);
     return true;
 }
 
