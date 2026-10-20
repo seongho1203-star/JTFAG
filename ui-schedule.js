@@ -405,7 +405,7 @@ function saveSchedule() {
 
     syncToSupabase(appData); renderNoticeArea(); renderAll(); closeScheduleModal();
     showToast(created
-        ? `✅ ${roundNo}차 일정을 저장했습니다. ${roundNo}차 정산을 미리 생성했습니다.`
+        ? `✅ ${roundNo}차 일정을 저장했습니다.\n${roundNo}차 정산을 미리 생성했습니다.`
         : roundNo <= appData.totalRounds
             ? `✅ ${roundNo}차 일정을 저장했습니다. 스코어표 골프장도 반영했습니다.`
             : `✅ ${roundNo}차 일정을 저장했습니다. 차수 생성 시 골프장이 자동 반영됩니다.`);

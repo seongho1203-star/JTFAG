@@ -537,7 +537,7 @@ function ensureScheduledRound(quiet) {
     if (appData.diffReasons) delete appData.diffReasons[String(no)];
     if (wasLast) selectedMoneyRoundIdx = appData.totalRounds - 1;
     if (typeof overlayMoney === 'function') overlayMoney();
-    if (!quiet) showToast(`➕ ${no}차 일정에 맞춰 ${no}차를 미리 생성했습니다. 정산 금액을 입력할 수 있습니다.`);
+    if (!quiet) showToast(`➕ ${no}차를 미리 생성했습니다.\n정산 금액을 입력할 수 있습니다.`);
     return true;
 }
 

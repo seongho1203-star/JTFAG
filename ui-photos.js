@@ -95,7 +95,7 @@ async function migratePhotosToStorage() {
     rounds.forEach(list => (list || []).forEach(src => {
         if (typeof src === 'string' && src.startsWith('data:')) targetCount++;
     }));
-    if (targetCount === 0) { showToast("✅ 이전할 사진이 없습니다. 이미 모두 Storage에 있습니다."); return; }
+    if (targetCount === 0) { showToast("✅ 이전할 사진이 없습니다. 이미 모두 저장소에 있습니다."); return; }
     if (!(await showConfirmPrompt(`사진 ${targetCount}장을 Storage로 옮깁니다.<br><span style='font-size:0.78rem; font-weight:600; color:#6b7075;'>되돌릴 수 없습니다.</span>`, "이전하기", "#d4af37"))) return;
 
     showToast(`⏳ 사진 ${targetCount}장 이전 중...`);
