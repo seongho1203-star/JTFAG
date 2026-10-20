@@ -614,7 +614,7 @@ function undoLastAction() {
     // (사본에 든 남의 금액은 그때 값이라, 그대로 쓰면 그 뒤에 남이 적은 금액을 지운다).
     if (typeof commitUndoMoney === 'function') commitUndoMoney(appData, snapshot);
     // 미션·멀리건 사용은 되돌리지 않는다 — 되돌려 미션을 다시 뽑을 수 있으면 무작위의 뜻이 없다(mission.js).
-    ['missions', 'mulligans', 'missionResets', 'predictions'].forEach(k => { if (appData[k] !== undefined) snapshot[k] = appData[k]; });
+    ['missions', 'mulligans', 'missionResets', 'missionRestores', 'predictions'].forEach(k => { if (appData[k] !== undefined) snapshot[k] = appData[k]; });
     appData = snapshot;
     if (typeof overlayMoney === 'function') overlayMoney();
     syncToSupabase(appData); showToast("↩️ 이전 상태로 되돌렸습니다."); renderAll();

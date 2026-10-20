@@ -34,9 +34,14 @@ const MISSION_LV_MIN = 3;  // 그 합의 하한 — ★ + ★은 너무 쉽다(�
 const MISSION_RESET_AT = 1791681351211;   // 2026-10-11 10:15 KST
 // 차수 초기화(관리자 메뉴 → `🎯 미션 차수 초기화` · `resetMissionRound()`) — `payload.missionResets = { "10": 시각 }`.
 // 그 차수에서 이 시각보다 먼저 받은 미션은 없는 것으로 본다(지우지 않는다 — 위와 같은 까닭). 값은 더 커지기만 하고 합칠 때 큰 쪽을 쓴다.
+// **초기화 취소**(`restoreMissionRound()`)도 지우지 않는다 — `payload.missionRestores = { "10": 취소한 초기화 시각 }`을 적고,
+// 초기화 시각이 그 값 이하이면 초기화가 없던 것으로 본다. 둘 다 커지기만 하므로 낡은 폰이 합쳐도 되살아나지 않는다.
+// 다시 초기화하면 새 시각이 취소한 값보다 커진다(`resetMissionRound()`의 `Math.max`).
 function missionResetAt(round) {
     const m = appData && appData.missionResets;
-    return Math.max(MISSION_RESET_AT, (m && Number(m[String(round)])) || 0);
+    const v = (m && Number(m[String(round)])) || 0;
+    const rs = (appData && appData.missionRestores && Number(appData.missionRestores[String(round)])) || 0;
+    return Math.max(MISSION_RESET_AT, rs >= v ? 0 : v);
 }
 const missionLive = (rec, round) => !!rec && typeof rec === 'object' && (Number(rec.at) || 0) >= (round === undefined ? MISSION_RESET_AT : missionResetAt(round));
 
@@ -472,6 +477,12 @@ function mergeMissionData(prev) {
         if (!appData.missionResets || typeof appData.missionResets !== 'object') appData.missionResets = {};
         if (v > (Number(appData.missionResets[r]) || 0)) { appData.missionResets[r] = v; changed = true; }
     });
+    const prs = (prev && prev.missionRestores) || {};
+    Object.keys(prs).forEach(r => {
+        const v = Number(prs[r]) || 0;
+        if (!appData.missionRestores || typeof appData.missionRestores !== 'object') appData.missionRestores = {};
+        if (v > (Number(appData.missionRestores[r]) || 0)) { appData.missionRestores[r] = v; changed = true; }
+    });
     const pm = (prev && prev.missions) || {};
     Object.keys(pm).forEach(r => Object.keys(pm[r] || {}).forEach(g => addMission(r, g, pm[r][g])));
     const pu = (prev && prev.mulligans) || {};
@@ -698,10 +709,40 @@ async function resetMissionRound() {
     let at = 0;
     Object.keys(all).forEach(g => { const rec = all[g]; if (rec) { at = Math.max(at, Number(rec.at) || 0, (rec.re && Number(rec.re.at)) || 0); } });
     if (!appData.missionResets || typeof appData.missionResets !== 'object') appData.missionResets = {};
-    appData.missionResets[String(r)] = at + 1;
+    appData.missionResets[String(r)] = Math.max(at + 1, (Number(appData.missionRestores && appData.missionRestores[String(r)]) || 0) + 1);   // 취소한 초기화 시각보다 커야 다시 먹는다
     syncToSupabase(appData);
     if (typeof renderMissionPage === 'function') renderMissionPage();
     showToast(`🎯 ${r}차 미션을 초기화했습니다.`);
+}
+
+// 관리자 메뉴 → `🎯 미션 차수 초기화 취소` — 잘못 초기화한 차수의 미션·포인트를 되살린다(기록은 지워지지 않았으므로 그대로 돌아온다).
+// 지금 초기화가 먹고 있는 차수(기록 중 초기화 시각보다 먼저 받은 것이 있는 차수)만 고르게 한다.
+async function restoreMissionRound() {
+    const resets = (appData && appData.missionResets) || {};
+    const rs = (appData && appData.missionRestores) || {};
+    const rounds = Object.keys((appData && appData.missions) || {}).map(Number).filter(r => {
+        const v = Number(resets[r]) || 0;
+        if (!(v > 0) || v <= (Number(rs[r]) || 0)) return false;       // 초기화한 적이 없거나 이미 취소했다
+        const all = appData.missions[String(r)] || {};
+        return golfers.some(g => { const rec = all[g]; return rec && (Number(rec.at) || 0) >= MISSION_RESET_AT && (Number(rec.at) || 0) < v; });
+    }).sort((a, b) => a - b);
+    if (!rounds.length) { showToast('ℹ️ 초기화를 취소할 차수가 없습니다.'); return; }
+    msnResetPick = rounds[rounds.length - 1];
+    const count = r => golfers.filter(g => { const rec = ((appData.missions[String(r)] || {})[g]); return rec && (Number(rec.at) || 0) >= MISSION_RESET_AT; }).length;
+    const opts = rounds.slice().reverse().map(r => `<option value="${r}">${r}차 · ${count(r)}명 기록</option>`).join('');
+    const ok = await showConfirmPrompt(`<b>미션 차수 초기화 취소</b><br>
+        <select onchange="msnResetPick = Number(this.value)" style="margin:10px 0 8px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${opts}</select>
+        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">초기화로 가려졌던 그 차수의 미션이 그대로 되살아나고 포인트도 다시 계산됩니다.</span>`, '초기화 취소', '#2b5394');
+    if (!ok) return;
+    const r = msnResetPick;
+    if (!rounds.includes(r)) return;
+    const v = Number(appData.missionResets && appData.missionResets[String(r)]) || 0;
+    if (!v) return;
+    if (!appData.missionRestores || typeof appData.missionRestores !== 'object') appData.missionRestores = {};
+    appData.missionRestores[String(r)] = Math.max(v, Number(appData.missionRestores[String(r)]) || 0);
+    syncToSupabase(appData);
+    if (typeof renderMissionPage === 'function') renderMissionPage();
+    showToast(`🎯 ${r}차 미션 초기화를 취소했습니다.`);
 }
 
 async function useMulligan() {
