@@ -183,6 +183,9 @@ function photoLoadingShow(text, ratio, retry) {
     const box = document.getElementById('photoLoading');
     if (!box) return;
     box.hidden = false;
+    // 원본이 오기 전까지 썸네일을 어둡게 둔다 — 다 받으면 밝아지면서 원본으로 바뀐다. 실패하면 밝게 돌려 둔다.
+    const viewer = document.querySelector('#imageViewModal .photo-viewer');
+    if (viewer) viewer.classList.toggle('loading', !retry);
     document.getElementById('photoLoadingText').textContent = text;
     // 둥근 진행 표시: 선의 길이(dashoffset)만 바꾼다. 크기를 모르면(ratio < 0) 4분의 1 호가 유한 횟수로 돈다.
     const svg = document.getElementById('photoRingSvg');
@@ -198,6 +201,8 @@ function photoLoadingShow(text, ratio, retry) {
 function photoLoadingHide() {
     const box = document.getElementById('photoLoading');
     if (box) box.hidden = true;
+    const viewer = document.querySelector('#imageViewModal .photo-viewer');
+    if (viewer) viewer.classList.remove('loading');
 }
 
 function photoCachePut(src, blob) {
@@ -317,8 +322,8 @@ const photoZoom = {
     bound: false, scale: 1, tx: 0, ty: 0,
     pointers: new Map(), pinch: null, drag: null, moved: false, lastTap: 0
 };
-const PHOTO_ZOOM_MAX = 5;
-const PHOTO_ZOOM_TAP = 2.5;   // 두 번 두드렸을 때 배율
+const PHOTO_ZOOM_MAX = 12;   // 원본은 4000px가 넘어 화면(약 400px)의 열 배까지 키워도 화질이 남는다
+const PHOTO_ZOOM_TAP = 3;   // 두 번 두드렸을 때 배율
 
 function photoZoomApply(animate) {
     const img = document.getElementById('fullImageView');

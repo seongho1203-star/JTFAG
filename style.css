@@ -648,6 +648,10 @@ html, body { overscroll-behavior-x: none; }
 #imageViewModal.active { backdrop-filter: none; }   /* 검은 배경이라 blur이 필요 없고, 원본 사진 위에서는 비싸다 */
 .photo-viewer { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
 .photo-stage { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; cursor: grab; }
+/* 원본을 받는 동안 썸네일은 어둡게 — 100%가 되면 밝아진다 */
+.photo-viewer.loading { background: #000000; }   /* 뒤의 갤러리가 어두워진 사진 사이로 비치지 않게 */
+.photo-viewer.loading .photo-stage img { opacity: 0.4; }
+.photo-stage img { transition: opacity 0.25s ease; }
 #fullImageView:not([src]), #fullImageView[src=""] { visibility: hidden; }   /* 썸네일이 없는 사진은 원본이 올 때까지 깨진 그림 표시 대신 비워 둔다 */
 .photo-stage img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; transform-origin: center center; will-change: transform; }
 /* 아래 도구줄. 다운로드 · 공유 · 닫기. 반투명한 둥근 단추 — 사진 위에 떠도 읽힌다. */
