@@ -328,11 +328,14 @@ function paintRaveBox() {
     if (!box) return;
     if (selectedMoneyRoundIdx + 1 < RAVE_FROM_ROUND) { box.innerHTML = ''; return; }
     const list = (typeof raveAwards !== 'undefined' ? raveAwards : []).filter(a => a.round === selectedMoneyRoundIdx);
-    const total = list.reduce((t, a) => t + a.total, 0);
     const man = n => `${formatNumber(n / 10000)}만원`;
+    // 합계가 아니라 **동반자 1인이 내는 금액**으로 적는다(사용자 요청 — `합계 3만원`이 아니라 `1인 1만원씩`).
+    // 갱신이 한 명이면 오른쪽 표에, 둘 이상이면 줄마다 적는다(낼 금액이 사람마다 다를 수 있다).
+    const one = list.length === 1;
     const html = `<span class="near-head">🏆 라베 갱신</span>`
         + (list.length
-            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.prev}→${a.score}타`).join('<br>')}</span><span class="near-check ok">합계 ${man(total)}</span>`
+            ? `<span class="rave-list">${list.map(a => `<b>${escapeHtml(a.name)}</b> ${a.prev}→${a.score}타${one ? '' : ` · 1인 ${man(a.pay)}씩`}`).join('<br>')}</span>`
+                + (one ? `<span class="near-check ok">1인 ${man(list[0].pay)}씩</span>` : '')
             : `<span class="near-check none">갱신 없음</span>`);
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }

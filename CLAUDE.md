@@ -967,7 +967,7 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
   항목은 `{round, name, score, prev, pay(동반자 한 사람이 낼 금액), payers(낼 사람 수 = 3), total(받을 합계)}`. 종전 기록이 없는 첫 경기·같은 타수는 갱신이 아니다. **저장하지 않고 `appData.scores`에서 매번 셈한다**(타수를 고치면 따라온다).
   정산 탭의 `🏆 라베 갱신 지급(동반자)` 줄(`paintRaveBox()` in ui-money.js)과 계급 이력(`raveHistoryHtml()`)에 보인다.
   **정산 금액(시작·남은)에도 공금 잔액에도 섞지 않는다** — 선수끼리 따로 주고받는 돈이다.
-  '타당'은 줄인 타수 1타당으로 읽었다 — 다른 뜻(갱신 때마다 정액 등)이면 `computeRaveAwards()`만 고치면 된다.
+  **정산 탭의 라베 줄은 `합계`가 아니라 `1인 1만원씩`(동반자 한 사람이 낼 금액)으로 적는다**(`paintRaveBox()` · 사용자 요청 — 갱신이 둘 이상이면 줄마다 `· 1인 N만원씩`). '타당'은 줄인 타수 1타당으로 읽었다 — 다른 뜻(갱신 때마다 정액 등)이면 `computeRaveAwards()`만 고치면 된다.
 - 뱃지 판정은 `getGolferBadgesArray()`. 싱글(79타 이하) 등 일부는 스코어에서, 버디/파 최다 등은 `CUMULATIVE_STATS`에서 나온다.
   - **불사조 = 하극상 승수 1위**(`upsetWins` in `processAllRoundSettlements()` · `golferUpsetWins`). 차수마다 1:1에서 이긴 상대가
     **직전 차수 계급이 나보다 높았으면** 1승을 센다(첫 계급 차수는 직전 계급이 없어 안 센다). 같으면 함께 받는다.
