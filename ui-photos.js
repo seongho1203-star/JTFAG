@@ -173,7 +173,7 @@ async function deleteRoundPhoto(photoIdx) {
    원본이 3~5MB라 곧바로 띄우면 한참 빈 화면이다(사용자 제보). 격자에서 이미 받아 둔 썸네일을 먼저 보여 주고,
    뒤에서 원본을 받아 오며 아래에 진행 막대(`원본 불러오는 중 37%`)를 띄운다. 다 받으면 같은 자리에서 원본으로 바뀐다.
    받은 원본은 최근 네 장까지 기억해(`photoView.cache`) 다시 열면 바로 뜬다. 다른 사진으로 옮기거나 닫으면 받던 것을 끊는다. */
-const photoView = { orig: '', token: 0, abort: null, cache: new Map() };
+const photoView = { orig: '', token: 0, abort: null, cache: new Map(), saving: false };
 const PHOTO_CACHE_MAX = 4;
 
 function photoMB(n) { return (n / 1048576).toFixed(1) + 'MB'; }
@@ -520,9 +520,24 @@ function isTouchDevice() {
     return (navigator.maxTouchPoints || 0) > 0;
 }
 
+// 저장창을 마치면 단추가 초록 체크로 바뀌고 몇 초간 다시 안 눌린다 — 사진 앱에는 원본이 이미 있어 새로 저장된 줄 모르고 계속 누르던 일이 있었다.
+const PHOTO_SAVED_MS = 3500;
+const PHOTO_CHECK_SVG = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+function photoSavedMark() {
+    const btn = document.querySelector('#imageViewModal .photo-dl');
+    const prev = btn ? btn.innerHTML : '';
+    if (btn) { btn.classList.add('done'); btn.innerHTML = PHOTO_CHECK_SVG; }
+    showToast('✅ 저장 요청을 마쳤습니다. 사진 앱의 최근 항목에서 확인해 주세요.');
+    setTimeout(() => {
+        photoView.saving = false;
+        if (btn) { btn.classList.remove('done'); btn.innerHTML = prev; }
+    }, PHOTO_SAVED_MS);
+}
+
 async function downloadCurrentPhoto() {
     if (!photoView.orig) return;
     // 아직 받는 중이면 저장을 막는다. 여기서 따로 내려받으면 시간이 걸려, 폰이 '누른 직후'로 인정하는 시간이 지나 공유창이 안 열린다.
+    if (photoView.saving) { showToast('✅ 방금 저장했습니다. 사진 앱의 최근 항목에서 확인해 주세요.'); return; }
     const viewer = document.querySelector('#imageViewModal .photo-viewer');
     if (viewer && viewer.classList.contains('loading')) { showToast('⏳ 원본을 다 받은 뒤에 저장할 수 있습니다.'); return; }
     if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡 인앱 브라우저에서는 저장이 제한됩니다. '다른 브라우저로 열기'를 이용하거나 사진을 길게 눌러 저장하세요."); return; }
@@ -532,8 +547,10 @@ async function downloadCurrentPhoto() {
         const file = new File([blob], photoFileName(blob), { type: blob.type || 'image/jpeg' });
 
         if (isTouchDevice() && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'JTFAG 사진 저장' });
-            showToast("📷 '이미지 저장' 또는 갤러리를 선택하면 저장됩니다.");
+            photoView.saving = true;
+            try { await navigator.share({ files: [file], title: 'JTFAG 사진 저장' }); }
+            catch (e) { photoView.saving = false; throw e; }
+            photoSavedMark();
             return;
         }
         const blobUrl = window.URL.createObjectURL(blob);
