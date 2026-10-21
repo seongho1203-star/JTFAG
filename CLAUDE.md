@@ -371,6 +371,8 @@ scripts/fetch-courses.js  →  courses.js를 커밋
   `saveSchedule()`(저장 직후)와 `applyHoleScores()`(접속·실시간 갱신, 맨 끝)가 부른다. **일정이 정확히 `totalRounds + 1`에 붙어 있고 일정 문구가 있을 때만**, 그리고 **마지막 차수가 비어 있지 않을 때만** 만든다 —
   마지막 차수가 비어 있으면 `settleScheduleRound()`가 일정을 그 차수로 옮기는 몫이라 둘이 맞서지 않게 한 것이다. 금액 줄은 비우지 않고(`appendRoundFromHoles()`와 같다), 같은 번호의 옛 차액 사유만 비운다. 값이 그대로면 false라 헛저장이 없다.
   **직접 지운 차수는 되살리지 않는다** — `removeRound()`가 일정이 그 번호에 남았을 때 `payload.autoRoundOff`에 번호를 적고, `saveSchedule()`이 지운다(다른 번호의 일정이면 `ensureScheduledRound()`가 스스로 지운다). 안 그러면 지울 때마다 접속하면 되살아난다.
+- **`+ 차수 추가`·`- 최근 차수 삭제`는 본인(`SCORE_OWNER`) 기기에서만 보인다**(`#ownerRoundBtns` · `updateScoreRequestBtn()`이 `📋 스코어 등록`과 함께 켜고 끈다 · 사용자 요청 — 다른 동반자는 안 쓰므로 숨기고 `↩️ 되돌리기`만 모두에게 남긴다).
+  `addRound()`·`removeRound()`도 본인이 아니면 첫 줄에서 돌아선다(화면에서 감추는 것만으로 두지 않는다 — 보안이 아니라 실수 방지 장치다). 버튼 줄이 오른쪽 정렬을 잃지 않게 `.right-btns`에 `margin-left: auto`가 있다. 일정·스코어카드가 차수를 저절로 만드는 길(`ensureScheduledRound`·`appendRoundFromHoles`)은 이 문과 무관하다.
 - **홈 공지 카드의 제목은 `다음 라운드 11차`처럼 차수가 붙는다**(`renderNoticeArea()` in ui-notice.js · `.sched-no`). 일정이 없으면 `다음 라운드`만.
 - **`내 목표 타수` 카드의 최근 5경기 칩(`10차 -1`)을 누르면 그 차수의 스코어카드가 올라온다**(`openMyScorecard(r, who)` in ui-rounds.js · `.goal-chip.tap` · `.sc-overlay`·`.sc-sheet` · 사용자 요청 — `내가 올린 부분을 누르면 나오게` + 목표 타수 카드 화면). **이 기기 주인 본인의 스코어카드만 뜬다**(사용자 요청 — `본인 스코어만 나오게해줘`. 이름 칩·다른 사람 보기는 걷어냈다 — 되살리지 말 것). **표 머리의 `N차`와 사진 갤러리 제목은 눌리지 않는다** — 둘 다 한 번 붙였다가 사용자가 아니라고 했다. 되살리지 말 것.
   제목에 이름이 붙는다(`10차 스코어카드 · 신성호`). 총타수(`grossFromHoles`와 같은 값)·±파 · 전반/후반 표(버디 초록 · 이글 이상 금색 · 보기 · 더블 이상 빨강) · 개수 범례.

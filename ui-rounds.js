@@ -394,6 +394,7 @@ function updateScore(name, r, val) {
 }
 
 function addRound() {
+    if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;   // 버튼은 본인에게만 보인다 — 여기서도 막는다
     saveState(); appData.totalRounds++;
     // 일정에서 이 차수 골프장을 미리 잡아 뒀으면 그걸 넣는다.
     if (!appData.courses) appData.courses = []; appData.courses.push(roundCourseMap()[appData.totalRounds] || "");
@@ -414,6 +415,7 @@ function addRound() {
 // 사진이 붙은 차수를 무심코 지웠다가 되돌리기가 실시간 갱신에 밀려
 // 사진이 통째로 안 보이게 된 적이 있다.
 async function removeRound() {
+    if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;   // 버튼은 본인에게만 보인다 — 여기서도 막는다
     if (appData.totalRounds <= 2) { showToast("⚠️ 최소 2개 라운드는 유지되어야 합니다."); return; }
 
     const r = appData.totalRounds - 1;

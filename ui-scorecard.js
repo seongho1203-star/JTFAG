@@ -8,6 +8,9 @@ function updateScoreRequestBtn() {
     if (!btn) return;
     const isOwner = localStorage.getItem('jtfag_my_name') === SCORE_OWNER;
     btn.style.display = isOwner ? '' : 'none';
+    // 차수 추가·삭제도 본인만 쓴다(사용자 요청 — 다른 동반자는 안 쓰므로 숨긴다). 되돌리기는 모두에게 남긴다.
+    const rb = document.getElementById('ownerRoundBtns');
+    if (rb) rb.style.display = isOwner ? '' : 'none';
 }
 
 // 올릴 차수는 거의 항상 '방금 친 차수'다. 홀 기록이 아직 없는 마지막 차수를

@@ -193,7 +193,8 @@
     </div>
 
     <div class="btn-group">
-        <div class="left-btns">
+        <!-- 차수 추가·삭제는 본인(SCORE_OWNER) 기기에서만 보인다. updateScoreRequestBtn()이 켜고 끈다. -->
+        <div class="left-btns" id="ownerRoundBtns" style="display:none;">
             <button type="button" class="action-btn add-btn" onclick="addRound()">+ 차수 추가</button>
             <button type="button" class="action-btn remove-btn" onclick="removeRound()">- 최근 차수 삭제</button>
         </div>

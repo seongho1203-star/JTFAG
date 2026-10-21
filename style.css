@@ -450,7 +450,7 @@ p.subtitle { color: var(--primary-gold); font-size: clamp(0.65rem, 2.5vw, 0.78re
 
 .btn-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; width: 100%; flex-wrap: wrap; gap:4px;}
 .left-btns { display: flex; gap: 4px; align-items: center; flex-wrap: wrap;}
-.right-btns { display: flex; gap: 4px; align-items: center; justify-content: flex-end;}
+.right-btns { display: flex; gap: 4px; align-items: center; justify-content: flex-end; margin-left: auto;}
 .action-btn { padding: 6px 8px; border: none; border-radius: 8px; font-weight: 800; font-size: clamp(0.62rem, 2.3vw, 0.72rem); white-space: nowrap; }
 .add-btn { background: #2563eb; color: white; }
 .remove-btn { background: #d97706; color: white; }
