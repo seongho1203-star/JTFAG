@@ -178,15 +178,21 @@ const PHOTO_CACHE_MAX = 4;
 
 function photoMB(n) { return (n / 1048576).toFixed(1) + 'MB'; }
 
+const PHOTO_RING_C = 2 * Math.PI * 28;   // 원 둘레 — index.html의 r="28"과 한 쌍
 function photoLoadingShow(text, ratio, retry) {
     const box = document.getElementById('photoLoading');
     if (!box) return;
     box.hidden = false;
     document.getElementById('photoLoadingText').textContent = text;
-    // 진행 막대는 transform으로만 움직인다. 크기를 모르면(ratio < 0) 줄어들지 않는 얇은 막대가 오간다.
+    // 둥근 진행 표시: 선의 길이(dashoffset)만 바꾼다. 크기를 모르면(ratio < 0) 4분의 1 호가 유한 횟수로 돈다.
+    const svg = document.getElementById('photoRingSvg');
     const fill = document.getElementById('photoLoadingFill');
-    fill.classList.toggle('indeterminate', ratio < 0);
-    fill.style.transform = ratio < 0 ? '' : `scaleX(${Math.max(0.02, Math.min(1, ratio))})`;
+    const unknown = ratio < 0;
+    svg.classList.toggle('spin', unknown);
+    const r = unknown ? 0.25 : Math.max(0.02, Math.min(1, ratio));
+    fill.style.strokeDashoffset = String(PHOTO_RING_C * (1 - r));
+    document.getElementById('photoLoadingPct').textContent = unknown || retry ? '' : Math.min(99, Math.floor(ratio * 100)) + '%';
+    document.getElementById('photoRing').hidden = !!retry;
     document.getElementById('photoLoadingRetry').hidden = !retry;
 }
 function photoLoadingHide() {
@@ -212,7 +218,7 @@ async function photoLoadOriginal(src, token) {
     const img = document.getElementById('fullImageView');
     const ctrl = new AbortController();
     photoView.abort = ctrl;
-    photoLoadingShow('원본 불러오는 중...', 0, false);
+    photoLoadingShow('원본 불러오는 중', 0, false);
     try {
         const res = await fetch(src, { signal: ctrl.signal });
         if (!res.ok) throw new Error('사진을 불러오지 못했습니다.');
@@ -227,13 +233,11 @@ async function photoLoadOriginal(src, token) {
                 if (done) break;
                 chunks.push(value); got += value.length;
                 if (token !== photoView.token) return;
-                photoLoadingShow(total
-                    ? `원본 불러오는 중 ${Math.min(99, Math.floor(got / total * 100))}% · ${photoMB(got)} / ${photoMB(total)}`
-                    : `원본 불러오는 중 · ${photoMB(got)}`, total ? got / total : -1, false);
+                photoLoadingShow(total ? `${photoMB(got)} / ${photoMB(total)}` : photoMB(got), total ? got / total : -1, false);
             }
             blob = new Blob(chunks, { type });
         } else {
-            photoLoadingShow('원본 불러오는 중...', -1, false);
+            photoLoadingShow('원본 불러오는 중', -1, false);
             blob = await res.blob();
         }
         if (token !== photoView.token) return;

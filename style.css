@@ -655,14 +655,19 @@ html, body { overscroll-behavior-x: none; }
 .photo-tool { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.16); color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 0; }
 .photo-tool:active { background: rgba(255, 255, 255, 0.3); }
 .photo-tool svg { display: block; }
-/* 원본을 받는 동안 도구줄 바로 위에 뜨는 진행 안내. 사진 위에 걸쳐도 읽히게 어두운 반투명 알약이다. */
-.photo-loading { position: absolute; left: 16px; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 320px; padding: 10px 14px 12px; border-radius: 14px; background: rgba(8, 10, 20, 0.78); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff; text-align: center; z-index: 2; pointer-events: none; }
+/* 원본을 받는 동안 사진 가운데에 뜨는 둥근 진행 표시(카톡과 같은 모양). 어두운 원판 + 흰 호 + 가운데 퍼센트, 아래에 용량. */
+.photo-loading { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; color: #ffffff; z-index: 2; pointer-events: none; }
 .photo-loading[hidden] { display: none; }
-.photo-loading-text { font-size: 0.74rem; font-weight: 800; line-height: 1.4; word-break: keep-all; }
-.photo-loading-bar { height: 4px; margin-top: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); overflow: hidden; }
-.photo-loading-bar i { display: block; height: 100%; width: 100%; background: #ffffff; transform-origin: left center; transform: scaleX(0.02); transition: transform 0.18s linear; }
-.photo-loading-bar i.indeterminate { width: 35%; transition: none; animation: photo-load-slide 1.1s ease-in-out 12 alternate; }
-@keyframes photo-load-slide { from { transform: translateX(0); } to { transform: translateX(185%); } }
+.photo-ring { position: relative; width: 64px; height: 64px; border-radius: 50%; background: rgba(8, 10, 20, 0.62); }
+.photo-ring[hidden] { display: none; }
+.photo-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.photo-ring circle { fill: none; stroke-width: 4; }
+.photo-ring .trk { stroke: rgba(255, 255, 255, 0.25); }
+.photo-ring .bar { stroke: #ffffff; stroke-linecap: round; stroke-dasharray: 175.93; stroke-dashoffset: 172; }
+.photo-ring svg.spin { animation: photo-ring-spin 1s linear 40; }
+.photo-ring b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; }
+@keyframes photo-ring-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+.photo-loading-text { padding: 3px 10px; border-radius: 999px; background: rgba(8, 10, 20, 0.62); font-size: 0.72rem; font-weight: 800; line-height: 1.4; }
 .photo-loading-retry { margin-top: 8px; padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.18); color: #ffffff; font-size: 0.74rem; font-weight: 800; font-family: inherit; pointer-events: auto; }
 .photo-loading-retry[hidden] { display: none; }
 

@@ -445,8 +445,11 @@
             <img id="fullImageView" src="" alt="사진" draggable="false">
         </div>
         <div class="photo-loading" id="photoLoading" hidden>
-            <div class="photo-loading-text" id="photoLoadingText">원본 불러오는 중...</div>
-            <div class="photo-loading-bar"><i id="photoLoadingFill"></i></div>
+            <div class="photo-ring" id="photoRing">
+                <svg viewBox="0 0 64 64" id="photoRingSvg"><circle class="trk" cx="32" cy="32" r="28"/><circle class="bar" id="photoLoadingFill" cx="32" cy="32" r="28"/></svg>
+                <b id="photoLoadingPct"></b>
+            </div>
+            <div class="photo-loading-text" id="photoLoadingText">원본 불러오는 중</div>
             <button type="button" class="photo-loading-retry" id="photoLoadingRetry" hidden onclick="photoRetry()">다시 시도</button>
         </div>
         <div class="photo-tools">
