@@ -494,7 +494,9 @@ async function currentPhotoBlob() {
     showToast("⏳ 원본을 내려받는 중입니다...");
     const res = await fetch(orig);
     if (!res.ok) throw new Error("사진을 불러오지 못했습니다.");
-    return await res.blob();
+    const blob = await res.blob();
+    photoCachePut(orig, blob);   // 다시 누르면 곧바로 저장창이 뜨게 담아 둔다
+    return blob;
 }
 
 function photoFileName(blob) {
@@ -520,6 +522,9 @@ function isTouchDevice() {
 
 async function downloadCurrentPhoto() {
     if (!photoView.orig) return;
+    // 아직 받는 중이면 저장을 막는다. 여기서 따로 내려받으면 시간이 걸려, 폰이 '누른 직후'로 인정하는 시간이 지나 공유창이 안 열린다.
+    const viewer = document.querySelector('#imageViewModal .photo-viewer');
+    if (viewer && viewer.classList.contains('loading')) { showToast('⏳ 원본을 다 받은 뒤에 저장할 수 있습니다.'); return; }
     if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡 인앱 브라우저에서는 저장이 제한됩니다. '다른 브라우저로 열기'를 이용하거나 사진을 길게 눌러 저장하세요."); return; }
     try {
         const blob = await currentPhotoBlob();
@@ -537,6 +542,7 @@ async function downloadCurrentPhoto() {
         showToast("💾 기기에 저장했습니다.");
     } catch (error) {
         if (error && error.name === 'AbortError') return;   // 시트를 그냥 닫은 것
+        if (error && error.name === 'NotAllowedError') { showToast('📷 저장 준비가 끝났습니다. 저장 단추를 한 번 더 눌러 주세요.'); return; }   // 내려받는 사이 폰이 누른 직후로 안 쳤다 — 이제 담아 뒀으니 바로 열린다
         console.error("다운로드 에러:", error); showToast("⚠️ 저장에 실패했습니다. 사진을 길게 눌러 '이미지 저장'을 선택해 주세요.");
     }
 }
