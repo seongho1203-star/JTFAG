@@ -185,7 +185,7 @@ function renderTable() {
     for (let r = 0; r < appData.totalRounds; r++) {
         // 골프장은 사람이 여기서 치지 않는다 — 일정에서 차수를 고르면 저절로 채워진다.
         // 칸을 눌렀을 때 그 차수 일정이 열리게 해 둔다(고칠 길이 있어야 한다).
-        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot" onclick="openScheduleForRound(${r})"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${escapeHtml((appData.courses && appData.courses[r]) || "")}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
+        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${escapeHtml((appData.courses && appData.courses[r]) || "")}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
     }
     headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
     headerRow.innerHTML = headerHtml;
