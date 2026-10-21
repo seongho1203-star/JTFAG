@@ -308,11 +308,40 @@ async function uploadPhotoBlob(blob, roundIdx) {
     return window._supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-// 사진을 지울 때 Storage 파일도 함께 정리한다. 실패해도 앱 동작은 막지 않는다.
+/* ── 썸네일 ──────────────────────────────────────────────────────
+   라운드 사진은 원본 그대로 올리므로(3~5MB) 갤러리 격자가 원본을 받으면 너무 늦게 뜬다(사용자 제보).
+   그래서 올릴 때 **작은 판(긴 변 640px)을 같은 통의 `thumbs/` 아래에 하나 더 올리고**, 격자는 그것을 보여 준다.
+   payload에는 원본 주소만 남긴다 — 썸네일 주소는 원본 경로에서 늘 같은 규칙으로 낸다(`photoThumbUrl`).
+   썸네일이 없는 예전 사진은 격자가 원본으로 물러나고, 이 기기 주인(SCORE_OWNER)이 갤러리를 열면 뒤에서 하나씩 만든다. */
+const THUMB_DIR = 'thumbs/';
+const THUMB_MAX_PX = 640;
+const THUMB_QUALITY = 0.72;
+
+function thumbPathFromPath(path) {
+    return THUMB_DIR + String(path).replace(/\.[^./]+$/, '') + '.jpg';
+}
+// 썸네일 주소. 예전 base64 사진이거나 우리 통의 파일이 아니면 원본 주소를 그대로 돌려준다.
+function photoThumbUrl(src) {
+    if (typeof src !== 'string' || src.startsWith('data:')) return src;
+    const path = storagePathFromUrl(src);
+    if (!path || path.startsWith(THUMB_DIR)) return src;
+    return window._supabase.storage.from(PHOTO_BUCKET).getPublicUrl(thumbPathFromPath(path)).data.publicUrl;
+}
+// 원본 주소(src)에 맞는 썸네일을 만들어 올린다. 이미 있으면(upsert 안 함) 오류가 나도 그냥 넘어간다.
+async function uploadPhotoThumb(src, blob) {
+    const path = storagePathFromUrl(src);
+    if (!path) return false;
+    const thumb = await compressImageToBlob(blob, THUMB_MAX_PX, THUMB_QUALITY);
+    const { error } = await window._supabase.storage.from(PHOTO_BUCKET)
+        .upload(thumbPathFromPath(path), thumb, { contentType: 'image/jpeg', upsert: false });
+    return !error;
+}
+
+// 사진을 지울 때 Storage 파일도 함께 정리한다(썸네일 포함). 실패해도 앱 동작은 막지 않는다.
 async function deletePhotoFromStorage(src) {
     const path = storagePathFromUrl(src);
     if (!path) return;
-    const { error } = await window._supabase.storage.from(PHOTO_BUCKET).remove([path]);
+    const { error } = await window._supabase.storage.from(PHOTO_BUCKET).remove([path, thumbPathFromPath(path)]);
     if (error) console.error("Storage 삭제 실패:", error);
 }
 

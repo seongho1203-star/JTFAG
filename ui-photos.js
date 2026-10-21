@@ -12,8 +12,41 @@ function renderRoundPhotos() {
     const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) ? appData.roundPhotos[selectedPhotoRoundIdx] : [];
     if (photos.length === 0) { grid.innerHTML = `<div style="grid-column: span 2; text-align:center; padding: 20px; color:#94a3b8; font-size: 0.8rem;">등록된 사진이 없습니다.</div>`; return; }
     photos.forEach((src, index) => {
-        grid.innerHTML += `<div class="photo-item"><img src="${src}" loading="lazy" onclick="openImageViewModal(appData.roundPhotos[selectedPhotoRoundIdx][${index}])"><button type="button" class="photo-delete-btn" onclick="deleteRoundPhoto(${index})">✕</button></div>`;
+        // 격자에는 썸네일을 보여 준다(원본은 눌렀을 때). 썸네일이 아직 없는 사진은 `photoThumbFail()`이 원본으로 물러난다.
+        grid.innerHTML += `<div class="photo-item"><img src="${escapeHtml(photoThumbUrl(src))}" data-orig="${escapeHtml(src)}" loading="lazy" decoding="async" onerror="photoThumbFail(this)" onclick="openImageViewModal(appData.roundPhotos[selectedPhotoRoundIdx][${index}])"><button type="button" class="photo-delete-btn" onclick="deleteRoundPhoto(${index})">✕</button></div>`;
     });
+}
+
+/* 썸네일이 없는 사진(썸네일 기능 이전에 올린 것)은 원본으로 물러난다. 이 기기 주인이면 뒤에서 썸네일을 만들어 다음부터 빠르게 뜬다.
+   한 사진은 세션당 한 번만 시도한다 — 실패하는 사진을 계속 다시 받지 않는다. */
+const thumbTried = new Set();
+const thumbQueue = [];
+let thumbWorking = false;
+function photoThumbFail(img) {
+    const orig = img.dataset.orig;
+    if (!orig || img.dataset.fb) return;
+    img.dataset.fb = '1';
+    img.src = orig;
+    if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER || thumbTried.has(orig) || orig.startsWith('data:')) return;
+    thumbTried.add(orig); thumbQueue.push(orig);
+    runThumbQueue();
+}
+async function runThumbQueue() {
+    if (thumbWorking) return;
+    thumbWorking = true;
+    while (thumbQueue.length) {
+        const orig = thumbQueue.shift();
+        try {
+            const res = await fetch(orig);
+            if (!res.ok) continue;
+            if (!(await uploadPhotoThumb(orig, await res.blob()))) continue;
+            const url = photoThumbUrl(orig) + '?t=' + Date.now();   // 없던 주소의 실패 기록을 피해 간다
+            document.querySelectorAll('#photoGrid img').forEach(im => {
+                if (im.dataset.orig === orig) { im.dataset.fb = '1'; im.src = url; }
+            });
+        } catch (e) { console.error('썸네일 만들기 실패:', e); }
+    }
+    thumbWorking = false;
 }
 
 // 원본을 그대로 올리면 용량이 커서, 긴 변 기준 800px JPEG으로 줄여 올린다.
@@ -69,7 +102,10 @@ async function handleRoundPhotoUpload(event) {
         try {
             if (files.length > 1) showToast(`⏳ ${i + 1}/${files.length}장 업로드 중... (원본)`);
             // File은 Blob이라 그대로 올라간다 — 다시 그리지 않으므로 화질이 그대로다.
-            urls.push(await uploadPhotoBlob(files[i], round));
+            const url = await uploadPhotoBlob(files[i], round);
+            urls.push(url);
+            // 갤러리 격자용 썸네일 — 실패해도 사진 등록은 그대로 간다(격자가 원본으로 물러난다).
+            try { await uploadPhotoThumb(url, files[i]); } catch (e) { console.warn('썸네일 업로드 실패:', e); }
         } catch (err) { console.error("사진 업로드 실패:", err); failed++; }
     }
     input.value = '';
@@ -133,15 +169,131 @@ async function deleteRoundPhoto(photoIdx) {
     await deletePhotoFromStorage(removed);
 }
 
+/* ── 사진 보기: 썸네일 먼저, 원본은 진행률을 보이며 받는다 ─────────────────
+   원본이 3~5MB라 곧바로 띄우면 한참 빈 화면이다(사용자 제보). 격자에서 이미 받아 둔 썸네일을 먼저 보여 주고,
+   뒤에서 원본을 받아 오며 아래에 진행 막대(`원본 불러오는 중 37%`)를 띄운다. 다 받으면 같은 자리에서 원본으로 바뀐다.
+   받은 원본은 최근 네 장까지 기억해(`photoView.cache`) 다시 열면 바로 뜬다. 다른 사진으로 옮기거나 닫으면 받던 것을 끊는다. */
+const photoView = { orig: '', token: 0, abort: null, cache: new Map() };
+const PHOTO_CACHE_MAX = 4;
+
+function photoMB(n) { return (n / 1048576).toFixed(1) + 'MB'; }
+
+function photoLoadingShow(text, ratio, retry) {
+    const box = document.getElementById('photoLoading');
+    if (!box) return;
+    box.hidden = false;
+    document.getElementById('photoLoadingText').textContent = text;
+    // 진행 막대는 transform으로만 움직인다. 크기를 모르면(ratio < 0) 줄어들지 않는 얇은 막대가 오간다.
+    const fill = document.getElementById('photoLoadingFill');
+    fill.classList.toggle('indeterminate', ratio < 0);
+    fill.style.transform = ratio < 0 ? '' : `scaleX(${Math.max(0.02, Math.min(1, ratio))})`;
+    document.getElementById('photoLoadingRetry').hidden = !retry;
+}
+function photoLoadingHide() {
+    const box = document.getElementById('photoLoading');
+    if (box) box.hidden = true;
+}
+
+function photoCachePut(src, blob) {
+    const old = photoView.cache.get(src);
+    if (old) URL.revokeObjectURL(old.url);
+    photoView.cache.delete(src);
+    const url = URL.createObjectURL(blob);
+    photoView.cache.set(src, { blob, url });
+    while (photoView.cache.size > PHOTO_CACHE_MAX) {
+        const k = photoView.cache.keys().next().value;
+        URL.revokeObjectURL(photoView.cache.get(k).url);
+        photoView.cache.delete(k);
+    }
+    return url;
+}
+
+async function photoLoadOriginal(src, token) {
+    const img = document.getElementById('fullImageView');
+    const ctrl = new AbortController();
+    photoView.abort = ctrl;
+    photoLoadingShow('원본 불러오는 중...', 0, false);
+    try {
+        const res = await fetch(src, { signal: ctrl.signal });
+        if (!res.ok) throw new Error('사진을 불러오지 못했습니다.');
+        const total = Number(res.headers.get('content-length')) || 0;
+        const type = res.headers.get('content-type') || 'image/jpeg';
+        let blob;
+        if (res.body && res.body.getReader) {
+            const reader = res.body.getReader();
+            const chunks = []; let got = 0;
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value); got += value.length;
+                if (token !== photoView.token) return;
+                photoLoadingShow(total
+                    ? `원본 불러오는 중 ${Math.min(99, Math.floor(got / total * 100))}% · ${photoMB(got)} / ${photoMB(total)}`
+                    : `원본 불러오는 중 · ${photoMB(got)}`, total ? got / total : -1, false);
+            }
+            blob = new Blob(chunks, { type });
+        } else {
+            photoLoadingShow('원본 불러오는 중...', -1, false);
+            blob = await res.blob();
+        }
+        if (token !== photoView.token) return;
+        const url = photoCachePut(src, blob);
+        // 원본을 다 풀어 둔 뒤에 바꾼다 — 바꾸는 순간 빈 화면이 비치지 않게.
+        const full = new Image();
+        full.src = url;
+        try { await full.decode(); } catch (e) { /* 못 풀어도 img가 알아서 그린다 */ }
+        if (token !== photoView.token) return;
+        img.onerror = null;
+        img.src = url;
+        photoLoadingHide();
+    } catch (err) {
+        if (token !== photoView.token || (err && err.name === 'AbortError')) return;
+        console.error('원본 불러오기 실패:', err);
+        photoLoadingShow('원본을 불러오지 못했습니다.', 0, true);
+    }
+}
+
+function photoRetry() {
+    if (!photoView.orig) return;
+    const token = ++photoView.token;
+    photoLoadOriginal(photoView.orig, token);
+}
+
+function photoStopLoading() {
+    photoView.token++;
+    if (photoView.abort) { try { photoView.abort.abort(); } catch (e) { /* 이미 끝났다 */ } photoView.abort = null; }
+}
+
 function openImageViewModal(src) {
     initPhotoZoom();
     photoZoomReset();
-    document.getElementById('fullImageView').src = src;
+    photoStopLoading();
+    const token = photoView.token;
+    const img = document.getElementById('fullImageView');
+    photoView.orig = src;
+    img.onerror = null;
+    const hit = photoView.cache.get(src);
+    if (hit) {
+        img.src = hit.url; photoLoadingHide();
+    } else if (typeof src !== 'string' || src.startsWith('data:')) {
+        img.src = src; photoLoadingHide();            // 예전 base64 사진은 이미 손에 있다
+    } else {
+        // 격자에서 받아 둔 썸네일이 곧바로 뜬다. 썸네일이 없는 사진은 원본이 올 때까지 빈 화면에 진행 막대만 보인다.
+        const thumb = photoThumbUrl(src);
+        img.onerror = () => { img.onerror = null; img.removeAttribute('src'); };
+        img.src = thumb;
+        photoLoadOriginal(src, token);
+    }
     document.getElementById('imageViewModal').classList.add('active');
 }
 function closeImageViewModal() {
+    photoStopLoading();
+    photoView.orig = '';
+    photoLoadingHide();
+    const img = document.getElementById('fullImageView');
+    img.onerror = null;
     document.getElementById('imageViewModal').classList.remove('active');
-    document.getElementById('fullImageView').src = "";
+    img.src = "";
     photoZoomReset();
 }
 
@@ -320,14 +472,18 @@ function initPhotoZoom() {
 
 // 사진 파일을 Blob으로. Storage URL이거나, 아직 이전하지 않은 예전 base64일 수 있다.
 async function currentPhotoBlob() {
-    const imgSrc = document.getElementById('fullImageView').src;
-    if (!imgSrc) return null;
-    if (imgSrc.startsWith('data:')) {
-        const splitDataURI = imgSrc.split(','); const byteString = atob(splitDataURI[1]); const mime = splitDataURI[0].split(':')[1].split(';')[0];
+    // 화면에 떠 있는 것이 썸네일일 수 있다 — 저장은 늘 원본으로 한다.
+    const orig = photoView.orig;
+    if (!orig) return null;
+    if (orig.startsWith('data:')) {
+        const splitDataURI = orig.split(','); const byteString = atob(splitDataURI[1]); const mime = splitDataURI[0].split(':')[1].split(';')[0];
         const ab = new ArrayBuffer(byteString.length); const ia = new Uint8Array(ab); for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
         return new Blob([ab], { type: mime });
     }
-    const res = await fetch(imgSrc);
+    const hit = photoView.cache.get(orig);
+    if (hit) return hit.blob;
+    showToast("⏳ 원본을 내려받는 중입니다...");
+    const res = await fetch(orig);
     if (!res.ok) throw new Error("사진을 불러오지 못했습니다.");
     return await res.blob();
 }
@@ -354,7 +510,7 @@ function isTouchDevice() {
 }
 
 async function downloadCurrentPhoto() {
-    if (!document.getElementById('fullImageView').src) return;
+    if (!photoView.orig) return;
     if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡 인앱 브라우저에서는 저장이 제한됩니다. '다른 브라우저로 열기'를 이용하거나 사진을 길게 눌러 저장하세요."); return; }
     try {
         const blob = await currentPhotoBlob();
