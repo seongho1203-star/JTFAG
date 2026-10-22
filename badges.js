@@ -520,9 +520,11 @@ function openBadgeDetail(id) {
         const ms = badgeState(def, n, titleCache);
         let line = '';
         if (def.kind === 'tier') line = ms.earned ? `<b style="color:${BADGE_TIERS[BADGE_STEP_TIERS[ms.level - 1]].c}">${BADGE_TIERS[BADGE_STEP_TIERS[ms.level - 1]].name}</b>` : '<b class="off">미획득</b>';
-        else if (def.kind === 'life') line = ms.earned ? `<b style="color:${t.c}">${ms.round + 1}차 획득</b>` : '<b class="off">미획득</b>';
+        else if (def.kind === 'life') line = ms.earned ? `<b style="color:${t.c}">${ms.round + 1}차 획득 ›</b>` : '<b class="off">미획득</b>';
         else line = ms.earned ? `<b style="color:${t.c}">보유 중</b>` : '<b class="off">-</b>';
         const extra = def.kind === 'tier' ? `<span>${badgeQty(def, ms.value)}</span>` : (def.metric ? `<span>${escapeHtml(def.metric(n))}</span>` : '');
+        // 평생 뱃지를 딴 사람의 칸은 눌러서 그 차수 스코어카드를 본다(사용자 요청). 그 사람의 카드가 뜬다.
+        if (def.kind === 'life' && ms.earned) return `<button type="button" class="bdg-member tap${n === g ? ' me' : ''}" onclick="openMyScorecard(${ms.round}, '${n}', true)" aria-label="${escapeHtml(n)} ${ms.round + 1}차 스코어카드 보기"><span class="nm">${escapeHtml(n)}</span>${line}${extra}</button>`;
         return `<div class="bdg-member${n === g ? ' me' : ''}"><span class="nm">${escapeHtml(n)}</span>${line}${extra}</div>`;
     }).join('');
 

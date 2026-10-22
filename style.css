@@ -1432,6 +1432,9 @@ html, body { overscroll-behavior: none; }
 .bdg-members { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .bdg-member { background: #ffffff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 2px; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .bdg-member.me { background: #eaf0f8; border-color: #cddaf0; }
+button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.bdg-member.tap:active { background: #f1f4f9; }
+.bdg-member.me.tap:active { background: #dde7f5; }
 .bdg-member .nm { font-size: 0.74rem; font-weight: 800; }
 .bdg-member.me .nm { color: #2b5394; }
 .bdg-member b { font-size: 0.68rem; font-weight: 800; white-space: nowrap; }

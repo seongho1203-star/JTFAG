@@ -349,9 +349,11 @@ function scHalf(par, rel, from) {
         + `<tr><th class="sc-lab">타수</th>${scoreRow.join('')}<td class="sc-tot"><b>${sum}</b></td></tr></table>`;
 }
 
-function openMyScorecard(r, who) {
+// anyone이 참이면 who 본인의 카드를 그대로 연다(뱃지 상세의 멤버 현황 — 그 사람이 딴 차수를 보려는 것).
+// 아니면 예전처럼 이 기기 주인 것만 뜬다(목표 타수 카드의 칩).
+function openMyScorecard(r, who, anyone) {
     const saved = typeof myGolferName === 'function' ? myGolferName() : '';
-    const name = golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]);
+    const name = anyone && golfers.includes(who) ? who : (golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]));
     const rec = typeof ROUND_HOLES !== 'undefined' ? ROUND_HOLES[String(r + 1)] : null;
     if (!rec || !rec.par || !rec.rel || !rec.rel[name] || rec.par.length !== 18) {
         showToast(`${r + 1}차는 홀별 기록이 아직 없습니다. 스코어를 등록하면 볼 수 있습니다.`);
