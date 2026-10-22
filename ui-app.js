@@ -262,6 +262,7 @@ function showGreeting(myName) {
                 <div class="greet-name"><span class="greet-rank"></span>등급<br><span class="greet-who"></span>님</div>
                 <div class="greet-msg">입장하였습니다 · 화면을 누르면 넘어갑니다</div>
             </div>`;
+        if (window.__greetFont) window.__greetFont(overlay);
     }
     overlay.style.setProperty('--g1', g.from);
     overlay.style.setProperty('--g2', g.to);
