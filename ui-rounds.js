@@ -162,7 +162,7 @@ function toggleScoreEdit() {
 // 타수·계급은 calc.js가 채운 값(golferRankHistory · roundNetInfo)을 읽기만 한다 — **calculateAndRender()가 계산한 뒤에 그린다.**
 // 타수 칸은 홀 기록이 있으면 잠긴 숫자이고, 홀 기록이 없는 차수만 관리자 `✏️ 타수 직접 수정`으로 칸이 열린다(updateScore).
 let roundCardsOpen = false;                // `이전 차수 보기` — 이번 실행 동안만 기억한다
-const ROUND_CARDS_MIN = 2;                 // 11차 이후 카드가 이보다 적으면 최근 차수로 채운다
+const ROUND_CARDS_MIN = 1;                 // 11차 이후 카드가 이보다 적으면 최근 차수로 채운다
 const RANK_CIRCLE = ['#c98d00', '#3b82c4', '#7c5cc4', '#8a8f96'];   // 독수리 · 매 · 학 · 참새
 
 function renderTable() { renderRoundCards(); }
