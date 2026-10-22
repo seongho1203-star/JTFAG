@@ -237,9 +237,6 @@
     <!-- 차수별 결과 카드 — renderRoundCards()(ui-rounds.js)가 그린다. 예전 가로 표(scoreTable)를 대체했다. -->
     <div class="round-cards" id="roundCards"></div>
 
-    <div class="history-btn-container">
-        <button type="button" class="open-history-btn" onclick="openHistoryModal()">📜 라운드별 계급 정산 이력 보기 ▾</button>
-    </div>
     </div><!-- /page-detail -->
     <!-- 화면 3(미션): 라운드 미션 받기 · 결과 · 포인트 · 멀리건 사용권 — mission.js가 그린다 -->
     <div class="page page-mission"><div id="missionPage"></div></div>
@@ -250,18 +247,6 @@
     </div></div><!-- /pager -->
 </div>
 
-
-<div class="modal-overlay" id="historyModal" onclick="if(event.target === this) closeHistoryModal()">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>📜 라운드별 계급 정산 이력</h3>
-            <button type="button" class="close-btn" onclick="closeHistoryModal()">✕</button>
-        </div>
-        <div class="modal-body">
-            <div class="history-list" id="historyList"></div>
-        </div>
-    </div>
-</div>
 
 <div class="modal-overlay" id="scheduleModal" onclick="if(event.target === this) closeScheduleModal()">
     <div class="modal-content">

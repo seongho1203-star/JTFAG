@@ -1,7 +1,5 @@
 // ◇ ui.js를 나눈 조각 — 기록 창 · 개인 리포트 · 알림 설정 · 관리자 메뉴 · 분석
 // ◇ 로딩 순서가 곧 원래 순서다(index.html). 전역 함수·변수라 어느 조각에서든 그대로 부른다.
-function openHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.add('active'); }
-function closeHistoryModal() { const modal = document.getElementById('historyModal'); if (modal) modal.classList.remove('active'); }
 
 /* ── 내 목표 달성 기록 ──────────────────────────────────────────
    11차 규칙에 맞춰 1:1 승률 두 카드를 바꿨다(사용자 요청 — 계급이 '내 목표 타수와의 싸움'이라 상대와의 승패는 의미가 약하다).

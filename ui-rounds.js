@@ -234,11 +234,7 @@ function renderRoundCards() {
     const newer = all.filter(r => r + 1 >= HANDICAP_RULE_FROM_ROUND);
     const shown = roundCardsOpen ? all : all.slice(0, Math.max(newer.length, Math.min(ROUND_CARDS_MIN, total)));
     const hidden = all.length - shown.length;
-    // 다음 라운드 목표 — 예전 표의 마지막 `평균` 열이 하던 일이다(최근 5경기 평균 = 내 목표 타수).
-    const tr = typeof latestHandicapRounds === 'function' ? latestHandicapRounds() : [];
-    const avg = tr.length ? handicapAverageAt(tr[tr.length - 1]) : null;
-    const goal = avg ? `<div class="rc-goal"><span>다음 라운드 목표 타수</span>${golfers.map(g => `<b class="${g === me ? 'me' : ''}">${g} ${avg[g]}</b>`).join('')}</div>` : '';
-    let html = goal + shown.map(r => roundCardHtml(r, me)).join('');
+    let html = shown.map(r => roundCardHtml(r, me)).join('');
     if (hidden > 0) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 ${hidden}개 보기 ▾</button>`;
     else if (roundCardsOpen && all.length > ROUND_CARDS_MIN) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 접기 ▴</button>`;
     if (box._html !== html) { box.innerHTML = html; box._html = html; }

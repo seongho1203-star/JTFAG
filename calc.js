@@ -292,12 +292,6 @@ function computeRaveAwards() {
     return out;
 }
 
-function raveHistoryHtml(r) {
-    const list = raveAwards.filter(a => a.round === r);
-    if (!list.length) return '';
-    return `<div class="hm-rave">${list.map(a => `🏆 라베 갱신 · <b>${escapeHtml(a.name)}</b> ${a.score}타 (종전 ${a.prev}타)`).join('<br>')}</div>`;
-}
-
 function processAllRoundSettlements() {
     const totalRounds = appData.totalRounds;
     const totalRankProfit = {};
@@ -422,9 +416,6 @@ function processAllRoundSettlements() {
         golferFluctuationMap[fluctuationWinner] = true;
     }
 
-    const historyList = document.getElementById('historyList');
-    if (historyList) historyList.innerHTML = "";
-
     for (let r = 2; r < totalRounds; r++) {
         const data = h2hRoundData(r);
         if (!data) continue;
@@ -491,12 +482,6 @@ function processAllRoundSettlements() {
             return matchResults[b].totalDiff - matchResults[a].totalDiff;
         });
 
-        let roundHistoryHtml = `
-            <div class="history-item">
-                <div class="history-header">⛳ ${r + 1}차전 계급 정산 결과</div>
-                <div class="history-grid">
-        `;
-
         sortedGolfers.forEach((golferName, index) => {
             const rankInfo = RANK_CONFIG[index];
             const profit = rankPenaltyAt(r, index);
@@ -507,25 +492,9 @@ function processAllRoundSettlements() {
             // 계급이 매겨진 마지막 차수. 결과 발표 연출(ui.js)이 이 차수를 보여 준다.
             // 타수가 덜 채워진 차수는 건너뛰므로 totalRounds - 1과 다를 수 있다.
             lastRankedRound = r;
-
-            const ni = roundNetInfo[r] && roundNetInfo[r][golferName];
-            const netTag = ni ? `<small class="hm-net">목표 ${ni.target} · ${ni.net > 0 ? '+' : ''}${ni.net}</small>` : '';
-            const priceDisplay = profit === 0 ? "0원" : (profit > 0 ? "+" : "") + (profit / 10000) + "만";
-
-            roundHistoryHtml += `
-                <div class="history-member">
-                    <span style="font-weight:700; color:var(--text-main);">${golferName}${netTag}</span>
-                    <div style="display:flex; align-items:center; gap:2px;">
-                        <span class="rank-badge ${rankInfo.class}">${rankInfo.icon} ${rankInfo.name}</span>
-                        <span style="font-weight:800; color:${profit > 0 ? '#16a34a' : (profit < 0 ? '#dc2626' : '#64748b')};">${priceDisplay}</span>
-                    </div>
-                </div>
-            `;
         });
 
         rankedRoundsList.push(r);
-        roundHistoryHtml += `</div>${raveHistoryHtml(r)}</div>`;
-        if (historyList) historyList.innerHTML += roundHistoryHtml;
     }
 
     // 불사조 — 하극상 승수가 가장 많은 사람(같으면 함께). 예전엔 승수가 1로 박혀 있어 늘 첫 사람에게 갔다.
