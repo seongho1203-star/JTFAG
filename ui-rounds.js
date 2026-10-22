@@ -216,6 +216,23 @@ function goalNetAt(name, r) {
     return { r, score, target: avg[name], net: score - avg[name] };
 }
 
+// 카드 아래 한 줄 요약 — 최근 경기의 목표 대비(낮을수록 좋음)가 어느 쪽으로 흐르는지 말로 적는다(사용자 요청).
+// 전부 달성 > 연속 개선 > 연속 상승 > 직전 경기 대비 순이다. 기록이 둘 미만이면 흐름이 없다.
+function goalFlowText(last) {
+    if (!last || last.length < 2) return null;
+    const nets = last.map(g => g.net);
+    if (nets.every(n => n <= 0)) return { tone: 'up', text: `최근 ${nets.length}경기 모두 목표 달성` };
+    let up = 0, down = 0;
+    for (let i = nets.length - 1; i > 0 && nets[i] < nets[i - 1]; i--) up++;
+    for (let i = nets.length - 1; i > 0 && nets[i] > nets[i - 1]; i--) down++;
+    if (up >= 2) return { tone: 'up', text: `최근 ${up + 1}경기 연속 목표 대비 개선 중` };
+    if (down >= 2) return { tone: 'down', text: `최근 ${down + 1}경기 연속 목표 대비 상승 중` };
+    const d = Math.round((nets[nets.length - 1] - nets[nets.length - 2]) * 10) / 10;
+    if (d < 0) return { tone: 'up', text: `직전 경기보다 ${Math.abs(d)}타 개선` };
+    if (d > 0) return { tone: 'down', text: `직전 경기보다 ${d}타 상승` };
+    return { tone: '', text: '직전 경기와 같은 타수' };
+}
+
 function renderHandicapMatchCard(rounds) {
     const matchGrid = document.getElementById('matchGrid'); if (!matchGrid) return;
     const avgScores = rounds.length ? handicapAverageAt(rounds[rounds.length - 1]) : null;
@@ -234,13 +251,23 @@ function renderHandicapMatchCard(rounds) {
         const hit = last.filter(g => g.net <= 0).length;
         const mean = last.length ? last.reduce((t, g) => t + g.net, 0) / last.length : null;
         const sign = n => (n > 0 ? '+' : '') + n;
-        const chips = last.length ? last.map(g => `<div class="goal-chip tap ${g.net <= 0 ? 'ok' : 'miss'}" role="button" onclick="openMyScorecard(${g.r}, '${me}')"><i>${g.r + 1}차</i><b>${sign(g.net)}</b></div>`).join('')
-            : `<div class="goal-none">비교할 기록이 아직 없습니다.</div>`;
+        // 최근 5경기 중 목표 대비가 가장 낮은 경기에 ★ — 전부 같으면 가릴 것이 없어 붙이지 않는다.
+        const nets = last.map(g => g.net);
+        const bestNet = nets.length >= 2 && Math.min(...nets) < Math.max(...nets) ? Math.min(...nets) : null;
+        const chips = last.length ? last.map(g => {
+            const star = bestNet !== null && g.net === bestNet;
+            return `<div class="goal-chip tap ${g.net <= 0 ? 'ok' : 'miss'}${star ? ' best' : ''}" role="button" onclick="openMyScorecard(${g.r}, '${me}')"${star ? ' title="최근 경기 중 목표 대비 가장 좋은 기록"' : ''}>`
+                + `<i>${g.r + 1}차${star ? '<em class="star">★</em>' : ''}</i><strong>${g.score}</strong><small>목표 ${g.target}</small><span class="pill">${sign(g.net)}</span></div>`;
+        }).join('') : `<div class="goal-none">비교할 기록이 아직 없습니다.</div>`;
+        const meanR = mean === null ? null : Math.round(mean * 10) / 10;
+        const meanCls = meanR === null || meanR === 0 ? '' : (meanR > 0 ? ' over' : ' under');
+        const flow = goalFlowText(last);
         const others = golfers.filter(g => g !== me).map(g => `${escapeHtml(g)} <b>${avgScores[g]}</b>`).join(' · ');
         html = `<div class="goal-top"><div class="goal-num"><b>${avgScores[me]}</b><span>다음 라운드<br>내 목표 타수</span></div>`
             + `<div class="goal-hit"><b>${last.length ? `${hit}/${last.length}` : '-'}</b><span>목표 달성<br>(목표 대비 0 이하)</span></div></div>`
-            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수${mean === null ? '' : ` · 평균 ${sign(Math.round(mean * 10) / 10)}`}</span><button type="button" class="goal-all" onclick="openMyScorecardList('${me}')">전체 스코어카드 ›</button></div>`
+            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수${meanR === null ? '' : ` · 평균 <b class="goal-mean${meanCls}">${sign(meanR)}</b>`}</span><button type="button" class="goal-all" onclick="openMyScorecardList('${me}')">전체 스코어카드 ›</button></div>`
             + `<div class="goal-recent">${chips}</div>`
+            + (flow ? `<div class="goal-flow ${flow.tone}">${flow.text}</div>` : '')
             + `<div class="goal-others"><span>멤버 목표 타수</span>${others}</div>`;
     }
     if (matchGrid._html !== html) { matchGrid.innerHTML = html; matchGrid._html = html; }

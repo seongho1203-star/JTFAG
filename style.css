@@ -2083,13 +2083,18 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .goal-num span, .goal-hit span { font-size: clamp(0.6rem, 2.5vw, 0.66rem); color: var(--text-sub); font-weight: 600; line-height: 1.35; white-space: nowrap; }
 .goal-cap { display: flex; justify-content: space-between; gap: 8px; padding: 0 4px 5px; font-size: clamp(0.62rem, 2.5vw, 0.68rem); font-weight: 700; color: var(--text-sub); }
 .goal-recent { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
-.goal-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 5px; border-radius: 10px; min-width: 0; }
-.goal-chip i { font-style: normal; font-size: clamp(0.56rem, 2.3vw, 0.62rem); font-weight: 600; color: var(--text-sub); }
-.goal-chip b { font-size: clamp(0.92rem, 4vw, 1.05rem); font-weight: 800; font-variant-numeric: tabular-nums; }
-.goal-chip.ok { background: rgba(22, 163, 74, 0.1); }
-.goal-chip.ok b { color: var(--accent-green); }
-.goal-chip.miss { background: rgba(194, 69, 59, 0.09); }
-.goal-chip.miss b { color: #c2453b; }
+.goal-chip { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 0 5px; border-radius: 12px; min-width: 0; background: #fff; border: 1px solid var(--line); }
+.goal-chip i { font-style: normal; font-size: clamp(0.56rem, 2.3vw, 0.62rem); font-weight: 700; color: var(--text-sub); }
+.goal-chip .star { font-style: normal; color: #c98d00; margin-left: 1px; }
+.goal-chip strong { font-size: clamp(1rem, 4.6vw, 1.2rem); font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--text-main); }
+.goal-chip small { font-size: clamp(0.5rem, 2.1vw, 0.58rem); color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.goal-chip .pill { margin-top: 3px; font-size: clamp(0.62rem, 2.7vw, 0.7rem); font-weight: 800; padding: 1px 7px; border-radius: 99px; font-variant-numeric: tabular-nums; }
+.goal-chip.ok .pill { background: rgba(22, 163, 74, 0.12); color: var(--accent-green); }
+.goal-chip.miss .pill { background: rgba(194, 69, 59, 0.1); color: #c2453b; }
+.goal-chip.best { border-color: var(--accent-green); box-shadow: 0 0 0 1px var(--accent-green) inset; }
+.goal-mean.over { color: #c2453b; } .goal-mean.under { color: var(--accent-green); }
+.goal-flow { margin-top: 8px; padding: 0 4px; font-size: clamp(0.64rem, 2.6vw, 0.72rem); font-weight: 700; color: var(--text-sub); }
+.goal-flow.up { color: var(--accent-green); } .goal-flow.down { color: #c2453b; }
 .goal-none { grid-column: 1 / -1; text-align: center; color: var(--text-sub); font-size: 0.74rem; padding: 8px 0; }
 .goal-others { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 9px; padding: 8px 4px 0; border-top: 1px solid var(--line); font-size: clamp(0.66rem, 2.7vw, 0.74rem); font-weight: 600; color: var(--text-main); }
 .goal-others span { color: var(--text-sub); font-size: clamp(0.58rem, 2.4vw, 0.64rem); }
