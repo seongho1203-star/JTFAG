@@ -462,7 +462,7 @@ function openMyScorecard(r, who, anyone) {
             <div class="sc-sub">${escapeHtml([club, sub].filter(Boolean).join(' · ')) || '&nbsp;'}</div></div>
         <div class="sc-total"><b>${total}</b>타 <span class="${diff > 0 ? 'over' : diff < 0 ? 'under' : ''}">${diff === 0 ? '이븐파' : `${diff > 0 ? '+' : ''}${diff}`}</span></div>
         ${scHalf(par, rel, 0)}${scHalf(par, rel, 9)}
-        <div class="sc-legend"><span><i class="sc-s birdie">·</i>버디 ${count(v => v === -1)}</span><span><i class="sc-s eagle">·</i>이글 이상 ${count(v => v <= -2)}</span><span>파 ${count(v => v === 0)}</span><span><i class="sc-s bogey">·</i>보기 ${count(v => v === 1)}</span><span><i class="sc-s double">·</i>더블 이상 ${count(v => v >= 2)}</span></div>
+        <div class="sc-legend"><span><i class="sc-s birdie">·</i>버디 ${count(v => v === -1)}</span><span><i class="sc-s eagle">·</i>이글 이상 ${count(v => v <= -2)}</span><span><i class="sc-s par">·</i>파 ${count(v => v === 0)}</span><span><i class="sc-s bogey">·</i>보기 ${count(v => v === 1)}</span><span><i class="sc-s double">·</i>더블 이상 ${count(v => v >= 2)}</span></div>
         <button type="button" class="bdg-close" onclick="closeMyScorecard()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeMyScorecard(); });
