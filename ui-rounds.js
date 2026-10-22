@@ -205,11 +205,19 @@ function roundCardHtml(r, me) {
         const ni = useNet && roundNetInfo[r] ? roundNetInfo[r][g] : null;
         let pill = '', small = '';
         if (order) {
-            // 오른쪽 알약 = 그 차수 개인별 버디·파 개수(홀 기록이 있는 차수만 · 이글은 있을 때만 덧붙인다).
-            // 계급 벌금은 위 `차수별 정산` 표에 있어 여기서는 안 적는다(사용자 요청 — 금액 자리에 버디·파).
-            const st = typeof badgeStat === 'function' ? badgeStat(g, r) : null;
-            if (st) pill = `<span class="rc-pill">${st.eagle ? `이글 ${st.eagle} · ` : ''}버디 ${st.birdie} · 파 ${st.par}</span>`;
-            if (useNet && ni) small = `<small>목표 ${ni.target} · <em class="${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</em></small>`;
+            // 오른쪽 알약 = 그 차수 개인별 홀인원·이글·버디·파 개수(홀 기록이 있는 차수만 · 홀인원·이글은 있을 때만).
+            // 색은 글자에만 준다 — 홀인원 황금 · 이글 빨강 · 버디 주황 · 파 파랑(사용자 요청). 계급 벌금은 위 `차수별 정산` 표에 있다.
+            const h = typeof badgeHoles === 'function' ? badgeHoles(g, r) : null;
+            if (h) {
+                let hio = 0, eg = 0, bd = 0, pr = 0;
+                h.rel.forEach((x, i) => { if (x === 1 - h.par[i]) hio++; else if (x <= -2) eg++; else if (x === -1) bd++; else if (x === 0) pr++; });
+                const seg = (cls, name, n) => `<b class="${cls}">${name} ${n}</b>`;
+                const parts = [];
+                if (hio) parts.push(seg('hio', '홀인원', hio));
+                if (eg) parts.push(seg('eg', '이글', eg));
+                parts.push(seg('bd', '버디', bd), seg('pr', '파', pr));
+                pill = `<span class="rc-pill rc-bp${parts.length > 2 ? ' tight' : ''}">${parts.join(' · ')}</span>`;
+            }
         }
         const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no" style="background:${RANK_CIRCLE[x.rank]}" title="${RANK_CONFIG[x.rank].name}">${x.rank + 1}</span>`;
         const val = (appData.scores && appData.scores[g] && appData.scores[g][r] !== undefined) ? appData.scores[g][r] : '';
