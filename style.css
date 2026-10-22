@@ -2137,8 +2137,7 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .rc-pill.ok { background: rgba(22, 163, 74, 0.12); color: var(--accent-green); }
 .rc-pill.miss { background: rgba(194, 69, 59, 0.1); color: #c2453b; }
 .rc-bp b { font-weight: 800; }
-.rc-bp.tight { font-size: 0.6rem; padding: 1px 5px; letter-spacing: -0.02em; }
-@media (max-width: 380px) { .rc-row:has(.rc-bp.tight) .rc-sc small { display: none; } }
+.rc-bp.tight { font-size: 0.58rem; padding: 1px 4px; letter-spacing: -0.03em; }
 .rc-bp b.hio { color: #b8860b; }
 .rc-bp b.eg { color: #d23b3b; }
 .rc-bp b.bd { color: #e07b12; }

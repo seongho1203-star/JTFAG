@@ -216,8 +216,10 @@ function roundCardHtml(r, me) {
                 if (hio) parts.push(seg('hio', '홀인원', hio));
                 if (eg) parts.push(seg('eg', '이글', eg));
                 parts.push(seg('bd', '버디', bd), seg('pr', '파', pr));
-                pill = `<span class="rc-pill rc-bp${parts.length > 2 ? ' tight' : ''}">${parts.join(' · ')}</span>`;
+                const tight = parts.length > 2;
+                pill = `<span class="rc-pill rc-bp${tight ? ' tight' : ''}">${parts.join(tight ? '·' : ' · ')}</span>`;
             }
+            if (useNet && ni) small = `<small><em class="${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</em></small>`;
         }
         const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no" style="background:${RANK_CIRCLE[x.rank]}" title="${RANK_CONFIG[x.rank].name}">${x.rank + 1}</span>`;
         const val = (appData.scores && appData.scores[g] && appData.scores[g][r] !== undefined) ? appData.scores[g][r] : '';
