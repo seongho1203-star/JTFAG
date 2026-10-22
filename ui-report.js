@@ -350,75 +350,130 @@ function switchReportTab(tab) {
     if (body) body.scrollTop = 0;
 }
 
-// 개인 리포트 '분석' 탭. 홀 기록이 있는 차수만 ①②에 쓰이고, ③은 입력된 스코어 전체를 쓴다.
-function buildAnalysisHtml(name) {
-    const a = (typeof getHoleAnalysis === 'function') ? getHoleAnalysis(name) : null;
-    let html = "";
+// 개인 리포트 '분석' 탭(사용자가 시안을 고른 모양 — 아티팩트 `분석 탭 시안`).
+// ① 최근 5경기 평균 큰 숫자 + 꺾은선(목표 타수 점선) ② 베스트 스코어 카드(라이프/최근 5경기) + `스코어카드 보기` ③ 파 종류별 강약.
+// **전반/후반 카드는 사용자 요청으로 뺐다 — 되살리지 말 것.** 홀 기록이 있는 차수만 ②의 개수·③에 쓰이고, 꺾은선은 입력된 스코어 전체를 쓴다.
+let analysisBestScope = 'life';
 
+function analysisScores(name) {
+    const sc = (appData.scores && appData.scores[name]) ? appData.scores[name] : [];
+    return sc.map((s, i) => ({ r: i, v: parseFloat(s) })).filter(x => Number.isFinite(x.v) && x.v > 0);
+}
+
+// 최근 경기 꺾은선. 점마다 타수를 적고 마지막 점에 둥근 강조를 둔다. 목표 타수는 점선이다.
+function analysisChartSvg(games, target) {
+    const W = 340, X0 = 30, X1 = 310, YT = 24, YB = 118;
+    const vals = games.map(g => g.v).concat(target ? [target] : []);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    if (hi - lo < 6) { const mid = (hi + lo) / 2; lo = mid - 3; hi = mid + 3; }
+    const y = v => YB - (v - lo) / (hi - lo) * (YB - YT);
+    const n = games.length;
+    const xs = games.map((g, i) => n === 1 ? (X0 + X1) / 2 : X0 + i * (X1 - X0) / (n - 1));
+    const pts = games.map((g, i) => `${xs[i].toFixed(1)},${y(g.v).toFixed(1)}`).join(' ');
+    const last = n - 1;
+    let svg = `<svg class="an-chart" viewBox="0 0 ${W} 150" role="img" aria-label="최근 ${n}경기 타수 꺾은선 그래프">`;
+    [YT + 8, (YT + YB) / 2, YB].forEach(gy => { svg += `<line x1="16" x2="324" y1="${gy}" y2="${gy}" stroke="#e5e9f0" stroke-width="1"/>`; });
+    if (target) svg += `<line x1="16" x2="324" y1="${y(target).toFixed(1)}" y2="${y(target).toFixed(1)}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 4"/>`;
+    if (n > 1) svg += `<polyline points="${pts}" fill="none" stroke="#2b5394" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    games.forEach((g, i) => {
+        const cy = y(g.v);
+        if (i === last) svg += `<circle cx="${xs[i].toFixed(1)}" cy="${cy.toFixed(1)}" r="11" fill="#2b5394" opacity=".15"/><circle cx="${xs[i].toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="#2b5394" stroke="#fff" stroke-width="2"/>`;
+        else svg += `<circle cx="${xs[i].toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="#fff" stroke="#2b5394" stroke-width="2"/>`;
+        // 값 글자는 점 위에 둔다. 위쪽이 모자라면(맨 위 점) 아래에 둔다.
+        const ty = cy - 11 < 12 ? cy + 20 : cy - 11;
+        svg += `<text class="an-val${i === last ? ' sel' : ''}" x="${xs[i].toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle">${g.v}</text>`;
+        svg += `<text class="an-ax" x="${xs[i].toFixed(1)}" y="144" text-anchor="middle">${g.r + 1}차</text>`;
+    });
+    return svg + '</svg>';
+}
+
+function analysisDateText(r) {
+    const d = (appData.roundDates || {})[r + 1] || (typeof ROUND_HOLES !== 'undefined' && (ROUND_HOLES[String(r + 1)] || {}).date) || '';
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    if (!m) return '';
+    const wd = ['일', '월', '화', '수', '목', '금', '토'][new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()];
+    return `${m[1]}.${m[2]}.${m[3]} (${wd})`;
+}
+
+function analysisBestCard(name, all, recent) {
+    const pool = analysisBestScope === 'recent' ? recent : all;
+    // 같은 타수면 가장 최근 경기를 보여 준다.
+    const best = pool.reduce((m, g) => (g.v <= m.v ? g : m), pool[0]);
+    const r = best.r;
+    const holes = (typeof badgeHoles === 'function') ? badgeHoles(name, r) : null;
+    let bd = 0, pr = 0;
+    if (holes) holes.rel.forEach(x => { if (x <= -1) bd++; else if (x === 0) pr++; });
+    const course = (appData.courses && appData.courses[r]) || '';
+    const sub = typeof subCourseOf === 'function' ? subCourseOf(r) : '';
+    const place = (course ? escapeHtml(course) : '골프장 미정') + (sub ? ` <i>${escapeHtml(sub)}</i>` : '');
+    const dateTxt = analysisDateText(r);
+    const photo = ((appData.roundPhotos && appData.roundPhotos[r]) || []).find(p => typeof p === 'string' && /^https?:/.test(p));
+    const thumbSrc = photo ? (typeof photoThumbUrl === 'function' ? photoThumbUrl(photo) : photo) : '';
+    const thumb = `<div class="an-thumb">${thumbSrc ? `<img src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>`;
+    const tiles = holes ? `<div class="an-tiles">
+        <div class="an-tile"><span class="an-ic">${AN_ICON.bird}</span><div><div class="an-k">버디 이상</div><div class="an-v">${bd}<small> 개</small></div></div></div>
+        <div class="an-tile"><span class="an-ic">${AN_ICON.flag}</span><div><div class="an-k">파</div><div class="an-v">${pr}<small> 개</small></div></div></div></div>` : '';
+    const cta = holes ? `<button type="button" class="an-cta" onclick="openMyScorecard(${r}, '${escapeHtml(name)}', true)">스코어카드 보기</button>` : '';
+    const opt = (v, t) => `<option value="${v}"${analysisBestScope === v ? ' selected' : ''}>${t}</option>`;
+    return `<div class="an-card">
+        <div class="an-head"><h3>베스트 스코어</h3>
+            <select class="an-pill" aria-label="베스트 기준" onchange="setAnalysisBestScope(this.value, '${escapeHtml(name)}')">${opt('life', '라이프 베스트')}${opt('recent', '최근 5경기 베스트')}</select></div>
+        <div class="an-best"><div class="an-best-l"><div class="an-sc">${best.v}<small>타</small></div>
+            <div class="an-meta"><b>${place}</b><br>${r + 1}차${dateTxt ? ' · ' + dateTxt : ''}</div></div>${thumb}</div>
+        ${tiles}${cta}</div>`;
+}
+
+const AN_ICON = {
+    bird: '<svg viewBox="0 0 24 24" fill="none" stroke="#2b5394" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" fill="none" stroke="#2b5394" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M12 4l7 3-7 3"/></svg>'
+};
+
+function setAnalysisBestScope(scope, name) {
+    analysisBestScope = scope === 'recent' ? 'recent' : 'life';
+    const pane = document.getElementById('reportPaneAnalysis');
+    if (pane) pane.innerHTML = buildAnalysisHtml(name);
+}
+
+function buildAnalysisHtml(name) {
+    const all = analysisScores(name);
+    if (!all.length) {
+        return `<div class="an-card"><div class="analysis-empty">입력된 스코어가 없습니다.<br>스코어카드가 등록되면 표시됩니다.</div></div>`;
+    }
+    const recent = all.slice(-5);
+    const mean = Math.round(recent.reduce((t, g) => t + g.v, 0) / recent.length * 10) / 10;
+    // 목표 대비·목표선은 직전 5경기가 있는 경기(6차부터)에서만 나온다.
+    const nets = recent.map(g => goalNetAt(name, g.r)).filter(Boolean);
+    const lastNet = nets.length ? nets[nets.length - 1] : null;
+    const delta = nets.length ? Math.round(nets.reduce((t, g) => t + g.net, 0) / nets.length * 10) / 10 : null;
+    const pill = delta === null ? '' : `<span class="an-delta ${delta <= 0 ? 'ok' : 'miss'}">목표 대비 ${typeof signNum === 'function' ? signNum(delta) : delta}</span>`;
+    const hero = `<div class="an-hero">
+        <div class="an-lbl">최근 ${recent.length}경기 평균</div>
+        <div class="an-avg"><b>${mean}</b><span>타</span>${pill}</div>
+        ${analysisChartSvg(recent, lastNet ? lastNet.target : null)}
+        <div class="an-legend"><span><i></i>내 타수</span>${lastNet ? `<span><i class="t"></i>목표 ${lastNet.target}</span>` : ''}</div></div>`;
+
+    let html = hero + analysisBestCard(name, all, recent);
+
+    // 파 종류별 강약 — 값이 낮을수록 좋다. 가장 좋은 쪽 초록, 나쁜 쪽 빨강.
+    const a = (typeof getHoleAnalysis === 'function') ? getHoleAnalysis(name) : null;
     if (!a) {
-        html += `<div class="report-section"><div class="report-title">🕳️ 홀별 분석</div>
-            <div class="analysis-empty">홀 단위 기록이 아직 없습니다.<br>스코어카드가 등록되면 표시됩니다.</div></div>`;
+        html += `<div class="an-card"><h3>파 종류별 강약</h3><div class="analysis-empty">홀 단위 기록이 아직 없습니다.<br>스코어카드가 등록되면 표시됩니다.</div></div>`;
     } else {
-        // ① 파 종류별 강약 — 값이 낮을수록 좋다. 가장 좋은 쪽 초록, 나쁜 쪽 빨강.
         const pars = [{ k: '파3', v: a.par3 }, { k: '파4', v: a.par4 }, { k: '파5', v: a.par5 }].filter(x => x.v !== null);
         const best = Math.min(...pars.map(x => x.v)), worst = Math.max(...pars.map(x => x.v));
         // 세 값이 거의 같으면 억지로 강약을 가르지 않고 전부 '보통'으로 둔다.
         const meaningful = (worst - best) >= 0.3;
-        const parCells = pars.map(x => {
-            let label = '보통', color = '#475569';
+        const rows = pars.map(x => {
+            let label = '보통', color = '#64748b';
             if (meaningful && x.v === best) { label = '강함'; color = '#059669'; }
             else if (meaningful && x.v === worst) { label = '약함'; color = '#dc2626'; }
             const width = worst > 0 ? Math.max(8, (x.v / worst) * 100) : 8;
-            return `<div class="stat-box" style="padding:6px 4px;">
-                <div class="stat-label" style="font-size:0.62rem;">${x.k}</div>
-                <div class="analysis-val" style="color:${color};">${label}</div>
-                <div class="analysis-bar"><span style="width:${width}%; background:${color};"></span></div></div>`;
+            return `<div class="an-row"><span class="an-t">${x.k}</span><div class="an-track"><span style="width:${width}%; background:${color};"></span></div><span class="an-s" style="color:${color};">${label}</span></div>`;
         }).join('');
-        html += `<div class="report-section"><div class="report-title">🕳️ 파 종류별 강약</div>
-            <div class="stat-grid" style="grid-template-columns: repeat(${pars.length}, 1fr);">${parCells}</div>
-            <div class="analysis-note">${meaningful ? '막대가 짧을수록 성적이 좋은 홀 유형입니다.' : '파 유형별 편차가 거의 없습니다.'}</div></div>`;
-
-        // ② 전반 / 후반
-        const diff = a.back - a.front;
-        let comment = "전·후반 편차가 크지 않습니다.";
-        if (diff >= 5) comment = `후반 스코어가 평균 ${diff}타 높습니다.`;
-        else if (diff <= -5) comment = `후반 스코어가 평균 ${Math.abs(diff)}타 낮습니다.`;
-        // 두 칸이 같은 함수를 쓴다. 예전에는 전반만 등호(<=)가 붙어 있어,
-        // 전후반이 같은 값일 때 전반은 초록·후반은 빨강으로 갈렸다.
-        const halfColor = (mine, other) => mine === other ? '#475569' : (mine < other ? '#059669' : '#dc2626');
-        html += `<div class="report-section"><div class="report-title">🌗 전반 / 후반</div>
-            <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="stat-box"><div class="stat-label">전반 9홀</div><div class="analysis-val" style="color:${halfColor(a.front, a.back)};">+${a.front}</div></div>
-                <div class="stat-box"><div class="stat-label">후반 9홀</div><div class="analysis-val" style="color:${halfColor(a.back, a.front)};">+${a.back}</div></div>
-            </div>
-            <div class="analysis-note">${comment}</div></div>`;
+        html += `<div class="an-card"><h3>파 종류별 강약</h3><div class="an-bars">${rows}</div>
+            <div class="analysis-note">${meaningful ? '막대가 짧을수록 성적이 좋은 홀 유형입니다.' : '파 유형별 편차가 거의 없습니다.'}</div>
+            <div class="analysis-note">홀 기록이 있는 ${a.roundCount}개 차수 기준입니다.</div></div>`;
     }
-
-    // ③ 차수별 추이
-    const scores = (appData.scores && appData.scores[name]) ? appData.scores[name] : [];
-    const valid = scores.map((s, i) => ({ r: i + 1, v: parseFloat(s) })).filter(x => !isNaN(x.v) && x.v > 0);
-    let trend = `<div class="analysis-empty">입력된 스코어가 없습니다.</div>`;
-    if (valid.length > 0) {
-        const lo = Math.min(...valid.map(x => x.v)), hi = Math.max(...valid.map(x => x.v));
-        // 눈금 최소 폭을 둬서 1~2타 차이가 막대에서 과장돼 보이지 않게 한다.
-        const span = Math.max(hi - lo, 8);
-        // 세로 막대라 차수가 늘어도 높이는 그대로다. 막대만 얇아진다.
-        const step = valid.length > 12 ? Math.ceil(valid.length / 8) : 1;
-        const cols = valid.map((x, i) => {
-            const isBest = (x.v === lo && valid.length > 1);
-            return `<div class="trend-col" title="${x.r}차전 ${x.v}타"><span style="height:${30 + ((x.v - lo) / span) * 70}%; background:${isBest ? '#059669' : '#cbd5e1'};"></span></div>`;
-        }).join('');
-        const axis = valid.map((x, i) => {
-            const show = (step === 1) || (i % step === 0) || (i === valid.length - 1);
-            return `<span>${show ? x.r : ''}</span>`;
-        }).join('');
-        const last = valid[valid.length - 1];
-        trend = `<div class="trend-chart">${cols}</div><div class="trend-axis">${axis}</div>
-            <div class="analysis-note">최저 <b style="color:#059669;">${lo}타</b> · 최고 ${hi}타 · 최근 <b>${last.v}타</b>(${last.r}차)</div>`;
-    }
-    html += `<div class="report-section"><div class="report-title">📈 차수별 추이</div>${trend}
-        ${a ? `<div class="analysis-note">위 분석은 홀 기록이 있는 ${a.roundCount}개 차수 기준입니다.</div>` : ''}</div>`;
-
     return html;
 }
 
