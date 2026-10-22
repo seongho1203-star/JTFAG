@@ -534,6 +534,65 @@ function photoSavedMark() {
     }, PHOTO_SAVED_MS);
 }
 
+/* 사진 앱은 촬영 시각(EXIF)으로 줄을 세운다 — 한 달 전 사진을 저장하면 그 시절 사진들 사이에 끼어 저장된 줄 모른다(사용자 제보).
+   JPEG의 촬영·수정 시각(EXIF 0x0132·0x9003·0x9004, XMP 날짜)을 지금으로 같은 길이만큼 덮어쓴다. 바이트 위치가 안 바뀌므로 아이폰 HDR 정보(게인 맵) 같은 나머지는 그대로다.
+   바뀌었으면 true. */
+function photoStampNow(buf) {
+    const u8 = new Uint8Array(buf);
+    if (u8.length < 4 || u8[0] !== 0xFF || u8[1] !== 0xD8) return false;
+    const dv = new DataView(buf);
+    const d = new Date();
+    const p2 = n => String(n).padStart(2, '0');
+    const hms = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+    const exifText = `${d.getFullYear()}:${p2(d.getMonth() + 1)}:${p2(d.getDate())} ${hms}`;
+    const xmpText = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${hms}`;
+    const ascii = (a, n) => { let t = ''; for (let i = 0; i < n && a + i < u8.length; i++) t += String.fromCharCode(u8[a + i]); return t; };
+    const put = (at, text) => { for (let i = 0; i < text.length; i++) u8[at + i] = text.charCodeAt(i); };
+    let changed = false;
+
+    function stampExif(tiff, segEnd) {
+        const le = ascii(tiff, 2) === 'II';
+        if (!le && ascii(tiff, 2) !== 'MM') return;
+        if (dv.getUint16(tiff + 2, le) !== 42) return;
+        const walk = (ifd, depth) => {
+            if (ifd < tiff || ifd + 2 > segEnd) return;
+            const n = dv.getUint16(ifd, le);
+            for (let i = 0; i < n; i++) {
+                const e = ifd + 2 + i * 12;
+                if (e + 12 > segEnd) return;
+                const tag = dv.getUint16(e, le), type = dv.getUint16(e + 2, le), cnt = dv.getUint32(e + 4, le);
+                if (tag === 0x8769 && depth < 1) { walk(tiff + dv.getUint32(e + 8, le), depth + 1); continue; }
+                if ((tag === 0x0132 || tag === 0x9003 || tag === 0x9004) && type === 2 && cnt === 20) {
+                    const at = tiff + dv.getUint32(e + 8, le);
+                    if (at >= tiff && at + 20 <= segEnd) { put(at, exifText); changed = true; }
+                }
+            }
+        };
+        walk(tiff + dv.getUint32(tiff + 4, le), 0);
+    }
+
+    function stampXmp(start, end) {
+        const text = ascii(start, end - start);
+        const re = /\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d/g;
+        let m;
+        while ((m = re.exec(text))) { put(start + m.index, xmpText); changed = true; }
+    }
+
+    let pos = 2;
+    while (pos + 4 <= u8.length && u8[pos] === 0xFF) {
+        const marker = u8[pos + 1];
+        if (marker === 0xDA || marker === 0xD9) break;   // 여기부터는 사진 데이터
+        const end = pos + 2 + dv.getUint16(pos + 2);
+        if (end > u8.length) break;
+        if (marker === 0xE1) {
+            if (ascii(pos + 4, 6) === 'Exif\0\0') stampExif(pos + 10, end);
+            else if (ascii(pos + 4, 28) === 'http://ns.adobe.com/xap/1.0/') stampXmp(pos + 4, end);
+        }
+        pos = end;
+    }
+    return changed;
+}
+
 async function downloadCurrentPhoto() {
     if (!photoView.orig) return;
     // 아직 받는 중이면 저장을 막는다. 여기서 따로 내려받으면 시간이 걸려, 폰이 '누른 직후'로 인정하는 시간이 지나 공유창이 안 열린다.
@@ -544,7 +603,14 @@ async function downloadCurrentPhoto() {
     try {
         const blob = await currentPhotoBlob();
         if (!blob) return;
-        const file = new File([blob], photoFileName(blob), { type: blob.type || 'image/jpeg' });
+        let saveBlob = blob;
+        if (isTouchDevice() && /jpe?g/i.test(blob.type || '')) {   // 사진 앱 최근 항목에 오르도록 촬영 시각을 지금으로
+            try {
+                const buf = await blob.arrayBuffer();
+                if (photoStampNow(buf)) saveBlob = new Blob([buf], { type: blob.type });
+            } catch (e) { saveBlob = blob; }
+        }
+        const file = new File([saveBlob], photoFileName(blob), { type: blob.type || 'image/jpeg' });
 
         if (isTouchDevice() && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             photoView.saving = true;

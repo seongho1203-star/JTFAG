@@ -657,7 +657,7 @@ body:has(#imageViewModal.active) #customToast { bottom: calc(120px + env(safe-ar
 .photo-dl.done { background: rgba(52, 199, 120, 0.55); border-color: rgba(52, 199, 120, 0.9); }   /* 원본을 다 받기 전에는 저장을 못 한다 */
 .photo-stage img { transition: opacity 0.25s ease; }
 #fullImageView:not([src]), #fullImageView[src=""] { visibility: hidden; }   /* 썸네일이 없는 사진은 원본이 올 때까지 깨진 그림 표시 대신 비워 둔다 */
-.photo-stage img { dynamic-range-limit: standard; -webkit-dynamic-range-limit: standard; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; transform-origin: center center; will-change: transform; }
+.photo-stage img { dynamic-range-limit: standard; -webkit-dynamic-range-limit: standard; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; transform-origin: center center; }   /* will-change: transform은 두지 않는다 — 사파리가 1배 크기로 한 번 그려 두고 늘려서 확대하면 원본인데도 뭉개져 보인다 */
 /* 아래 도구줄. 다운로드 · 공유 · 닫기. 반투명한 둥근 단추 — 사진 위에 떠도 읽힌다. */
 .photo-tools { flex-shrink: 0; display: flex; justify-content: center; gap: 22px; padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
 .photo-tool { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.16); color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 0; }
