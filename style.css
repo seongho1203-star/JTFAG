@@ -2087,7 +2087,7 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .sc-table .sc-lab { width: 34px; text-align: left; color: var(--text-sub); font-size: 0.66rem; }
 .sc-table .sc-tot { width: 40px; background: #f5f6f8; font-weight: 800; }
 .sc-s { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; font-weight: 800; }
-.sc-s.birdie { border-radius: 50%; background: #dcfce7; color: #15803d; }
+.sc-s.birdie { border-radius: 50%; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #3fae6a; }
 .sc-s.eagle { border-radius: 50%; background: #fde68a; color: #92400e; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #d9a21b; }
 .sc-s.bogey { border-radius: 4px; background: #f1f5f9; color: #475569; }
 .sc-s.double { border-radius: 4px; background: #fee2e2; color: #b91c1c; }
