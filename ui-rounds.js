@@ -218,7 +218,8 @@ function roundCardHtml(r, me) {
         return `<div class="rc-row${g === me ? ' me' : ''}${x.rank === 0 ? ' win' : ''}">${no}<span class="rc-nm">${g}</span><span class="rc-sc">${score}${small}</span>${pill}</div>`;
     }).join('');
     if (!order && !hasAny && !editable) body += '<div class="rc-wait">스코어 입력 대기</div>';
-    return `<div class="rc-card"><div class="rc-head"><b>${r + 1}차</b><span class="rc-where">${where}</span>${tag}<button type="button" class="rc-photo" onclick="openRoundPhotoModal(${r})">📸 ${photos}장</button></div>${body}</div>`;
+    const sel = r === selectedMoneyRoundIdx ? ' sel' : '';
+    return `<div class="rc-card${sel}" onclick="rcCardTap(event, ${r})"><div class="rc-head"><b>${r + 1}차</b><span class="rc-where">${where}</span>${tag}<button type="button" class="rc-photo" onclick="openRoundPhotoModal(${r})">📸 ${photos}장</button></div>${body}</div>`;
 }
 
 function renderRoundCards() {
@@ -237,6 +238,18 @@ function renderRoundCards() {
     if (hidden > 0) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 ${hidden}개 보기 ▾</button>`;
     else if (roundCardsOpen && all.length > ROUND_CARDS_MIN) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 접기 ▴</button>`;
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
+}
+
+// 카드를 누르면 맨 위 `차수별 정산` 표가 그 차수로 바뀌고 화면이 그쪽으로 올라간다(사용자 요청).
+// 사진 단추·타수 입력 칸을 누른 것은 제 일이 있으므로 건드리지 않는다.
+function rcCardTap(e, r) {
+    if (e.target.closest('button, input')) return;
+    changeMoneyRound(r);
+    renderRoundCards();
+    const sel = document.getElementById('moneyRoundSelect');
+    const card = sel && sel.closest('.money-card');
+    const top = document.getElementById('topBar');
+    if (card) window.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top + window.scrollY - (top ? top.offsetHeight : 0) - 8), behavior: 'smooth' });
 }
 
 function toggleRoundCards() { roundCardsOpen = !roundCardsOpen; renderRoundCards(); }

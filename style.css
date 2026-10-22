@@ -2113,6 +2113,8 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 /* ─── 차수별 결과 카드 (정산 화면 · 예전 가로 타수 표를 대체) ─── */
 .round-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .rc-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.rc-card { cursor: pointer; }
+.rc-card.sel { border-color: var(--primary-gold); box-shadow: 0 0 0 1px var(--primary-gold) inset; }
 .rc-head { display: flex; align-items: center; gap: 7px; padding: 8px 10px; background: var(--gold-light); }
 .rc-head b { font-size: 0.9rem; font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
 .rc-where { flex: 1; min-width: 0; font-size: clamp(0.64rem, 2.6vw, 0.72rem); color: var(--text-sub); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
