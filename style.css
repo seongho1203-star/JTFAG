@@ -2090,7 +2090,7 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .sc-s.birdie { border-radius: 50%; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #3fae6a; }
 .sc-s.eagle { border-radius: 50%; background: #fde68a; color: #92400e; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #d9a21b; }
 .sc-s.par { border-radius: 50%; background: #eaf2ff; color: #1d4ed8; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #5b8fe0; }
-.sc-s.bogey { border-radius: 4px; background: #f1f5f9; color: #475569; }
+.sc-s.bogey { border-radius: 4px; background: #f1f5f9; color: #475569; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #94a3b8; }
 .sc-s.double { border-radius: 4px; background: #fee2e2; color: #b91c1c; }
 .sc-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 0.66rem; color: var(--text-sub); font-weight: 700; }
 .sc-legend span { display: inline-flex; align-items: center; gap: 4px; }
