@@ -210,12 +210,15 @@ function roundCardHtml(r, me) {
             pill = `<span class="rc-pill ${pen < 0 ? 'miss' : 'even'}" title="${RANK_CONFIG[x.rank].name} 벌금">${pen === 0 ? '0원' : sign(pen / 10000) + '만원'}</span>`;
             if (useNet && ni) small = `<small>목표 ${ni.target} · <em class="${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</em></small>`;
         }
+        // 그 차수 버디·파 개수(홀 기록이 있는 차수만 · 이글은 버디에 안 섞고 있을 때만 덧붙인다).
+        const st = typeof badgeStat === 'function' ? badgeStat(g, r) : null;
+        const bp = st ? `<small>버디 ${st.birdie} · 파 ${st.par}${st.eagle ? ` · 이글 ${st.eagle}` : ''}</small>` : '';
         const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no" style="background:${RANK_CIRCLE[x.rank]}" title="${RANK_CONFIG[x.rank].name}">${x.rank + 1}</span>`;
         const val = (appData.scores && appData.scores[g] && appData.scores[g][r] !== undefined) ? appData.scores[g][r] : '';
         const score = editable
             ? `<input type="text" id="score_input_${g}_${r}" class="rc-input" inputmode="numeric" pattern="[0-9]*" value="${escapeHtml(String(val))}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${g}', ${r}, this.value)">`
             : `<strong>${sc === null ? '-' : sc}</strong>`;
-        return `<div class="rc-row${g === me ? ' me' : ''}${x.rank === 0 ? ' win' : ''}">${no}<span class="rc-nm">${g}</span><span class="rc-sc">${score}${small}</span>${pill}</div>`;
+        return `<div class="rc-row${g === me ? ' me' : ''}${x.rank === 0 ? ' win' : ''}">${no}<span class="rc-nm"><b>${g}</b>${bp}</span><span class="rc-sc">${score}${small}</span>${pill}</div>`;
     }).join('');
     if (!order && !hasAny && !editable) body += '<div class="rc-wait">스코어 입력 대기</div>';
     const sel = r === selectedMoneyRoundIdx ? ' sel' : '';

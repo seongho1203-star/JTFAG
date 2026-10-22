@@ -2121,12 +2121,14 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .rc-where i { font-style: normal; color: var(--primary-gold); font-weight: 700; }
 .rc-tag { font-style: normal; font-size: 0.56rem; font-weight: 800; color: var(--text-sub); border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 1px 6px; white-space: nowrap; }
 .rc-photo { border: 1px solid var(--line); background: #fff; color: var(--primary-gold); border-radius: 99px; padding: 3px 9px; font: inherit; font-size: 0.62rem; font-weight: 800; white-space: nowrap; min-height: 26px; cursor: pointer; }
-.rc-row { display: grid; grid-template-columns: 20px 4.6em 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; border-top: 1px solid var(--line); font-size: 0.82rem; }
+.rc-row { display: grid; grid-template-columns: 20px 7.2em 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; border-top: 1px solid var(--line); font-size: 0.82rem; }
 .rc-row.me { background: rgba(43, 83, 148, 0.06); }
 .rc-no { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 0.62rem; font-weight: 900; }
 .rc-no.off { background: var(--line); }
-.rc-nm { font-weight: 800; white-space: nowrap; }
-.rc-row.win .rc-nm::after { content: ' ★'; color: #c98d00; font-weight: 700; }
+.rc-nm { display: flex; flex-direction: column; font-weight: 800; white-space: nowrap; line-height: 1.25; }
+.rc-nm b { font-weight: 800; }
+.rc-nm small { font-size: 0.6rem; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.rc-row.win .rc-nm b::after { content: ' ★'; color: #c98d00; font-weight: 700; }
 .rc-sc { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .rc-sc strong { font-size: 1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
 .rc-sc small { font-size: 0.62rem; color: var(--text-sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
