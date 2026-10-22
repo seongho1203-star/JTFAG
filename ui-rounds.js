@@ -239,7 +239,7 @@ function renderHandicapMatchCard(rounds) {
         const others = golfers.filter(g => g !== me).map(g => `${escapeHtml(g)} <b>${avgScores[g]}</b>`).join(' · ');
         html = `<div class="goal-top"><div class="goal-num"><b>${avgScores[me]}</b><span>다음 라운드<br>내 목표 타수</span></div>`
             + `<div class="goal-hit"><b>${last.length ? `${hit}/${last.length}` : '-'}</b><span>목표 달성<br>(목표 대비 0 이하)</span></div></div>`
-            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수${mean === null ? '' : ` · 평균 ${sign(Math.round(mean * 10) / 10)}`}</span><button type="button" class="goal-all" onclick="openMyScorecardList('${me}')">전체 ›</button></div>`
+            + `<div class="goal-cap"><span>최근 ${last.length || 5}경기 목표 대비 타수${mean === null ? '' : ` · 평균 ${sign(Math.round(mean * 10) / 10)}`}</span><button type="button" class="goal-all" onclick="openMyScorecardList('${me}')">전체 스코어카드 ›</button></div>`
             + `<div class="goal-recent">${chips}</div>`
             + `<div class="goal-others"><span>멤버 목표 타수</span>${others}</div>`;
     }
