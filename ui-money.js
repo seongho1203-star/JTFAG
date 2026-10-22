@@ -58,7 +58,7 @@ function renderStorageUsage() {
         <div class="storage-bar"><span style="width:${Math.max(percent, 1)}%; background:${statusColor};"></span></div>`;
 }
 
-function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); }
+function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); if (typeof renderRoundCards === 'function') renderRoundCards(); }
 
 // 차수 목록을 드롭다운에 채운다. 차수가 늘어도 화면이 커지지 않는다 —
 // 예전엔 칩을 격자로 늘어놓는 창이었는데, 스무 개가 되면 감당이 안 된다.

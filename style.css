@@ -2145,7 +2145,6 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .rc-bp b.pr { color: #2f6fd1; }
 .rc-input { width: 64px; height: 28px; border: 1px solid var(--accent-line); border-radius: 8px; padding: 0 6px; font: inherit; font-size: 0.9rem; font-weight: 800; text-align: center; background: #fff; }
 .rc-wait { padding: 8px 10px; border-top: 1px solid var(--line); text-align: center; font-size: 0.7rem; color: var(--text-sub); }
-.rc-more { align-self: center; border: 1px solid var(--line); background: #fff; color: var(--primary-gold); border-radius: 99px; padding: 6px 16px; font: inherit; font-size: 0.72rem; font-weight: 800; min-height: 32px; cursor: pointer; }
 
 /* ── 개인 리포트 분석 탭 (사용자가 시안을 고름 — 평균 큰 숫자 · 꺾은선 · 베스트 카드). 전반/후반 카드는 뺐다.
    글자 크기·여백은 `기록` 탭(.report-section · .stat-val 0.9rem · .report-title 0.8rem)에 맞춘 값이다 — 사용자 요청: 기록 탭보다 너무 컸다. ── */

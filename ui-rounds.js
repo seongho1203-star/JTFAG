@@ -161,8 +161,6 @@ function toggleScoreEdit() {
 // 홈의 5경기 기준 목표 대비를 1~10차에 붙이지 않는다 — 그때 정산은 2경기 핸디 기준이라 확정된 순위와 어긋나 보인다.
 // 타수·계급은 calc.js가 채운 값(golferRankHistory · roundNetInfo)을 읽기만 한다 — **calculateAndRender()가 계산한 뒤에 그린다.**
 // 타수 칸은 홀 기록이 있으면 잠긴 숫자이고, 홀 기록이 없는 차수만 관리자 `✏️ 타수 직접 수정`으로 칸이 열린다(updateScore).
-let roundCardsOpen = false;                // `이전 차수 보기` — 이번 실행 동안만 기억한다
-const ROUND_CARDS_MIN = 1;                 // 11차 이후 카드가 이보다 적으면 최근 차수로 채운다
 const RANK_CIRCLE = ['#c98d00', '#3b82c4', '#7c5cc4', '#8a8f96'];   // 독수리 · 매 · 학 · 참새
 
 function renderTable() { renderRoundCards(); }
@@ -230,7 +228,7 @@ function roundCardHtml(r, me) {
     }).join('');
     if (!order && !hasAny && !editable) body += '<div class="rc-wait">스코어 입력 대기</div>';
     const sel = r === selectedMoneyRoundIdx ? ' sel' : '';
-    return `<div class="rc-card${sel}" onclick="rcCardTap(event, ${r})"><div class="rc-head"><b>${r + 1}차</b><span class="rc-where">${where}</span>${tag}<button type="button" class="rc-photo" onclick="openRoundPhotoModal(${r})">📸 ${photos}장</button></div>${body}</div>`;
+    return `<div class="rc-card${sel}"><div class="rc-head"><b>${r + 1}차</b><span class="rc-where">${where}</span>${tag}<button type="button" class="rc-photo" onclick="openRoundPhotoModal(${r})">📸 ${photos}장</button></div>${body}</div>`;
 }
 
 function renderRoundCards() {
@@ -241,29 +239,11 @@ function renderRoundCards() {
     const saved = localStorage.getItem('jtfag_my_name');
     const me = golfers.includes(saved) ? saved : null;
     const total = appData.totalRounds;
-    const all = []; for (let r = total - 1; r >= 0; r--) all.push(r);
-    const newer = all.filter(r => r + 1 >= HANDICAP_RULE_FROM_ROUND);
-    const shown = roundCardsOpen ? all : all.slice(0, Math.max(newer.length, Math.min(ROUND_CARDS_MIN, total)));
-    const hidden = all.length - shown.length;
-    let html = shown.map(r => roundCardHtml(r, me)).join('');
-    if (hidden > 0) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 ${hidden}개 보기 ▾</button>`;
-    else if (roundCardsOpen && all.length > ROUND_CARDS_MIN) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 접기 ▴</button>`;
+    // 위 `차수별 정산`에서 고른 차수의 카드 한 장만 보인다(사용자 요청 — `7차를 선택하면 하단에 7차`). 이전 차수 접기·펴기 단추는 없앴다.
+    const r = (selectedMoneyRoundIdx >= 0 && selectedMoneyRoundIdx < total) ? selectedMoneyRoundIdx : total - 1;
+    const html = total > 0 ? roundCardHtml(r, me) : '';
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
-
-// 카드를 누르면 맨 위 `차수별 정산` 표가 그 차수로 바뀌고 화면이 그쪽으로 올라간다(사용자 요청).
-// 사진 단추·타수 입력 칸을 누른 것은 제 일이 있으므로 건드리지 않는다.
-function rcCardTap(e, r) {
-    if (e.target.closest('button, input')) return;
-    changeMoneyRound(r);
-    renderRoundCards();
-    const sel = document.getElementById('moneyRoundSelect');
-    const card = sel && sel.closest('.money-card');
-    const top = document.getElementById('topBar');
-    if (card) window.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top + window.scrollY - (top ? top.offsetHeight : 0) - 8), behavior: 'smooth' });
-}
-
-function toggleRoundCards() { roundCardsOpen = !roundCardsOpen; renderRoundCards(); }
 
 // 홈 · 통합 정산 요약 아래 — **내 목표 타수 카드**다(사용자 요청 — 11차부터 계급이 '내 목표와의 싸움'이라 상대에게 받는 타수는 의미가 없다).
 // 큰 숫자는 다음 라운드 내 목표 타수(최근 5경기 평균), 아래에 최근 5경기 목표 대비 타수와 목표 달성 횟수, 한 줄로 멤버들의 목표 타수.
