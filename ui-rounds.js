@@ -205,11 +205,10 @@ function roundCardHtml(r, me) {
         const ni = useNet && roundNetInfo[r] ? roundNetInfo[r][g] : null;
         let pill = '', small = '';
         if (order) {
-            if (useNet && ni) { small = `<small>목표 ${ni.target}</small>`; pill = `<span class="rc-pill ${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</span>`; }
-            else if (!useNet) {
-                const rec = roundH2hRecord(r, g);
-                if (rec) pill = `<span class="rc-pill ${rec.w > rec.l ? 'ok' : (rec.w < rec.l ? 'miss' : 'even')}">${rec.w}승${rec.t ? ` ${rec.t}무` : ''} ${rec.l}패</span>`;
-            }
+            // 오른쪽 알약 = 그 차수 계급 벌금(승패는 매번 3-0·2-1·1-2·0-3으로 같아 뜻이 없다 — 사용자 요청).
+            const pen = rankPenaltyAt(r, x.rank);
+            pill = `<span class="rc-pill ${pen < 0 ? 'miss' : 'even'}" title="${RANK_CONFIG[x.rank].name} 벌금">${pen === 0 ? '0원' : sign(pen / 10000) + '만원'}</span>`;
+            if (useNet && ni) small = `<small>목표 ${ni.target} · <em class="${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</em></small>`;
         }
         const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no" style="background:${RANK_CIRCLE[x.rank]}" title="${RANK_CONFIG[x.rank].name}">${x.rank + 1}</span>`;
         const val = (appData.scores && appData.scores[g] && appData.scores[g][r] !== undefined) ? appData.scores[g][r] : '';

@@ -2129,6 +2129,9 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .rc-sc strong { font-size: 1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
 .rc-sc small { font-size: 0.62rem; color: var(--text-sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .rc-pill { font-size: 0.7rem; font-weight: 800; padding: 1px 8px; border-radius: 99px; white-space: nowrap; font-variant-numeric: tabular-nums; background: #f1f1ee; color: var(--text-sub); }
+.rc-sc small em { font-style: normal; font-weight: 800; }
+.rc-sc small em.ok { color: var(--accent-green); }
+.rc-sc small em.miss { color: #c2453b; }
 .rc-pill.ok { background: rgba(22, 163, 74, 0.12); color: var(--accent-green); }
 .rc-pill.miss { background: rgba(194, 69, 59, 0.1); color: #c2453b; }
 .rc-input { width: 64px; height: 28px; border: 1px solid var(--accent-line); border-radius: 8px; padding: 0 6px; font: inherit; font-size: 0.9rem; font-weight: 800; text-align: center; background: #fff; }
