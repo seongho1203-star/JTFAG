@@ -300,8 +300,9 @@ function badgeTierOf(s, level) {
 // (예전엔 독수리 단골의 단위가 `번`이라 `번 3개`처럼 읽혔다 — 사용자 제보)
 function badgeQty(def, n) { return `${def.unit} ${n}${def.count || '개'}`; }
 
-function badgeIcon(name, size, color, width) {
-    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BADGE_ICONS[name] || ''}"/></svg>`;
+// fill을 주면 선 그림 안쪽에 그 색을 12%로 깐다(메달 그림용 — 시안 A). 안 주면 예전처럼 속이 빈 선 그림이다.
+function badgeIcon(name, size, color, width, fill) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill || 'none'}"${fill ? ' fill-opacity="0.12"' : ''} stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BADGE_ICONS[name] || ''}"/></svg>`;
 }
 
 // ── 뱃지 화면 ─────────────────────────────────────────────
@@ -362,7 +363,7 @@ function badgeTileHtml(s, latest, name = badgeViewName) {
     const pct = prog ? Math.min(100, Math.round(s.value / target * 100)) : 0;
     return `<button type="button" class="bdg-tile${locked ? ' locked' : ''}" onclick="openBadgeDetail('${d.id}')" aria-label="${escapeHtml(d.name)} ${locked ? '미획득' : '획득'}">
         <span class="bdg-medal" style="--bc:${t.c};--bf:${t.f}">
-            ${badgeIcon(d.icon, 26, locked ? '#b4b8bd' : t.c)}
+            ${badgeIcon(d.icon, 26, locked ? '#b4b8bd' : t.c, 1.9, locked ? '' : t.c)}
             ${locked ? `<span class="bdg-lock">${badgeIcon('lock', 11, '#9aa0a8', 2.4)}</span>` : ''}
             ${isNew ? '<span class="bdg-new">NEW</span>' : ''}
         </span>
@@ -531,7 +532,7 @@ function openBadgeDetail(id) {
     o.innerHTML = `<div class="bdg-sheet" role="dialog" aria-label="${escapeHtml(def.name)}">
         <div class="bdg-grip"></div>
         <div class="bdg-big">
-            <span class="bdg-medal big${locked ? ' locked' : ''}" style="--bc:${t.c};--bf:${t.f}">${badgeIcon(def.icon, 48, locked ? '#b4b8bd' : t.c, 1.7)}</span>
+            <span class="bdg-medal big${locked ? ' locked' : ''}" style="--bc:${t.c};--bf:${t.f}">${badgeIcon(def.icon, 48, locked ? '#b4b8bd' : t.c, 1.7, locked ? '' : t.c)}</span>
             <div class="bdg-big-name"><span>${escapeHtml(def.name)}</span><em style="color:${locked ? '#8a9097' : t.c};background:${locked ? '#f1f1ef' : t.f}">${label}</em></div>
             <div class="bdg-big-desc">${escapeHtml(def.desc)}</div>
             <div class="bdg-big-who">${escapeHtml(g)}님 기준</div>

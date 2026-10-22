@@ -1384,8 +1384,11 @@ html, body { overscroll-behavior: none; }
 .bdg-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 2px; }
 .bdg-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; border: none; background: none; padding: 6px 0 8px 0; font-family: inherit; border-radius: 12px; }
 .bdg-tile:active { background: #f4f4f2; }
-.bdg-medal { width: 56px; height: 56px; border-radius: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;
-  background: var(--bf); border: 2.5px solid var(--bc); box-shadow: 0 0 0 3px #ffffff, 0 0 0 4px var(--bf); }
+/* 인장 — 이중 테두리 + 안쪽 은은한 빛(사용자가 시안 A를 골랐다 · 아티팩트 `뱃지 아이콘 시안`). 겉 크기는 예전 56px 그대로(50 + 여백 3×2)라 격자가 안 변한다.
+   그림에는 단계 색 12% 채움이 들어간다(badgeIcon의 fill). 정지된 그라데이션·그림자뿐이다. */
+.bdg-medal { width: 50px; height: 50px; margin: 3px; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;
+  background: radial-gradient(circle at 50% 30%, #ffffff, var(--bf) 80%);
+  box-shadow: 0 0 0 2px var(--bc), 0 0 0 4.5px #ffffff, 0 0 0 5.5px color-mix(in srgb, var(--bc) 40%, #ffffff); }
 .bdg-tile.locked .bdg-medal, .bdg-medal.locked { background: #f3f3f1; border: 2px dashed #d3d5d8; box-shadow: none; }
 .bdg-lock { position: absolute; right: -3px; bottom: -3px; width: 20px; height: 20px; border-radius: 10px; background: #ffffff; border: 1px solid #e3e3df; display: flex; align-items: center; justify-content: center; }
 .bdg-new { position: absolute; top: -5px; right: -8px; background: #e2493b; color: #ffffff; font-size: 0.56rem; font-weight: 900; padding: 1px 5px; border-radius: 8px; letter-spacing: 0.3px; }
@@ -1403,7 +1406,7 @@ html, body { overscroll-behavior: none; }
 .bdg-sheet-overlay.show .bdg-sheet { transform: none; }
 .bdg-grip { width: 40px; height: 5px; border-radius: 3px; background: #dedfdc; margin: 0 auto; }
 .bdg-big { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 6px; }
-.bdg-medal.big { width: 104px; height: 104px; border-radius: 52px; border-width: 4px; box-shadow: 0 0 0 6px #ffffff, 0 0 0 8px var(--bf); }
+.bdg-medal.big { width: 90px; height: 90px; margin: 7px; box-shadow: 0 0 0 3px var(--bc), 0 0 0 7px #ffffff, 0 0 0 8.5px color-mix(in srgb, var(--bc) 40%, #ffffff); }
 .bdg-medal.big.locked { border-width: 3px; box-shadow: none; }
 .bdg-big-name { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 .bdg-big-name span { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; }
