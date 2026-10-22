@@ -407,9 +407,16 @@ function analysisBestCard(name, all, recent) {
     const sub = typeof subCourseOf === 'function' ? subCourseOf(r) : '';
     const place = (course ? escapeHtml(course) : '골프장 미정') + (sub ? ` <i>${escapeHtml(sub)}</i>` : '');
     const dateTxt = analysisDateText(r);
-    const photo = ((appData.roundPhotos && appData.roundPhotos[r]) || []).find(p => typeof p === 'string' && /^https?:/.test(p));
-    const thumbSrc = photo ? (typeof photoThumbUrl === 'function' ? photoThumbUrl(photo) : photo) : '';
-    const thumb = `<div class="an-thumb">${thumbSrc ? `<img src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>`;
+    // 그 골프장의 스탬프(스탬프 탭의 도장과 같은 그림). 마크가 없는 곳은 이니셜이 든다. 골프장 이름이 없는 차수는 그림을 뺀다.
+    let seal = '';
+    if (typeof passportSealHtml === 'function' && typeof passportData === 'function') {
+        const cname = passportCourse(r + 1), key = cname ? passportClubKey(cname) : '';
+        if (key) {
+            const g = passportData().groups.find(x => x.key === key) || { key, name: cname, country: 'KR', visits: [{ round: r + 1, date: '' }] };
+            const mk = passportMark(g.key);
+            seal = `<div class="an-seal" style="color:${mk ? mk.ink : '#667b70'}">${passportSealHtml(g, 'anSeal')}</div>`;
+        }
+    }
     const tiles = holes ? `<div class="an-tiles">
         <div class="an-tile"><span class="an-ic">${AN_ICON.bird}</span><div><div class="an-k">버디 이상</div><div class="an-v">${bd}<small> 개</small></div></div></div>
         <div class="an-tile"><span class="an-ic">${AN_ICON.flag}</span><div><div class="an-k">파</div><div class="an-v">${pr}<small> 개</small></div></div></div></div>` : '';
@@ -419,7 +426,7 @@ function analysisBestCard(name, all, recent) {
         <div class="an-head"><h3>베스트 스코어</h3>
             <select class="an-pill" aria-label="베스트 기준" onchange="setAnalysisBestScope(this.value, '${escapeHtml(name)}')">${opt('life', '라이프 베스트')}${opt('recent', '최근 5경기 베스트')}</select></div>
         <div class="an-best"><div class="an-best-l"><div class="an-sc">${best.v}<small>타</small></div>
-            <div class="an-meta"><b>${place}</b><br>${r + 1}차${dateTxt ? ' · ' + dateTxt : ''}</div></div>${thumb}</div>
+            <div class="an-meta"><b>${place}</b><br>${r + 1}차${dateTxt ? ' · ' + dateTxt : ''}</div></div>${seal}</div>
         ${tiles}${cta}</div>`;
 }
 

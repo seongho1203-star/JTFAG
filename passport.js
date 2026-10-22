@@ -293,13 +293,10 @@ function passportTilt(key) {  // 같은 골프장은 늘 같은 각도로 찍힌
 }
 const passportWhen = v => v.round ? (v.date || v.round + '차') : (v.date || '날짜 미상');
 const passportRingWhen = v => v.round ? v.round + '차' : (v.date ? v.date.slice(0, 7).replace('-', '.') : 'PAST');
-function passportStampHtml(group, index) {
-    const first = group.visits[0], n = group.visits.length, tag = PASSPORT_COUNTRY_TAG[group.country];
-    const mark = passportMark(group.key), ink = mark ? mark.ink : '#667b70';
-    const ring = passportRingName(group.name), id = 'passportRing' + index;
-    return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${ink}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
-        ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}${tag ? `<span class="passport-country">${tag}</span>` : ''}
-        <span class="passport-seal" style="--tilt:${passportTilt(group.key)}deg" aria-hidden="true">
+function passportSealHtml(group, id) {
+    const first = group.visits[0], n = group.visits.length;
+    const ring = passportRingName(group.name), mark = passportMark(group.key);
+    return `<span class="passport-seal" style="--tilt:${passportTilt(group.key)}deg" aria-hidden="true">
             <svg viewBox="0 0 200 200" focusable="false"><defs><path id="${id}t" d="M24 100 A76 76 0 0 1 176 100"/><path id="${id}b" d="M17 100 A83 83 0 0 0 183 100"/></defs>
                 <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="3.5"/>
                 <circle cx="100" cy="100" r="89" fill="none" stroke="currentColor" stroke-width="1"/>
@@ -309,7 +306,15 @@ function passportStampHtml(group, index) {
                 <path d="M13 100l4-3v6zM187 100l-4-3v6z" fill="currentColor"/>
             </svg>
             <span class="passport-core"${mark ? ` style="background:${mark.background}"` : ''}>${passportMarkHtml(group)}</span>
-        </span>
+        </span>`;
+}
+function passportStampHtml(group, index) {
+    const first = group.visits[0], n = group.visits.length, tag = PASSPORT_COUNTRY_TAG[group.country];
+    const mark = passportMark(group.key), ink = mark ? mark.ink : '#667b70';
+    const id = 'passportRing' + index;
+    return `<button type="button" id="passportStamp-${escapeHtml(group.key)}" class="passport-stamp" style="--passport-ink:${ink}" onclick="openPassport(${index})" aria-haspopup="dialog" aria-label="${escapeHtml(group.name)} 방문 기록">
+        ${passportNewKeys.has(group.key) ? '<span class="passport-new">NEW</span>' : ''}${tag ? `<span class="passport-country">${tag}</span>` : ''}
+        ${passportSealHtml(group, id)}
         <b class="passport-name">${escapeHtml(group.name)}</b>${passportKoOf(group) ? `<small class="passport-ko">${escapeHtml(passportKoOf(group))}</small>` : ''}<small class="passport-first">첫 방문 ${passportWhen(first)}</small>
         <span class="passport-visits">${n}회 방문 <span aria-hidden="true">›</span></span>
     </button>`;
