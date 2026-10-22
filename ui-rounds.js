@@ -154,55 +154,97 @@ function toggleScoreEdit() {
         : "🔒 타수 수정을 잠갔습니다.");
 }
 
-function renderTable() {
-    const headerRow = document.getElementById('headerRow'); const tbody = document.getElementById('scoreTbody');
-    
-    const currentInputs = tbody.querySelectorAll('.score-input');
-    const expectedCount = appData.totalRounds * golfers.length;
-    
-    if (currentInputs.length === expectedCount && tbody.children.length === golfers.length) {
-        for (let r = 0; r < appData.totalRounds; r++) {
-            const cInput = document.getElementById(`course_input_${r}`);
-            if (cInput && document.activeElement !== cInput) cInput.value = (appData.courses && appData.courses[r]) ? appData.courses[r] : "";
-            paintSubCourse(r);
-            const pBtn = document.getElementById(`photo_btn_${r}`);
-            if (pBtn) pBtn.innerHTML = `📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장`;
-        }
-        golfers.forEach(name => {
-            for (let r = 0; r < appData.totalRounds; r++) {
-                const sInput = document.getElementById(`score_input_${name}_${r}`);
-                if (!sInput) continue;
-                if (document.activeElement !== sInput) sInput.value = (appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : "";
-                const locked = isScoreCellLocked(r);
-                sInput.readOnly = locked;
-                sInput.classList.toggle('locked', locked);
-            }
-        });
-        return;
-    }
+// ─── 정산 화면의 타수 영역 — 차수별 결과 카드다(사용자 요청 — 홈의 내 목표 타수 카드와 겹치는 가로 표를 바꿨다 · 시안 A) ───
+// 차수마다 카드 한 장(최신이 위) · 네 명을 **실제 계급 순서**로 세운다. 오른쪽 알약은 그 차수의 정산 기준을 따른다:
+//   1~10차 — 1:1 맞대결 승패(`2승 1패`) · 카드 머리 `1:1 핸디 방식`
+//   11차~  — 내 목표 타수 대비(`-5`) + 줄 가운데 `목표 97` · 카드 머리 `목표 대비 방식`
+// 홈의 5경기 기준 목표 대비를 1~10차에 붙이지 않는다 — 그때 정산은 2경기 핸디 기준이라 확정된 순위와 어긋나 보인다.
+// 타수·계급은 calc.js가 채운 값(golferRankHistory · roundNetInfo)을 읽기만 한다 — **calculateAndRender()가 계산한 뒤에 그린다.**
+// 타수 칸은 홀 기록이 있으면 잠긴 숫자이고, 홀 기록이 없는 차수만 관리자 `✏️ 타수 직접 수정`으로 칸이 열린다(updateScore).
+let roundCardsOpen = false;                // `이전 차수 보기` — 이번 실행 동안만 기억한다
+const ROUND_CARDS_MIN = 2;                 // 11차 이후 카드가 이보다 적으면 최근 차수로 채운다
+const RANK_CIRCLE = ['#c98d00', '#3b82c4', '#7c5cc4', '#8a8f96'];   // 독수리 · 매 · 학 · 참새
 
-    let headerHtml = `<th class="sticky-col-1">이름</th>`;
-    for (let r = 0; r < appData.totalRounds; r++) {
-        // 골프장은 사람이 여기서 치지 않는다 — 일정에서 차수를 고르면 저절로 채워진다.
-        // 칸을 눌렀을 때 그 차수 일정이 열리게 해 둔다(고칠 길이 있어야 한다).
-        headerHtml += `<th><div class="header-round-title">${r + 1}차</div><div class="course-slot"><input type="text" id="course_input_${r}" class="course-input locked" readonly value="${escapeHtml((appData.courses && appData.courses[r]) || "")}" placeholder="골프장"></div><div id="photo_btn_${r}" class="photo-btn" onclick="openRoundPhotoModal(${r})">📸 ${(appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0}장</div></th>`;
-    }
-    headerHtml += `<th id="avgHeaderTitle" style="white-space:nowrap;">- 평균</th>`;
-    headerRow.innerHTML = headerHtml;
-    for (let r = 0; r < appData.totalRounds; r++) paintSubCourse(r);
+function renderTable() { renderRoundCards(); }
 
-    tbody.innerHTML = "";
-    golfers.forEach(name => {
-        const tr = document.createElement('tr'); tr.setAttribute('data-name', name);
-        let rowHtml = `<td class="golfer-name sticky-col-1">${name}</td>`;
-        for (let r = 0; r < appData.totalRounds; r++) {
-            const locked = isScoreCellLocked(r);
-            rowHtml += `<td class="score-cell"><input type="text" id="score_input_${name}_${r}" inputmode="numeric" pattern="[0-9]*" class="score-input${locked ? ' locked' : ''}"${locked ? ' readonly' : ''} value="${(appData.scores[name] && appData.scores[name][r] !== undefined) ? appData.scores[name][r] : ""}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${name}', ${r}, this.value)"></td>`;
-        }
-        rowHtml += `<td class="avg-cell"><span class="avg-pill empty">-</span></td>`;
-        tr.innerHTML = rowHtml; tbody.appendChild(tr);
-    });
+// 그 차수의 실제 계급 순서. 계급이 아직 안 매겨진 차수(타수가 덜 찼다)는 null.
+function roundRankOrder(r) {
+    const i = typeof rankedRoundsList !== 'undefined' ? rankedRoundsList.indexOf(r) : -1;
+    if (i < 0) return null;
+    const rows = golfers.map(g => ({ name: g, rank: (golferRankHistory[g] || [])[i] }));
+    if (rows.some(x => x.rank === undefined)) return null;
+    return rows.sort((a, b) => a.rank - b.rank);
 }
+
+// 1~10차 알약 — 그 차수 정산 규칙(직전 2경기 핸디) 그대로 세 명과 겨룬 결과. 기준이 없던 차수는 null.
+function roundH2hRecord(r, name) {
+    const d = typeof h2hRoundData === 'function' ? h2hRoundData(r) : null;
+    if (!d) return null;
+    let w = 0, l = 0, t = 0;
+    golfers.forEach(o => { if (o === name) return; const res = h2hOutcome(d, name, o).res; if (res === 'w') w++; else if (res === 'l') l++; else t++; });
+    return { w, l, t };
+}
+
+function roundCardHtml(r, me) {
+    const useNet = r + 1 >= HANDICAP_RULE_FROM_ROUND;
+    const order = roundRankOrder(r);
+    const scoreOf = g => { const v = parseFloat(((appData.scores || {})[g] || [])[r]); return Number.isFinite(v) && v > 0 ? v : null; };
+    const hasAny = golfers.some(g => scoreOf(g) !== null);
+    const rows = order || golfers.map(g => ({ name: g, rank: null }));
+    const editable = !isScoreCellLocked(r);
+    const course = (appData.courses && appData.courses[r]) || '';
+    const sub = typeof subCourseOf === 'function' ? subCourseOf(r) : '';
+    const date = (appData.roundDates || {})[r + 1] || (typeof ROUND_HOLES !== 'undefined' && (ROUND_HOLES[String(r + 1)] || {}).date) || '';
+    const dateText = /^\d{4}-(\d{2})-(\d{2})$/.test(date) ? ` · ${+date.slice(5, 7)}/${+date.slice(8, 10)}` : '';
+    const where = (course ? escapeHtml(course) : '골프장 미정') + (sub ? ` <i>${escapeHtml(sub)}</i>` : '') + dateText;
+    const photos = (appData.roundPhotos && appData.roundPhotos[r]) ? appData.roundPhotos[r].length : 0;
+    const tag = order ? `<em class="rc-tag">${useNet ? '목표 대비 방식' : '1:1 핸디 방식'}</em>` : '';
+    const sign = n => (n > 0 ? '+' : '') + n;
+    let body = rows.map(x => {
+        const g = x.name, sc = scoreOf(g);
+        const ni = useNet && roundNetInfo[r] ? roundNetInfo[r][g] : null;
+        let pill = '', small = '';
+        if (order) {
+            if (useNet && ni) { small = `<small>목표 ${ni.target}</small>`; pill = `<span class="rc-pill ${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</span>`; }
+            else if (!useNet) {
+                const rec = roundH2hRecord(r, g);
+                if (rec) pill = `<span class="rc-pill ${rec.w > rec.l ? 'ok' : (rec.w < rec.l ? 'miss' : 'even')}">${rec.w}승${rec.t ? ` ${rec.t}무` : ''} ${rec.l}패</span>`;
+            }
+        }
+        const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no" style="background:${RANK_CIRCLE[x.rank]}" title="${RANK_CONFIG[x.rank].name}">${x.rank + 1}</span>`;
+        const val = (appData.scores && appData.scores[g] && appData.scores[g][r] !== undefined) ? appData.scores[g][r] : '';
+        const score = editable
+            ? `<input type="text" id="score_input_${g}_${r}" class="rc-input" inputmode="numeric" pattern="[0-9]*" value="${escapeHtml(String(val))}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${g}', ${r}, this.value)">`
+            : `<strong>${sc === null ? '-' : sc}</strong>`;
+        return `<div class="rc-row${g === me ? ' me' : ''}${x.rank === 0 ? ' win' : ''}">${no}<span class="rc-nm">${g}</span><span class="rc-sc">${score}${small}</span>${pill}</div>`;
+    }).join('');
+    if (!order && !hasAny && !editable) body += '<div class="rc-wait">스코어 입력 대기</div>';
+    return `<div class="rc-card"><div class="rc-head"><b>${r + 1}차</b><span class="rc-where">${where}</span>${tag}<button type="button" class="rc-photo" onclick="openRoundPhotoModal(${r})">📸 ${photos}장</button></div>${body}</div>`;
+}
+
+function renderRoundCards() {
+    const box = document.getElementById('roundCards'); if (!box) return;
+    // 칸에 커서가 있는 동안은 다시 그리지 않는다 — 남의 저장이 들어와도 적던 숫자가 안 날아간다.
+    const ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains('rc-input') && box.contains(ae)) return;
+    const saved = localStorage.getItem('jtfag_my_name');
+    const me = golfers.includes(saved) ? saved : null;
+    const total = appData.totalRounds;
+    const all = []; for (let r = total - 1; r >= 0; r--) all.push(r);
+    const newer = all.filter(r => r + 1 >= HANDICAP_RULE_FROM_ROUND);
+    const shown = roundCardsOpen ? all : all.slice(0, Math.max(newer.length, Math.min(ROUND_CARDS_MIN, total)));
+    const hidden = all.length - shown.length;
+    // 다음 라운드 목표 — 예전 표의 마지막 `평균` 열이 하던 일이다(최근 5경기 평균 = 내 목표 타수).
+    const tr = typeof latestHandicapRounds === 'function' ? latestHandicapRounds() : [];
+    const avg = tr.length ? handicapAverageAt(tr[tr.length - 1]) : null;
+    const goal = avg ? `<div class="rc-goal"><span>다음 라운드 목표 타수</span>${golfers.map(g => `<b class="${g === me ? 'me' : ''}">${g} ${avg[g]}</b>`).join('')}</div>` : '';
+    let html = goal + shown.map(r => roundCardHtml(r, me)).join('');
+    if (hidden > 0) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 ${hidden}개 보기 ▾</button>`;
+    else if (roundCardsOpen && all.length > ROUND_CARDS_MIN) html += `<button type="button" class="rc-more" onclick="toggleRoundCards()">이전 차수 접기 ▴</button>`;
+    if (box._html !== html) { box.innerHTML = html; box._html = html; }
+}
+
+function toggleRoundCards() { roundCardsOpen = !roundCardsOpen; renderRoundCards(); }
 
 // 홈 · 통합 정산 요약 아래 — **내 목표 타수 카드**다(사용자 요청 — 11차부터 계급이 '내 목표와의 싸움'이라 상대에게 받는 타수는 의미가 없다).
 // 큰 숫자는 다음 라운드 내 목표 타수(최근 5경기 평균), 아래에 최근 5경기 목표 대비 타수와 목표 달성 횟수, 한 줄로 멤버들의 목표 타수.

@@ -1,8 +1,7 @@
 // ◇ ui.js를 나눈 조각 — renderAll(렌더 파이프라인) · 연출(입장 순서 · 카운트업 · 계급 변동 · 결과 발표 · 독수리 축포 · 대관식)
 // ◇ 로딩 순서가 곧 원래 순서다(index.html). 전역 함수·변수라 어느 조각에서든 그대로 부른다.
 function renderAll() {
-    renderTable();
-    calculateAndRender();
+    calculateAndRender();   // 차수별 결과 카드도 여기서(계산 뒤에) 그린다
     renderMoneyTable();
     forceTableReflow();
     jumpToLatestRound();

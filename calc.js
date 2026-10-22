@@ -256,7 +256,6 @@ function calculateAndRender() {
 
     const infoText = document.getElementById('infoText');
     const matchCardTitle = document.getElementById('matchCardTitle');
-    const avgHeaderTitle = document.getElementById('avgHeaderTitle');
 
     const roundStr = roundRangeText(targetRounds);
     const titleStr = roundStr ? `최근 ${HANDICAP_ROUNDS}경기(${roundStr})` : `최근 ${HANDICAP_ROUNDS}경기`;
@@ -264,28 +263,10 @@ function calculateAndRender() {
 
     if (infoText) infoText.innerHTML = `💡 <b>${HANDICAP_ROUNDS}경기 평균</b> = 내 목표 타수`;   // 저장 상태 칩과 한 줄에 들어가게 짧게 적는다(범위는 홈 카드·표 머리에 있다)
     if (matchCardTitle) matchCardTitle.textContent = avgTitleStr;
-    if (avgHeaderTitle) avgHeaderTitle.innerHTML = '내 목표<br>타수';
-
-    const rows = document.querySelectorAll('#scoreTbody tr');
-    rows.forEach(row => {
-        const name = row.getAttribute('data-name');
-
-        const avgCell = row.querySelector('.avg-cell');
-        // 값은 알약(.avg-pill) 안에만 넣는다. 칸을 통째로 덮어쓰면 배경 스타일이 날아간다.
-        const pill = avgCell ? avgCell.querySelector('.avg-pill') : null;
-        if (pill) {
-            if (averages && averages[name] !== undefined) {
-                pill.textContent = `${averages[name]}`;
-                pill.classList.remove('empty');
-            } else {
-                pill.textContent = `-`;
-                pill.classList.add('empty');
-            }
-        }
-    });
 
     processAllRoundSettlements();
     renderHandicapMatchCard(targetRounds);
+    renderRoundCards();   // 계급·보정타수가 채워진 뒤에 그려야 한다
 }
 
 /* 라베(개인 최저타) 갱신 — 11차부터 종전 개인 최저타(1~직전 차수 전체)보다 줄인 타수 1타당 1만원을 동반자(나머지 셋)가 각자 준다 — 공금에서 나가지 않는다.

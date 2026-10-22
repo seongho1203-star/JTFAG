@@ -2146,3 +2146,32 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .sc-row b { font-weight: 900; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
 .sc-row em { font-style: normal; font-weight: 800; font-size: 0.8rem; text-align: right; color: var(--text-sub); }
 .sc-row em.over { color: #c2453b; } .sc-row em.under { color: var(--accent-green); }
+
+/* ─── 차수별 결과 카드 (정산 화면 · 예전 가로 타수 표를 대체) ─── */
+.round-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.rc-goal { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; font-size: clamp(0.66rem, 2.7vw, 0.74rem); }
+.rc-goal span { color: var(--text-sub); font-weight: 700; font-size: clamp(0.58rem, 2.4vw, 0.64rem); width: 100%; }
+.rc-goal b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.rc-goal b.me { color: var(--primary-gold); }
+.rc-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.rc-head { display: flex; align-items: center; gap: 7px; padding: 8px 10px; background: var(--gold-light); }
+.rc-head b { font-size: 0.9rem; font-weight: 900; color: var(--primary-gold); white-space: nowrap; }
+.rc-where { flex: 1; min-width: 0; font-size: clamp(0.64rem, 2.6vw, 0.72rem); color: var(--text-sub); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-where i { font-style: normal; color: var(--primary-gold); font-weight: 700; }
+.rc-tag { font-style: normal; font-size: 0.56rem; font-weight: 800; color: var(--text-sub); border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 1px 6px; white-space: nowrap; }
+.rc-photo { border: 1px solid var(--line); background: #fff; color: var(--primary-gold); border-radius: 99px; padding: 3px 9px; font: inherit; font-size: 0.62rem; font-weight: 800; white-space: nowrap; min-height: 26px; cursor: pointer; }
+.rc-row { display: grid; grid-template-columns: 20px 4.6em 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; border-top: 1px solid var(--line); font-size: 0.82rem; }
+.rc-row.me { background: rgba(43, 83, 148, 0.06); }
+.rc-no { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 0.62rem; font-weight: 900; }
+.rc-no.off { background: var(--line); }
+.rc-nm { font-weight: 800; white-space: nowrap; }
+.rc-row.win .rc-nm::after { content: ' ★'; color: #c98d00; font-weight: 700; }
+.rc-sc { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.rc-sc strong { font-size: 1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.rc-sc small { font-size: 0.62rem; color: var(--text-sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rc-pill { font-size: 0.7rem; font-weight: 800; padding: 1px 8px; border-radius: 99px; white-space: nowrap; font-variant-numeric: tabular-nums; background: #f1f1ee; color: var(--text-sub); }
+.rc-pill.ok { background: rgba(22, 163, 74, 0.12); color: var(--accent-green); }
+.rc-pill.miss { background: rgba(194, 69, 59, 0.1); color: #c2453b; }
+.rc-input { width: 64px; height: 28px; border: 1px solid var(--accent-line); border-radius: 8px; padding: 0 6px; font: inherit; font-size: 0.9rem; font-weight: 800; text-align: center; background: #fff; }
+.rc-wait { padding: 8px 10px; border-top: 1px solid var(--line); text-align: center; font-size: 0.7rem; color: var(--text-sub); }
+.rc-more { align-self: center; border: 1px solid var(--line); background: #fff; color: var(--primary-gold); border-radius: 99px; padding: 6px 16px; font: inherit; font-size: 0.72rem; font-weight: 800; min-height: 32px; cursor: pointer; }
