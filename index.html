@@ -15,9 +15,18 @@
     <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Medium.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Black.woff2">
+
     <!-- 환영창은 외부 CSS·라이브러리 다운로드를 기다리지 않고 첫 화면부터 표시한다. -->
     <style id="greetingStyle">
         /* 안내창(#customToast)은 style.css가 오기 전에는 꾸밈 없이 숨겨 둔 상태(visibility)였다가 스타일이 붙는 순간 보이게 되는데, 그때 불투명(1)에서 0으로 0.3초 사라지며 입장 화면 아래 가운데에 검은 알약이 번쩍였다. 처음부터 투명으로 둔다. */
+        /* 환영창 전용 글꼴(JTGreet)은 style.css의 `* { font-family … !important }`와 이름이 달라 나중에 덮이지 않고, font-display: block이라 글꼴이 오기 전에는 가는 대체 글꼴로 먼저 그리지 않고 비워 둔다(가늘다가 갑자기 굵어지던 것 방지). 주소는 style.css가 불러오는 Pretendard와 같아 한 번만 받는다. */
+        @font-face { font-family: 'JTGreet'; font-weight: 500; font-style: normal; font-display: block; src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Medium.woff2') format('woff2'); }
+        @font-face { font-family: 'JTGreet'; font-weight: 700; font-style: normal; font-display: block; src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2') format('woff2'); }
+        @font-face { font-family: 'JTGreet'; font-weight: 900; font-style: normal; font-display: block; src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Black.woff2') format('woff2'); }
+        .greet-poster, .greet-poster * { font-family: 'JTGreet', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', sans-serif !important; }
         #customToast { opacity: 0; }
         html { background: #f7f7f5; }
         body { margin: 0; }
