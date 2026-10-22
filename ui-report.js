@@ -422,11 +422,12 @@ function analysisBestCard(name, all, recent) {
         <div class="an-tile"><span class="an-ic">${AN_ICON.flag}</span><div><div class="an-k">파</div><div class="an-v">${pr}<small> 개</small></div></div></div></div>` : '';
     const cta = holes ? `<button type="button" class="an-cta" onclick="openMyScorecard(${r}, '${escapeHtml(name)}', true)">스코어카드 보기</button>` : '';
     const opt = (v, t) => `<option value="${v}"${analysisBestScope === v ? ' selected' : ''}>${t}</option>`;
+    // 오른쪽 한 칸에 선택 알약과 스탬프를 세로로 쌓고 가운데 맞춘다(사용자 요청 — 스탬프를 `라이프 베스트` 칸 기준 중앙정렬).
     return `<div class="an-card">
-        <div class="an-head"><h3>베스트 스코어</h3>
-            <select class="an-pill" aria-label="베스트 기준" onchange="setAnalysisBestScope(this.value, '${escapeHtml(name)}')">${opt('life', '라이프 베스트')}${opt('recent', '최근 5경기 베스트')}</select></div>
-        <div class="an-best"><div class="an-best-l"><div class="an-sc">${best.v}<small>타</small></div>
-            <div class="an-meta"><b>${place}</b><br>${r + 1}차${dateTxt ? ' · ' + dateTxt : ''}</div></div>${seal}</div>
+        <div class="an-top"><div class="an-top-l"><h3>베스트 스코어</h3>
+            <div class="an-best-l"><div class="an-sc">${best.v}<small>타</small></div>
+            <div class="an-meta"><b>${place}</b><br>${r + 1}차${dateTxt ? ' · ' + dateTxt : ''}</div></div></div>
+            <div class="an-top-r"><select class="an-pill" aria-label="베스트 기준" onchange="setAnalysisBestScope(this.value, '${escapeHtml(name)}')">${opt('life', '라이프 베스트')}${opt('recent', '최근 5경기 베스트')}</select>${seal}</div></div>
         ${tiles}${cta}</div>`;
 }
 
