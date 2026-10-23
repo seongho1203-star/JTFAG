@@ -58,7 +58,14 @@ function renderStorageUsage() {
         <div class="storage-bar"><span style="width:${Math.max(percent, 1)}%; background:${statusColor};"></span></div>`;
 }
 
-function changeMoneyRound(idxVal) { selectedMoneyRoundIdx = parseInt(idxVal, 10); renderMoneyTable(); if (typeof renderRoundCards === 'function') renderRoundCards(); }
+// `전체`를 고르면 아래 차수 카드가 1차부터 지금까지 모두 보인다(사용자 요청). 위 정산 표는 금액 칸이 차수 하나에 묶여 있어
+// 마지막으로 보던 차수(selectedMoneyRoundIdx)를 그대로 둔다 — 그래서 값을 따로 들고 있고 selectedMoneyRoundIdx를 건드리지 않는다.
+let moneyShowAll = false;
+function changeMoneyRound(idxVal) {
+    if (idxVal === 'all') moneyShowAll = true;
+    else { moneyShowAll = false; selectedMoneyRoundIdx = parseInt(idxVal, 10); }
+    renderMoneyTable(); if (typeof renderRoundCards === 'function') renderRoundCards();
+}
 
 // 차수 목록을 드롭다운에 채운다. 차수가 늘어도 화면이 커지지 않는다 —
 // 예전엔 칩을 격자로 늘어놓는 창이었는데, 스무 개가 되면 감당이 안 된다.
@@ -68,15 +75,17 @@ function renderMoneyRoundOptions(select) {
         const course = (appData.courses && appData.courses[r]) ? appData.courses[r].trim() : "";
         want.push(`${r + 1}차전${course ? ` · ${course}` : ""}`);
     }
+    const cur = () => moneyShowAll ? 'all' : String(selectedMoneyRoundIdx);
     // 내용이 그대로면 다시 만들지 않는다 (실시간 갱신 때마다 목록이 껌뻑인다).
     if (select.getAttribute('data-labels') === want.join('|')) {
-        select.value = String(selectedMoneyRoundIdx);
+        select.value = cur();
         return;
     }
     select.innerHTML = "";
     want.forEach((label, r) => select.add(new Option(label, r)));
+    select.add(new Option('전체 (1차~현재)', 'all'));
     select.setAttribute('data-labels', want.join('|'));
-    select.value = String(selectedMoneyRoundIdx);
+    select.value = cur();
 }
 
 // 정산 금액 뱃지. 계급정산·타수정산이 같은 함수를 쓰므로 두 칸이 어긋날 수 없다.

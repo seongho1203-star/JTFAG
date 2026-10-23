@@ -227,7 +227,7 @@ function roundCardHtml(r, me) {
         return `<div class="rc-row${g === me ? ' me' : ''}${x.rank === 0 ? ' win' : ''}">${no}<span class="rc-nm">${g}</span><span class="rc-sc">${score}${small}</span>${pill}</div>`;
     }).join('');
     if (!order && !hasAny && !editable) body += '<div class="rc-wait">스코어 입력 대기</div>';
-    const sel = r === selectedMoneyRoundIdx ? ' sel' : '';
+    const sel = (r === selectedMoneyRoundIdx && !(typeof moneyShowAll !== 'undefined' && moneyShowAll)) ? ' sel' : '';
     return `<div class="rc-card${sel}"><div class="rc-head"><b>${r + 1}차</b><span class="rc-where">${where}</span>${tag}<button type="button" class="rc-photo" onclick="openRoundPhotoModal(${r})">📸 ${photos}장</button></div>${body}</div>`;
 }
 
@@ -240,8 +240,14 @@ function renderRoundCards() {
     const me = golfers.includes(saved) ? saved : null;
     const total = appData.totalRounds;
     // 위 `차수별 정산`에서 고른 차수의 카드 한 장만 보인다(사용자 요청 — `7차를 선택하면 하단에 7차`). 이전 차수 접기·펴기 단추는 없앴다.
+    // `전체`(moneyShowAll)이면 최신이 위로 1차까지 모두 보인다.
     const r = (selectedMoneyRoundIdx >= 0 && selectedMoneyRoundIdx < total) ? selectedMoneyRoundIdx : total - 1;
-    const html = total > 0 ? roundCardHtml(r, me) : '';
+    let html = '';
+    if (total > 0) {
+        if (typeof moneyShowAll !== 'undefined' && moneyShowAll) {
+            for (let i = total - 1; i >= 0; i--) html += roundCardHtml(i, me);
+        } else html = roundCardHtml(r, me);
+    }
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
 
