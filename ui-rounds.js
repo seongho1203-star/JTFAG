@@ -383,25 +383,45 @@ function openMyScorecardList(who) {
     const saved = typeof myGolferName === 'function' ? myGolferName() : '';
     const name = golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]);
     const holes = typeof ROUND_HOLES !== 'undefined' ? ROUND_HOLES : {};
-    const rows = [];
+    const list = [];
     for (let r = appData.totalRounds - 1; r >= 0; r--) {
         const rec = holes[String(r + 1)];
         if (!rec || !rec.par || rec.par.length !== 18 || !rec.rel || !rec.rel[name]) continue;
-        const total = rec.par.reduce((t, p, i) => t + p + rec.rel[name][i], 0), diff = total - rec.par.reduce((t, p) => t + p, 0);
-        const club = (appData.courses && appData.courses[r]) || '';
-        rows.push(`<button type="button" class="sc-row" onclick="openMyScorecard(${r}, '${name}')"><i>${r + 1}차</i><span>${escapeHtml(club) || '&nbsp;'}</span><b>${total}타</b><em class="${diff > 0 ? 'over' : diff < 0 ? 'under' : ''}">${diff === 0 ? 'E' : (diff > 0 ? '+' : '') + diff}</em></button>`);
+        const rel = rec.rel[name], parSum = rec.par.reduce((t, p) => t + p, 0);
+        const sumOf = (from, to) => { let t = 0; for (let i = from; i < to; i++) t += rec.par[i] + rel[i]; return t; };
+        const total = sumOf(0, 18);
+        const date = (appData.roundDates || {})[r + 1] || rec.date || '';
+        list.push({ r, rel, total, diff: total - parSum, out: sumOf(0, 9), inn: sumOf(9, 18),
+            club: (appData.courses && appData.courses[r]) || '', sub: typeof subCourseOf === 'function' ? subCourseOf(r) : '',
+            date: /^\d{4}-(\d{2})-(\d{2})$/.test(date) ? `${+date.slice(5, 7)}/${+date.slice(8, 10)}` : '' });
     }
-    if (!rows.length) { showToast('홀별 기록이 등록된 경기가 아직 없습니다.'); return; }
+    if (!list.length) { showToast('홀별 기록이 등록된 경기가 아직 없습니다.'); return; }
+    // 라이프 베스트 = 가장 낮은 타수(같으면 모두). 카드는 div다 — 안에 칸이 여럿이라 button이면 아이폰 사파리에서 높이가 접힌다.
+    const best = Math.min(...list.map(g => g.total));
+    const sign = d => d === 0 ? 'E' : (d > 0 ? '+' : '') + d;
+    const rows = list.map(g => {
+        const isBest = g.total === best;
+        const dots = g.rel.map(x => `<s class="${x <= -2 ? 'e' : x === -1 ? 'b' : x === 0 ? 'p' : x === 1 ? '' : 'd'}"></s>`).join('');
+        const club = (escapeHtml(g.club) || '골프장 미정') + (g.sub ? `<small>${escapeHtml(g.sub)}</small>` : '');
+        return `<div class="sc-tk${isBest ? ' best' : ''}" role="button" tabindex="0" onclick="openMyScorecard(${g.r}, '${name}')">`
+            + (isBest ? '<span class="sc-tk-flag">라이프 베스트</span>' : '')
+            + `<div class="sc-tk-top"><span class="sc-tk-no">${g.r + 1}차</span><span class="sc-tk-club">${club}</span>${isBest || !g.date ? '' : `<span class="sc-tk-date">${g.date}</span>`}</div>`
+            + `<div class="sc-tk-body"><div><em>OUT</em><b>${g.out}</b></div><div><em>IN</em><b>${g.inn}</b></div>`
+            + `<div class="sum"><em>TOTAL</em><b>${g.total}<small class="${g.diff > 0 ? 'over' : g.diff < 0 ? 'under' : ''}">${sign(g.diff)}</small></b></div></div>`
+            + `<div class="sc-tk-dots">${dots}</div></div>`;
+    });
     closeMyScorecard();
     const o = document.createElement('div');
     o.className = 'bdg-sheet-overlay sc-overlay';
     o.innerHTML = `<div class="bdg-sheet sc-sheet" role="dialog" aria-label="내 스코어카드 전체">
         <div class="bdg-grip"></div>
-        <div class="sc-head"><div class="sc-title">내 스코어카드 · ${escapeHtml(name)}</div><div class="sc-sub">${rows.length}경기 · 누르면 홀별 기록</div></div>
+        <div class="sc-head"><div class="sc-title">내 스코어카드 · ${escapeHtml(name)}</div><div class="sc-sub">${list.length}경기 · 누르면 홀별 기록</div></div>
         <div class="sc-list">${rows.join('')}</div>
+        <div class="sc-legend sc-tk-legend"><span><i class="e"></i>이글 이상</span><span><i class="b"></i>버디</span><span><i class="p"></i>파</span><span><i class="g"></i>보기</span><span><i class="d"></i>더블 이상</span></div>
         <button type="button" class="bdg-close" onclick="closeMyScorecard()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeMyScorecard(); });
+    o.addEventListener('keydown', e => { const t = e.target.closest && e.target.closest('.sc-tk'); if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); } });
     document.body.appendChild(o);
     requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
 }
