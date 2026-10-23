@@ -388,6 +388,18 @@ function dismissMyScorecard() {
 
 /* 내 스코어카드 전체 목록(사용자 요청 — 최근 5경기 칩 밖의 지난 차수도 보려고). 홀 기록이 있는 차수만, 최신 차수가 위.
    줄을 누르면 openMyScorecard()가 열리고, 그 함수가 `.sc-overlay`를 먼저 닫으므로 이 창도 같은 클래스를 달아 저절로 닫힌다. */
+// 전체 목록의 날짜 — 저장된 날짜가 있으면 그것(일정 `roundDates` · 홀 기록의 `date`), 없으면 짐작해서 채운다(사용자 요청 — 지난 차수에는 날짜가 비어 있었다):
+// ① 예측 마감일(`passportRoundDate()` — 티오프 날) ② 그 차수에 처음 올린 사진의 업로드 날(경로의 `round3/1760000000000_…` 숫자 · 한국 날짜).
+// ②는 라운드 당일에 올리는 일이 대부분이라 쓴다 — 며칠 뒤에 올렸다면 그만큼 어긋난다. 저장하지 않고 그릴 때마다 읽는다.
+function scListDate(r, rec) {
+    const stored = (appData.roundDates || {})[r + 1] || (rec && rec.date) || '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(stored)) return stored;
+    const viaPassport = typeof passportRoundDate === 'function' ? passportRoundDate(r + 1) : '';
+    if (viaPassport) return viaPassport;
+    const times = ((appData.roundPhotos || [])[r] || []).map(u => { const m = /\/round\d+\/(\d{13})_/.exec(String(u)); return m ? Number(m[1]) : 0; }).filter(Boolean);
+    return times.length ? new Date(Math.min(...times) + 9 * 3600000).toISOString().slice(0, 10) : '';
+}
+
 function openMyScorecardList(who) {
     const saved = typeof myGolferName === 'function' ? myGolferName() : '';
     const name = golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]);
@@ -399,7 +411,7 @@ function openMyScorecardList(who) {
         const rel = rec.rel[name], parSum = rec.par.reduce((t, p) => t + p, 0);
         const sumOf = (from, to) => { let t = 0; for (let i = from; i < to; i++) t += rec.par[i] + rel[i]; return t; };
         const total = sumOf(0, 18);
-        const date = (appData.roundDates || {})[r + 1] || rec.date || '';
+        const date = scListDate(r, rec);
         list.push({ r, rel, total, diff: total - parSum, out: sumOf(0, 9), inn: sumOf(9, 18),
             club: (appData.courses && appData.courses[r]) || '', sub: typeof subCourseOf === 'function' ? subCourseOf(r) : '',
             date: /^\d{4}-(\d{2})-(\d{2})$/.test(date) ? `${+date.slice(5, 7)}/${+date.slice(8, 10)}` : '' });
@@ -412,7 +424,7 @@ function openMyScorecardList(who) {
         const club = (escapeHtml(g.club) || '골프장 미정') + (g.sub ? `<small>${escapeHtml(g.sub)}</small>` : '');
         return `<div class="sc-tk${isBest ? ' best' : ''}" role="button" tabindex="0" onclick="openMyScorecard(${g.r}, '${name}', false, true)">`
             + (isBest ? '<span class="sc-tk-flag">라이프 베스트</span>' : '')
-            + `<div class="sc-tk-top"><span class="sc-tk-no">${g.r + 1}차</span><span class="sc-tk-club">${club}</span>${isBest || !g.date ? '' : `<span class="sc-tk-date">${g.date}</span>`}</div></div>`;
+            + `<div class="sc-tk-top"><span class="sc-tk-no">${g.r + 1}차</span><span class="sc-tk-club">${club}</span>${g.date ? `<span class="sc-tk-date">${g.date}</span>` : ''}</div></div>`;
     });
     closeMyScorecard();
     const o = document.createElement('div');
