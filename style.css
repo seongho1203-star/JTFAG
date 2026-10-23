@@ -2102,30 +2102,16 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 /* 내 스코어카드 전체 목록 */
 .goal-cap { align-items: center; }
 .goal-all { border: 0; background: none; color: var(--primary-gold); font: inherit; font-weight: 800; padding: 4px 2px; min-height: 28px; cursor: pointer; white-space: nowrap; }
-/* 스코어카드 티켓 — OUT · IN · TOTAL 세 칸 + 18홀 동그라미 줄(사용자가 시안 C를 골랐다). 카드는 div이고 flex: none이어야 목록이 길어도 안 접힌다 */
+/* 전체 스코어카드 목록 — 카드 한 줄(차수 칩 · 골프장 · 코스 · 날짜)과 맨 아래 범례. 사용자가 보내 준 화면 그대로다 */
 .sc-list { display: flex; flex-direction: column; gap: 10px; max-height: 56vh; overflow-y: auto; padding: 2px 0; }
 .sc-tk { flex: none; position: relative; background: #f6f8fc; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; text-align: left; }
 .sc-tk:active { background: var(--gold-light); }
-.sc-tk.best { border-color: #e6c766; background: #fcf7e6; }
-.sc-tk-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; }
+.sc-tk-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
 .sc-tk-no { flex: none; font-weight: 900; font-size: 0.75rem; color: #fff; background: var(--primary-gold); border-radius: 8px; padding: 3px 8px; }
 .sc-tk-club { min-width: 0; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-tk-club small { color: var(--text-sub); font-weight: 600; margin-left: 4px; font-size: 0.66rem; }
 .sc-tk-date { margin-left: auto; flex: none; font-size: 0.7rem; font-weight: 700; color: var(--text-sub); }
 .sc-tk-flag { position: absolute; right: 0; top: 0; font-size: 0.6rem; font-weight: 800; color: #7a5600; background: #f6e3a8; border-radius: 0 0 0 10px; padding: 3px 9px; }
-.sc-tk-body { display: grid; grid-template-columns: 1fr 1fr 1.25fr; border-top: 1px dashed var(--line); }
-.sc-tk-body > div { padding: 9px 12px 10px; border-right: 1px dashed var(--line); }
-.sc-tk-body > div:last-child { border-right: 0; background: rgba(43, 83, 148, 0.07); }
-.sc-tk-body em { display: block; font-style: normal; font-size: 0.62rem; font-weight: 800; color: var(--text-sub); letter-spacing: 0.04em; }
-.sc-tk-body b { display: block; font-size: 1.25rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.sc-tk-body .sum b { font-size: 1.6rem; }
-.sc-tk-body b small { font-size: 0.68rem; font-weight: 800; margin-left: 4px; color: var(--text-sub); }
-.sc-tk-body b small.over { color: #c2453b; } .sc-tk-body b small.under { color: var(--accent-green); }
-.sc-tk-dots { display: flex; gap: 3px; padding: 0 12px 10px; }
-.sc-tk-dots s { flex: 1; aspect-ratio: 1; max-width: 16px; border-radius: 50%; background: #d9dde6; display: block; }
-.sc-tk-dots s.b { background: transparent; box-shadow: inset 0 0 0 2px #3fae6a; }
-.sc-tk-dots s.e { background: #d9a21b; } .sc-tk-dots s.p { background: #5b8fe0; } .sc-tk-dots s.d { background: #e0766b; }
-.sc-tk-dots s:nth-child(9) { margin-right: 6px; }
 .sc-tk-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: #d9dde6; }
 .sc-tk-legend i.e { background: #d9a21b; } .sc-tk-legend i.p { background: #5b8fe0; } .sc-tk-legend i.d { background: #e0766b; }
 .sc-tk-legend i.b { background: transparent; box-shadow: inset 0 0 0 2px #3fae6a; }

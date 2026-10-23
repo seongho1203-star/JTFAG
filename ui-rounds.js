@@ -396,19 +396,14 @@ function openMyScorecardList(who) {
             date: /^\d{4}-(\d{2})-(\d{2})$/.test(date) ? `${+date.slice(5, 7)}/${+date.slice(8, 10)}` : '' });
     }
     if (!list.length) { showToast('홀별 기록이 등록된 경기가 아직 없습니다.'); return; }
-    // 라이프 베스트 = 가장 낮은 타수(같으면 모두). 카드는 div다 — 안에 칸이 여럿이라 button이면 아이폰 사파리에서 높이가 접힌다.
+    // 라이프 베스트 = 가장 낮은 타수(같으면 모두). 카드는 한 줄짜리 `차수 · 골프장 · 코스 · 날짜`다(사용자가 보내 준 화면 그대로).
     const best = Math.min(...list.map(g => g.total));
-    const sign = d => d === 0 ? 'E' : (d > 0 ? '+' : '') + d;
     const rows = list.map(g => {
         const isBest = g.total === best;
-        const dots = g.rel.map(x => `<s class="${x <= -2 ? 'e' : x === -1 ? 'b' : x === 0 ? 'p' : x === 1 ? '' : 'd'}"></s>`).join('');
         const club = (escapeHtml(g.club) || '골프장 미정') + (g.sub ? `<small>${escapeHtml(g.sub)}</small>` : '');
         return `<div class="sc-tk${isBest ? ' best' : ''}" role="button" tabindex="0" onclick="openMyScorecard(${g.r}, '${name}')">`
             + (isBest ? '<span class="sc-tk-flag">라이프 베스트</span>' : '')
-            + `<div class="sc-tk-top"><span class="sc-tk-no">${g.r + 1}차</span><span class="sc-tk-club">${club}</span>${isBest || !g.date ? '' : `<span class="sc-tk-date">${g.date}</span>`}</div>`
-            + `<div class="sc-tk-body"><div><em>OUT</em><b>${g.out}</b></div><div><em>IN</em><b>${g.inn}</b></div>`
-            + `<div class="sum"><em>TOTAL</em><b>${g.total}<small class="${g.diff > 0 ? 'over' : g.diff < 0 ? 'under' : ''}">${sign(g.diff)}</small></b></div></div>`
-            + `<div class="sc-tk-dots">${dots}</div></div>`;
+            + `<div class="sc-tk-top"><span class="sc-tk-no">${g.r + 1}차</span><span class="sc-tk-club">${club}</span>${isBest || !g.date ? '' : `<span class="sc-tk-date">${g.date}</span>`}</div></div>`;
     });
     closeMyScorecard();
     const o = document.createElement('div');
