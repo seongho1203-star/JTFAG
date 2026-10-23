@@ -377,6 +377,15 @@ function closeMyScorecard() {
     setTimeout(() => o.remove(), 220);
 }
 
+// 전체 목록에서 들어온 스코어카드는 닫으면 목록으로 돌아간다(사용자 요청). 그 밖(목표 타수 칩·뱃지 상세)은 그냥 닫힌다.
+// 다른 스코어카드를 열려고 안에서 닫는 길(openMyScorecard의 closeMyScorecard)은 목록을 다시 열지 않는다 — 이 함수는 `닫기`·바탕 누름 전용이다.
+function dismissMyScorecard() {
+    const o = document.querySelector('.sc-overlay');
+    const back = o && o.getAttribute('data-back');
+    closeMyScorecard();
+    if (back) openMyScorecardList(back);
+}
+
 /* 내 스코어카드 전체 목록(사용자 요청 — 최근 5경기 칩 밖의 지난 차수도 보려고). 홀 기록이 있는 차수만, 최신 차수가 위.
    줄을 누르면 openMyScorecard()가 열리고, 그 함수가 `.sc-overlay`를 먼저 닫으므로 이 창도 같은 클래스를 달아 저절로 닫힌다. */
 function openMyScorecardList(who) {
@@ -401,7 +410,7 @@ function openMyScorecardList(who) {
     const rows = list.map(g => {
         const isBest = g.total === best;
         const club = (escapeHtml(g.club) || '골프장 미정') + (g.sub ? `<small>${escapeHtml(g.sub)}</small>` : '');
-        return `<div class="sc-tk${isBest ? ' best' : ''}" role="button" tabindex="0" onclick="openMyScorecard(${g.r}, '${name}')">`
+        return `<div class="sc-tk${isBest ? ' best' : ''}" role="button" tabindex="0" onclick="openMyScorecard(${g.r}, '${name}', false, true)">`
             + (isBest ? '<span class="sc-tk-flag">라이프 베스트</span>' : '')
             + `<div class="sc-tk-top"><span class="sc-tk-no">${g.r + 1}차</span><span class="sc-tk-club">${club}</span>${isBest || !g.date ? '' : `<span class="sc-tk-date">${g.date}</span>`}</div></div>`;
     });
@@ -412,7 +421,6 @@ function openMyScorecardList(who) {
         <div class="bdg-grip"></div>
         <div class="sc-head"><div class="sc-title">내 스코어카드 · ${escapeHtml(name)}</div><div class="sc-sub">${list.length}경기 · 누르면 홀별 기록</div></div>
         <div class="sc-list">${rows.join('')}</div>
-        <div class="sc-legend sc-tk-legend"><span><i class="e"></i>이글 이상</span><span><i class="b"></i>버디</span><span><i class="p"></i>파</span><span><i class="g"></i>보기</span><span><i class="d"></i>더블 이상</span></div>
         <button type="button" class="bdg-close" onclick="closeMyScorecard()">닫기</button>
     </div>`;
     o.addEventListener('click', e => { if (e.target === o) closeMyScorecard(); });
@@ -440,7 +448,7 @@ function scHalf(par, rel, from) {
 
 // anyone이 참이면 who 본인의 카드를 그대로 연다(뱃지 상세의 멤버 현황 — 그 사람이 딴 차수를 보려는 것).
 // 아니면 예전처럼 이 기기 주인 것만 뜬다(목표 타수 카드의 칩).
-function openMyScorecard(r, who, anyone) {
+function openMyScorecard(r, who, anyone, fromList) {
     const saved = typeof myGolferName === 'function' ? myGolferName() : '';
     const name = anyone && golfers.includes(who) ? who : (golfers.includes(saved) ? saved : (golfers.includes(who) ? who : golfers[0]));
     const rec = typeof ROUND_HOLES !== 'undefined' ? ROUND_HOLES[String(r + 1)] : null;
@@ -464,9 +472,10 @@ function openMyScorecard(r, who, anyone) {
         <div class="sc-total"><b>${total}</b>타 <span class="${diff > 0 ? 'over' : diff < 0 ? 'under' : ''}">${diff === 0 ? '이븐파' : `${diff > 0 ? '+' : ''}${diff}`}</span></div>
         ${scHalf(par, rel, 0)}${scHalf(par, rel, 9)}
         <div class="sc-legend"><span><i class="sc-s birdie">·</i>버디 ${count(v => v === -1)}</span><span><i class="sc-s eagle">·</i>이글 이상 ${count(v => v <= -2)}</span><span><i class="sc-s par">·</i>파 ${count(v => v === 0)}</span><span><i class="sc-s bogey">·</i>보기 ${count(v => v === 1)}</span><span><i class="sc-s double">·</i>더블 이상 ${count(v => v >= 2)}</span></div>
-        <button type="button" class="bdg-close" onclick="closeMyScorecard()">닫기</button>
+        <button type="button" class="bdg-close" onclick="dismissMyScorecard()">닫기</button>
     </div>`;
-    o.addEventListener('click', e => { if (e.target === o) closeMyScorecard(); });
+    if (fromList) o.setAttribute('data-back', name);
+    o.addEventListener('click', e => { if (e.target === o) dismissMyScorecard(); });
     document.body.appendChild(o);
     requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
 }

@@ -2112,9 +2112,6 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .sc-tk-club small { color: var(--text-sub); font-weight: 600; margin-left: 4px; font-size: 0.66rem; }
 .sc-tk-date { margin-left: auto; flex: none; font-size: 0.7rem; font-weight: 700; color: var(--text-sub); }
 .sc-tk-flag { position: absolute; right: 0; top: 0; font-size: 0.6rem; font-weight: 800; color: #7a5600; background: #f6e3a8; border-radius: 0 0 0 10px; padding: 3px 9px; }
-.sc-tk-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: #d9dde6; }
-.sc-tk-legend i.e { background: #d9a21b; } .sc-tk-legend i.p { background: #5b8fe0; } .sc-tk-legend i.d { background: #e0766b; }
-.sc-tk-legend i.b { background: transparent; box-shadow: inset 0 0 0 2px #3fae6a; }
 
 /* ─── 차수별 결과 카드 (정산 화면 · 예전 가로 타수 표를 대체) ─── */
 .round-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
