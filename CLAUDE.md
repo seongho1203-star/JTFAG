@@ -1030,6 +1030,9 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
     전체 CSS는 `media="print"`로 병렬 다운로드 후 `all`로 전환하고, `window.jtfagStylesReady`가 완료된 뒤 앱 초기화·이전 화면 복원을 실행한다.
     준비 중에는 `html.app-starting`이 환영창 외 요소를 숨긴다. SDK와 앱 스크립트는 `defer`로 다운로드하되 기존 의존 순서를 지킨다.
     Chrome이 앱 내용을 그리기 전에 자동 표시하는 설치 앱 시작 화면은 웹앱 코드로 제거할 수 없다. 로고가 완전히 없어졌다고 안내하지 말 것.
+    **안드로이드 시작 화면의 로고는 manifest로 줄였다**(사용자 제보 — 앱을 열면 내가 올린 로고가 먼저 나오고 그다음 입장 화면이 떴다). 그 화면은 크롬이 manifest의 `background_color`와 `purpose: any` 아이콘으로 만들어 앱이 뜨기 전에 보여 준다.
+    그래서 `any` 아이콘을 **투명 그림**(`icon-splash.png`·`icon-splash-192.png`)으로 두고, 홈 화면 아이콘은 `maskable`(`icon-maskable-192/512.png` — 가장자리 색 바탕에 로고를 72%로 앉힌 것)이 맡게 했다. `background_color`는 앱 바탕(`#f7f7f5`)과 같다 — 빈 바탕이 잠깐 보였다 입장 화면으로 이어진다. **시작 화면 자체는 못 없앤다.**
+    **홈 화면 아이콘이 비어 보이면 크롬이 `any`를 골랐다는 뜻이니 `any`를 도로 `icon-192/512.png`로 돌릴 것.** 이미 설치한 폰은 크롬이 manifest 변경을 보고 며칠 안에 바꾸고, 급하면 지웠다 다시 설치하면 된다. 웹 탭 아이콘(`<link rel=icon>`)은 `icon-192.png` 그대로다.
     헤드리스 확인은 스크래치패드 `early-test.js`(서버 답을 늦춰 첫 프레임에 덮여 있는가 · 두 번 안 뜨는가 · 계급 고쳐 쓰기 · 미리 눌러 넘기기).
   - **계급 그림은 이 기기에 담아 둔다**(`storeGreetPic()` in ui.js · `jtfag_greet_pic` = `{url, data}` · 사용자 제보 — `등급 이모티콘이 인터넷 환경에 따라서 늦게 뜬다`).
     그림이 Supabase 저장소에 있어 접속마다 받아 왔다. 한 번 받으면 data URL(긴 변 720px · webp, 사파리는 PNG)로 남기고,
