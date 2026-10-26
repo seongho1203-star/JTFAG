@@ -54,14 +54,18 @@ const mBirdie = h => mCount(h, v => v < 0);
 const mStrokes = (h, pred) => h.rel.reduce((n, v, i) => n + (pred(v, i) ? h.par[i] + v : 0), 0);
 
 // 특별미션은 뽑기와 관계없이 모든 멤버의 홀 기록으로 판정한다.
-// 한 홀은 홀인원·이글·알바트로스 중 해당하는 한 항목에만 가산한다.
+// 한 홀은 홀인원·이글·알바트로스 중 해당하는 한 항목에만 가산한다. 사이클링 버디는 홀이 아니라 라운드 단위라 이와 따로 더한다.
 const SPECIAL_MISSION_DEFS = [
     { id: 'holeInOne', text: '홀인원', pts: 20, how: '한 홀을 1타로 마무리',
       count: h => mCount(h, (v, i) => h.par[i] + v === 1) },
     { id: 'albatross', text: '알바트로스', pts: 20, how: '한 홀에서 파보다 3타 적게 · 홀인원 제외',
       count: h => mCount(h, (v, i) => v === -3 && h.par[i] + v > 1) },
     { id: 'eagle', text: '이글', pts: 10, how: '한 홀에서 파보다 2타 적게 · 홀인원 제외',
-      count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) }
+      count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) },
+    // 사이클링 버디 — 파3·파4·파5 홀에서 각각 버디 이상(뱃지 `cycleBirdie`와 같은 셈). 한 라운드에 한 번만 센다.
+    // `from`은 적용을 시작하는 차수다(사용자 요청 — 12차부터. 그전 차수는 소급하지 않는다: 포인트가 곧 멀리건 사용권이라).
+    { id: 'cycleBirdie', text: '사이클링 버디', pts: 10, from: 12, how: '파3 · 파4 · 파5 홀에서 모두 버디 이상 · 12차부터 · 라운드당 1회',
+      count: h => [3, 4, 5].every(p => h.par.some((q, i) => q === p && h.rel[i] < 0)) ? 1 : 0 }
 ];
 
 // 미션 목록(사용자가 정했다 — 처음 아홉에 열하나를 더했다). `w`는 뽑힐 무게 — 전반·후반 42타는 한 가지를 둘로 나눈 것이라 반씩.
@@ -290,6 +294,7 @@ function specialMissionLog(g) {
         if (!h || !h.par.every((p, i) => Number.isInteger(p) && Number.isInteger(h.rel[i]) && p + h.rel[i] >= 1)) return [];
         const y = specialMissionYear(round);
         return SPECIAL_MISSION_DEFS.flatMap(def => {
+            if (def.from && round < def.from) return [];
             const count = def.count(h);
             return count ? [{ round, g, y, id: def.id, text: def.text, count, pts: def.pts * count }] : [];
         });
