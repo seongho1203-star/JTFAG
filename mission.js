@@ -64,7 +64,7 @@ const SPECIAL_MISSION_DEFS = [
       count: h => mCount(h, (v, i) => v === -2 && h.par[i] + v > 1) },
     // 사이클링 버디 — 파3·파4·파5 홀에서 각각 버디 이상(뱃지 `cycleBirdie`와 같은 셈). 한 라운드에 한 번만 센다.
     // `from`은 적용을 시작하는 차수다(사용자 요청 — 12차부터. 그전 차수는 소급하지 않는다: 포인트가 곧 멀리건 사용권이라).
-    { id: 'cycleBirdie', text: '사이클링 버디', pts: 10, from: 12, how: '파3 · 파4 · 파5 홀에서 모두 버디 이상 · 12차부터 · 라운드당 1회',
+    { id: 'cycleBirdie', text: '사이클링 버디', pts: 10, from: 12, how: '파3 · 파4 · 파5 홀에서 모두 버디 이상 · 라운드당 1회',
       count: h => [3, 4, 5].every(p => h.par.some((q, i) => q === p && h.rel[i] < 0)) ? 1 : 0 }
 ];
 
