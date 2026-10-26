@@ -384,6 +384,9 @@ scripts/fetch-courses.js  →  courses.js를 커밋
 - **일정이 '아직 없는 다음 차수'에 잡히면 그 차수를 미리 만든다**(`ensureScheduledRound()` in ui-rounds.js · 사용자 요청 — 10차가 끝나고 11차 일정을 등록하면 경기 전에 차수별 정산에서 시작 금액부터 입력할 수 있어야 한다. 예전엔 스코어카드가 올라오거나 `+ 차수 추가`를 눌러야 생겼다).
   `saveSchedule()`(저장 직후)와 `applyHoleScores()`(접속·실시간 갱신, 맨 끝)가 부른다. **일정이 정확히 `totalRounds + 1`에 붙어 있고 일정 문구가 있을 때만**, 그리고 **마지막 차수가 비어 있지 않을 때만** 만든다 —
   마지막 차수가 비어 있으면 `settleScheduleRound()`가 일정을 그 차수로 옮기는 몫이라 둘이 맞서지 않게 한 것이다. 금액 줄은 비우지 않고(`appendRoundFromHoles()`와 같다), 같은 번호의 옛 차액 사유만 비운다. 값이 그대로면 false라 헛저장이 없다.
+  **앞 차수 금액이 덜 적혔으면 차수 선택(정산 탭 드롭다운)을 새 차수로 넘기지 않는다**(`roundMoneyPending()`·`defaultMoneyRound()` in calc.js · 사용자 요청 — 스코어가 들어오면 금액이 덜 적혀도 다음 차수로 넘어가 버렸다).
+  `roundMoneyPending(r)` = 스코어는 들어왔는데 네 명 남은 금액이 다 안 적힘. `ensureScheduledRound()`·`appendRoundFromHoles()`는 앞 차수가 그 상태면 `wasLast`를 거짓으로 두어 선택을 안 옮기고,
+  앱을 처음 열 때(`fetchFromSupabase()`)도 마지막 차수가 시작 전(금액 없음)이고 바로 앞 차수가 그 상태면 앞 차수를 고른다. 다 적히면 그때부터는 예전처럼 새 차수를 따라간다. **선택만 바꾼다 — 계급정산·타수정산 확정 규칙(`moneySettled`·`roundScored`)은 그대로다.**
   **직접 지운 차수는 되살리지 않는다** — `removeRound()`가 일정이 그 번호에 남았을 때 `payload.autoRoundOff`에 번호를 적고, `saveSchedule()`이 지운다(다른 번호의 일정이면 `ensureScheduledRound()`가 스스로 지운다). 안 그러면 지울 때마다 접속하면 되살아난다.
 - **`+ 차수 추가`·`- 최근 차수 삭제`는 본인(`SCORE_OWNER`) 기기에서만 보인다**(`#ownerRoundBtns` · `updateScoreRequestBtn()`이 `📋 스코어 등록`과 함께 켜고 끈다 · 사용자 요청 — 다른 동반자는 안 쓰므로 숨기고 `↩️ 되돌리기`만 모두에게 남긴다).
   `addRound()`·`removeRound()`도 본인이 아니면 첫 줄에서 돌아선다(화면에서 감추는 것만으로 두지 않는다 — 보안이 아니라 실수 방지 장치다). 버튼 줄이 오른쪽 정렬을 잃지 않게 `.right-btns`에 `margin-left: auto`가 있다. 일정·스코어카드가 차수를 저절로 만드는 길(`ensureScheduledRound`·`appendRoundFromHoles`)은 이 문과 무관하다.

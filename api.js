@@ -501,7 +501,8 @@ async function fetchFromSupabase() {
         _calSig = calendarSignature(appData);   // 접속 때의 일정을 기준으로 — 이후 바뀐 저장만 캘린더로 보낸다
         if (!appData.roundMoney) appData.roundMoney = getDefaultData().roundMoney;
         if (!appData.roundPhotos) appData.roundPhotos = Array.from({length: appData.totalRounds}, () => []);
-        if (selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds) selectedMoneyRoundIdx = appData.totalRounds - 1;
+        const pickMoneyRound = selectedMoneyRoundIdx < 0 || selectedMoneyRoundIdx >= appData.totalRounds;
+        if (pickMoneyRound) selectedMoneyRoundIdx = appData.totalRounds - 1;
         // 접속할 때만 도는 게 아니라 앱이 앞으로 나올 때도 돈다(ui.js의 visibilitychange).
         // **금액은 따로 둔 테이블(money.js)이 진짜다.** 읽어서 payload의 낡은 금액 위에 얹는다.
         // 테이블이 없으면(SQL을 아직 안 돌렸으면) 예전 보호막으로 돈다.
@@ -512,6 +513,7 @@ async function fetchFromSupabase() {
             syncToSupabase(appData);
         }
         applyHoleScores();   // 홀 기록이 있는 차수의 타수를 채워 넣는다
+        if (pickMoneyRound && typeof defaultMoneyRound === 'function') selectedMoneyRoundIdx = defaultMoneyRound();   // 앞 차수 금액이 덜 적혔으면 그 차수에 머문다
         // 미션·멀리건은 더하기만 하는 값 — 낡은 폰이 덮어써 빠진 것을 앞 상태와 이 기기 기록에서 되살린다(mission.js)
         const predictionsRestored = typeof mergePredictionData === 'function' && mergePredictionData(prevData);
         const missionsRestored = typeof mergeMissionData === 'function' && mergeMissionData(prevData);

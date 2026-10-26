@@ -84,7 +84,8 @@ function appendRoundFromHoles() {
     const nums = Object.keys(ROUND_HOLES).map(k => parseInt(k, 10)).filter(n => n > 0 && n <= 60);
     const max = nums.length ? Math.max(...nums) : 0;
     if (max <= appData.totalRounds) return false;
-    const wasLast = selectedMoneyRoundIdx === appData.totalRounds - 1;
+    // 바로 앞 차수 금액이 덜 적혔으면 차수 선택을 새 차수로 넘기지 않는다(사용자 요청).
+    const wasLast = selectedMoneyRoundIdx === appData.totalRounds - 1 && !roundMoneyPending(appData.totalRounds - 1);
     const from = appData.totalRounds;
     if (!appData.courses) appData.courses = [];
     if (!appData.roundPhotos) appData.roundPhotos = [];
@@ -637,7 +638,7 @@ function ensureScheduledRound(quiet) {
     if (parseInt(appData.autoRoundOff, 10) && parseInt(appData.autoRoundOff, 10) !== no) delete appData.autoRoundOff;
     if (no !== appData.totalRounds + 1 || parseInt(appData.autoRoundOff, 10) === no) return false;
     if (appData.totalRounds < 1 || roundIsEmpty(appData.totalRounds - 1)) return false;
-    const wasLast = selectedMoneyRoundIdx === appData.totalRounds - 1;
+    const wasLast = selectedMoneyRoundIdx === appData.totalRounds - 1 && !roundMoneyPending(appData.totalRounds - 1);
     if (!appData.courses) appData.courses = [];
     if (!appData.roundPhotos) appData.roundPhotos = [];
     if (!appData.roundMoney) appData.roundMoney = [];

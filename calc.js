@@ -46,6 +46,22 @@ function lastScoredRound() {
 }
 function roundScored(r) { return r <= lastScoredRound(); }
 
+// 그 차수의 금액을 네 명 모두 적었는가(남은 금액 기준 — moneySettled와 같은 잣대).
+// 스코어가 들어왔는데 이게 거짓이면 '정산 입력 중'이라, 새 차수가 생겨도 차수 선택을 그 차수에 둔다(사용자 요청).
+function roundMoneyDone(r) {
+    const row = appData && appData.roundMoney && appData.roundMoney[r];
+    return !!row && golfers.every(g => moneySettled(row[g]));
+}
+function roundMoneyPending(r) { return r >= 0 && roundScored(r) && !roundMoneyDone(r); }
+// 앱을 처음 열 때 고를 차수 — 마지막 차수가 아직 시작 전이고 바로 앞 차수 금액이 덜 적혔으면 그 앞 차수에 머문다.
+function defaultMoneyRound() {
+    const n = (appData && appData.totalRounds) || 0, last = n - 1;
+    if (n < 2) return Math.max(last, 0);
+    const row = (appData.roundMoney && appData.roundMoney[last]) || {};
+    const started = golfers.some(g => { const m = row[g]; return m && ((Number(m.start) || 0) || (Number(m.end) || 0) || (Number(m.donate) || 0)); });
+    return (!started && roundMoneyPending(last - 1)) ? last - 1 : last;
+}
+
 // 찬조 합계 — 모임을 위해 그 사람이 쓴 돈. `roundMoney[차수][이름].donate`에 있다.
 // 정산에서 나온 값이 아니라 따로 적은 값이라, 합산에서 그만큼 **뺀다**
 // (-50만인 사람이 5만을 찬조하면 -55만). 예전 payload에는 키가 없으므로 없으면 0.
