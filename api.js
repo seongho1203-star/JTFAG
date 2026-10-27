@@ -266,7 +266,7 @@ function ddayLabel(days) {
 // 라운드 사진은 Storage 버킷에 올리고 payload에는 공개 URL만 저장한다.
 // (예전에 등록된 사진은 payload 안에 base64로 들어 있어, 두 형태가 함께 존재할 수 있다)
 const PHOTO_BUCKET = 'round-photos';
-const MAX_PHOTOS_PER_ROUND = 30;
+const MAX_PHOTOS_PER_ROUND = 50;
 
 // 일정에서 '직접 입력'으로 친 골프장을 payload.customCourses에 몇 개까지 남길지.
 const MAX_CUSTOM_COURSES = 20;
