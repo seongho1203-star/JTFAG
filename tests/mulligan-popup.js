@@ -46,7 +46,7 @@ function setup() {
     m.ctx.showConfirmPrompt = (...args) => new Promise(resolve => confirms.push({args, resolve}));
     m.ctx.kickScorecardWorkflow = async () => { kicks.push('notify'); return true; };
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../mission.js'), 'utf8'), m.ctx);
-    m.run("missionPoints=g=>g==='신성호'?10:0; missionTarget=()=>({round:11,days:0}); appData.mulligans={};");
+    m.run("missionPointsRaw=g=>g==='신성호'?10:0; missionTarget=()=>({round:11,days:0}); appData.mulligans={};");
     return {...m, page, children, confirms, kicks, ownCard,
         frame() { frames.splice(0).forEach(fn => fn()); },
         finishClose() { m.timers.splice(0).forEach(timer => timer.f()); }

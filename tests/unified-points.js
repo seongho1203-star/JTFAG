@@ -25,9 +25,15 @@ assert.equal(run("missionSeasonPoints('신성호')"), 18);
 assert.equal(run("missionPoints('신성호',2027)"), 3);
 assert.equal(run("missionPoints('신성호',undefined,10)"), 12);
 assert.equal(run("missionPoints('신성호',undefined,11)"), 18);
-assert.deepEqual(plain(run("mulliganInfo('신성호')")), {pts:21,earned:4,used:0,left:4,toNext:4});
+assert.deepEqual(plain(run("mulliganInfo('신성호')")), {pts:21,earned:4,used:0,cost:5,left:4,toNext:4});
 run("appData.mulligans={'신성호':[{t:Date.now(),r:10}]}");
 assert.equal(run("mulliganInfo('신성호').left"), 3);
+// 멀리건을 쓰면 보유 포인트도 5점 차감된다(번 포인트는 그대로 — 사용권 셈·결과 발표용)
+assert.equal(run("missionPoints('신성호')"), 16);
+assert.equal(run("missionSeasonPoints('신성호')"), 13);
+assert.equal(run("missionPointsEarned('신성호')"), 21);
+assert.deepEqual(plain(run("mulliganInfo('신성호')")), {pts:16,earned:4,used:1,cost:5,left:3,toNext:4});
+run("appData.mulligans={}"); // 이하 합산 규칙 검사는 멀리건 차감 없이
 assert.equal(run("redrawCheck('신성호',11).done"), true);
 assert.deepEqual(plain(run('missionKings()')), ['신성호']);
 
@@ -40,6 +46,8 @@ run("missionLog=()=>[];specialMissionLog=()=>[];missionEntry=()=>({redrawn:true,
 assert.equal(run("missionPoints('신성호')"), 0, '다시 뽑기 비용을 통합한 점수에서 차감');
 run('missionEntry=()=>({redrawn:false,y:2026})');
 assert.equal(run("missionPoints('신성호')"), 2);
+run("appData.mulligans={'신성호':[{t:Date.now(),r:10}]}"); // 쓴 사용권 1장 = 5점 차감 → 번 포인트 2점으로는 다시 뽑기 불가
+assert.equal(run("missionPoints('신성호')"), 0);
 assert.equal(run("redrawCheck('신성호',11).ok"), false, '이미 사용한 사용권을 예측 점수로 우회하지 않음');
 run('appData.mulligans={}');
 assert.equal(run("redrawCheck('신성호',11).ok"), true, '예측으로 얻은 점수를 다시 뽑기에 사용');

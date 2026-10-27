@@ -351,11 +351,26 @@ function missionRedraws(g, year, throughRound = Infinity) {
 // 라운드 예측(prediction.js)은 숨겨 두고 포인트 연결도 끊었다(사용자 결정 — 멀리건이 너무 많이 나온다는 동반자 의견).
 // 코드·기록은 지우지 않았다. true로 바꾸면 화면과 포인트 합산이 함께 되살아난다.
 let PREDICTION_ENABLED = false;
-// 포인트 = 미션 성공 + 특별미션 − 다시 뽑기(+ 예측 적중은 PREDICTION_ENABLED일 때만). 시즌 순위·사용권·다시 뽑기가 모두 이 값을 쓴다.
-function missionPoints(g, year, throughRound = Infinity) {
+// 번 포인트 = 미션 성공 + 특별미션 − 다시 뽑기(+ 예측 적중은 PREDICTION_ENABLED일 때만). 멀리건 사용권을 몇 장 받았는지는 이 값으로 셈한다.
+function missionPointsRaw(g, year, throughRound = Infinity) {
     const won = missionLog(g).filter(x => x.ok && x.round <= throughRound && (!year || x.y === year)).reduce((t, x) => t + x.lv, 0);
     const predicted = PREDICTION_ENABLED && typeof predictionPoints === 'function' ? predictionPoints(g, year, throughRound) : 0;
-    return Math.max(0, won + specialMissionPoints(g, year, throughRound) + predicted - missionRedraws(g, year, throughRound) * REDRAW_COST);
+    return won + specialMissionPoints(g, year, throughRound) + predicted - missionRedraws(g, year, throughRound) * REDRAW_COST;
+}
+// 멀리건 사용으로 차감된 포인트(사용 1장 = MULLIGAN_STEP점 · 사용자 요청 — 멀리건을 쓰면 포인트도 차감). 쓴 해·차수로 가른다.
+function mulliganSpent(g, year, throughRound = Infinity) {
+    return mulliganUses(g).filter(u => (u.r || 0) <= throughRound && (!year || kstYearOf(u.t) === year)).length * MULLIGAN_STEP;
+}
+function kstYearOf(t) {
+    return parseInt(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date(t)), 10);
+}
+// 번 포인트(차감 전) — 결과 발표의 '이번 차수로 늘어난 사용권' 셈이 쓴다.
+function missionPointsEarned(g, year, throughRound = Infinity) {
+    return Math.max(0, missionPointsRaw(g, year, throughRound));
+}
+// 보유 포인트 = 번 포인트 − 멀리건 사용 차감. 카드·시즌 순위·미션왕·다시 뽑기·사용권이 모두 이 값을 쓴다.
+function missionPoints(g, year, throughRound = Infinity) {
+    return Math.max(0, missionPointsRaw(g, year, throughRound) - mulliganSpent(g, year, throughRound));
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
 
@@ -366,9 +381,10 @@ function redrawCheck(g, round) {
     if (!e) return { ok: false };
     if (e.redrawn) return { ok: false, done: true, why: 'ℹ️ 이번 라운드는 이미 다시 뽑았습니다.' };
     const pts = missionPoints(g);
-    if (pts < REDRAW_COST) return { ok: false, why: `⚠️ 포인트가 부족합니다. 다시 뽑기에는 ${REDRAW_COST}점이 필요합니다(보유 ${pts}점).`, pts };
-    if (Math.floor((pts - REDRAW_COST) / MULLIGAN_STEP) < mulliganUses(g).length) {
-        return { ok: false, why: '⚠️ 이미 사용한 멀리건 사용권 때문에 포인트를 사용할 수 없습니다.', pts };
+    if (pts < REDRAW_COST) {
+        // 멀리건 사용으로 차감되어 모자란 경우는 까닭을 갈라 알린다(번 포인트로는 충분했을 때).
+        if (mulliganUses(g).length && missionPointsEarned(g) >= REDRAW_COST) return { ok: false, why: `⚠️ 멀리건 사용으로 포인트가 차감되어 부족합니다. 다시 뽑기에는 ${REDRAW_COST}점이 필요합니다(보유 ${pts}점).`, pts };
+        return { ok: false, why: `⚠️ 포인트가 부족합니다. 다시 뽑기에는 ${REDRAW_COST}점이 필요합니다(보유 ${pts}점).`, pts };
     }
     return { ok: true, pts };
 }
@@ -387,10 +403,11 @@ function mulliganUsedIn(g, round) {
     return mulliganUses(g).some(u => u.r === round);
 }
 function mulliganInfo(g) {
+    // pts는 멀리건 사용 차감 뒤의 보유 포인트다. 사용권 개수는 보유 포인트 ÷ 5와 같다(번 포인트 ÷ 5 − 쓴 장수).
     const pts = missionPoints(g);
-    const earned = Math.floor(pts / MULLIGAN_STEP);
+    const earned = Math.floor(missionPointsEarned(g) / MULLIGAN_STEP);
     const used = mulliganUses(g).length;
-    return { pts, earned, used, left: Math.max(0, earned - used), toNext: MULLIGAN_STEP - (pts % MULLIGAN_STEP) };
+    return { pts, earned, used, cost: MULLIGAN_STEP, left: Math.max(0, Math.floor(pts / MULLIGAN_STEP)), toNext: MULLIGAN_STEP - (pts % MULLIGAN_STEP) };
 }
 
 // 미션왕 — 올해 포인트 1위(0점이면 없음 · 같으면 함께)
@@ -809,7 +826,7 @@ async function useMulligan() {
     if (mulliganUsedIn(me, round)) { showToast(`ℹ️ ${round}차 라운드에서는 이미 멀리건을 사용했습니다. 라운드당 1회만 사용할 수 있습니다.`); return; }
     const info = mulliganInfo(me);
     if (info.left <= 0) { showToast(`⚠️ 사용 가능한 멀리건이 없습니다. 다음 사용권까지 ${info.toNext}점 남았습니다.`); return; }
-    const ok = await showConfirmPrompt(`<b>멀리건 사용권 1개</b>를 사용합니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${round}차 라운드 · 라운드당 1회 · 사용 후 취소할 수 없습니다.<br>보유 ${info.left}개 → ${info.left - 1}개<br>동반자에게 사용 알림이 전송됩니다.</span>`, '사용', '#2b5394');
+    const ok = await showConfirmPrompt(`<b>멀리건 사용권 1개</b>를 사용합니다.<br><span style="font-size:0.8rem;color:#6b7075;font-weight:600">${round}차 라운드 · 라운드당 1회 · 사용 후 취소할 수 없습니다.<br>보유 ${info.left}개 → ${info.left - 1}개 · 포인트 ${info.cost}점 차감 (${info.pts}점 → ${info.pts - info.cost}점)<br>동반자에게 사용 알림이 전송됩니다.</span>`, '사용', '#2b5394');
     if (!ok) return;
     // 확인창이 떠 있는 사이 남의 저장이 들어왔을 수 있어 지금 값으로 다시 본다
     if (localStorage.getItem('jtfag_my_name') !== me) { showToast('⚠️ 본인 이름을 다시 확인해 주세요.'); return; }
@@ -982,13 +999,13 @@ function mulliganPopupBody(me) {
     const pct = Math.round((MULLIGAN_STEP - m.toNext) / MULLIGAN_STEP * 100);
     const uses = golfers.flatMap(g => mulliganUses(g).map(u => ({ g, u }))).sort((a, b) => b.u.t - a.u.t).slice(0, 5);
     const fmt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
-    return `<p class="msn-mulligan-rule">포인트 ${MULLIGAN_STEP}점마다 1장 · 라운드당 1회</p>
+    return `<p class="msn-mulligan-rule">포인트 ${MULLIGAN_STEP}점마다 1장 · 사용 시 ${MULLIGAN_STEP}점 차감 · 라운드당 1회</p>
         <div class="msn-mul">
             <div class="msn-ticket"><span class="big">${m.left}</span><span class="lb">장 보유</span></div>
             <div class="msn-mul-body">
                 <div class="msn-mul-line">다음 사용권까지 <b>${m.toNext}점</b></div>
                 <div class="msn-mul-bar"><i style="width:${pct}%"></i></div>
-                <div class="msn-mul-sub">통산 ${m.pts}점 · 받은 사용권 ${m.earned}장 · 사용 ${m.used}장${missionRedraws(me) ? ` · 다시 뽑기 ${missionRedraws(me)}회(−${missionRedraws(me) * REDRAW_COST}점)` : ''}</div>
+                <div class="msn-mul-sub">보유 ${m.pts}점 · 받은 사용권 ${m.earned}장 · 사용 ${m.used}장(−${m.used * MULLIGAN_STEP}점)${missionRedraws(me) ? ` · 다시 뽑기 ${missionRedraws(me)}회(−${missionRedraws(me) * REDRAW_COST}점)` : ''}</div>
             </div>
         </div>
         ${uses.length ? `<div class="msn-uses"><div class="lb">최근 사용</div>${uses.map(x => `<div class="msn-use"><span>${escapeHtml(x.g)}</span><span>${x.u.r ? x.u.r + '차' : ''} · ${fmt(x.u.t)}</span></div>`).join('')}</div>` : ''}`;
@@ -1166,8 +1183,8 @@ function revealMissionResult(r) {
     const okN = rows.filter(x => x.s.okN > 0).length;
     const STEP = 0.35;
     // 이 차수로 멀리건 사용권이 늘어난 사람
-    const before = g => Math.floor(missionPoints(g, undefined, r - 1) / MULLIGAN_STEP);
-    const after = g => Math.floor(missionPoints(g, undefined, r) / MULLIGAN_STEP);
+    const before = g => Math.floor(missionPointsEarned(g, undefined, r - 1) / MULLIGAN_STEP);
+    const after = g => Math.floor(missionPointsEarned(g, undefined, r) / MULLIGAN_STEP);
     const gained = golfers.map(g => ({ g, n: after(g) - before(g) })).filter(x => x.n > 0);
     const kings = missionKings();
     const tail = 0.5 + rows.length * STEP;

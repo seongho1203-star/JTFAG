@@ -123,7 +123,7 @@ function installConsumer(x,kind) {
         showConfirmPrompt:async()=>true,renderScoreRequestModal(){},pruneScoreRequests(){},
         document:{getElementById:()=>({checked:false,value:''})},missionYearNow:()=>2026,
         compressImageToBlob:async file=>file,uploadPhotoBlob:async()=> 'https://example.invalid/scorecard.jpg',
-        mulliganRound:()=>11,mulliganUsedIn:()=>false,mulliganInfo:()=>({left:1}),
+        mulliganRound:()=>11,mulliganUsedIn:()=>false,mulliganInfo:()=>({left:1,pts:5,cost:5}),
         writeMine:fn=>fn({mulligans:[]}),renderMissionPage(){}
     });
     if(kind==='delete')x.run(slice(ui,'async function requestHoleDelete()','async function handleScorecardUpload('));
