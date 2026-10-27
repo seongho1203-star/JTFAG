@@ -1565,6 +1565,9 @@ SELECT 허용 · INSERT/UPDATE는 **우리 넷의 이름**인 줄만 · DELETE �
   - **관리자 메뉴 → `📸 사진 용량 확인`이 저장소 사용량을 차수별로 보여 준다**(`openPhotoUsageModal()` in ui-photos.js · `#photoUsageModal` · 사용자 요청). 전체 사용량 / 1GB 막대(60% 노랑 · 85% 빨강)와 차수별·`미리보기`(thumbs) 개수·용량이다.
     **앱(anon 키)은 `round-photos`의 파일 목록을 못 읽는다**(SELECT 정책이 없다 — 열면 파일 이름이 다 샌다). 그래서 폴더별 개수·용량만 돌려주는 DB 함수 `photo_storage_usage()`(`supabase/photo-usage.sql` · `security definer` · 읽기 전용)를 `rpc`로 부른다. 2026-10-27에 이미 적용했다.
     함수가 없는 저장소에서는 `photo-usage.sql 실행` 안내를 띄운다. 이 프로젝트에는 `rn-photos`(다른 앱) 통도 있으므로 함수는 `round-photos` 통만 센다.
+    **80%를 넘으면 푸시가 간다**(`scripts/check-photo-storage.js` · `.github/workflows/photo-storage.yml` · 사용자 요청). **매주 월요일 한국 09:10**에 같은 함수를 읽어 `LIMIT_BYTES`(1GB)의 `ALERT_PERCENT`(80%) 이상이면 **사진 관리자(`OWNER_NAME` = 신성호)의 기기에만** `📸 사진 저장소 8N% 사용 · 남은 공간 · 가장 큰 차수`를 보낸다(`scripts/push.js`의 `onlyName` · tag `photo-storage`). 80% 미만이면 아무것도 안 한다.
+    **하루가 아니라 주 1회인 것은 일부러다** — 넘은 동안 매일 울리면 지울 마음이 없는 사람에게 방해다. 한도·기준은 앱 쪽(`PHOTO_STORAGE_LIMIT`)과 같은 값이니 한쪽만 고치지 말 것. 수동 확인은 Actions → `사진 저장소 용량 알림` → Run workflow(기본 dry run).
+    검증: `NODE_PATH=<web-push 흉내 모듈 상위> node tests/photo-storage-alert.js`(가짜 서버 · 30% 알림 없음 · 81% 신성호에게만 · 경계 · 이상한 응답). **실제 푸시·실제 DB로는 아직 못 돌렸다** — 처음에는 dry run으로 한 번 확인할 것.
   - **`uploadPhotoBlob()`은 확장자와 `contentType`을 blob에서 읽는다**(`PHOTO_EXT`).
     예전엔 무조건 `.jpg` · `image/jpeg`였다 — 캔버스를 거쳐 늘 JPEG였기 때문이다.
     원본을 올리면서 PNG·HEIC도 들어올 수 있어, 그대로 뒀으면 PNG를 `.jpg`로 올려 놓고
