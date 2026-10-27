@@ -242,6 +242,7 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
         <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
+        <button type="button" class="admin-btn" onclick="openPhotoUsageModal()">📸 사진 용량 확인 <span class="admin-btn-sub">저장소 사용량</span></button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 수정 잠금' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만'}</span></button>
         <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 수정 잠금' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만'}</span></button>
         <button type="button" class="admin-btn" onclick="resetMissionRound()">🎯 미션 차수 초기화 <span class="admin-btn-sub">선택 차수의 미션을 다시 받기</span></button>

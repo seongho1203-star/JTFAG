@@ -1562,6 +1562,9 @@ SELECT 허용 · INSERT/UPDATE는 **우리 넷의 이름**인 줄만 · DELETE �
     **진행 상황은 갤러리 창 안의 진행 막대가 계속 보여 준다**(`#photoUploadProgress` · `paintPhotoUploadProgress()` in ui-photos.js · 사용자 제보 — 여러 장일 때 토스트가 2초 만에 사라져 진행이 안 보였다). `N/M장 · 업로드 MB / 전체 MB · %`와 막대이고, 토스트도 끝날 때까지 길게 유지한다(`showToast(msg, 600000)` → 마지막 안내가 덮는다).
     실제 바이트 진행은 XHR `upload.onprogress`로 받는다(`uploadPhotoBlob(blob, roundIdx, onProgress)` → `xhrUploadToStorage()` in api.js — fetch에는 업로드 진행이 없다). XHR이 네트워크 오류로 죽으면 supabase-js 업로드로 물러나고 HTTP 거절(4xx)은 그대로 던진다.
     업로드 중에는 `+ 사진 업로드` 단추를 잠그고 다시 고르면 안내만 띄운다(`photoUploading`).
+  - **관리자 메뉴 → `📸 사진 용량 확인`이 저장소 사용량을 차수별로 보여 준다**(`openPhotoUsageModal()` in ui-photos.js · `#photoUsageModal` · 사용자 요청). 전체 사용량 / 1GB 막대(60% 노랑 · 85% 빨강)와 차수별·`미리보기`(thumbs) 개수·용량이다.
+    **앱(anon 키)은 `round-photos`의 파일 목록을 못 읽는다**(SELECT 정책이 없다 — 열면 파일 이름이 다 샌다). 그래서 폴더별 개수·용량만 돌려주는 DB 함수 `photo_storage_usage()`(`supabase/photo-usage.sql` · `security definer` · 읽기 전용)를 `rpc`로 부른다. 2026-10-27에 이미 적용했다.
+    함수가 없는 저장소에서는 `photo-usage.sql 실행` 안내를 띄운다. 이 프로젝트에는 `rn-photos`(다른 앱) 통도 있으므로 함수는 `round-photos` 통만 센다.
   - **`uploadPhotoBlob()`은 확장자와 `contentType`을 blob에서 읽는다**(`PHOTO_EXT`).
     예전엔 무조건 `.jpg` · `image/jpeg`였다 — 캔버스를 거쳐 늘 JPEG였기 때문이다.
     원본을 올리면서 PNG·HEIC도 들어올 수 있어, 그대로 뒀으면 PNG를 `.jpg`로 올려 놓고

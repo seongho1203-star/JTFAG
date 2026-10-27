@@ -665,3 +665,67 @@ async function downloadCurrentPhoto() {
     }
 }
 
+
+
+// 관리자 메뉴 `📸 사진 용량 확인` — 사진 저장소(round-photos)를 얼마나 쓰는지 차수별로 보여 준다(사용자 요청).
+// 앱(anon 키)은 파일 목록을 못 읽으므로 폴더별 개수·용량만 돌려주는 DB 함수 `photo_storage_usage()`를 부른다(supabase/photo-usage.sql).
+// 함수가 없으면 실행 안내를 띄운다. 무료 한도는 1GB다(`PHOTO_STORAGE_LIMIT`).
+const PHOTO_STORAGE_LIMIT = 1024 * 1024 * 1024;
+
+function closePhotoUsageModal() { document.getElementById('photoUsageModal').classList.remove('active'); }
+
+function photoUsageSize(bytes) {
+    if (bytes >= 1024 * 1024 * 1024) return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+    if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+
+async function openPhotoUsageModal() {
+    const content = document.getElementById('photoUsageContent');
+    if (!content) return;
+    content.innerHTML = '<div class="subs-empty">불러오는 중…</div>';
+    document.getElementById('photoUsageModal').classList.add('active');
+
+    let rows;
+    try {
+        const { data, error } = await window._supabase.rpc('photo_storage_usage');
+        if (error) throw error;
+        rows = Array.isArray(data) ? data : [];
+    } catch (err) {
+        const missing = /photo_storage_usage|function|404|PGRST202/i.test(String(err && (err.message || err.code || err)));
+        content.innerHTML = `<div class="subs-empty">⚠️ ${missing
+            ? '용량 조회 함수가 없습니다.<br>supabase/photo-usage.sql을 SQL Editor에서 한 번 실행해 주세요.'
+            : escapeHtml((err && err.message) || '용량을 불러오지 못했습니다.')}</div>`;
+        return;
+    }
+
+    const num = v => Number(v) || 0;
+    const total = rows.reduce((a, r) => a + num(r.bytes), 0);
+    const files = rows.reduce((a, r) => a + num(r.files), 0);
+    const pct = Math.min(100, total / PHOTO_STORAGE_LIMIT * 100);
+    const color = pct > 85 ? '#dc2626' : pct > 60 ? '#eab308' : '#16a34a';
+    const icon = pct > 85 ? '🔴' : pct > 60 ? '🟡' : '🟢';
+
+    const thumbs = rows.find(r => r.folder === 'thumbs');
+    const rounds = rows.filter(r => /^round\d+$/.test(r.folder))
+        .sort((a, b) => parseInt(b.folder.slice(5)) - parseInt(a.folder.slice(5)));
+    const others = rows.filter(r => r !== thumbs && !rounds.includes(r));
+    const maxBytes = Math.max(1, ...rows.map(r => num(r.bytes)));
+    const line = (label, r) => `
+        <div class="pu-row">
+            <span class="pu-label">${escapeHtml(label)}</span>
+            <span class="pu-bar"><i style="width:${Math.max(2, num(r.bytes) / maxBytes * 100)}%"></i></span>
+            <span class="pu-val">${num(r.files)}장 · ${photoUsageSize(num(r.bytes))}</span>
+        </div>`;
+
+    content.innerHTML = `
+        <div class="pu-total">
+            <div class="pu-total-line"><span>전체 사용량</span><b style="color:${color}">${icon} ${photoUsageSize(total)} / 1 GB</b></div>
+            <div class="storage-bar"><span style="width:${Math.max(pct, 1)}%; background:${color};"></span></div>
+            <div class="pu-sub">${files}개 파일 · 남은 공간 ${photoUsageSize(Math.max(0, PHOTO_STORAGE_LIMIT - total))} (${pct.toFixed(1)}% 사용)</div>
+        </div>
+        ${rounds.map(r => line(r.folder.slice(5) + '차', r)).join('')}
+        ${thumbs ? line('미리보기', thumbs) : ''}
+        ${others.map(r => line(r.folder || '기타', r)).join('')}
+        <div class="pu-note">원본 사진은 한 장에 3~5MB쯤 쓰므로 차수당 50장을 가득 채우면 150~250MB가 됩니다. 한도에 가까워지면 지난 차수 사진을 삭제해 주세요.</div>`;
+}

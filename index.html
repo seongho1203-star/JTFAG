@@ -384,6 +384,18 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="photoUsageModal" onclick="if(event.target === this) closePhotoUsageModal()">
+    <div class="modal-content" style="max-width: 360px;">
+        <div class="modal-header">
+            <h3>📸 사진 용량 확인</h3>
+            <button type="button" class="close-btn" onclick="closePhotoUsageModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="photoUsageContent"></div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="scoreRequestModal" onclick="if(event.target === this) closeScoreRequestModal()">
     <div class="modal-content">
         <div class="modal-header">

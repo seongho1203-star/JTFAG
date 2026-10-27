@@ -2206,3 +2206,14 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .photo-up-progress .pup-bar { height: 6px; border-radius: 3px; background: #fff; overflow: hidden; }
 .photo-up-progress .pup-fill { display: block; height: 100%; width: 0; background: var(--primary-gold, #2b5394); border-radius: 3px; transition: width 0.15s linear; }
 .open-history-btn:disabled { opacity: 0.5; }
+
+/* 관리자 메뉴 `사진 용량 확인` */
+.pu-total { background: var(--gold-light); border: 1px solid var(--accent-line, #dbe4f3); border-radius: 10px; padding: 11px 12px; margin-bottom: 10px; }
+.pu-total-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; font-weight: 800; margin-bottom: 7px; }
+.pu-sub { font-size: 0.7rem; color: var(--text-sub); margin-top: 6px; }
+.pu-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid #f1f5f9; font-size: 0.75rem; }
+.pu-label { font-weight: 800; color: var(--text-main); white-space: nowrap; }
+.pu-bar { height: 6px; border-radius: 3px; background: #eef2f7; overflow: hidden; }
+.pu-bar i { display: block; height: 100%; background: var(--primary-gold, #2b5394); border-radius: 3px; }
+.pu-val { color: var(--text-sub); font-weight: 700; white-space: nowrap; font-size: 0.7rem; }
+.pu-note { margin-top: 10px; font-size: 0.68rem; line-height: 1.5; color: #94a3b8; word-break: keep-all; }
