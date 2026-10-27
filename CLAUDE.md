@@ -1559,6 +1559,9 @@ SELECT 허용 · INSERT/UPDATE는 **우리 넷의 이름**인 줄만 · DELETE �
     그대로 넘긴다 — 다시 줄이지 말 것. payload에는 URL만 들어가므로 **payload 용량과는 무관**하고,
     대신 **Storage를 그만큼 쓴다**(무료 1GB · 차수당 `MAX_PHOTOS_PER_ROUND` 30장).
     여러 장이면 몇 장째인지 토스트로 알린다 — 원본은 느려서 멈춘 것처럼 보이기 때문이다.
+    **진행 상황은 갤러리 창 안의 진행 막대가 계속 보여 준다**(`#photoUploadProgress` · `paintPhotoUploadProgress()` in ui-photos.js · 사용자 제보 — 여러 장일 때 토스트가 2초 만에 사라져 진행이 안 보였다). `N/M장 · 업로드 MB / 전체 MB · %`와 막대이고, 토스트도 끝날 때까지 길게 유지한다(`showToast(msg, 600000)` → 마지막 안내가 덮는다).
+    실제 바이트 진행은 XHR `upload.onprogress`로 받는다(`uploadPhotoBlob(blob, roundIdx, onProgress)` → `xhrUploadToStorage()` in api.js — fetch에는 업로드 진행이 없다). XHR이 네트워크 오류로 죽으면 supabase-js 업로드로 물러나고 HTTP 거절(4xx)은 그대로 던진다.
+    업로드 중에는 `+ 사진 업로드` 단추를 잠그고 다시 고르면 안내만 띄운다(`photoUploading`).
   - **`uploadPhotoBlob()`은 확장자와 `contentType`을 blob에서 읽는다**(`PHOTO_EXT`).
     예전엔 무조건 `.jpg` · `image/jpeg`였다 — 캔버스를 거쳐 늘 JPEG였기 때문이다.
     원본을 올리면서 PNG·HEIC도 들어올 수 있어, 그대로 뒀으면 PNG를 `.jpg`로 올려 놓고

@@ -297,14 +297,43 @@ const PHOTO_EXT = {
     'image/heic': 'heic', 'image/heif': 'heif', 'image/gif': 'gif'
 };
 
-async function uploadPhotoBlob(blob, roundIdx) {
+// 보낸 바이트를 알려 주며 올린다. fetch에는 올리는 진행률이 없어 XHR을 쓴다(사진이 3~5MB라 몇 장이면 오래 걸린다).
+// 쓸 수 없거나 네트워크 오류가 나면 아래 supabase-js 길로 한 번 더 시도한다.
+function xhrUploadToStorage(path, blob, type, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${path}`);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_ANON_KEY}`);
+        xhr.setRequestHeader('x-upsert', 'false');
+        xhr.setRequestHeader('cache-control', 'max-age=3600');
+        xhr.setRequestHeader('Content-Type', type);
+        xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(Object.assign(new Error(`업로드 거절(${xhr.status})`), { http: xhr.status }));
+        xhr.onerror = () => reject(new Error('네트워크 오류'));
+        xhr.ontimeout = () => reject(new Error('시간 초과'));
+        xhr.send(blob);
+    });
+}
+async function uploadPhotoBlob(blob, roundIdx, onProgress) {
     const type = (blob && blob.type) || 'image/jpeg';
     const ext = PHOTO_EXT[type] || 'jpg';
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `round${roundIdx + 1}/${Date.now()}_${rand}.${ext}`;
-    const { error } = await window._supabase.storage.from(PHOTO_BUCKET)
-        .upload(path, blob, { contentType: type, upsert: false });
-    if (error) throw error;
+    let sent = false;
+    if (typeof onProgress === 'function' && typeof XMLHttpRequest !== 'undefined') {
+        try { await xhrUploadToStorage(path, blob, type, onProgress); sent = true; }
+        catch (e) {
+            // 서버가 거절한 것(4xx)은 다시 해도 같다 — 연결 문제일 때만 예전 길로 물러난다.
+            if (e && e.http) throw e;
+            console.warn('진행률 업로드 실패, 예전 방식으로 재시도:', e);
+        }
+    }
+    if (!sent) {
+        const { error } = await window._supabase.storage.from(PHOTO_BUCKET)
+            .upload(path, blob, { contentType: type, upsert: false });
+        if (error) throw error;
+    }
     return window._supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 

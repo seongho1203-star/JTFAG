@@ -365,7 +365,8 @@
         </div>
         <div class="modal-body">
             <input type="file" accept="image/*" id="roundPhotoUpload" style="display:none;" onchange="handleRoundPhotoUpload(event)" multiple>
-            <button type="button" class="open-history-btn" onclick="document.getElementById('roundPhotoUpload').click()">+ 사진 업로드</button>
+            <button type="button" class="open-history-btn" id="photoUploadBtn" onclick="document.getElementById('roundPhotoUpload').click()">+ 사진 업로드</button>
+            <div class="photo-up-progress" id="photoUploadProgress" hidden><div class="pup-text"></div><div class="pup-bar"><i class="pup-fill"></i></div></div>
             <div class="photo-grid" id="photoGrid"></div>
         </div>
     </div>

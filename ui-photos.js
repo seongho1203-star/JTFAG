@@ -73,10 +73,33 @@ function compressImageToBlob(file, maxSize, quality) {
     });
 }
 
+// ── 사진 업로드 진행 표시 ──────────────────────────────────────────
+// 올리는 동안은 갤러리 창 안의 진행 막대와 (창을 닫아도 보이는) 안내 글을 함께 갱신한다.
+let photoUploading = false;
+function photoMB(bytes) { return (bytes / 1048576).toFixed(bytes >= 10485760 ? 0 : 1) + 'MB'; }
+function paintPhotoUploadProgress(st) {
+    const box = document.getElementById('photoUploadProgress');
+    const btn = document.getElementById('photoUploadBtn');
+    if (btn) btn.disabled = !!st;
+    if (!st) { if (box) box.hidden = true; return; }
+    const pct = Math.min(100, Math.round(st.loaded / st.total * 100));
+    const msg = st.n > 1
+        ? `${Math.min(st.i + 1, st.n)}/${st.n}장 업로드 중 · ${photoMB(st.loaded)} / ${photoMB(st.total)} (${pct}%)`
+        : `사진 업로드 중 · ${photoMB(st.loaded)} / ${photoMB(st.total)} (${pct}%)`;
+    if (box) {
+        box.hidden = false;
+        const t = box.querySelector('.pup-text'); if (t) t.textContent = msg;
+        const f = box.querySelector('.pup-fill'); if (f) f.style.width = pct + '%';
+    }
+    // 안내 글은 끝날 때까지 유지한다(기본 2.2초 뒤 사라지는 것이 문제였다).
+    showToast('⏳ ' + msg, 600000);
+}
+
 async function handleRoundPhotoUpload(event) {
     const input = event.target;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
+    if (photoUploading) { showToast('ℹ️ 업로드가 진행 중입니다. 끝난 뒤 다시 선택해 주세요.'); input.value = ''; return; }
     // **올리기 시작한 차수를 붙들어 둔다.** 원본은 오래 걸려 그사이 다른 차수 갤러리를 열 수 있는데,
     // 그때그때 `selectedPhotoRoundIdx`를 읽으면 사진이 나중에 연 차수에 붙었다(금액 칸이 그랬던 것과 같은 자리).
     const round = selectedPhotoRoundIdx;
@@ -93,21 +116,33 @@ async function handleRoundPhotoUpload(event) {
        대신 Storage는 그만큼 쓰고 업로드도 오래 걸려, 몇 장째인지 보여 준다.
        **스코어카드는 그대로 1600px로 줄인다**(`SCORECARD_MAX_PX`) — 판독에 그 이상은
        필요 없고, 크게 보내면 판독만 느려지고 비싸진다. */
-    showToast(files.length > 1
-        ? `⏳ 사진 ${files.length}장을 원본으로 업로드 중입니다...`
-        : "⏳ 사진을 원본으로 업로드 중입니다...");
+    /* **올리는 동안 진행 상태를 계속 보여 준다**(사용자 제보 — 여러 장이면 알림이 2초 만에 사라져 올라가는 중인지 알 수 없었다).
+       갤러리 창 안의 진행 막대(`#photoUploadProgress`)가 장수·용량·퍼센트를 갱신하고,
+       창을 닫아도 보이게 안내 글(토스트)도 끝날 때까지 유지한다. 끝나면 막대를 걷는다. */
+    const totalBytes = files.reduce((t, f) => t + (f.size || 0), 0) || 1;
+    let doneBytes = 0;
+    const paint = (i, cur) => {
+        const loaded = Math.min(totalBytes, doneBytes + cur);
+        paintPhotoUploadProgress({ i, n: files.length, loaded, total: totalBytes });
+    };
     const urls = [];
     let failed = 0;
+    photoUploading = true;
+    paint(0, 0);
     for (let i = 0; i < files.length; i++) {
         try {
-            if (files.length > 1) showToast(`⏳ ${i + 1}/${files.length}장 업로드 중... (원본)`);
+            paint(i, 0);
             // File은 Blob이라 그대로 올라간다 — 다시 그리지 않으므로 화질이 그대로다.
-            const url = await uploadPhotoBlob(files[i], round);
+            const url = await uploadPhotoBlob(files[i], round, (sent, all) => paint(i, Math.min(files[i].size || all, sent)));
             urls.push(url);
+            doneBytes += files[i].size || 0;
+            paint(i, 0);
             // 갤러리 격자용 썸네일 — 실패해도 사진 등록은 그대로 간다(격자가 원본으로 물러난다).
             try { await uploadPhotoThumb(url, files[i]); } catch (e) { console.warn('썸네일 업로드 실패:', e); }
-        } catch (err) { console.error("사진 업로드 실패:", err); failed++; }
+        } catch (err) { console.error("사진 업로드 실패:", err); failed++; doneBytes += files[i].size || 0; }
     }
+    photoUploading = false;
+    paintPhotoUploadProgress(null);
     input.value = '';
 
     // 한 장이라도 올라갔으면 그만큼만 반영한다. 전부 실패하면 상태를 건드리지 않는다.

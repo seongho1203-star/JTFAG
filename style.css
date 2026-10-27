@@ -2198,3 +2198,11 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .an-track { height: 6px; background: #eef1f6; border-radius: 999px; overflow: hidden; }
 .an-track span { display: block; height: 100%; border-radius: 999px; }
 .an-s { text-align: right; font-weight: 800; font-size: 0.65rem; }
+
+/* 사진 업로드 진행 막대 — 여러 장을 올리는 동안 갤러리 창 안에 계속 보인다. 늘 도는 애니메이션 없이 너비만 바뀐다. */
+.photo-up-progress { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--accent-line, #d6e0f0); border-radius: 12px; background: var(--gold-light, #eef3fb); }
+.photo-up-progress[hidden] { display: none; }
+.photo-up-progress .pup-text { font-size: 0.78rem; font-weight: 700; color: var(--primary-gold, #2b5394); margin-bottom: 7px; word-break: keep-all; }
+.photo-up-progress .pup-bar { height: 6px; border-radius: 3px; background: #fff; overflow: hidden; }
+.photo-up-progress .pup-fill { display: block; height: 100%; width: 0; background: var(--primary-gold, #2b5394); border-radius: 3px; transition: width 0.15s linear; }
+.open-history-btn:disabled { opacity: 0.5; }
