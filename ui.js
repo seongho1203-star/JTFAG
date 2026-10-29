@@ -477,21 +477,18 @@ const FUND_KINDS = {
 const FUND_QUICK = [[10000, '+1만'], [50000, '+5만'], [100000, '+10만']];
 
 // 공금 장부의 계산기(사용자 요청 — 계산기 앱으로 나갔다 오는 불편 · 입력 창이 아니라 장부 화면에 있다). 토큰은 숫자 문자열과 `+ − × ÷`다.
-// × ÷를 먼저 셈하고 끝에 매달린 연산자는 무시한다. 0으로 나누거나 비어 있으면 null, 결과는 반올림한 정수다.
+// **왼쪽에서 오른쪽으로 차례로 셈한다**(일반 계산기와 같다 — 사용자 제보: `20,000 + 20,000 ÷ 2`를 (20,000+20,000)÷2 = 20,000으로 기대했는데
+// × ÷를 먼저 셈해 30,000이 나왔다). 끝에 매달린 연산자는 무시하고, 0으로 나누거나 비어 있으면 null, 결과는 반올림한 정수다.
 function fundCalcEval(tokens) {
     const t = tokens.slice();
     while (t.length && isNaN(Number(t[t.length - 1]))) t.pop();
     if (!t.length || isNaN(Number(t[0]))) return null;
-    const nums = [Number(t[0])], ops = [];
-    for (let i = 1; i + 1 < t.length; i += 2) { ops.push(t[i]); nums.push(Number(t[i + 1])); }
-    const n2 = [nums[0]], o2 = [];
-    for (let k = 0; k < ops.length; k++) {
-        if (ops[k] === '×') n2[n2.length - 1] *= nums[k + 1];
-        else if (ops[k] === '÷') { if (nums[k + 1] === 0) return null; n2[n2.length - 1] /= nums[k + 1]; }
-        else { o2.push(ops[k]); n2.push(nums[k + 1]); }
+    let r = Number(t[0]);
+    for (let i = 1; i + 1 < t.length; i += 2) {
+        const n = Number(t[i + 1]), o = t[i];
+        if (o === '+') r += n; else if (o === '−') r -= n; else if (o === '×') r *= n;
+        else if (o === '÷') { if (n === 0) return null; r /= n; }
     }
-    let r = n2[0];
-    o2.forEach((o, k) => { r = o === '+' ? r + n2[k + 1] : r - n2[k + 1]; });
     return Math.round(r);
 }
 

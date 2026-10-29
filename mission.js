@@ -410,6 +410,44 @@ function mulliganInfo(g) {
     return { pts, earned, used, cost: MULLIGAN_STEP, left: Math.max(0, Math.floor(pts / MULLIGAN_STEP)), toNext: MULLIGAN_STEP - (pts % MULLIGAN_STEP) };
 }
 
+/* 회칙 제14조 ⑤ — 이전 차수에서 금액(계급·타수 정산)을 가장 많이 잃은 회원은 다음 차수에서 전반·후반 1개씩 멀리건을 보상으로 받는다(사용자 요청).
+   **14차 결과부터 적용**한다(`MULLIGAN_COMP_FROM` — 14차에서 가장 많이 잃은 사람이 15차에 받는다 · 그 앞 차수는 소급하지 않는다).
+   잃은 금액은 그 차수 `남은 금액 − 시작 금액`(계급정산 + 타수정산이 다 든 값 · 찬조는 별개라 뺀다)이다. 네 명 정산이 다 끝나고(`roundMoneyDone`) 스코어가 들어온 차수만 셈한다.
+   **동률이면 함께 받는다.** 아무도 잃지 않았으면(−가 없으면) 없다. 저장하지 않고 정산 금액에서 그때그때 셈한다(금액을 고치면 따라온다).
+   포인트·사용권(`mulliganInfo`)과 섞지 않는다 — 포인트를 쓰지도 않고 라운드당 1회 제한(③)에도 안 걸리는 별도 보상이다. */
+const MULLIGAN_COMP_FROM = 14;
+function mulliganCompFor(lossRound) {
+    if (!(lossRound >= MULLIGAN_COMP_FROM)) return null;
+    const idx = lossRound - 1, row = appData.roundMoney && appData.roundMoney[idx];
+    if (!row || !roundScored(idx) || !roundMoneyDone(idx)) return null;
+    const loss = {};
+    golfers.forEach(g => { const x = row[g] || {}; loss[g] = (Number(x.end) || 0) - (Number(x.start) || 0); });
+    const min = Math.min(...golfers.map(g => loss[g]));
+    if (!(min < 0)) return null;
+    return { lossRound, round: lossRound + 1, names: golfers.filter(g => loss[g] === min), amount: -min };
+}
+// 아직 안 친 가장 가까운 보상 — 다음 차수에 홀 기록이 들어오면 지난 일이라 안 보인다.
+function mulliganCompNext() {
+    for (let r = (appData.totalRounds || 0); r >= MULLIGAN_COMP_FROM; r--) {
+        const c = mulliganCompFor(r);
+        if (c) return roundHasHoles(c.round) ? null : c;
+    }
+    return null;
+}
+function mulliganCompText(c) {
+    return `${c.round}차 보상 멀리건 · 전반 1개 + 후반 1개`;
+}
+function mulliganCompCard(me) {
+    const c = mulliganCompNext();
+    if (!c) return '';
+    const mine = c.names.includes(me);
+    return `<div class="msn-card msn-comp${mine ? ' mine' : ''}">
+        <div class="msn-head"><span>멀리건 보상</span><small>회칙 제14조 ⑤</small></div>
+        <div class="msn-comp-who">${c.names.map(escapeHtml).join(' · ')}${mine ? ' <i>내 보상</i>' : ''}</div>
+        <div class="msn-comp-sub">${c.lossRound}차에서 가장 많이 잃음(−${formatNumber(c.amount)}원) → ${mulliganCompText(c)}</div>
+    </div>`;
+}
+
 // 미션왕 — 올해 포인트 1위(0점이면 없음 · 같으면 함께)
 function missionKings() {
     if (typeof golfers === 'undefined') return [];
@@ -999,7 +1037,9 @@ function mulliganPopupBody(me) {
     const pct = Math.round((MULLIGAN_STEP - m.toNext) / MULLIGAN_STEP * 100);
     const uses = golfers.flatMap(g => mulliganUses(g).map(u => ({ g, u }))).sort((a, b) => b.u.t - a.u.t).slice(0, 5);
     const fmt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
-    return `<p class="msn-mulligan-rule">포인트 ${MULLIGAN_STEP}점마다 1장 · 사용 시 ${MULLIGAN_STEP}점 차감 · 라운드당 1회</p>
+    const comp = mulliganCompNext();
+    const compLine = comp && comp.names.includes(me) ? `<div class="msn-mulligan-comp">🎁 ${mulliganCompText(comp)}<small>${comp.lossRound}차에서 가장 많이 잃어(−${formatNumber(comp.amount)}원) 받는 보상 · 포인트·사용권과 별개</small></div>` : '';
+    return `<p class="msn-mulligan-rule">포인트 ${MULLIGAN_STEP}점마다 1장 · 사용 시 ${MULLIGAN_STEP}점 차감 · 라운드당 1회</p>${compLine}
         <div class="msn-mul">
             <div class="msn-ticket"><span class="big">${m.left}</span><span class="lb">장 보유</span></div>
             <div class="msn-mul-body">
@@ -1145,7 +1185,7 @@ function renderMissionPage() {
     const box = document.getElementById('missionPage');
     if (!box || typeof golfers === 'undefined' || missionRoll) return;
     const me = localStorage.getItem('jtfag_my_name');
-    const html = missionPointCards(me) + (PREDICTION_ENABLED ? '<div id="predictionHost"></div>' : '') + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionHistoryCard(me) + missionListCard();
+    const html = missionPointCards(me) + mulliganCompCard(me) + (PREDICTION_ENABLED ? '<div id="predictionHost"></div>' : '') + missionTargetCard(me) + missionLastResultCard() + specialMissionCard(me) + missionHistoryCard(me) + missionListCard();
     // 같으면 갈아 끼우지 않는다 — 남의 저장마다 renderAll이 돈다
     if (html !== missionLastHtml) { missionLastHtml = html; box.innerHTML = html; }
     if (PREDICTION_ENABLED && typeof renderPredictionCard === 'function') renderPredictionCard();

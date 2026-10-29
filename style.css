@@ -2244,10 +2244,12 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
 .fl-keys button { height: 42px; border-radius: 9px; border: 1px solid var(--line); background: #fff; font-family: inherit; font-size: 1.15rem; font-weight: 800; color: #16181a; cursor: pointer; }
 .fl-keys button.op { background: #e9eff9; border-color: #c9d6ec; color: var(--primary-gold); }
-.fl-calc-foot { display: flex; gap: 4px; margin-top: 5px; }
-.fl-calc-foot button { white-space: nowrap; flex: 1; height: 38px; border-radius: 8px; border: 0; background: #f2f2ee; color: var(--text-sub); font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
-.fl-calc-foot button.use { background: #fbeaea; color: #c0392b; flex: 1.6; }
-.fl-calc-foot button.add { background: #e4f3ea; color: #1f6b45; flex: 1.6; }
+.fl-calc-foot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 5px; }
+.fl-calc-foot.solo .eq { grid-column: 2 / -1; }
+.fl-calc-foot button { white-space: nowrap; min-width: 0; padding: 0; height: 42px; border-radius: 8px; border: 0; background: #f2f2ee; color: var(--text-sub); font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
+.fl-calc-foot button.use { background: #fbeaea; color: #c0392b; }
+.fl-calc-foot button.add { background: #e4f3ea; color: #1f6b45; }
+.fl-calc-foot button.eq { background: var(--primary-gold); color: #fff; font-size: 1.15rem; }
 .fund-ledger .in { color: #1f6b45; } .fund-ledger .out { color: #c0392b; }
 .fl-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
 .fl-lockrow { display: flex; align-items: center; justify-content: space-between; }
@@ -2295,7 +2297,7 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-acts.mini button, .fl-unlock.mini { padding: 7px 8px; font-size: 0.72rem; width: auto; margin: 0; white-space: nowrap; }
 .fl-calc-head { padding: 7px 12px; }
 
-@media (max-height: 760px) { .fl-keys button { height: 36px; font-size: 1.05rem; } .fl-calc-foot button { height: 34px; } }
+@media (max-height: 760px) { .fl-keys button { height: 36px; font-size: 1.05rem; } .fl-calc-foot button { height: 36px; } }
 
 /* 공금 장부 3단계 — 내역/통계 보기 */
 .fl-views { display: flex; gap: 0; margin-top: 8px; background: #f2f2ee; border-radius: 10px; padding: 3px; }
@@ -2327,3 +2329,18 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-ctrl .fl-views button { padding: 6px 14px; }
 .fl-ctrl .fl-chips { margin: 0; gap: 5px; min-width: 0; }
 .fl-ctrl .fl-chip { padding: 5px 10px; }
+
+/* 멀리건 보상(회칙 제14조 ⑤) */
+.msn-comp .msn-head small { color: var(--text-sub); font-size: 0.66rem; font-weight: 700; }
+.msn-comp-who { font-size: 1.05rem; font-weight: 800; margin-top: 4px; word-break: keep-all; }
+.msn-comp-who i { font-style: normal; font-size: 0.64rem; font-weight: 800; color: #fff; background: var(--primary-gold); border-radius: 6px; padding: 2px 7px; margin-left: 6px; vertical-align: middle; }
+.msn-comp-sub { margin-top: 4px; font-size: 0.72rem; color: #6b7075; line-height: 1.5; word-break: keep-all; }
+.msn-comp.mine { border-color: var(--primary-gold); }
+.msn-mulligan-comp { margin: 0 0 12px; padding: 9px 11px; background: #eef3fb; border-radius: 10px; font-size: 0.8rem; font-weight: 800; color: var(--primary-gold); word-break: keep-all; }
+.msn-mulligan-comp small { display: block; margin-top: 3px; font-size: 0.66rem; font-weight: 600; color: #6b7075; }
+
+.fl-keys button.eq { background: var(--primary-gold); border-color: var(--primary-gold); color: #fff; }
+
+.fl-ctrl .fl-chip { white-space: nowrap; padding: 5px 9px; font-size: 0.72rem; }
+.fl-ctrl .fl-views button { padding: 6px 11px; white-space: nowrap; }
+.fl-ctrl { gap: 6px; }

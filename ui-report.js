@@ -604,8 +604,8 @@ function renderFundLedger() {
                     <div class="fl-calc-res" id="flCalcRes">= 0</div>
                     <div class="fl-keys">${['7','8','9','÷','4','5','6','×','1','2','3','−','0','00','⌫','+'].map(k =>
                         `<button type="button" class="${'+−×÷'.includes(k) ? 'op' : ''}" data-fl="ck" data-k="${k}">${k}</button>`).join('')}</div>
-                    <div class="fl-calc-foot"><button type="button" data-fl="ck" data-k="C">지우기</button>${admin
-                        ? `<button type="button" class="use" data-fl="calcTo" data-m="use" id="flCalcUse">− 사용 입력</button><button type="button" class="add" data-fl="calcTo" data-m="add" id="flCalcAdd">+ 적립 입력</button>`
+                    <div class="fl-calc-foot${admin ? '' : ' solo'}"><button type="button" data-fl="ck" data-k="C">지우기</button><button type="button" class="eq" data-fl="ck" data-k="=">=</button>${admin
+                        ? `<button type="button" class="use" data-fl="calcTo" data-m="use" id="flCalcUse">사용 입력</button><button type="button" class="add" data-fl="calcTo" data-m="add" id="flCalcAdd">적립 입력</button>`
                         : ''}</div>
                 </div>` : ''}
             </div>
@@ -639,6 +639,7 @@ function fundCalcPaint() {
 function fundCalcKey(k) {
     const e = fundCalcExpr, last = e[e.length - 1];
     if (k === 'C') fundCalcExpr = [];
+    else if (k === '=') { const res = fundCalcEval(e); if (res !== null) fundCalcExpr = [String(Math.max(0, res))]; }   // 식을 결과 하나로 접는다 — 이어서 계산할 수 있다
     else if (k === '⌫') { if (last !== undefined) { if (fundIsOp(last) || last.length <= 1) e.pop(); else e[e.length - 1] = last.slice(0, -1); } }
     else if (fundIsOp(k)) { if (!e.length) return fundCalcPaint(); if (fundIsOp(last)) e[e.length - 1] = k; else e.push(k); }
     else {   // 숫자 · 00
