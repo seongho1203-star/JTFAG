@@ -2344,3 +2344,9 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-ctrl .fl-chip { white-space: nowrap; padding: 5px 9px; font-size: 0.72rem; }
 .fl-ctrl .fl-views button { padding: 6px 11px; white-space: nowrap; }
 .fl-ctrl { gap: 6px; }
+
+/* 장부 금액을 누르면 계산기에 담긴다 */
+button.fl-amt.tap { font-family: inherit; background: #f7f7f5; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; margin: -4px 0; cursor: pointer; -webkit-tap-highlight-color: rgba(43,83,148,0.18); }
+button.fl-amt.tap:active { background: #e9eff9; border-color: #c9d6ec; }
+.fl-calc-head em { font-style: normal; font-size: 0.62rem; font-weight: 600; color: var(--text-sub); margin-left: 6px; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+button.fl-amt.tap { justify-self: end; }

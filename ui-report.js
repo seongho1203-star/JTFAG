@@ -575,7 +575,8 @@ function renderFundLedger() {
         }
         return `${head}<div class="fl-row${l.void ? ' void' : ''}">
             <div class="fl-what">${kind}${voidTag}<span class="fl-memo">${memo}</span></div>
-            <div class="fl-amt ${plus ? 'in' : 'out'}">${plus ? '+' : '−'}${formatNumber(Math.abs(d))}</div>
+            ${l.void ? `<div class="fl-amt ${plus ? 'in' : 'out'}">${plus ? '+' : '−'}${formatNumber(Math.abs(d))}</div>`
+                : `<button type="button" class="fl-amt tap ${plus ? 'in' : 'out'}" data-fl="amt" data-v="${Math.abs(d)}" aria-label="${formatNumber(Math.abs(d))}원 계산기에 담기">${plus ? '+' : '−'}${formatNumber(Math.abs(d))}</button>`}
             <div class="fl-sub">${escapeHtml(String(l.time || ''))} · ${escapeHtml(l.name || '')}${voidInfo}</div>
             <div class="fl-bal">${l.void ? '' : '잔액 ' + formatNumber(balAfter[i])}</div>${ctl}</div>`;
     }).join('');
@@ -598,7 +599,7 @@ function renderFundLedger() {
                     : `<button type="button" class="fl-unlock" data-fl="unlock">🔒 관리자 인증 (적립 · 사용 입력)</button>`}
             </div>`}
             <div class="fl-calc${fundCalcOpen ? ' open' : ''}">
-                <button type="button" class="fl-calc-head" data-fl="calcToggle" aria-expanded="${fundCalcOpen}">🧮 계산기 <span>${fundCalcOpen ? '접기 ▴' : '펼치기 ▾'}</span></button>
+                <button type="button" class="fl-calc-head" data-fl="calcToggle" aria-expanded="${fundCalcOpen}">🧮 계산기 <em>목록의 금액을 누르면 담깁니다</em><span>${fundCalcOpen ? '접기 ▴' : '펼치기 ▾'}</span></button>
                 ${fundCalcOpen ? `<div class="fl-calc-body">
                     <div class="fl-calc-expr" id="flCalcExpr"> </div>
                     <div class="fl-calc-res" id="flCalcRes">= 0</div>
@@ -636,6 +637,15 @@ function fundCalcPaint() {
     rs.textContent = res === null ? '= 0' : '= ' + formatNumber(res);
     ['flCalcUse', 'flCalcAdd'].forEach(id => { const b = document.getElementById(id); if (b) { b.disabled = !(res > 0); b.style.opacity = res > 0 ? '1' : '0.45'; } });
 }
+// 장부 줄의 금액을 누르면 계산기에 담는다(사용자 요청 — 숫자를 다시 치지 않게). 닫혀 있으면 펴고, 식이 숫자로 끝나 있으면 `+`를 사이에 넣어 이어 붙인다.
+// 빼려면 먼저 `−`를 누르고 금액을 누른다. 부호는 안 따진다(적립·사용 모두 금액 그대로 담는다).
+function fundCalcAdd(v) {
+    v = Math.abs(Math.round(Number(v) || 0)); if (!v) return;
+    const e = fundCalcExpr, last = e[e.length - 1];
+    if (last !== undefined && !fundIsOp(last)) e.push('+');
+    e.push(String(v));
+    if (!fundCalcOpen) { fundCalcOpen = true; renderFundLedger(); } else fundCalcPaint();
+}
 function fundCalcKey(k) {
     const e = fundCalcExpr, last = e[e.length - 1];
     if (k === 'C') fundCalcExpr = [];
@@ -658,6 +668,7 @@ async function fundLedgerClick(ev) {
     else if (act === 'statMonth') { fundStatMonth = t.dataset.k; renderFundLedger(); }
     else if (act === 'calcToggle') { fundCalcOpen = !fundCalcOpen; renderFundLedger(); }
     else if (act === 'ck') fundCalcKey(t.dataset.k);
+    else if (act === 'amt') fundCalcAdd(t.dataset.v);
     else if (act === 'calcTo') {
         const res = fundCalcEval(fundCalcExpr); if (!(res > 0)) return;
         await editClubFund(t.dataset.m, res);
