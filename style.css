@@ -2216,3 +2216,15 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .pu-bar i { display: block; height: 100%; background: var(--primary-gold, #2b5394); border-radius: 3px; }
 .pu-val { color: var(--text-sub); font-weight: 700; white-space: nowrap; font-size: 0.7rem; }
 .pu-note { margin-top: 10px; font-size: 0.68rem; line-height: 1.5; color: #94a3b8; word-break: keep-all; }
+
+/* ─── JTFAG 회칙(#rulesModal) — 머리말 책 단추 ─── */
+.header-tools .rules-btn { color: #3d4450; }
+.rules-body { overflow-y: auto; overscroll-behavior: contain; padding: 4px 16px 18px; }
+.rules-body .rl-ch { margin: 18px 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--line); font-size: 0.86rem; font-weight: 900; color: var(--primary-gold); }
+.rules-body .rl-ch:first-child { margin-top: 8px; }
+.rules-body .rl-art { margin: 0 0 9px; font-size: 0.76rem; line-height: 1.65; color: var(--text-main); word-break: keep-all; }
+.rules-body .rl-art b { font-weight: 800; }
+.rules-body .rl-table { width: 100%; border-collapse: collapse; margin: 0 0 10px; table-layout: fixed; }
+.rules-body .rl-table th, .rules-body .rl-table td { border: 1px solid var(--line); padding: 6px 1px; text-align: center; font-size: 0.7rem; white-space: nowrap; }
+@media (max-width: 360px) { .rules-body .rl-table td { font-size: 0.6rem; letter-spacing: -0.4px; } }
+.rules-body .rl-table th { background: var(--gold-light); font-weight: 800; }

@@ -416,3 +416,13 @@ async function resetAllData() {
     renderAll(); showToast("🔄 모든 데이터가 초기화되었습니다."); forceTableReflow();
 }
 
+
+// JTFAG 회칙 — 머리말의 책 단추가 연다. 글은 index.html의 #rulesModal이 원본이다(읽기만 한다 · 저장 없음).
+function openRulesModal() {
+    const m = document.getElementById('rulesModal');
+    if (!m) return;
+    m.classList.add('active');
+    const body = m.querySelector('.rules-body');
+    if (body) body.scrollTop = 0;
+}
+function closeRulesModal() { const m = document.getElementById('rulesModal'); if (m) m.classList.remove('active'); }
