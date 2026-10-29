@@ -17,6 +17,7 @@ function renderAll() {
     if (typeof renderBadgePage === 'function') { renderBadgePage(); checkBadgeUnlocks(); }
     if (typeof refreshTripPage === 'function') refreshTripPage();
     if (typeof checkPassportStamps === 'function') checkPassportStamps();
+    if (typeof refreshFundLedger === 'function') refreshFundLedger();   // 공금 장부가 열려 있을 때만 다시 그린다
 }
 
 // ─── 연출 세 가지 ───

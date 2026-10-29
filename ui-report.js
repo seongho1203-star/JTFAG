@@ -207,6 +207,7 @@ function adminLock() {
     renderMoneyTable();
     renderTable();
     updateLockUI();
+    refreshFundLedger();
     closeAdminModal();
     showToast("🔒 관리자 권한을 해제했습니다.");
 }
@@ -240,7 +241,7 @@ function renderAdminModal() {
     const legacy = countLegacyPhotos();
     let btns = `
         <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
-        <button type="button" class="admin-btn" onclick="openFundLogModal()">📜 공금 수정 로그</button>
+        <button type="button" class="admin-btn" onclick="openFundLedger()">📒 공금 장부</button>
         <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
         <button type="button" class="admin-btn" onclick="openPhotoUsageModal()">📸 사진 용량 확인 <span class="admin-btn-sub">저장소 사용량</span></button>
         <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 수정 잠금' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만'}</span></button>
@@ -426,3 +427,169 @@ function openRulesModal() {
     if (body) body.scrollTop = 0;
 }
 function closeRulesModal() { const m = document.getElementById('rulesModal'); if (m) m.classList.remove('active'); }
+
+
+/* ── 공금 장부 ─────────────────────────────────────────────────────────────
+   홈의 공금 잔액 칸을 누르면 열린다(사용자 요청 — 공금 부분을 장부처럼 보게). 예전에는 그 칸이 곧바로 비밀번호를 물었다.
+   **보는 것은 누구나, 적립·사용·취소는 관리자 인증(`isFundUnlocked`) 뒤에만이다.**
+   값은 예전 그대로 `payload.clubFund`(잔액)와 `payload.fundLogs`(기록)다 — 새 필드는 둘뿐이고 옛 기록은 그대로 읽힌다:
+     void: {time, name}  취소 처리한 기록. **지우지 않고 남기며** 그 금액만큼 잔액을 되돌린다(복구하면 다시 반영).
+     fix:  true          잔액을 직접 정정한 기록(`직접` 모드) — 장부에 `정정`으로 따로 보인다.
+   **거래 뒤의 잔액은 저장하지 않고 지금 잔액에서 거꾸로 셈한다**(가장 최근 유효 기록 뒤 = clubFund). 기록이 중간에
+   잘렸거나 사슬이 어긋난 예전 자료여도 맨 위 잔액이 늘 맞고, 취소·복구를 해도 줄마다 따로 고칠 것이 없다.
+   이번 달 적립·사용에는 취소한 기록과 정정을 뺀다. 50건 제한은 없앴다(상한 500 — `editClubFund()`). */
+let fundLedgerFilter = 'all';
+const fundDelta = (l) => (l.after || 0) - (l.before || 0);
+function fundNowLabel() {
+    const n = new Date();
+    return `${n.getMonth() + 1}/${n.getDate()} ${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+}
+// 창이 떠 있는 사이 남의 저장이 들어오면 appData가 통째로 바뀐다 — 확인 뒤에 같은 기록을 다시 찾아 처리한다.
+function findFundLogAt(log) {
+    return (appData.fundLogs || []).findIndex(l => l.time === log.time && l.name === log.name && l.before === log.before && l.after === log.after);
+}
+function openFundLedger() {
+    const m = document.getElementById('fundLedgerModal'); if (!m) return;
+    renderFundLedger();
+    m.classList.add('active');
+    const body = document.getElementById('fundLedgerBody'); if (body) body.scrollTop = 0;
+}
+function closeFundLedger() { const m = document.getElementById('fundLedgerModal'); if (m) m.classList.remove('active'); }
+function refreshFundLedger() {
+    const m = document.getElementById('fundLedgerModal');
+    if (m && m.classList.contains('active')) renderFundLedger();
+}
+
+function renderFundLedger() {
+    const body = document.getElementById('fundLedgerBody'); if (!body) return;
+    const logs = appData.fundLogs || [];
+    const cur = appData.clubFund || 0;
+    const admin = isFundUnlocked;
+    const thisMonth = new Date().getMonth() + 1;
+    const monthOf = (l) => parseInt(String(l.time || '').split('/')[0], 10) || 0;
+
+    // 거래 뒤 잔액: 가장 최근 유효 기록 뒤가 지금 잔액이고, 거꾸로 거래 금액을 뺀다.
+    const balAfter = [];
+    let bal = cur;
+    for (let i = logs.length - 1; i >= 0; i--) {
+        if (logs[i].void) { balAfter[i] = null; continue; }
+        balAfter[i] = bal; bal -= fundDelta(logs[i]);
+    }
+    let inM = 0, outM = 0, voidN = 0;
+    logs.forEach(l => {
+        if (l.void) { voidN++; return; }
+        if (l.fix || monthOf(l) !== thisMonth) return;
+        const d = fundDelta(l);
+        if (d > 0) inM += d; else outM += -d;
+    });
+
+    const shown = [];
+    for (let i = logs.length - 1; i >= 0; i--) {
+        const d = fundDelta(logs[i]);
+        if (fundLedgerFilter === 'in' && !(d > 0 && !logs[i].fix)) continue;
+        if (fundLedgerFilter === 'out' && !(d < 0 && !logs[i].fix)) continue;
+        shown.push(i);
+    }
+    let lastMonth = -1;
+    const rows = shown.map(i => {
+        const l = logs[i], d = fundDelta(l), plus = d > 0;
+        const m = monthOf(l);
+        const head = m !== lastMonth ? `<div class="fl-month">${m ? m + '월' : '기록'}</div>` : '';
+        lastMonth = m;
+        const kind = l.fix ? '<span class="fl-tag fix">정정</span>' : `<span class="fl-tag ${plus ? 'in' : 'out'}">${plus ? '적립' : '사용'}</span>`;
+        const voidTag = l.void ? '<span class="fl-tag void">취소됨</span>' : '';
+        const memo = l.memo ? escapeHtml(l.memo) : (l.fix ? '잔액 정정' : (plus ? '적립' : '사용'));
+        const voidInfo = l.void ? ` · ${escapeHtml(l.void.time || '')} ${escapeHtml(l.void.name || '')} 취소` : '';
+        let ctl = '';
+        if (admin) {
+            ctl = l.void
+                ? `<button type="button" data-fl="restore" data-i="${i}">복구</button>`
+                : `<button type="button" data-fl="memo" data-i="${i}">내역 수정</button><button type="button" data-fl="void" data-i="${i}">취소</button>`;
+            ctl = `<div class="fl-ctl">${ctl}</div>`;
+        }
+        return `${head}<div class="fl-row${l.void ? ' void' : ''}">
+            <div class="fl-what">${kind}${voidTag}<span class="fl-memo">${memo}</span></div>
+            <div class="fl-amt ${plus ? 'in' : 'out'}">${plus ? '+' : '−'}${formatNumber(Math.abs(d))}</div>
+            <div class="fl-sub">${escapeHtml(String(l.time || ''))} · ${escapeHtml(l.name || '')}${voidInfo}</div>
+            <div class="fl-bal">${l.void ? '' : '잔액 ' + formatNumber(balAfter[i])}</div>${ctl}</div>`;
+    }).join('');
+
+    const chip = (key, label) => `<button type="button" class="fl-chip${fundLedgerFilter === key ? ' sel' : ''}" data-fl="filter" data-k="${key}">${label}</button>`;
+    body.innerHTML = `
+        <div class="fl-card">
+            <div class="fl-lockrow"><small>현재 공금 잔액</small><span class="fl-lock${admin ? ' open' : ''}">${admin ? '관리자 인증됨' : '보기 전용'}</span></div>
+            <div class="fl-big">${formatNumber(cur)}<span>원</span></div>
+            <div class="fl-month2"><div><small>${thisMonth}월 적립</small><b class="in">+${formatNumber(inM)}</b></div><div><small>${thisMonth}월 사용</small><b class="out">${outM ? '−' : ''}${formatNumber(outM)}</b></div></div>
+            ${admin
+                ? `<div class="fl-acts"><button type="button" class="a-in" data-fl="add">+ 적립</button><button type="button" class="a-out" data-fl="use">− 사용</button><button type="button" class="a-fix" data-fl="fix">정정</button></div>`
+                : `<button type="button" class="fl-unlock" data-fl="unlock">🔒 관리자 인증 (적립 · 사용 입력)</button>`}
+        </div>
+        <div class="fl-chips">${chip('all', '전체')}${chip('in', '적립')}${chip('out', '사용')}</div>
+        ${logs.length === 0 ? '<div class="fl-empty">기록된 내역이 없습니다.</div>' : (shown.length ? `<div class="fl-list">${rows}</div>` : '<div class="fl-empty">해당하는 내역이 없습니다.</div>')}
+        <div class="fl-foot">기록 ${logs.length}건${voidN ? ` · 취소 ${voidN}건` : ''} · 취소한 기록도 남아 있습니다</div>`;
+}
+
+async function fundLedgerClick(ev) {
+    const t = ev.target.closest('[data-fl]'); if (!t) return;
+    const act = t.dataset.fl, i = +t.dataset.i;
+    if (act === 'filter') { fundLedgerFilter = t.dataset.k; renderFundLedger(); }
+    else if (act === 'unlock') { if (await authenticateAdmin()) renderFundLedger(); }
+    else if (act === 'add' || act === 'use') { await editClubFund(act); }
+    else if (act === 'fix') { await editClubFund('direct'); }
+    else if (act === 'void') await voidFundLog(i);
+    else if (act === 'restore') await restoreFundLog(i);
+    else if (act === 'memo') await editFundLedgerMemo(i);
+}
+
+async function voidFundLog(i) {
+    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    const log = (appData.fundLogs || [])[i];
+    if (!log || log.void) return;
+    const d = fundDelta(log), cur = appData.clubFund || 0;
+    const ok = await showConfirmPrompt(
+        `이 거래를 취소할까요?<br><span style="font-size:0.78rem; color:#6b7075;">${escapeHtml(log.time || '')} · ${escapeHtml(log.name || '')} · ${d > 0 ? '+' : '−'}${formatNumber(Math.abs(d))}원${log.memo ? ' · ' + escapeHtml(log.memo) : ''}</span><br><span style="font-size:0.78rem; color:#c0392b;">공금 잔액 ${formatNumber(cur)}원 → ${formatNumber(cur - d)}원</span>`,
+        '거래 취소');
+    if (!ok) return;
+    const at = findFundLogAt(log);
+    if (at < 0 || appData.fundLogs[at].void) { showToast("이미 처리된 기록입니다."); renderFundLedger(); return; }
+    saveState();
+    appData.fundLogs[at].void = { time: fundNowLabel(), name: localStorage.getItem('jtfag_my_name') || "알 수 없음" };
+    appData.clubFund = (appData.clubFund || 0) - d;
+    syncToSupabase(appData); renderNoticeArea(); renderAll();
+    showToast(`↩️ 거래를 취소했습니다. 공금 ${formatFundString(appData.clubFund)}`);
+}
+
+async function restoreFundLog(i) {
+    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    const log = (appData.fundLogs || [])[i];
+    if (!log || !log.void) return;
+    const d = fundDelta(log), cur = appData.clubFund || 0;
+    const ok = await showConfirmPrompt(
+        `취소한 거래를 복구할까요?<br><span style="font-size:0.78rem; color:#6b7075;">${escapeHtml(log.time || '')} · ${d > 0 ? '+' : '−'}${formatNumber(Math.abs(d))}원</span><br><span style="font-size:0.78rem; color:#1f6b45;">공금 잔액 ${formatNumber(cur)}원 → ${formatNumber(cur + d)}원</span>`,
+        '복구', '#2b5394');
+    if (!ok) return;
+    const at = findFundLogAt(log);
+    if (at < 0 || !appData.fundLogs[at].void) { showToast("이미 처리된 기록입니다."); renderFundLedger(); return; }
+    saveState();
+    delete appData.fundLogs[at].void;
+    appData.clubFund = (appData.clubFund || 0) + d;
+    syncToSupabase(appData); renderNoticeArea(); renderAll();
+    showToast(`✅ 거래를 복구했습니다. 공금 ${formatFundString(appData.clubFund)}`);
+}
+
+// 내역(메모)만 고친다. 금액은 못 고친다 — 틀렸으면 취소하고 다시 입력한다.
+async function editFundLedgerMemo(i) {
+    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    const picked = (appData.fundLogs || [])[i];
+    if (!picked) return;
+    const memo = await showMemoPrompt(picked);
+    if (memo === null) return;
+    const at = findFundLogAt(picked);
+    if (at < 0) { showToast("이미 삭제된 기록입니다."); renderFundLedger(); return; }
+    const log = appData.fundLogs[at];
+    if (memo === (log.memo || '')) return;
+    saveState();
+    if (memo) log.memo = memo; else delete log.memo;
+    syncToSupabase(appData); renderFundLedger();
+    showToast(memo ? "✏️ 내역을 수정했습니다." : "✏️ 내역을 삭제했습니다.");
+}

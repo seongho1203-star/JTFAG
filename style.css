@@ -2228,3 +2228,45 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .rules-body .rl-table th, .rules-body .rl-table td { border: 1px solid var(--line); padding: 6px 1px; text-align: center; font-size: 0.7rem; white-space: nowrap; }
 @media (max-width: 360px) { .rules-body .rl-table td { font-size: 0.6rem; letter-spacing: -0.4px; } }
 .rules-body .rl-table th { background: var(--gold-light); font-weight: 800; }
+
+
+/* ─── 공금 장부(#fundLedgerModal) — 홈의 공금 잔액 칸 ─── */
+.notice-fund label .fund-more { margin-left: 4px; font-size: 0.68rem; font-weight: 700; color: var(--primary-gold); }
+.fund-ledger { overflow-y: auto; overscroll-behavior: contain; padding: 12px 12px 16px; background: var(--bg-main); }
+.fund-ledger .in { color: #1f6b45; } .fund-ledger .out { color: #c0392b; }
+.fl-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.fl-lockrow { display: flex; align-items: center; justify-content: space-between; }
+.fl-lockrow small, .fl-month2 small { color: var(--text-sub); font-size: 0.7rem; font-weight: 700; }
+.fl-lock { font-size: 0.66rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #f2f2ee; color: var(--text-sub); }
+.fl-lock.open { background: #e4f3ea; color: #1f6b45; }
+.fl-big { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.fl-big span { font-size: 0.95rem; font-weight: 700; margin-left: 2px; }
+.fl-month2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.fl-month2 div { background: #f2f2ee; border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.fl-month2 small { display: block; }
+.fl-month2 b { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.fl-acts { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 12px; }
+.fl-acts button, .fl-unlock { border: 0; border-radius: 10px; padding: 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+.fl-acts .a-in { background: #e4f3ea; color: #1f6b45; } .fl-acts .a-out { background: #fbeaea; color: #c0392b; }
+.fl-acts .a-fix { background: #f2f2ee; color: var(--text-sub); padding-inline: 14px; }
+.fl-unlock { width: 100%; margin-top: 12px; background: #f2f2ee; color: var(--text-sub); }
+.fl-chips { display: flex; gap: 6px; margin: 12px 2px 4px; }
+.fl-chip { font-family: inherit; font-size: 0.74rem; font-weight: 700; padding: 5px 13px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--text-sub); cursor: pointer; }
+.fl-chip.sel { background: var(--primary-gold); border-color: var(--primary-gold); color: #fff; }
+.fl-month { font-size: 0.7rem; font-weight: 800; color: var(--text-sub); padding: 9px 13px 5px; background: #f7f7f5; border-bottom: 1px solid var(--line); }
+.fl-month:first-child { border-top: 0; }
+.fl-list { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-top: 6px; }
+.fl-row { padding: 11px 13px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
+.fl-row:last-child { border-bottom: 0; }
+.fl-what { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; font-weight: 700; font-size: 0.85rem; }
+.fl-memo { min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
+.fl-tag { font-size: 0.62rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: #f2f2ee; color: var(--text-sub); white-space: nowrap; }
+.fl-tag.in { background: #e4f3ea; color: #1f6b45; } .fl-tag.out { background: #fbeaea; color: #c0392b; }
+.fl-amt { font-weight: 800; text-align: right; font-size: 0.9rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fl-sub, .fl-bal { color: var(--text-sub); font-size: 0.7rem; }
+.fl-bal { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fl-row.void .fl-memo, .fl-row.void .fl-amt { text-decoration: line-through; color: var(--text-sub); }
+.fl-ctl { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+.fl-ctl button { font-family: inherit; border: 1px solid var(--line); background: #fff; color: var(--text-sub); font-size: 0.7rem; font-weight: 700; border-radius: 7px; padding: 5px 11px; cursor: pointer; }
+.fl-empty { text-align: center; color: var(--text-sub); font-size: 0.8rem; padding: 26px 0; }
+.fl-foot { text-align: center; color: var(--text-sub); font-size: 0.68rem; margin-top: 10px; }

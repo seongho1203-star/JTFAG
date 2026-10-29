@@ -456,9 +456,9 @@ const FUND_MODES = {
     direct: { tab: "✏️ 직접", label: "정정할 잔액", memo: "예) 잔액 정정", sign: 0 }
 };
 
-function showFundPrompt(before) {
+function showFundPrompt(before, startMode) {
     return new Promise((resolve) => {
-        let mode = 'use';   // 대개는 쓴 돈을 적는다
+        let mode = FUND_MODES[startMode] ? startMode : 'use';   // 대개는 쓴 돈을 적는다
 
         const overlay = document.createElement('div');
         overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:10000; display:flex; justify-content:center; align-items:center; opacity:0; transition:opacity 0.2s; padding:20px;";
@@ -555,7 +555,7 @@ function showFundPrompt(before) {
         }
         function save() {
             if (!parseNumber(amountInput.value)) { amountInput.focus(); return; }
-            cleanup({ after: resultOf(), memo: memoInput.value.trim() });
+            cleanup({ after: resultOf(), memo: memoInput.value.trim(), mode });
         }
         cancelBtn.onclick = () => cleanup(null);
         okBtn.onclick = save;
@@ -575,10 +575,10 @@ function showFundPrompt(before) {
 // 예전에는 관리자 메뉴 안에 있어서 그 문(비밀번호)을 이미 지난 뒤였다.
 // 이제 바로 부를 수 있게 됐으니 **여기서 비밀번호를 직접 묻는다** — 돈이라 그대로 열어 둘 수 없다.
 // (한 번 풀면 isFundUnlocked가 남아, 잠그기 전까지는 다시 묻지 않는다.)
-async function editClubFund() {
+async function editClubFund(startMode) {
     if (!(await authenticateAdmin())) return;
     const before = appData.clubFund || 0;
-    const entered = await showFundPrompt(before);
+    const entered = await showFundPrompt(before, startMode);
     if (entered === null) return;
     const after = entered.after;
     const memo = entered.memo || "";
@@ -588,15 +588,18 @@ async function editClubFund() {
     saveState();
     if (!appData.fundLogs) appData.fundLogs = [];
     const now = new Date();
-    appData.fundLogs.push({
+    const entry = {
         time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
         name: localStorage.getItem('jtfag_my_name') || "알 수 없음",
         before: before, after: after, memo: memo
-    });
-    while (appData.fundLogs.length > 50) appData.fundLogs.shift();
+    };
+    if (entered.mode === 'direct') entry.fix = true;   // 잔액을 직접 정정한 기록 — 장부에 `정정`으로 따로 보인다
+    appData.fundLogs.push(entry);
+    // 장부라 예전의 50건 제한은 없앴다. 그래도 끝없이 불어나지 않게 넉넉한 상한만 둔다.
+    while (appData.fundLogs.length > 500) appData.fundLogs.shift();
 
     appData.clubFund = after;
-    syncToSupabase(appData); renderNoticeArea(); renderAll();
+    syncToSupabase(appData); renderNoticeArea(); renderAll();   // renderAll이 열려 있는 공금 장부도 다시 그린다
     const diff = after - before;
     showToast(`💰 ${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}원 → 공금 ${formatFundString(after)}`);
 }

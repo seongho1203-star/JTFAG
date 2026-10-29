@@ -175,8 +175,8 @@
                 <span id="weatherText">날씨 정보를 불러오는 중...</span>
             </div>
         </div>
-        <div class="notice-box notice-fund" onclick="editClubFund()">
-            <label>공금 잔액</label>
+        <div class="notice-box notice-fund" onclick="openFundLedger()">
+            <label>공금 잔액 <span class="fund-more">장부 ›</span></label>
             <div id="clubFundInput" class="notice-input notice-display-text">0원</div>
         </div>
     </div>
@@ -382,6 +382,17 @@
         <div class="modal-body">
             <div id="pushSubsContent"></div>
         </div>
+    </div>
+</div>
+
+<!-- 공금 장부 — 홈의 공금 잔액 칸을 누르면 열린다(openFundLedger in ui-report.js). 보는 것은 누구나, 적립·사용·취소는 관리자 인증 뒤에만. -->
+<div class="modal-overlay" id="fundLedgerModal" onclick="if(event.target === this) closeFundLedger()">
+    <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-header">
+            <h3>공금 장부</h3>
+            <button type="button" class="close-btn" onclick="closeFundLedger()">✕</button>
+        </div>
+        <div class="modal-body fund-ledger" id="fundLedgerBody" onclick="fundLedgerClick(event)"></div>
     </div>
 </div>
 
