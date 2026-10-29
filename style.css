@@ -2241,11 +2241,11 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-calc-body { padding: 0 10px 10px; }
 .fl-calc-expr { min-height: 16px; text-align: right; font-size: 0.78rem; font-weight: 700; color: var(--text-sub); word-break: break-all; font-variant-numeric: tabular-nums; }
 .fl-calc-res { text-align: right; font-size: 1.05rem; font-weight: 800; margin: 0 0 4px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.fl-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-.fl-keys button { height: 32px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 800; color: #16181a; cursor: pointer; }
+.fl-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.fl-keys button { height: 42px; border-radius: 9px; border: 1px solid var(--line); background: #fff; font-family: inherit; font-size: 1.15rem; font-weight: 800; color: #16181a; cursor: pointer; }
 .fl-keys button.op { background: #e9eff9; border-color: #c9d6ec; color: var(--primary-gold); }
 .fl-calc-foot { display: flex; gap: 4px; margin-top: 5px; }
-.fl-calc-foot button { white-space: nowrap; flex: 1; height: 34px; border-radius: 8px; border: 0; background: #f2f2ee; color: var(--text-sub); font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
+.fl-calc-foot button { white-space: nowrap; flex: 1; height: 38px; border-radius: 8px; border: 0; background: #f2f2ee; color: var(--text-sub); font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
 .fl-calc-foot button.use { background: #fbeaea; color: #c0392b; flex: 1.6; }
 .fl-calc-foot button.add { background: #e4f3ea; color: #1f6b45; flex: 1.6; }
 .fund-ledger .in { color: #1f6b45; } .fund-ledger .out { color: #c0392b; }
@@ -2294,3 +2294,5 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-acts.mini { margin-top: 0; gap: 4px; flex: 0 0 auto; }
 .fl-acts.mini button, .fl-unlock.mini { padding: 7px 8px; font-size: 0.72rem; width: auto; margin: 0; white-space: nowrap; }
 .fl-calc-head { padding: 7px 12px; }
+
+@media (max-height: 760px) { .fl-keys button { height: 36px; font-size: 1.05rem; } .fl-calc-foot button { height: 34px; } }
