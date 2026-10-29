@@ -8,6 +8,10 @@ window.SUPABASE_TABLE = 'jtfag_league';
 
 const ADMIN_PASSWORD = "1234";
 let isFundUnlocked = false;
+// 총무(공금 관리자) — 이 기기 주인이 이 사람이면 관리자 인증을 비밀번호 없이 통과한다(사용자 요청). 나머지는 비밀번호를 눌러야 한다.
+// `jtfag_my_name`은 누구나 바꿀 수 있어 보안 경계가 아니라 실수 방지 장치다(SCORE_OWNER와 같은 생각).
+const FUND_ADMIN = "김지명";
+const isFundAdmin = () => localStorage.getItem('jtfag_my_name') === FUND_ADMIN;
 // 타수 칸은 기본이 잠김이다. 홀 기록(stats.js)에서 자동으로 채워지므로 손댈 일이 없고,
 // 홀 기록이 없는 차수만 관리자가 잠시 열어 직접 넣을 수 있다.
 let isScoreUnlocked = false;

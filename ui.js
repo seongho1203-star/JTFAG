@@ -411,6 +411,7 @@ function showMemoPrompt(log) {
 
 async function authenticateAdmin() {
     if (isFundUnlocked) return true;
+    if (isFundAdmin()) { isFundUnlocked = true; updateLockUI(); return true; }   // 총무는 비밀번호를 묻지 않는다
     const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
     const pwd = await showPasswordPrompt("🔒 시스템 관리 비밀번호를<br>입력해 주세요");
     

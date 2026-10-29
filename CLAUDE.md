@@ -1630,6 +1630,9 @@ SELECT 허용 · INSERT/UPDATE는 **우리 넷의 이름**인 줄만 · DELETE �
 - **공금 칸을 누르면 `공금 장부`가 먼저 열린다**(`openFundLedger()` · `#fundLedgerModal` · `renderFundLedger()` in ui-report.js · `.fl-*` in style.css · 사용자 요청 —
   공금 부분을 디자인·기능 모두 바꾸고 싶다 → 시안(아티팩트 `JTFAG 공금 장부 시안`)의 **1단계**를 골랐다. 영수증 첨부는 뺐고 장부는 앱을 쓰는 모두가 본다).
   **2단계(입력 창 — 아래 꼭지)까지 넣었고, 3단계(월별·항목 통계)는 사용자가 아직 안 골랐다 — 요청이 있을 때만.**
+  - **총무(`FUND_ADMIN` = 김지명 · api.js)는 비밀번호 없이 관리자 인증된다**(`isFundAdmin()` — 이 기기 `jtfag_my_name`이 그 사람이면 `authenticateAdmin()`이 곧바로 통과시키고 장부를 열 때도 인증된 상태다 · 사용자 요청).
+    **그 밖의 사람은 비밀번호를 눌러야 관리자 인증된다.** `authenticateAdmin()` 하나가 공금·관리자 메뉴·장부를 다 지키므로 총무는 관리자 메뉴도 비밀번호 없이 열린다. `jtfag_my_name`은 누구나 바꿀 수 있어 보안 경계가 아니라 실수 방지 장치다(`SCORE_OWNER`와 같다).
+    총무가 바뀌면 `FUND_ADMIN`과 회칙 제12조(공금 관리자)를 함께 고칠 것.
   - **보는 것은 누구나, 적립·사용·정정·취소는 관리자 인증(`isFundUnlocked`) 뒤에만이다.** 예전엔 칸을 누르면 곧바로 비밀번호를 물었다.
     인증은 장부 안의 `🔒 관리자 인증` 단추로 하고(`authenticateAdmin()`), `adminLock()`이 잠그면 장부도 다시 그린다(`refreshFundLedger()`).
     적립·사용·정정 단추는 예전 `editClubFund(startMode)`를 그대로 부른다(`showFundPrompt(before, startMode)`가 그 탭으로 연다).

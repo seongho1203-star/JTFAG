@@ -452,6 +452,7 @@ function findFundLogAt(log) {
 }
 function openFundLedger() {
     const m = document.getElementById('fundLedgerModal'); if (!m) return;
+    if (isFundAdmin()) isFundUnlocked = true;   // 총무는 장부를 열면 바로 관리자 인증된 상태다
     renderFundLedger();
     m.classList.add('active');
     const body = document.getElementById('fundLedgerBody'); if (body) body.scrollTop = 0;
