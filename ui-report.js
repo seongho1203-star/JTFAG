@@ -444,6 +444,67 @@ function closeRulesModal() { const m = document.getElementById('rulesModal'); if
    잘렸거나 사슬이 어긋난 예전 자료여도 맨 위 잔액이 늘 맞고, 취소·복구를 해도 줄마다 따로 고칠 것이 없다.
    이번 달 적립·사용에는 취소한 기록과 정정을 뺀다. 50건 제한은 없앴다(상한 500 — `editClubFund()`). */
 let fundLedgerFilter = 'all';
+let fundView = 'list', fundStatMonth = 'all';   // 장부 보기: 내역 / 통계(3단계)
+
+/* 장부 3단계 — 월별·항목 통계(사용자 요청). 저장하지 않고 fundLogs에서 매번 셈한다.
+   취소한 기록과 정정(fix)은 뺀다. 월은 기록 시각(`10/18 19:02`)의 앞 숫자라 연도는 모른다.
+   항목(kind)은 2단계 이후 기록에만 있어, 없는 옛 기록은 내역 글에서 낱말로 짐작한다(`fundKindGuess` — 화면에서만, 저장 안 함).
+   짐작이 틀려도 합계에는 영향이 없다 — 어느 항목 줄에 들어가느냐만 달라진다. */
+function fundKindGuess(l) {
+    const m = String(l.memo || '').replace(/\s/g, '');
+    if (fundDelta(l) > 0) {
+        if (/회비/.test(m)) return '회비';
+        if (/타수/.test(m)) return '타수정산';
+        if (/계급/.test(m)) return '계급정산';
+        if (/벌금/.test(m)) return '벌금';
+        if (/찬조/.test(m)) return '찬조';
+        return '기타';
+    }
+    if (/간식|음료|편의점|닭강정|김밥|깐풍기|과자/.test(m)) return '간식';
+    if (/점심|저녁|식당|식사|돈까스|회식/.test(m)) return '식사';
+    if (/예약금|카트/.test(m)) return '예약금·카트비';
+    if (/여행/.test(m)) return '여행 경비';
+    if (/톨비|기름|교통|주유/.test(m)) return '교통비';
+    return '기타';
+}
+const fundKindOf = (l) => l.kind || fundKindGuess(l);
+function fundStats(logs) {
+    const months = [], byM = {};
+    logs.forEach(l => {
+        if (l.void || l.fix) return;
+        const m = parseInt(String(l.time || '').split('/')[0], 10) || 0;
+        if (!byM[m]) { byM[m] = { m, inn: 0, out: 0, inK: {}, outK: {} }; months.push(m); }
+        const d = fundDelta(l), k = fundKindOf(l), b = byM[m];
+        if (d > 0) { b.inn += d; b.inK[k] = (b.inK[k] || 0) + d; }
+        else if (d < 0) { b.out += -d; b.outK[k] = (b.outK[k] || 0) + -d; }
+    });
+    return { months, byM };
+}
+function fundStatsHtml(logs) {
+    const { months, byM } = fundStats(logs);
+    if (!months.length) return '<div class="fl-empty">통계를 낼 내역이 없습니다.</div>';
+    const sel = fundStatMonth !== 'all' && byM[fundStatMonth] ? +fundStatMonth : 'all';
+    const pick = sel === 'all' ? months : [sel];
+    const sum = { inn: 0, out: 0, inK: {}, outK: {} };
+    pick.forEach(m => { const b = byM[m]; sum.inn += b.inn; sum.out += b.out;
+        Object.keys(b.inK).forEach(k => sum.inK[k] = (sum.inK[k] || 0) + b.inK[k]);
+        Object.keys(b.outK).forEach(k => sum.outK[k] = (sum.outK[k] || 0) + b.outK[k]); });
+    const net = sum.inn - sum.out;
+    const bars = (obj, total, cls) => {
+        const keys = Object.keys(obj).sort((a, b) => obj[b] - obj[a]);
+        if (!keys.length) return '<div class="fl-st-none">내역 없음</div>';
+        return keys.map(k => `<div class="fl-bar"><div class="fl-bar-h"><span>${escapeHtml(k)}</span><b>${formatNumber(obj[k])}<i>${total ? Math.round(obj[k] / total * 100) : 0}%</i></b></div><div class="fl-bar-t"><div class="${cls}" style="width:${total ? Math.max(2, obj[k] / total * 100) : 0}%"></div></div></div>`).join('');
+    };
+    const maxM = Math.max(1, ...months.map(m => Math.max(byM[m].inn, byM[m].out)));
+    const monthRows = sel === 'all' ? `<div class="fl-st-card"><div class="fl-st-h">월별 적립 · 사용</div>${months.map(m => `<div class="fl-mrow"><div class="fl-mrow-n">${m ? m + '월' : '기록'}</div><div class="fl-mrow-b"><div class="fl-bar-t"><div class="in" style="width:${byM[m].inn / maxM * 100}%"></div></div><div class="fl-bar-t"><div class="out" style="width:${byM[m].out / maxM * 100}%"></div></div></div><div class="fl-mrow-v"><span class="in">+${formatNumber(byM[m].inn)}</span><span class="out">−${formatNumber(byM[m].out)}</span></div></div>`).join('')}</div>` : '';
+    const chip = (k, label) => `<button type="button" class="fl-chip${String(fundStatMonth) === String(k) || (k === 'all' && sel === 'all') ? ' sel' : ''}" data-fl="statMonth" data-k="${k}">${label}</button>`;
+    return `<div class="fl-chips fl-mchips">${chip('all', '전체')}${months.map(m => chip(m, (m || '기록') + (m ? '월' : ''))).join('')}</div>
+        <div class="fl-st-sum"><div><small>적립</small><b class="in">+${formatNumber(sum.inn)}</b></div><div><small>사용</small><b class="out">−${formatNumber(sum.out)}</b></div><div><small>순증감</small><b class="${net >= 0 ? 'in' : 'out'}">${net >= 0 ? '+' : '−'}${formatNumber(Math.abs(net))}</b></div></div>
+        ${monthRows}
+        <div class="fl-st-card"><div class="fl-st-h">사용 항목별</div>${bars(sum.outK, sum.out, 'out')}</div>
+        <div class="fl-st-card"><div class="fl-st-h">적립 항목별</div>${bars(sum.inK, sum.inn, 'in')}</div>
+        <div class="fl-foot">취소한 기록·정정은 뺀 값입니다 · 항목을 안 고른 예전 기록은 내역 글로 짐작해 나눴습니다</div>`;
+}
 const fundDelta = (l) => (l.after || 0) - (l.before || 0);
 function fundNowLabel() {
     const n = new Date();
@@ -548,10 +609,11 @@ function renderFundLedger() {
                         : ''}</div>
                 </div>` : ''}
             </div>
-            <div class="fl-chips">${chip('all', '전체')}${chip('in', '적립')}${chip('out', '사용')}</div>
+            <div class="fl-ctrl"><div class="fl-views"><button type="button" class="${fundView === 'list' ? 'sel' : ''}" data-fl="view" data-k="list">내역</button><button type="button" class="${fundView === 'stats' ? 'sel' : ''}" data-fl="view" data-k="stats">통계</button></div>
+            ${fundView === 'list' ? `<div class="fl-chips">${chip('all', '전체')}${chip('in', '적립')}${chip('out', '사용')}</div>` : ''}</div>
         </div>
-        <div class="fl-scroll" id="fundLedgerScroll">${listHtml}
-            <div class="fl-foot">기록 ${logs.length}건${voidN ? ` · 취소 ${voidN}건` : ''} · 취소한 기록도 남아 있습니다</div>
+        <div class="fl-scroll" id="fundLedgerScroll">${fundView === 'stats' ? fundStatsHtml(logs) : `${listHtml}
+            <div class="fl-foot">기록 ${logs.length}건${voidN ? ` · 취소 ${voidN}건` : ''} · 취소한 기록도 남아 있습니다</div>`}
         </div>`;
     // 목록을 보는 동안 남의 저장으로 다시 그려져도 굴려 둔 자리를 안 잃는다.
     const old = document.getElementById('fundLedgerScroll');
@@ -591,6 +653,8 @@ async function fundLedgerClick(ev) {
     const t = ev.target.closest('[data-fl]'); if (!t) return;
     const act = t.dataset.fl, i = +t.dataset.i;
     if (act === 'filter') { fundLedgerFilter = t.dataset.k; renderFundLedger(); }
+    else if (act === 'view') { fundView = t.dataset.k; renderFundLedger(); const sc = document.getElementById('fundLedgerScroll'); if (sc) sc.scrollTop = 0; }
+    else if (act === 'statMonth') { fundStatMonth = t.dataset.k; renderFundLedger(); }
     else if (act === 'calcToggle') { fundCalcOpen = !fundCalcOpen; renderFundLedger(); }
     else if (act === 'ck') fundCalcKey(t.dataset.k);
     else if (act === 'calcTo') {

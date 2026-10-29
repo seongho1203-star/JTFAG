@@ -2296,3 +2296,34 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-calc-head { padding: 7px 12px; }
 
 @media (max-height: 760px) { .fl-keys button { height: 36px; font-size: 1.05rem; } .fl-calc-foot button { height: 34px; } }
+
+/* 공금 장부 3단계 — 내역/통계 보기 */
+.fl-views { display: flex; gap: 0; margin-top: 8px; background: #f2f2ee; border-radius: 10px; padding: 3px; }
+.fl-views button { flex: 1; border: 0; background: transparent; font-family: inherit; font-size: 0.78rem; font-weight: 800; color: var(--text-sub); padding: 6px 0; border-radius: 8px; cursor: pointer; }
+.fl-views button.sel { background: #fff; color: var(--primary-gold); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.fl-mchips { flex-wrap: wrap; margin-top: 10px; }
+.fl-st-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.fl-st-sum div { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 6px; text-align: center; min-width: 0; }
+.fl-st-sum small { display: block; color: var(--text-sub); font-size: 0.64rem; font-weight: 700; }
+.fl-st-sum b { font-size: 0.82rem; font-variant-numeric: tabular-nums; word-break: keep-all; }
+.fl-st-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+.fl-st-h { font-size: 0.74rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; }
+.fl-st-none { color: var(--text-sub); font-size: 0.72rem; padding: 4px 0; }
+.fl-bar { margin-bottom: 8px; }
+.fl-bar:last-child { margin-bottom: 0; }
+.fl-bar-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.78rem; font-weight: 700; }
+.fl-bar-h b { font-variant-numeric: tabular-nums; font-size: 0.78rem; white-space: nowrap; }
+.fl-bar-h i { font-style: normal; color: var(--text-sub); font-size: 0.66rem; font-weight: 700; margin-left: 5px; }
+.fl-bar-t { height: 7px; background: #f2f2ee; border-radius: 4px; overflow: hidden; margin-top: 3px; }
+.fl-bar-t div { height: 100%; border-radius: 4px; }
+.fl-bar-t .in { background: #4caf7d; } .fl-bar-t .out { background: #e57368; }
+.fl-mrow { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 9px; }
+.fl-mrow:last-child { margin-bottom: 0; }
+.fl-mrow-n { font-size: 0.76rem; font-weight: 800; }
+.fl-mrow-v { display: flex; flex-direction: column; text-align: right; font-size: 0.68rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.fl-ctrl { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.fl-ctrl .fl-views { margin-top: 0; flex: 0 0 auto; }
+.fl-ctrl .fl-views button { padding: 6px 14px; }
+.fl-ctrl .fl-chips { margin: 0; gap: 5px; min-width: 0; }
+.fl-ctrl .fl-chip { padding: 5px 10px; }
