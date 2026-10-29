@@ -1632,7 +1632,8 @@ SELECT 허용 · INSERT/UPDATE는 **우리 넷의 이름**인 줄만 · DELETE �
   **2단계(입력 창 — 아래 꼭지)까지 넣었고, 3단계(월별·항목 통계)는 사용자가 아직 안 골랐다 — 요청이 있을 때만.**
   - **총무(`FUND_ADMIN` = 김지명 · api.js)는 공금 장부만 비밀번호 없이 인증된다**(`isFundAdmin()` · `authorizeFund()` in ui.js — 이 기기 `jtfag_my_name`이 그 사람이면 장부 열기·적립·사용·정정·취소·내역 수정이 곧바로 된다 · 사용자 요청).
     **그 밖의 사람은 비밀번호를 눌러야 인증된다**(`authenticateAdmin()`). **총무는 `isFundUnlocked`를 켜지 않는다** — 그 플래그는 관리자 메뉴 문과 같이 쓰므로 켜면 메뉴까지 열린다.
-    **관리자 메뉴(⚙️ `.lock-btn`)는 신성호(`SCORE_OWNER`)에게만 보인다**(`updateScoreRequestBtn()`이 켜고 끄며, `openAdminModal()`도 한 번 더 막는다 · 사용자 요청).
+    **관리자 메뉴(⚙️ `.lock-btn`)는 신성호(`SCORE_OWNER`)에게만 보이고 비밀번호 없이 곧바로 열린다**(`updateScoreRequestBtn()`이 켜고 끄며, `openAdminModal()`이 신성호가 아니면 막고 맞으면 `isFundUnlocked`를 켠다 · 사용자 요청).
+    단추가 사라진 사람은 🔔·📖가 **오른쪽 끝으로 한 칸씩 붙는다**(`.header-tools`가 flex라 `display:none`이면 저절로 — 390·320px에서 오른쪽 끝에 붙는 것을 쟀다). 다른 문(장부의 `관리자 인증` · 사진 이전)은 신성호도 비밀번호를 묻는다.
     `jtfag_my_name`은 누구나 바꿀 수 있어 보안 경계가 아니라 실수 방지 장치다. 총무가 바뀌면 `FUND_ADMIN`과 회칙 제12조(공금 관리자)를 함께 고칠 것.
   - **보는 것은 누구나, 적립·사용·정정·취소는 관리자 인증(`isFundUnlocked`) 뒤에만이다.** 예전엔 칸을 누르면 곧바로 비밀번호를 물었다.
     인증은 장부 안의 `🔒 관리자 인증` 단추로 하고(`authenticateAdmin()`), `adminLock()`이 잠그면 장부도 다시 그린다(`refreshFundLedger()`).

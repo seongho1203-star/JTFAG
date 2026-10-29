@@ -196,7 +196,8 @@ function saveNotifySettings() {
 async function openAdminModal() {
     // 관리자 메뉴는 신성호(SCORE_OWNER)만 쓴다(사용자 요청). 단추도 그에게만 보이지만 여기서 한 번 더 막는다.
     if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
-    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    // 신성호는 비밀번호 없이 곧바로 열린다(사용자 요청). 다른 문(사진 이전 · 장부의 `관리자 인증`)은 그대로 비밀번호를 묻는다.
+    if (!isFundUnlocked) { isFundUnlocked = true; updateLockUI(); }
     renderAdminModal(); renderStorageUsage();
     document.getElementById('adminModal').classList.add('active');
 }
