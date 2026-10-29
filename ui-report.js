@@ -433,7 +433,8 @@ function closeRulesModal() { const m = document.getElementById('rulesModal'); if
    홈의 공금 잔액 칸을 누르면 열린다(사용자 요청 — 공금 부분을 장부처럼 보게). 예전에는 그 칸이 곧바로 비밀번호를 물었다.
    **보는 것은 누구나, 적립·사용·취소는 관리자 인증(`isFundUnlocked`) 뒤에만이다.**
    값은 예전 그대로 `payload.clubFund`(잔액)와 `payload.fundLogs`(기록)다 — 새 필드는 둘뿐이고 옛 기록은 그대로 읽힌다:
-     void: {time, name}  취소 처리한 기록. **지우지 않고 남기며** 그 금액만큼 잔액을 되돌린다(복구하면 다시 반영).
+     void: {time, name, eff}  취소 처리한 기록. **지우지 않고 남기며** 그 금액(eff)만큼 잔액을 되돌린다(복구하면 다시 반영). eff 0은 잔액에 영향이 없던 중복 기록이다.
+   ts:   기록한 시각(ms) — 방금 같은 금액을 또 넣는지 `editClubFund()`가 본다. 예전 기록에는 없다.
      fix:  true          잔액을 직접 정정한 기록(`직접` 모드) — 장부에 `정정`으로 따로 보인다.
      kind: '그늘집' …    입력창에서 고른 항목(2단계). 내역이 비어 있으면 장부에 항목이 대신 보인다. 안 고른 옛 기록에는 없다.
    **거래 뒤의 잔액은 저장하지 않고 지금 잔액에서 거꾸로 셈한다**(가장 최근 유효 기록 뒤 = clubFund). 기록이 중간에
@@ -554,7 +555,7 @@ async function voidFundLog(i) {
     const at = findFundLogAt(log);
     if (at < 0 || appData.fundLogs[at].void) { showToast("이미 처리된 기록입니다."); renderFundLedger(); return; }
     saveState();
-    appData.fundLogs[at].void = { time: fundNowLabel(), name: localStorage.getItem('jtfag_my_name') || "알 수 없음" };
+    appData.fundLogs[at].void = { time: fundNowLabel(), name: localStorage.getItem('jtfag_my_name') || "알 수 없음", eff: d };   // eff = 이때 잔액에서 뺀 금액(복구할 때 그만큼 되돌린다)
     appData.clubFund = (appData.clubFund || 0) - d;
     syncToSupabase(appData); renderNoticeArea(); renderAll();
     showToast(`↩️ 거래를 취소했습니다. 공금 ${formatFundString(appData.clubFund)}`);
@@ -564,7 +565,7 @@ async function restoreFundLog(i) {
     if (!isFundUnlocked && !(await authenticateAdmin())) return;
     const log = (appData.fundLogs || [])[i];
     if (!log || !log.void) return;
-    const d = fundDelta(log), cur = appData.clubFund || 0;
+    const d = (typeof log.void.eff === 'number') ? log.void.eff : fundDelta(log), cur = appData.clubFund || 0;   // 잔액에 영향이 없던 기록(eff 0)은 복구해도 잔액이 안 바뀐다
     const ok = await showConfirmPrompt(
         `취소한 거래를 복구할까요?<br><span style="font-size:0.78rem; color:#6b7075;">${escapeHtml(log.time || '')} · ${d > 0 ? '+' : '−'}${formatNumber(Math.abs(d))}원</span><br><span style="font-size:0.78rem; color:#1f6b45;">공금 잔액 ${formatNumber(cur)}원 → ${formatNumber(cur + d)}원</span>`,
         '복구', '#2b5394');

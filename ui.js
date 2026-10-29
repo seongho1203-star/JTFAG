@@ -619,24 +619,41 @@ function showFundPrompt(before, startMode) {
 // (한 번 풀면 isFundUnlocked가 남아, 잠그기 전까지는 다시 묻지 않는다.)
 async function editClubFund(startMode) {
     if (!(await authenticateAdmin())) return;
-    const before = appData.clubFund || 0;
-    const entered = await showFundPrompt(before, startMode);
+    const opened = appData.clubFund || 0;
+    const entered = await showFundPrompt(opened, startMode);
     if (entered === null) return;
-    const after = entered.after;
     const memo = entered.memo || "";
+    const me = localStorage.getItem('jtfag_my_name') || "알 수 없음";
+    // 창을 열어 둔 사이 남이 공금을 고쳤을 수 있다. 적립·사용은 **입력한 금액**을 지금 잔액에 더하고 빼서
+    // 옛 잔액으로 남의 기록을 덮어쓰지 않는다(10/29에 같은 지출이 두 번 기록되고 둘째가 옛 잔액에서 시작한 일이 있었다).
+    // 직접 정정은 적은 잔액 그대로다.
+    const before = appData.clubFund || 0;
+    const after = entered.mode === 'direct' ? entered.after : before + (entered.after - opened);
     // 금액이 그대로면 사용내역만 남길 이유가 없다.
     if (after === before) { showToast("변경 사항이 없습니다."); return; }
+
+    // 방금 같은 사람이 같은 금액을 넣었으면 한 번 더 묻는다 — 두 번 눌렀거나 두 기기에서 같은 일을 넣는 실수를 막는다.
+    const last = [...(appData.fundLogs || [])].reverse().find(l => !l.void);
+    if (last && last.ts && Date.now() - last.ts < 30 * 60 * 1000 && last.name === me &&
+        (last.after - last.before) === (after - before)) {
+        const d = after - before;
+        const again = await showConfirmPrompt(
+            `방금(${last.time}) 같은 금액이 기록되어 있습니다.<br><span style="font-size:0.78rem; color:#6b7075;">${d > 0 ? '+' : '−'}${formatNumber(Math.abs(d))}원${last.memo ? ' · ' + escapeHtml(last.memo) : ''}</span><br>또 입력할까요?`,
+            '입력', '#2b5394');
+        if (!again) return;
+    }
 
     saveState();
     if (!appData.fundLogs) appData.fundLogs = [];
     const now = new Date();
     const entry = {
         time: `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
-        name: localStorage.getItem('jtfag_my_name') || "알 수 없음",
+        ts: now.getTime(),
+        name: me,
         before: before, after: after, memo: memo
     };
-    if (entered.mode === 'direct') entry.fix = true;
-    if (entered.kind) entry.kind = entered.kind;       // 고른 항목(그늘집·캐디 팁 …) — 안 고른 옛 기록에는 없다   // 잔액을 직접 정정한 기록 — 장부에 `정정`으로 따로 보인다
+    if (entered.mode === 'direct') entry.fix = true;   // 잔액을 직접 정정한 기록 — 장부에 `정정`으로 따로 보인다
+    if (entered.kind) entry.kind = entered.kind;       // 고른 항목(간식·식사 …) — 안 고른 옛 기록에는 없다
     appData.fundLogs.push(entry);
     // 장부라 예전의 50건 제한은 없앴다. 그래도 끝없이 불어나지 않게 넉넉한 상한만 둔다.
     while (appData.fundLogs.length > 500) appData.fundLogs.shift();
@@ -644,7 +661,8 @@ async function editClubFund(startMode) {
     appData.clubFund = after;
     syncToSupabase(appData); renderNoticeArea(); renderAll();   // renderAll이 열려 있는 공금 장부도 다시 그린다
     const diff = after - before;
-    showToast(`💰 ${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}원 → 공금 ${formatFundString(after)}`);
+    showToast(`💰 ${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}원 → 공금 ${formatFundString(after)}` +
+        (before !== opened ? "\n입력 중 공금이 바뀌어 지금 잔액 기준으로 반영했습니다." : ""));
 }
 
 // 공금은 표시만 한다. 고치는 건 그 칸을 눌러 여는 editClubFund()뿐이다.
