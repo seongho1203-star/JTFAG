@@ -194,6 +194,8 @@ function saveNotifySettings() {
 }
 
 async function openAdminModal() {
+    // 관리자 메뉴는 신성호(SCORE_OWNER)만 쓴다(사용자 요청). 단추도 그에게만 보이지만 여기서 한 번 더 막는다.
+    if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
     if (!isFundUnlocked && !(await authenticateAdmin())) return;
     renderAdminModal(); renderStorageUsage();
     document.getElementById('adminModal').classList.add('active');
@@ -452,7 +454,6 @@ function findFundLogAt(log) {
 }
 function openFundLedger() {
     const m = document.getElementById('fundLedgerModal'); if (!m) return;
-    if (isFundAdmin()) isFundUnlocked = true;   // 총무는 장부를 열면 바로 관리자 인증된 상태다
     renderFundLedger();
     m.classList.add('active');
     const body = document.getElementById('fundLedgerBody'); if (body) body.scrollTop = 0;
@@ -467,7 +468,7 @@ function renderFundLedger() {
     const body = document.getElementById('fundLedgerBody'); if (!body) return;
     const logs = appData.fundLogs || [];
     const cur = appData.clubFund || 0;
-    const admin = isFundUnlocked;
+    const admin = isFundAdmin() || isFundUnlocked;   // 총무는 곧바로, 그 밖의 사람은 비밀번호로 인증한 뒤
     const thisMonth = new Date().getMonth() + 1;
     const monthOf = (l) => parseInt(String(l.time || '').split('/')[0], 10) || 0;
 
@@ -545,7 +546,7 @@ async function fundLedgerClick(ev) {
 }
 
 async function voidFundLog(i) {
-    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    if (!(await authorizeFund())) return;
     const log = (appData.fundLogs || [])[i];
     if (!log || log.void) return;
     const d = fundDelta(log), cur = appData.clubFund || 0;
@@ -563,7 +564,7 @@ async function voidFundLog(i) {
 }
 
 async function restoreFundLog(i) {
-    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    if (!(await authorizeFund())) return;
     const log = (appData.fundLogs || [])[i];
     if (!log || !log.void) return;
     const d = (typeof log.void.eff === 'number') ? log.void.eff : fundDelta(log), cur = appData.clubFund || 0;   // 잔액에 영향이 없던 기록(eff 0)은 복구해도 잔액이 안 바뀐다
@@ -582,7 +583,7 @@ async function restoreFundLog(i) {
 
 // 내역(메모)만 고친다. 금액은 못 고친다 — 틀렸으면 취소하고 다시 입력한다.
 async function editFundLedgerMemo(i) {
-    if (!isFundUnlocked && !(await authenticateAdmin())) return;
+    if (!(await authorizeFund())) return;
     const picked = (appData.fundLogs || [])[i];
     if (!picked) return;
     const memo = await showMemoPrompt(picked);

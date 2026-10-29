@@ -409,9 +409,15 @@ function showMemoPrompt(log) {
     });
 }
 
+// 공금 장부·입력의 문. 총무(FUND_ADMIN)는 비밀번호 없이 통과하고, 그 밖의 사람은 관리자 비밀번호를 눌러야 한다.
+// **총무는 `isFundUnlocked`를 켜지 않는다** — 그 플래그는 관리자 메뉴 문과 같이 쓰므로, 켜면 총무에게 관리자 메뉴까지 열린다.
+async function authorizeFund() {
+    if (isFundAdmin() || isFundUnlocked) return true;
+    return authenticateAdmin();
+}
+
 async function authenticateAdmin() {
     if (isFundUnlocked) return true;
-    if (isFundAdmin()) { isFundUnlocked = true; updateLockUI(); return true; }   // 총무는 비밀번호를 묻지 않는다
     const correctPwd = appData.adminPassword || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : "1234");
     const pwd = await showPasswordPrompt("🔒 시스템 관리 비밀번호를<br>입력해 주세요");
     
@@ -619,7 +625,7 @@ function showFundPrompt(before, startMode) {
 // 이제 바로 부를 수 있게 됐으니 **여기서 비밀번호를 직접 묻는다** — 돈이라 그대로 열어 둘 수 없다.
 // (한 번 풀면 isFundUnlocked가 남아, 잠그기 전까지는 다시 묻지 않는다.)
 async function editClubFund(startMode) {
-    if (!(await authenticateAdmin())) return;
+    if (!(await authorizeFund())) return;
     const opened = appData.clubFund || 0;
     const entered = await showFundPrompt(opened, startMode);
     if (entered === null) return;
