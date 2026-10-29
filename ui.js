@@ -476,7 +476,7 @@ const FUND_KINDS = {
 };
 const FUND_QUICK = [[10000, '+1만'], [50000, '+5만'], [100000, '+10만']];
 
-// 금액 칸의 계산기(사용자 요청 — 계산기 앱으로 나갔다 오는 불편). 토큰은 숫자 문자열과 `+ − × ÷`다.
+// 공금 장부의 계산기(사용자 요청 — 계산기 앱으로 나갔다 오는 불편 · 입력 창이 아니라 장부 화면에 있다). 토큰은 숫자 문자열과 `+ − × ÷`다.
 // × ÷를 먼저 셈하고 끝에 매달린 연산자는 무시한다. 0으로 나누거나 비어 있으면 null, 결과는 반올림한 정수다.
 function fundCalcEval(tokens) {
     const t = tokens.slice();
@@ -495,7 +495,7 @@ function fundCalcEval(tokens) {
     return Math.round(r);
 }
 
-function showFundPrompt(before, startMode, savedCount) {
+function showFundPrompt(before, startMode, savedCount, presetAmount) {
     return new Promise((resolve) => {
         let mode = FUND_MODES[startMode] ? startMode : 'use';   // 대개는 쓴 돈을 적는다
         let kind = '', memoAuto = true;
@@ -532,70 +532,7 @@ function showFundPrompt(before, startMode, savedCount) {
             q.onclick = () => { amountInput.value = v ? formatNumber(parseNumber(amountInput.value) + v) : ""; refresh(); };
             quickRow.appendChild(q);
         });
-        // 계산기: 금액 칸 옆 단추로 키패드를 펴고, 식을 계산해 금액 칸에 적용한다(아이폰 숫자 자판에는 + − × ÷가 없다).
-        amountInput.style.flex = "1"; amountInput.style.minWidth = "0";
-        const calcBtn = document.createElement('button');
-        calcBtn.type = "button"; calcBtn.textContent = "계산기"; calcBtn.setAttribute('aria-expanded', 'false');
-        calcBtn.style.cssText = "flex:0 0 auto; padding:0 12px; border-radius:8px; border:1px solid #2b5394; background:#fff; color:#2b5394; font-size:0.78rem; font-weight:800; cursor:pointer; font-family:inherit;";
-        const amountRow = document.createElement('div'); amountRow.style.cssText = "display:flex; gap:6px; align-items:stretch;";
-        amountRow.append(amountInput, calcBtn);
-        const calcBox = document.createElement('div');
-        calcBox.style.cssText = "display:none; margin-top:8px; background:#f7f7f5; border:1px solid #e6e6e2; border-radius:10px; padding:8px;";
-        const calcExpr = document.createElement('div');
-        calcExpr.style.cssText = "min-height:20px; text-align:right; font-size:0.82rem; font-weight:700; color:#6b7075; word-break:break-all; font-variant-numeric:tabular-nums;";
-        const calcRes = document.createElement('div');
-        calcRes.style.cssText = "text-align:right; font-size:1.15rem; font-weight:800; color:#16181a; margin:2px 0 8px; font-variant-numeric:tabular-nums;";
-        const keyGrid = document.createElement('div'); keyGrid.style.cssText = "display:grid; grid-template-columns:repeat(4, 1fr); gap:5px;";
-        let expr = [];
-        const isOp = (x) => x === '+' || x === '−' || x === '×' || x === '÷';
-        function calcPaint() {
-            const res = fundCalcEval(expr);
-            calcExpr.textContent = expr.map(x => isOp(x) ? ` ${x} ` : formatNumber(Number(x))).join('').trim() || " ";
-            calcRes.textContent = res === null ? "= 0" : "= " + formatNumber(res);
-            applyBtn.disabled = !(res > 0); applyBtn.style.opacity = res > 0 ? "1" : "0.45";
-        }
-        function calcKey(k) {
-            const last = expr[expr.length - 1];
-            if (k === 'C') expr = [];
-            else if (k === '⌫') { if (last !== undefined) { if (isOp(last) || last.length <= 1) expr.pop(); else expr[expr.length - 1] = last.slice(0, -1); } }
-            else if (isOp(k)) { if (!expr.length) { calcPaint(); return; } if (isOp(last)) expr[expr.length - 1] = k; else expr.push(k); }
-            else {   // 숫자 · 00
-                if (last === undefined || isOp(last)) { if (k !== '00') expr.push(k); else expr.push('0'); }
-                else if (last === '0') { expr[expr.length - 1] = k === '00' ? '0' : k; }
-                else if (last.length + k.length <= 12) expr[expr.length - 1] = last + k;
-            }
-            calcPaint();
-        }
-        ['7','8','9','÷','4','5','6','×','1','2','3','−','0','00','⌫','+'].forEach(k => {
-            const b = document.createElement('button'); b.type = "button"; b.textContent = k;
-            b.setAttribute('aria-label', ({ '÷': '나누기', '×': '곱하기', '−': '빼기', '+': '더하기', '⌫': '지우기', '00': '0 두 개' })[k] || k);
-            const op = isOp(k);
-            b.style.cssText = "height:40px; border-radius:8px; border:1px solid " + (op ? "#c9d6ec" : "#e6e6e2") + "; background:" + (op ? "#e9eff9" : "#fff") + "; color:" + (op ? "#2b5394" : "#16181a") + "; font-size:1rem; font-weight:800; cursor:pointer; font-family:inherit;";
-            b.onclick = () => calcKey(k);
-            keyGrid.appendChild(b);
-        });
-        const calcFoot = document.createElement('div'); calcFoot.style.cssText = "display:grid; grid-template-columns:1fr 2fr; gap:5px; margin-top:6px;";
-        const clearBtn = document.createElement('button'); clearBtn.type = "button"; clearBtn.textContent = "전체 지우기";
-        clearBtn.style.cssText = btnCss + "height:38px; color:#6b7075;"; clearBtn.onclick = () => calcKey('C');
-        const applyBtn = document.createElement('button'); applyBtn.type = "button"; applyBtn.textContent = "금액에 적용";
-        applyBtn.style.cssText = "height:38px; border-radius:8px; border:0; background:#2b5394; color:#fff; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit;";
-        applyBtn.onclick = () => {
-            const res = fundCalcEval(expr); if (!(res > 0)) return;
-            amountInput.value = formatNumber(res); closeCalc(); refresh();
-        };
-        calcFoot.append(clearBtn, applyBtn);
-        calcBox.append(calcExpr, calcRes, keyGrid, calcFoot);
-        function closeCalc() { calcBox.style.display = "none"; calcBtn.setAttribute('aria-expanded', 'false'); calcBtn.textContent = "계산기"; }
-        calcBtn.onclick = () => {
-            if (calcBox.style.display !== "none") { closeCalc(); return; }
-            // 이미 적은 금액이 있으면 거기서 이어서 계산한다. 자판이 올라와 있으면 내린다.
-            const cur = parseNumber(amountInput.value);
-            expr = cur > 0 ? [String(cur)] : [];
-            amountInput.blur();
-            calcBox.style.display = "block"; calcBtn.setAttribute('aria-expanded', 'true'); calcBtn.textContent = "닫기";
-            calcPaint();
-        };
-        const amountBox = document.createElement('div'); amountBox.append(amountLabel, amountRow, quickRow, calcBox);
+        const amountBox = document.createElement('div'); amountBox.append(amountLabel, amountInput, quickRow);
 
         // 항목
         const kindLabel = document.createElement('div'); kindLabel.textContent = "항목"; kindLabel.style.cssText = labelCss;
@@ -678,12 +615,12 @@ function showFundPrompt(before, startMode, savedCount) {
             amountInput.value = key === 'direct' ? formatNumber(before) : "";
             quickRow.style.display = key === 'direct' ? "none" : "grid";
             againBtn.style.display = key === 'direct' ? "none" : "block";
-            closeCalc();
             paintKinds(); refresh();
             amountInput.focus();
         }
 
         setMode(mode);
+        if (presetAmount > 0 && mode !== 'direct') { amountInput.value = formatNumber(presetAmount); refresh(); }   // 장부 계산기에서 넘어온 금액
         setTimeout(() => { overlay.style.opacity = "1"; box.style.transform = "scale(1)"; amountInput.focus(); }, 10);
 
         function cleanup(value) {
@@ -714,12 +651,12 @@ function showFundPrompt(before, startMode, savedCount) {
 // 예전에는 관리자 메뉴 안에 있어서 그 문(비밀번호)을 이미 지난 뒤였다.
 // 이제 바로 부를 수 있게 됐으니 **여기서 비밀번호를 직접 묻는다** — 돈이라 그대로 열어 둘 수 없다.
 // (한 번 풀면 isFundUnlocked가 남아, 잠그기 전까지는 다시 묻지 않는다.)
-async function editClubFund(startMode) {
+async function editClubFund(startMode, presetAmount) {
     if (!(await authorizeFund())) return;
     // 연속 입력: `저장하고 다음 건 입력`을 누르면 같은 탭으로 창을 다시 연다. 한 건씩 저장되므로 중간에 닫아도 앞 건은 남는다.
     let mode = startMode, count = 0;
     for (;;) {
-        const r = await fundEntryOnce(mode, count);
+        const r = await fundEntryOnce(mode, count, count ? 0 : presetAmount);
         if (!r.saved) return;
         count++;
         if (!r.again) return;
@@ -728,9 +665,9 @@ async function editClubFund(startMode) {
 }
 
 // 한 건을 입력받아 저장한다. {saved, again, mode}를 돌려준다(취소·변경 없음·같은 금액 재확인에서 거절하면 saved=false).
-async function fundEntryOnce(startMode, count) {
+async function fundEntryOnce(startMode, count, presetAmount) {
     const opened = appData.clubFund || 0;
-    const entered = await showFundPrompt(opened, startMode, count);
+    const entered = await showFundPrompt(opened, startMode, count, presetAmount);
     if (entered === null) return { saved: false };
     const memo = entered.memo || "";
     const me = localStorage.getItem('jtfag_my_name') || "알 수 없음";

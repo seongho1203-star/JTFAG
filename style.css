@@ -2232,30 +2232,45 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 
 /* ─── 공금 장부(#fundLedgerModal) — 홈의 공금 잔액 칸 ─── */
 .notice-fund label .fund-more { margin-left: 4px; font-size: 0.68rem; font-weight: 700; color: var(--primary-gold); }
-.fund-ledger { overflow-y: auto; overscroll-behavior: contain; padding: 12px 12px 16px; background: var(--bg-main); }
+.fund-ledger { flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden; padding: 0; background: var(--bg-main); min-height: 0; }
+.fl-top { flex: 0 0 auto; padding: 10px 12px 0; }
+.fl-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 16px; }
+.fl-calc { margin-top: 8px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.fl-calc-head { width: 100%; display: flex; justify-content: space-between; align-items: center; border: 0; background: transparent; font-family: inherit; font-size: 0.8rem; font-weight: 800; color: var(--primary-gold); padding: 9px 13px; cursor: pointer; }
+.fl-calc-head span { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); }
+.fl-calc-body { padding: 0 10px 10px; }
+.fl-calc-expr { min-height: 16px; text-align: right; font-size: 0.78rem; font-weight: 700; color: var(--text-sub); word-break: break-all; font-variant-numeric: tabular-nums; }
+.fl-calc-res { text-align: right; font-size: 1.05rem; font-weight: 800; margin: 0 0 4px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.fl-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.fl-keys button { height: 32px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 800; color: #16181a; cursor: pointer; }
+.fl-keys button.op { background: #e9eff9; border-color: #c9d6ec; color: var(--primary-gold); }
+.fl-calc-foot { display: flex; gap: 4px; margin-top: 5px; }
+.fl-calc-foot button { white-space: nowrap; flex: 1; height: 34px; border-radius: 8px; border: 0; background: #f2f2ee; color: var(--text-sub); font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
+.fl-calc-foot button.use { background: #fbeaea; color: #c0392b; flex: 1.6; }
+.fl-calc-foot button.add { background: #e4f3ea; color: #1f6b45; flex: 1.6; }
 .fund-ledger .in { color: #1f6b45; } .fund-ledger .out { color: #c0392b; }
-.fl-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.fl-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
 .fl-lockrow { display: flex; align-items: center; justify-content: space-between; }
 .fl-lockrow small, .fl-month2 small { color: var(--text-sub); font-size: 0.7rem; font-weight: 700; }
 .fl-lock { font-size: 0.66rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #f2f2ee; color: var(--text-sub); }
 .fl-lock.open { background: #e4f3ea; color: #1f6b45; }
 .fl-big { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .fl-big span { font-size: 0.95rem; font-weight: 700; margin-left: 2px; }
-.fl-month2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.fl-month2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .fl-month2 div { background: #f2f2ee; border-radius: 10px; padding: 8px 10px; min-width: 0; }
 .fl-month2 small { display: block; }
 .fl-month2 b { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
-.fl-acts { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 12px; }
+.fl-acts { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 8px; }
 .fl-acts button, .fl-unlock { border: 0; border-radius: 10px; padding: 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
 .fl-acts .a-in { background: #e4f3ea; color: #1f6b45; } .fl-acts .a-out { background: #fbeaea; color: #c0392b; }
 .fl-acts .a-fix { background: #f2f2ee; color: var(--text-sub); padding-inline: 14px; }
 .fl-unlock { width: 100%; margin-top: 12px; background: #f2f2ee; color: var(--text-sub); }
-.fl-chips { display: flex; gap: 6px; margin: 12px 2px 4px; }
+.fl-chips { display: flex; gap: 6px; margin: 8px 2px 8px; }
 .fl-chip { font-family: inherit; font-size: 0.74rem; font-weight: 700; padding: 5px 13px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--text-sub); cursor: pointer; }
 .fl-chip.sel { background: var(--primary-gold); border-color: var(--primary-gold); color: #fff; }
 .fl-month { font-size: 0.7rem; font-weight: 800; color: var(--text-sub); padding: 9px 13px 5px; background: #f7f7f5; border-bottom: 1px solid var(--line); }
 .fl-month:first-child { border-top: 0; }
-.fl-list { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-top: 6px; }
+.fl-list { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .fl-row { padding: 11px 13px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
 .fl-row:last-child { border-bottom: 0; }
 .fl-what { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; font-weight: 700; font-size: 0.85rem; }
@@ -2270,3 +2285,12 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-ctl button { font-family: inherit; border: 1px solid var(--line); background: #fff; color: var(--text-sub); font-size: 0.7rem; font-weight: 700; border-radius: 7px; padding: 5px 11px; cursor: pointer; }
 .fl-empty { text-align: center; color: var(--text-sub); font-size: 0.8rem; padding: 26px 0; }
 .fl-foot { text-align: center; color: var(--text-sub); font-size: 0.68rem; margin-top: 10px; }
+
+.fl-card.mini { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; }
+.fl-mini-bal { min-width: 0; line-height: 1.15; }
+.fl-mini-bal small { display: block; color: var(--text-sub); font-size: 0.62rem; font-weight: 700; }
+.fl-mini-bal b { font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fl-mini-bal b span { font-size: 0.7rem; margin-left: 1px; }
+.fl-acts.mini { margin-top: 0; gap: 4px; flex: 0 0 auto; }
+.fl-acts.mini button, .fl-unlock.mini { padding: 7px 8px; font-size: 0.72rem; width: auto; margin: 0; white-space: nowrap; }
+.fl-calc-head { padding: 7px 12px; }

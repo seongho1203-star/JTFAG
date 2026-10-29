@@ -457,7 +457,7 @@ function openFundLedger() {
     const m = document.getElementById('fundLedgerModal'); if (!m) return;
     renderFundLedger();
     m.classList.add('active');
-    const body = document.getElementById('fundLedgerBody'); if (body) body.scrollTop = 0;
+    const sc = document.getElementById('fundLedgerScroll'); if (sc) sc.scrollTop = 0;
 }
 function closeFundLedger() { const m = document.getElementById('fundLedgerModal'); if (m) m.classList.remove('active'); }
 function refreshFundLedger() {
@@ -520,24 +520,83 @@ function renderFundLedger() {
     }).join('');
 
     const chip = (key, label) => `<button type="button" class="fl-chip${fundLedgerFilter === key ? ' sel' : ''}" data-fl="filter" data-k="${key}">${label}</button>`;
-    body.innerHTML = `
-        <div class="fl-card">
-            <div class="fl-lockrow"><small>현재 공금 잔액</small><span class="fl-lock${admin ? ' open' : ''}">${admin ? '관리자 인증됨' : '보기 전용'}</span></div>
-            <div class="fl-big">${formatNumber(cur)}<span>원</span></div>
-            <div class="fl-month2"><div><small>${thisMonth}월 적립</small><b class="in">+${formatNumber(inM)}</b></div><div><small>${thisMonth}월 사용</small><b class="out">${outM ? '−' : ''}${formatNumber(outM)}</b></div></div>
-            ${admin
-                ? `<div class="fl-acts"><button type="button" class="a-in" data-fl="add">+ 적립</button><button type="button" class="a-out" data-fl="use">− 사용</button><button type="button" class="a-fix" data-fl="fix">정정</button></div>`
-                : `<button type="button" class="fl-unlock" data-fl="unlock">🔒 관리자 인증 (적립 · 사용 입력)</button>`}
+    const listHtml = logs.length === 0 ? '<div class="fl-empty">기록된 내역이 없습니다.</div>'
+        : (shown.length ? `<div class="fl-list">${rows}</div>` : '<div class="fl-empty">해당하는 내역이 없습니다.</div>');
+    const html = `
+        <div class="fl-top">
+            ${fundCalcOpen
+                ? `<div class="fl-card mini"><div class="fl-mini-bal"><small>공금 잔액</small><b>${formatNumber(cur)}</b></div>${admin
+                    ? `<div class="fl-acts mini"><button type="button" class="a-in" data-fl="add">+ 적립</button><button type="button" class="a-out" data-fl="use">− 사용</button><button type="button" class="a-fix" data-fl="fix">정정</button></div>`
+                    : `<button type="button" class="fl-unlock mini" data-fl="unlock">🔒 인증</button>`}</div>`
+                : `<div class="fl-card">
+                <div class="fl-lockrow"><small>현재 공금 잔액</small><span class="fl-lock${admin ? ' open' : ''}">${admin ? '관리자 인증됨' : '보기 전용'}</span></div>
+                <div class="fl-big">${formatNumber(cur)}<span>원</span></div>
+                <div class="fl-month2"><div><small>${thisMonth}월 적립</small><b class="in">+${formatNumber(inM)}</b></div><div><small>${thisMonth}월 사용</small><b class="out">${outM ? '−' : ''}${formatNumber(outM)}</b></div></div>
+                ${admin
+                    ? `<div class="fl-acts"><button type="button" class="a-in" data-fl="add">+ 적립</button><button type="button" class="a-out" data-fl="use">− 사용</button><button type="button" class="a-fix" data-fl="fix">정정</button></div>`
+                    : `<button type="button" class="fl-unlock" data-fl="unlock">🔒 관리자 인증 (적립 · 사용 입력)</button>`}
+            </div>`}
+            <div class="fl-calc${fundCalcOpen ? ' open' : ''}">
+                <button type="button" class="fl-calc-head" data-fl="calcToggle" aria-expanded="${fundCalcOpen}">🧮 계산기 <span>${fundCalcOpen ? '접기 ▴' : '펼치기 ▾'}</span></button>
+                ${fundCalcOpen ? `<div class="fl-calc-body">
+                    <div class="fl-calc-expr" id="flCalcExpr"> </div>
+                    <div class="fl-calc-res" id="flCalcRes">= 0</div>
+                    <div class="fl-keys">${['7','8','9','÷','4','5','6','×','1','2','3','−','0','00','⌫','+'].map(k =>
+                        `<button type="button" class="${'+−×÷'.includes(k) ? 'op' : ''}" data-fl="ck" data-k="${k}">${k}</button>`).join('')}</div>
+                    <div class="fl-calc-foot"><button type="button" data-fl="ck" data-k="C">지우기</button>${admin
+                        ? `<button type="button" class="use" data-fl="calcTo" data-m="use" id="flCalcUse">− 사용 입력</button><button type="button" class="add" data-fl="calcTo" data-m="add" id="flCalcAdd">+ 적립 입력</button>`
+                        : ''}</div>
+                </div>` : ''}
+            </div>
+            <div class="fl-chips">${chip('all', '전체')}${chip('in', '적립')}${chip('out', '사용')}</div>
         </div>
-        <div class="fl-chips">${chip('all', '전체')}${chip('in', '적립')}${chip('out', '사용')}</div>
-        ${logs.length === 0 ? '<div class="fl-empty">기록된 내역이 없습니다.</div>' : (shown.length ? `<div class="fl-list">${rows}</div>` : '<div class="fl-empty">해당하는 내역이 없습니다.</div>')}
-        <div class="fl-foot">기록 ${logs.length}건${voidN ? ` · 취소 ${voidN}건` : ''} · 취소한 기록도 남아 있습니다</div>`;
+        <div class="fl-scroll" id="fundLedgerScroll">${listHtml}
+            <div class="fl-foot">기록 ${logs.length}건${voidN ? ` · 취소 ${voidN}건` : ''} · 취소한 기록도 남아 있습니다</div>
+        </div>`;
+    // 목록을 보는 동안 남의 저장으로 다시 그려져도 굴려 둔 자리를 안 잃는다.
+    const old = document.getElementById('fundLedgerScroll');
+    const keep = old ? old.scrollTop : 0;
+    body.innerHTML = html;
+    const sc = document.getElementById('fundLedgerScroll'); if (sc) sc.scrollTop = keep;
+    fundCalcPaint();
+}
+
+/* 장부의 계산기(사용자 요청 — 사용 내역 여러 개를 보면서 계산하려고 장부 화면에 둔다).
+   위(잔액·계산기·칩)는 붙박이고 목록만 굴러간다. 식은 모듈 값이라 장부가 다시 그려져도 남는다.
+   결과가 0보다 크면 관리자는 `사용으로 입력`/`적립으로 입력`으로 그 금액을 입력 창에 미리 채워 열 수 있다. */
+let fundCalcOpen = false, fundCalcExpr = [];
+const fundIsOp = (x) => x === '+' || x === '−' || x === '×' || x === '÷';
+function fundCalcPaint() {
+    const ex = document.getElementById('flCalcExpr'), rs = document.getElementById('flCalcRes');
+    if (!ex || !rs) return;
+    const res = fundCalcEval(fundCalcExpr);
+    ex.textContent = fundCalcExpr.map(x => fundIsOp(x) ? ` ${x} ` : formatNumber(Number(x))).join('').trim() || ' ';
+    rs.textContent = res === null ? '= 0' : '= ' + formatNumber(res);
+    ['flCalcUse', 'flCalcAdd'].forEach(id => { const b = document.getElementById(id); if (b) { b.disabled = !(res > 0); b.style.opacity = res > 0 ? '1' : '0.45'; } });
+}
+function fundCalcKey(k) {
+    const e = fundCalcExpr, last = e[e.length - 1];
+    if (k === 'C') fundCalcExpr = [];
+    else if (k === '⌫') { if (last !== undefined) { if (fundIsOp(last) || last.length <= 1) e.pop(); else e[e.length - 1] = last.slice(0, -1); } }
+    else if (fundIsOp(k)) { if (!e.length) return fundCalcPaint(); if (fundIsOp(last)) e[e.length - 1] = k; else e.push(k); }
+    else {   // 숫자 · 00
+        if (last === undefined || fundIsOp(last)) e.push(k === '00' ? '0' : k);
+        else if (last === '0') e[e.length - 1] = k === '00' ? '0' : k;
+        else if (last.length + k.length <= 12) e[e.length - 1] = last + k;
+    }
+    fundCalcPaint();
 }
 
 async function fundLedgerClick(ev) {
     const t = ev.target.closest('[data-fl]'); if (!t) return;
     const act = t.dataset.fl, i = +t.dataset.i;
     if (act === 'filter') { fundLedgerFilter = t.dataset.k; renderFundLedger(); }
+    else if (act === 'calcToggle') { fundCalcOpen = !fundCalcOpen; renderFundLedger(); }
+    else if (act === 'ck') fundCalcKey(t.dataset.k);
+    else if (act === 'calcTo') {
+        const res = fundCalcEval(fundCalcExpr); if (!(res > 0)) return;
+        await editClubFund(t.dataset.m, res);
+    }
     else if (act === 'unlock') { if (await authenticateAdmin()) renderFundLedger(); }
     else if (act === 'add' || act === 'use') { await editClubFund(act); }
     else if (act === 'fix') { await editClubFund('direct'); }
