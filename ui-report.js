@@ -435,6 +435,7 @@ function closeRulesModal() { const m = document.getElementById('rulesModal'); if
    값은 예전 그대로 `payload.clubFund`(잔액)와 `payload.fundLogs`(기록)다 — 새 필드는 둘뿐이고 옛 기록은 그대로 읽힌다:
      void: {time, name}  취소 처리한 기록. **지우지 않고 남기며** 그 금액만큼 잔액을 되돌린다(복구하면 다시 반영).
      fix:  true          잔액을 직접 정정한 기록(`직접` 모드) — 장부에 `정정`으로 따로 보인다.
+     kind: '그늘집' …    입력창에서 고른 항목(2단계). 내역이 비어 있으면 장부에 항목이 대신 보인다. 안 고른 옛 기록에는 없다.
    **거래 뒤의 잔액은 저장하지 않고 지금 잔액에서 거꾸로 셈한다**(가장 최근 유효 기록 뒤 = clubFund). 기록이 중간에
    잘렸거나 사슬이 어긋난 예전 자료여도 맨 위 잔액이 늘 맞고, 취소·복구를 해도 줄마다 따로 고칠 것이 없다.
    이번 달 적립·사용에는 취소한 기록과 정정을 뺀다. 50건 제한은 없앴다(상한 500 — `editClubFund()`). */
@@ -498,7 +499,7 @@ function renderFundLedger() {
         lastMonth = m;
         const kind = l.fix ? '<span class="fl-tag fix">정정</span>' : `<span class="fl-tag ${plus ? 'in' : 'out'}">${plus ? '적립' : '사용'}</span>`;
         const voidTag = l.void ? '<span class="fl-tag void">취소됨</span>' : '';
-        const memo = l.memo ? escapeHtml(l.memo) : (l.fix ? '잔액 정정' : (plus ? '적립' : '사용'));
+        const memo = escapeHtml(l.memo || l.kind || (l.fix ? '잔액 정정' : (plus ? '적립' : '사용')));
         const voidInfo = l.void ? ` · ${escapeHtml(l.void.time || '')} ${escapeHtml(l.void.name || '')} 취소` : '';
         let ctl = '';
         if (admin) {
