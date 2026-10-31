@@ -2020,12 +2020,12 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .rave-box { display: flex; align-items: center; flex-wrap: nowrap; gap: 4px 6px; margin-top: 7px; padding: 5px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .rave-box:empty { display: none; }
 /* 차액 사유 줄 — 검산 줄 아래. 한 줄에 칩 + 추가(이 기기 주인만). 폭이 모자랄 때만 접힌다 */
-.reason-box { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 5px; margin-top: 7px; padding: 4px 9px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.reason-box { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 5px; margin-top: 7px; padding: 4px 7px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .reason-box:empty { display: none; }
 .reason-box .near-head { white-space: nowrap; }
-.reason-list { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.reason-chip { display: inline-flex; align-items: center; gap: 0; padding: 0 1px 0 7px; border-radius: 999px; background: #eef2f7; color: var(--text-main); font-size: 0.66rem; font-weight: 700; white-space: nowrap; }
-.reason-x { border: 0; background: transparent; color: #94a3b8; font-size: 0.58rem; padding: 0 3px; min-width: 18px; min-height: 24px; cursor: pointer; line-height: 1; }
+.reason-list { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.reason-chip { display: inline-flex; align-items: center; gap: 0; padding: 0 1px 0 6px; border-radius: 999px; background: #eef2f7; color: var(--text-main); font-size: 0.66rem; font-weight: 700; white-space: nowrap; }
+.reason-x { border: 0; background: transparent; color: #94a3b8; font-size: 0.58rem; padding: 0 2px; min-width: 15px; min-height: 24px; cursor: pointer; line-height: 1; }
 .reason-add { margin-left: auto; border: 0; background: transparent; color: var(--primary-gold); font-size: 0.66rem; font-weight: 800; padding: 4px 0 4px 2px; min-height: 24px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 @media (max-width: 340px) { .reason-box { padding: 4px 7px; gap: 4px 3px; } .reason-box .near-head { font-size: 0.6rem; } .reason-chip { padding-left: 5px; font-size: 0.56rem; } .reason-list { gap: 3px; } .reason-x { min-width: 14px; padding: 0 2px; } }
 .rave-box .near-head { white-space: nowrap; }
