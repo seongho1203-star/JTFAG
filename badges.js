@@ -453,8 +453,8 @@ function renderBadgePage() {
     const secHtml = sections.map(sec => {
         const c = sec.items.filter(s => s.earned).length;
         return `<div class="bdg-card bdg-sec${sec.group.id === 'tease' ? ' tease' : ''}">
-            <div class="bdg-sec-head"><div><div class="bdg-sec-title">${sec.group.title}${sec.group.id === 'title' && typeof seasonPillHtml === 'function' ? ' ' + seasonPillHtml() : ''}</div><div class="bdg-sec-sub">${sec.group.sub}</div></div>
-            <div class="bdg-sec-count">${c} / ${sec.items.length}</div></div>
+            <div class="bdg-sec-head"><div><div class="bdg-sec-title">${sec.group.title}</div><div class="bdg-sec-sub">${sec.group.sub}</div></div>
+            <div class="bdg-sec-right"><div class="bdg-sec-count">${c} / ${sec.items.length}</div>${sec.group.id === 'title' && typeof seasonPillHtml === 'function' ? seasonPillHtml() : ''}</div></div>
             <div class="bdg-grid">${sec.items.map(s => badgeTileHtml(s, latest, g)).join('')}</div>
         </div>`;
     }).join('');
