@@ -2466,8 +2466,8 @@ button.fl-amt.tap { justify-self: end; }
 
 @media (max-height: 700px) { .aw-pane > div { padding-top: calc(46px + env(safe-area-inset-top)); gap: 12px; } .aw-slide { gap: 14px; } .aw-grand { gap: 10px; } }
 
-/* 시즌 알약은 카드 머리 오른쪽 끝에 둔다(사용자 요청 — 홈 통합 정산 요약 · 미션 포인트 · 시즌 타이틀) */
+/* 시즌 알약은 카드 머리 오른쪽 끝에 둔다(사용자 요청 — 홈 통합 정산 요약 · 시즌 타이틀) */
 .total-summary-card h2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.total-summary-card h2 .season-pill, .msn-head .season-pill { margin-left: auto; }
+.total-summary-card h2 .season-pill { margin-left: auto; }
 .bdg-sec-right { display: flex; align-items: center; gap: 8px; flex: none; }
 .bdg-sec-right .season-pill { margin-left: 0; }

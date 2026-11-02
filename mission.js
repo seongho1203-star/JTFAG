@@ -1033,7 +1033,7 @@ function missionPointCards(me) {
     const rows = golfers.map(g => ({ g, p: missionSeasonPoints(g), m: mulliganInfo(g) }));
     const selected = golfers.includes(missionViewName) ? missionViewName : (golfers.includes(me) ? me : golfers[0]);
     return `<div class="msn-card msn-points-card">
-        <div class="msn-head"><span>미션 포인트</span>${typeof seasonPillHtml === 'function' ? seasonPillHtml() : ''}</div>
+        <div class="msn-head"><span>미션 포인트</span></div>
         <div class="bdg-people msn-point-people">${rows.map(x => {
             return `<button type="button" class="bdg-person msn-point-person${x.g === selected ? ' on' : ''}" aria-pressed="${x.g === selected}"${x.g === me ? ` aria-haspopup="dialog" aria-label="${escapeHtml(x.g)} 미션 포인트 · 멀리건 사용"` : ''} onclick="selectMissionPointPerson('${x.g}')">
                 <span class="bdg-pname">${escapeHtml(x.g)}</span>
