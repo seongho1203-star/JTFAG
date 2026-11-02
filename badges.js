@@ -224,7 +224,7 @@ const BADGE_GROUPS = [
     ]},
     // 놀리는 뱃지 — 사용자 요청으로 넣었다. 색을 따로(`tease`) 두어 자랑 뱃지와 갈라 보이게 한다.
     { id: 'tease', title: '불명예 뱃지', sub: '받고 싶지 않지만 모이는 뱃지', badges: [
-        { id: 'donor', kind: 'title', tier: 'tease', icon: 'coin', name: '기부왕', desc: '올해 합산 정산 금액 손실 1위', holders: () => golfers.filter(g => golferDonorMap[g]) },
+        { id: 'donor', kind: 'title', tier: 'tease', icon: 'coin', name: '기부왕', desc: '올해 계급·타수 정산에서 가장 많이 잃은 사람', holders: () => golfers.filter(g => golferDonorMap[g]) },
         { id: 'bombSquad', kind: 'title', tier: 'tease', icon: 'bomb', name: '폭탄 처리반', desc: '올해 양파 개수 1위', holders: () => golferMaxDoublePar.slice() },
         { id: 'downtrend', kind: 'title', tier: 'tease', icon: 'down', name: '하락세', desc: '최근 경기 타수가 계속 늘어나는 중', holders: () => golfers.filter(g => golferDowntrendMap[g]) },
         { id: 'swing', kind: 'title', tier: 'tease', icon: 'wave', name: '기복왕', desc: '올해 라운드별 타수 기복 최대', holders: () => golfers.filter(g => golferFluctuationMap[g]) },
@@ -404,7 +404,7 @@ function badgeCount(sections) {
 function renderBadgePage() {
     const box = document.getElementById('badgePage');
     if (!box || typeof golfers === 'undefined') return;
-    // `뱃지 | 트로피장` 전환(ui-awards.js) — 트로피장이면 연말 시상 결과를 그린다.
+    // `뱃지 | 트로피` 전환(ui-awards.js) — 트로피이면 연말 시상 결과를 그린다.
     const viewSeg = typeof badgeViewSegHtml === 'function' ? badgeViewSegHtml() : '';
     if (typeof badgeView !== 'undefined' && badgeView === 'trophy' && typeof trophyCaseHtml === 'function') {
         const th = viewSeg + trophyCaseHtml();

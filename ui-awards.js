@@ -1,18 +1,18 @@
-// ◇ ui-awards.js — 연말 시상식 화면: 시즌 알약 · 트로피장 · 시상식 연출 · 관리자 지정(마지막 차수·공로상)
+// ◇ ui-awards.js — 연말 시상식 화면: 시즌 알약 · 트로피 · 시상식 연출 · 관리자 지정(마지막 차수·공로상)
 // ◇ 계산은 season.js(시즌)와 awards.js(시상)가 한다. 여기는 그리고 여닫기만 한다. 아무것도 저장하지 않는다(관리자 지정만 예외).
 
 // ── 시즌 알약 ────────────────────────────────────────────
 function seasonPillHtml() { return `<span class="season-pill">${currentSeason()} 시즌</span>`; }
 
-// ── 뱃지 탭의 `뱃지 | 트로피장` 전환 ─────────────────────────
+// ── 뱃지 탭의 `뱃지 | 트로피` 전환 ─────────────────────────
 let badgeView = 'badges';     // 'badges' | 'trophy'
 let trophyYear = 0;           // 0이면 자동(마무리된 가장 최근 시즌, 없으면 지금 시즌)
 let trophyName = '';
 
 function badgeViewSegHtml() {
-    return `<div class="tc-seg" role="tablist" aria-label="뱃지 화면 전환">
+    return `<div class="passport-tabs tc-seg" role="tablist" aria-label="뱃지 화면 전환">
         <button type="button" role="tab" aria-selected="${badgeView === 'badges'}" class="${badgeView === 'badges' ? 'on' : ''}" onclick="setBadgeView('badges')">뱃지</button>
-        <button type="button" role="tab" aria-selected="${badgeView === 'trophy'}" class="${badgeView === 'trophy' ? 'on' : ''}" onclick="setBadgeView('trophy')">트로피장</button>
+        <button type="button" role="tab" aria-selected="${badgeView === 'trophy'}" class="${badgeView === 'trophy' ? 'on' : ''}" onclick="setBadgeView('trophy')">트로피</button>
     </div>`;
 }
 function setBadgeView(v) {
@@ -50,7 +50,7 @@ function trophyCaseHtml() {
                 <div class="tc-wait-t">${y} 시즌 시상식</div>
                 <div class="tc-wait-s">${escapeHtml(seasonPendingText(y))}</div>
             </div>
-            <div class="tc-grid">${['올해의 골퍼'].concat(AWARD_ORDER.map(id => ({ avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', rebound: '극적 반전상', late: '뒷심상', donor: '기부왕', merit: '공로상' }[id]))).map(nm =>
+            <div class="tc-grid">${['올해의 골퍼'].concat(AWARD_ORDER.map(id => ({ avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', rebound: '극적 반전상', devote: '헌신왕', donor: '기부왕', merit: '공로상' }[id]))).map(nm =>
                 `<div class="tc-cell no"><div class="tc-cell-h">${TC_CUP}<span>${nm}</span></div><div class="tc-cell-n">발표 전</div></div>`).join('')}</div>`;
     }
 
@@ -80,7 +80,7 @@ function trophyCaseHtml() {
 
 // ── 시상식 연출 ─────────────────────────────────────────────
 // 입장 → 부문별 발표(수상자가 있는 부문만) → 대상. 화면을 누르면 다음으로 넘어가고, 기기마다 시즌당 한 번만 저절로 뜬다.
-// 마무리된 시즌이 아니면 열리지 않는다(재생 단추도 트로피장에서 마무리된 시즌에만 보인다).
+// 마무리된 시즌이 아니면 열리지 않는다(재생 단추도 트로피에서 마무리된 시즌에만 보인다).
 let awardsCeremony = null;
 
 const AW_ICON = `<svg width="52" height="52" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="11"/><circle cx="32" cy="32" r="3" fill="#e7c46a"/></svg>`;
@@ -134,7 +134,7 @@ function awardsSlides(y) {
                 <div><b>계급 점수</b> 독수리 3점 · 매 2점 · 학 1점 · 참새 0점 (${aw.grand.ranked}경기)</div>
                 <div><b>동점</b> ${aw.grand.tieBroken ? `계급 점수가 같아 평균 타수(${top.avg === null ? '-' : top.avg.toFixed(1) + '타'})가 낮은 쪽이 앞섭니다` : '평균 타수가 낮은 쪽이 앞섭니다'}</div>
             </div>
-            <button type="button" class="aw-go gold" data-case="1">트로피장 보기</button>
+            <button type="button" class="aw-go gold" data-case="1">트로피 보기</button>
         </div>`);
     }
     return slides;
@@ -228,7 +228,7 @@ async function openSeasonMeritPrompt() {
         <select onchange="seasonPick.year = Number(this.value)" aria-label="시즌" style="margin:10px 0 6px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${yearOpts}</select>
         <select onchange="seasonPick.name = this.value" aria-label="수상자" style="margin:0 0 6px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${opts}</select>
         <input type="text" maxlength="30" value="${escapeHtml(seasonPick.note)}" oninput="seasonPick.note = this.value" aria-label="공로 내용" style="margin:0 0 8px; width:100%; box-sizing:border-box; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">
-        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">모임에 기여한 사람 한 명을 직접 지정합니다. 시즌, 수상자, 공로 내용(예: 총무 수고) 순서로 고릅니다. 시상식과 트로피장에 그대로 나옵니다.</span>`, '저장', '#2b5394');
+        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">모임에 기여한 사람 한 명을 직접 지정합니다. 시즌, 수상자, 공로 내용(예: 총무 수고) 순서로 고릅니다. 시상식과 트로피에 그대로 나옵니다.</span>`, '저장', '#2b5394');
     if (!ok) return;
     const y = seasonPick.year;
     if (!appData.seasonSpecial || typeof appData.seasonSpecial !== 'object') appData.seasonSpecial = {};

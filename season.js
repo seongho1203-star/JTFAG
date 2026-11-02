@@ -96,7 +96,7 @@ function closedSeasons() {
     for (let y = SEASON_FIRST; y < currentSeason(); y++) if (seasonClosed(y)) out.push(y);
     return out;
 }
-// 트로피장 연도 탭 — 첫 시즌부터 지금 시즌까지
+// 트로피 연도 탭 — 첫 시즌부터 지금 시즌까지
 function seasonTabs() {
     const out = [];
     for (let y = SEASON_FIRST; y <= currentSeason(); y++) out.push(y);
@@ -136,10 +136,10 @@ function mergeSeasonData(prev) {
     return changed;
 }
 
-// 안내 문구 — 시즌이 아직 안 끝났을 때(트로피장 · 시상식 입구에서 쓴다)
+// 안내 문구 — 시즌이 아직 안 끝났을 때(트로피 · 시상식 입구에서 쓴다)
 function seasonPendingText(y) {
     const last = seasonFinalRound(y);
     return last
         ? `결과 발표는 ${y} 시즌이 마무리된 후 발표됩니다. (${last}차 정산 입력이 끝나면 자동으로 열립니다)`
-        : `결과 발표는 ${y} 시즌이 마무리된 후 발표됩니다. (${y}년 12월 31일 이후)`;
+        : `결과 발표는 ${y} 시즌이 마무리된 후 발표됩니다.`;
 }

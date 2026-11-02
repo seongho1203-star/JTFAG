@@ -8,7 +8,7 @@
 // 부문 수상은 동점이면 모두 받는다(공동).
 
 const RANK_POINTS = [3, 2, 1, 0];
-const AWARD_ORDER = ['avg', 'rave', 'eagle', 'birdie', 'mission', 'rebound', 'late', 'donor', 'merit'];
+const AWARD_ORDER = ['avg', 'rave', 'eagle', 'birdie', 'mission', 'rebound', 'devote', 'donor', 'merit'];
 
 // 그 시즌의 사람별 기록 — processAllRoundSettlements()가 채운 계급 이력과 기록을 시즌 차수만 걸러 읽는다.
 function seasonStats(y) {
@@ -40,12 +40,22 @@ function seasonStats(y) {
             if (d > 0 && (drop === null || d > drop.diff)) drop = { diff: d, from: scored[i - 1], to: scored[i] };
         }
 
-        // 뒷심 — 후반 9홀이 전반보다 좋았던 라운드 수(홀 기록이 있는 차수만)
-        let late = 0;
-        if (typeof halves === 'function') rounds.forEach(r => { const hv = halves(g, r); if (hv && hv[1] < hv[0]) late++; });
+        // 기부왕 — 그 시즌 계급·타수 정산에서 잃은 돈(찬조는 넣지 않는다). 요약 카드의 `계급`·`타수` 합과 같은 셈이다:
+        // 계급 정산은 그 차수 벌금 그대로, 타수 정산은 (남은−시작)에서 계급분을 뺀 값이 마이너스일 때만(남은 금액이 적히고 스코어가 들어온 차수).
+        let rankLoss = 0, strokeLoss = 0;
+        rounds.forEach(r => {
+            const rp = (typeof cachedRoundRankProfit !== 'undefined' && cachedRoundRankProfit[g] && typeof cachedRoundRankProfit[g][r] === 'number') ? cachedRoundRankProfit[g][r] : 0;
+            rankLoss += rp;
+            const m = appData.roundMoney && appData.roundMoney[r] ? appData.roundMoney[r][g] : null;
+            if (m && moneySettled(m) && roundScored(r)) {
+                const pure = (m.end - m.start) - rp;
+                if (pure < 0) strokeLoss += pure;
+            }
+        });
+        const lost = -(rankLoss + strokeLoss);   // 잃은 돈(양수)
 
         out[g] = {
-            g, counts, ranked, rankPoints, scored, avg, min, drop, late,
+            g, counts, ranked, rankPoints, scored, avg, min, drop, lost,
             holes: seasonHoleCounts(g, y),
             donation: donationOf(g, y),
             mission: missionSeasonGained(g, y)
@@ -95,10 +105,10 @@ function computeAwards(y) {
     add('rebound', '극적 반전상', '바로 앞 차수보다 타수를 가장 많이 줄인 한 번', awardLeaders(vals(s => s.drop ? s.drop.diff : null), 'max'),
         h => { const d = st[h[0]].drop; return `${d.from.r + 1}차 ${d.from.v}타 → ${d.to.r + 1}차 ${d.to.v}타 (−${d.diff})`; },
         (g, v) => `−${v}타`, '타');
-    add('late', '뒷심상', '후반 9홀이 전반보다 좋았던 라운드가 가장 많은 사람', awardLeaders(vals(s => s.late), 'max'),
-        h => `후반이 더 좋았던 라운드 ${st[h[0]].late}회`, (g, v) => `${v}회`, '회');
-    add('donor', '기부왕', '모임을 위해 찬조한 금액이 가장 큰 사람', awardLeaders(vals(s => s.donation), 'max'),
+    add('devote', '헌신왕', '모임을 위해 찬조한 금액이 가장 큰 사람', awardLeaders(vals(s => s.donation), 'max'),
         h => `찬조 ${awardWon(st[h[0]].donation)}`, (g, v) => awardWon(v), '원');
+    add('donor', '기부왕', '계급·타수 정산에서 가장 많이 잃은 사람 (찬조 제외)', awardLeaders(vals(s => s.lost), 'max'),
+        h => `계급·타수 정산 −${awardWon(st[h[0]].lost)}`, (g, v) => `−${awardWon(v)}`, '원');
 
     // 공로상 — 관리자가 직접 지정한다. 지정 전에는 수상자가 없다.
     const sp = (appData.seasonSpecial && appData.seasonSpecial[y]) || null;

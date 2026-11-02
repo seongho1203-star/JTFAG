@@ -2351,13 +2351,12 @@ button.fl-amt.tap:active { background: #e9eff9; border-color: #c9d6ec; }
 .fl-calc-head em { font-style: normal; font-size: 0.62rem; font-weight: 600; color: var(--text-sub); margin-left: 6px; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 button.fl-amt.tap { justify-self: end; }
 
-/* ── 연말 시상식 · 트로피장 · 시즌 알약 (ui-awards.js) ──
-   시즌 알약은 카드 제목 줄에 붙는 작은 글자라 홈 높이를 안 바꾼다. 트로피장은 흰 카드 · 가는 선 · 남색 하나(1번 클린 화이트).
+/* ── 연말 시상식 · 트로피 · 시즌 알약 (ui-awards.js) ──
+   시즌 알약은 카드 제목 줄에 붙는 작은 글자라 홈 높이를 안 바꾼다. 트로피은 흰 카드 · 가는 선 · 남색 하나(1번 클린 화이트).
    시상식은 연출이라 어두운 남색 · 금색(독수리 대관식과 같은 결). transform·opacity만, 한 번 돌고 끝난다. */
 .season-pill { display: inline-block; vertical-align: middle; margin-left: 4px; padding: 3px 8px; border-radius: 999px; background: #e9eef7; color: #2b5394; font-size: 0.66rem; font-weight: 800; letter-spacing: 0; line-height: 1.2; white-space: nowrap; }
-.tc-seg { display: flex; padding: 3px; margin-bottom: 10px; border-radius: 12px; background: #ececE8; }
-.tc-seg button { flex: 1 1 0; height: 34px; border: 0; border-radius: 9px; background: transparent; color: #5b6370; font-family: inherit; font-size: 0.86rem; font-weight: 600; }
-.tc-seg button.on { background: #ffffff; color: #1c2230; font-weight: 800; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+/* 뱃지 | 트로피 전환 — 여행 탭의 `여행 일정 / 스탬프`(.passport-tabs)와 같은 가운데 밑줄 탭이다(사용자 요청). 모양은 그쪽 규칙을 그대로 쓴다. */
+.tc-seg { margin-bottom: 12px; }
 .tc-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .tc-years { display: flex; gap: 6px; flex-wrap: wrap; }
 .tc-years button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: #f3f3f0; color: #5b6370; font-family: inherit; font-size: 0.78rem; font-weight: 600; }

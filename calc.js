@@ -177,7 +177,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "올해 상위 계급을 상대로 1:1 최다승 기록" });
     }
     if (golferDonorMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 합산 정산 금액 손실 1위" });
+        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 계급·타수 정산에서 가장 많이 잃은 사람" });
     }
     if (golferUptrendMap[g]) {
         badges.push({ html: `<div class="season-badge badge-uptrend">📈 상승세</div>`, desc: "최근 경기 스코어가 지속적으로 줄어드는 중" });
@@ -592,6 +592,7 @@ function processAllRoundSettlements() {
         }
     });
 
+    const donorBase = {};
     golfers.forEach(g => {
         const rankProfit = totalRankProfit[g] || 0; 
         let totalPureStrokeProfit = 0; 
@@ -612,13 +613,14 @@ function processAllRoundSettlements() {
             }
         }
         golferFinalNetProfitMap[g] = rankProfit + totalPureStrokeProfit - donationOf(g);
+        donorBase[g] = rankProfit + totalPureStrokeProfit;   // 기부왕은 계급·타수 정산만 본다(찬조 제외 · 사용자 요청)
     });
 
     let minNetProfit = Infinity;
     let donorWinner = null;
     golfers.forEach(g => {
-        if (golferFinalNetProfitMap[g] < minNetProfit && golferFinalNetProfitMap[g] < 0) {
-            minNetProfit = golferFinalNetProfitMap[g];
+        if (donorBase[g] < minNetProfit && donorBase[g] < 0) {
+            minNetProfit = donorBase[g];
             donorWinner = g;
         }
     });

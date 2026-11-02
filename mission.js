@@ -459,7 +459,7 @@ function mulliganCompCard(me) {
     return `<div class="msn-card msn-comp${mine ? ' mine' : ''}">
         <div class="msn-head"><span>멀리건 보상</span><small>회칙 제14조 ⑤</small></div>
         <div class="msn-comp-who">${c.names.map(escapeHtml).join(' · ')}${mine ? ' <i>내 보상</i>' : ''}</div>
-        <div class="msn-comp-sub">${c.lossRound}차에서 가장 많이 잃음(−${formatNumber(c.amount)}원) → ${mulliganCompText(c)}</div>
+        <div class="msn-comp-sub">${mulliganCompText(c)}</div>
     </div>`;
 }
 
