@@ -372,14 +372,21 @@ function missionPointsEarned(g, year, throughRound = Infinity) {
 function missionPoints(g, year, throughRound = Infinity) {
     return Math.max(0, missionPointsRaw(g, year, throughRound) - mulliganSpent(g, year, throughRound));
 }
-function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
-// 올해 누적 획득 포인트 — 쓴 것(다시 뽑기·멀리건 차감)을 빼지 않은 총 획득량. 미션왕이 이 값으로 정해진다
-// (사용자 요청 — 멀리건을 쓰면 보유 포인트가 줄어 미션왕이 바뀌었다).
-function missionSeasonGained(g) {
-    const y = missionYearNow();
-    const won = missionLog(g).filter(x => x.ok && x.y === y).reduce((t, x) => t + x.lv, 0);
-    const predicted = PREDICTION_ENABLED && typeof predictionPoints === 'function' ? predictionPoints(g, y, Infinity) : 0;
-    return Math.max(0, won + specialMissionPoints(g, y, Infinity) + predicted);
+// 카드에 보이는 보유 포인트 — 해마다 끊지 않고 점수째 새 시즌으로 이월한다(사용자 결정 · 멀리건 사용권도 같은 값이다).
+function missionSeasonPoints(g) { return missionPoints(g); }
+// 그 시즌 누적 획득 포인트(season 생략 = 지금 시즌) — 쓴 것(다시 뽑기·멀리건 차감)을 빼지 않은 총 획득량. 미션왕이 이 값으로 정해진다
+// (사용자 요청 — 멀리건을 쓰면 보유 포인트가 줄어 미션왕이 바뀌었다). 시즌은 차수의 시즌(season.js)으로 가른다 — 새 시즌에 0에서 다시 시작한다.
+function missionSeasonGained(g, season) {
+    const want = season === undefined ? currentSeason() : season, sm = seasonMap();
+    const inSeason = round => (sm[round - 1] === undefined ? want : sm[round - 1]) === want;
+    const won = missionLog(g).filter(x => x.ok && inSeason(x.round)).reduce((t, x) => t + x.lv, 0);
+    const special = specialMissionLog(g).filter(x => inSeason(x.round)).reduce((t, x) => t + x.pts, 0);
+    let predicted = 0;
+    if (PREDICTION_ENABLED && typeof predictionPoints === 'function') {
+        const y = missionYearNow();
+        predicted = predictionPoints(g, y, Infinity);
+    }
+    return Math.max(0, won + special + predicted);
 }
 
 // 지금 다시 뽑을 수 있는가 — 받은 미션이 있고 · 이번 라운드에 아직 안 다시 뽑았고 · 포인트 2점이 있고 ·
@@ -457,9 +464,9 @@ function mulliganCompCard(me) {
 }
 
 // 미션왕 — 올해 누적 획득 포인트 1위(0점이면 없음 · 같으면 함께). 쓴 포인트는 빼지 않는다.
-function missionKings() {
+function missionKings(season) {
     if (typeof golfers === 'undefined') return [];
-    const pts = golfers.map(g => missionSeasonGained(g));
+    const pts = golfers.map(g => missionSeasonGained(g, season));
     const top = Math.max(0, ...pts);
     return top > 0 ? golfers.filter((g, i) => pts[i] === top) : [];
 }
@@ -1007,8 +1014,8 @@ function missionLastResultCard() {
 }
 
 function specialMissionCard(me) {
-    const year = missionYearNow();
-    const log = golfers.includes(me) ? specialMissionLog(me).filter(x => x.y === year) : [];
+    const season = currentSeason(), sm = seasonMap();
+    const log = golfers.includes(me) ? specialMissionLog(me).filter(x => (sm[x.round - 1] === undefined ? season : sm[x.round - 1]) === season) : [];
     const recent = log.slice().reverse().slice(0, 5);
     return `<div class="msn-card">
         <div class="msn-head"><span>특별미션</span><span class="msn-sub">홀 기록 자동 판정</span></div>
@@ -1016,7 +1023,7 @@ function specialMissionCard(me) {
             const count = log.filter(x => x.id === d.id).reduce((sum, x) => sum + x.count, 0);
             return `<div class="msn-special"><div><b>${escapeHtml(d.text)}</b><small>${escapeHtml(d.how)}${count ? ` · 시즌 ${count}회 달성` : ''}</small></div><span class="msn-pts">+${d.pts}점</span></div>`;
         }).join('')}
-        ${golfers.includes(me) ? `<div class="msn-special-total">${escapeHtml(me)} · 특별미션 ${specialMissionPoints(me, year)}점</div>` : ''}
+        ${golfers.includes(me) ? `<div class="msn-special-total">${escapeHtml(me)} · 특별미션 ${log.reduce((t, x) => t + x.pts, 0)}점</div>` : ''}
         ${recent.map(x => `<div class="msn-special-log"><span>${x.round}차 · ${escapeHtml(x.text)}${x.count > 1 ? ` ${x.count}회` : ''}</span><b>+${x.pts}점</b></div>`).join('')}
         <div class="msn-foot">미션 수령 없이 모든 멤버에게 적용되며, 기존 홀 기록도 포함합니다. 달성 횟수만큼 미션 포인트에 합산됩니다. 동일 홀의 홀인원·이글·알바트로스는 중복 지급하지 않습니다.</div>
     </div>`;
@@ -1026,7 +1033,7 @@ function missionPointCards(me) {
     const rows = golfers.map(g => ({ g, p: missionSeasonPoints(g), m: mulliganInfo(g) }));
     const selected = golfers.includes(missionViewName) ? missionViewName : (golfers.includes(me) ? me : golfers[0]);
     return `<div class="msn-card msn-points-card">
-        <div class="msn-head"><span>미션 포인트</span></div>
+        <div class="msn-head"><span>미션 포인트${typeof seasonPillHtml === 'function' ? ' ' + seasonPillHtml() : ''}</span></div>
         <div class="bdg-people msn-point-people">${rows.map(x => {
             return `<button type="button" class="bdg-person msn-point-person${x.g === selected ? ' on' : ''}" aria-pressed="${x.g === selected}"${x.g === me ? ` aria-haspopup="dialog" aria-label="${escapeHtml(x.g)} 미션 포인트 · 멀리건 사용"` : ''} onclick="selectMissionPointPerson('${x.g}')">
                 <span class="bdg-pname">${escapeHtml(x.g)}</span>

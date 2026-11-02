@@ -35,7 +35,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             // 미션·멀리건은 더하기만 하는 값이라, 보낸 폰이 낡아 빠뜨렸으면 합쳐서 한 번 더 저장한다(mission.js).
             const predictionsRestored = typeof mergePredictionData === 'function' && mergePredictionData(prevData);
             const missionsRestored = typeof mergeMissionData === 'function' && mergeMissionData(prevData);
-            if (predictionsRestored || missionsRestored) syncToSupabase(appData);
+            const seasonRestored = typeof mergeSeasonData === 'function' && mergeSeasonData(prevData);
+            if (predictionsRestored || missionsRestored || seasonRestored) syncToSupabase(appData);
             renderNoticeArea(); renderAll(); showSaveStatus("⚡ 실시간 업데이트됨");
             if (document.getElementById('roundPhotoModal').classList.contains('active')) renderRoundPhotos();
             // 판독 결과(status)는 워크플로가 payload에 써 넣으므로 실시간으로 들어온다.
@@ -723,7 +724,7 @@ function undoLastAction() {
     // (사본에 든 남의 금액은 그때 값이라, 그대로 쓰면 그 뒤에 남이 적은 금액을 지운다).
     if (typeof commitUndoMoney === 'function') commitUndoMoney(appData, snapshot);
     // 미션·멀리건 사용은 되돌리지 않는다 — 되돌려 미션을 다시 뽑을 수 있으면 무작위의 뜻이 없다(mission.js).
-    ['missions', 'mulligans', 'missionResets', 'missionRestores', 'predictions'].forEach(k => { if (appData[k] !== undefined) snapshot[k] = appData[k]; });
+    ['missions', 'mulligans', 'missionResets', 'missionRestores', 'predictions', 'seasonFinal', 'seasonShut', 'seasonSpecial'].forEach(k => { if (appData[k] !== undefined) snapshot[k] = appData[k]; });
     appData = snapshot;
     if (typeof overlayMoney === 'function') overlayMoney();
     syncToSupabase(appData); showToast("↩️ 이전 상태로 되돌렸습니다."); renderAll();

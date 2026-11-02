@@ -18,7 +18,7 @@ const ctx = {
 };
 ctx.window = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
-for (const f of ['stats.js', 'api.js']) vm.runInContext(src(f), ctx, { filename: f });
+for (const f of ['stats.js', 'api.js', 'season.js']) vm.runInContext(src(f), ctx, { filename: f });
 vm.runInContext(src('calc.js'), ctx, { filename: 'calc.js' });
 const run = code => vm.runInContext(code, ctx);
 

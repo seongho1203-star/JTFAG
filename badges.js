@@ -190,21 +190,21 @@ const BADGE_GROUPS = [
           inc: (g, r) => badgeRankRows(g).filter(x => x.round === r && x.rank === 0).length }
     ]},
     { id: 'title', title: '시즌 타이틀', sub: '지금 1위만 보유 · 빼앗길 수 있습니다', badges: [
-        { id: 'avg1', kind: 'title', icon: 'bars', name: '평균타수 1위', desc: '평균 타수가 가장 낮은 사람',
+        { id: 'avg1', kind: 'title', icon: 'bars', name: '평균타수 1위', desc: '올해 평균 타수가 가장 낮은 사람',
           holders: () => { const m = minOf(golferAvgScores); return m === null ? [] : golfers.filter(g => golferAvgScores[g] === m); } },
         { id: 'best', kind: 'title', icon: 'trophy', name: '최저타', desc: '전체 기록 중 가장 낮은 타수 보유',
           holders: () => { const m = minOf(golferMinScores); return m === null ? [] : golfers.filter(g => golferMinScores[g] === m); } },
-        { id: 'birdie1', kind: 'title', icon: 'sparkle', name: '버디 1위', desc: '통산 버디 개수 1위', holders: () => golferMaxBirdie.slice() },
-        { id: 'par1', kind: 'title', icon: 'shield', name: '파 1위', desc: '통산 파 개수 1위', holders: () => golferMaxPar.slice() },
-        { id: 'par3', kind: 'title', icon: 'target', name: '숏홀 스나이퍼', desc: '파3 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[3] || []).slice() },
-        { id: 'par4', kind: 'title', icon: 'flag', name: '파4 지배자', desc: '파4 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[4] || []).slice() },
-        { id: 'par5', kind: 'title', icon: 'long', name: '롱홀 헌터', desc: '파5 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[5] || []).slice() },
+        { id: 'birdie1', kind: 'title', icon: 'sparkle', name: '버디 1위', desc: '올해 버디 개수 1위', holders: () => golferMaxBirdie.slice() },
+        { id: 'par1', kind: 'title', icon: 'shield', name: '파 1위', desc: '올해 파 개수 1위', holders: () => golferMaxPar.slice() },
+        { id: 'par3', kind: 'title', icon: 'target', name: '숏홀 스나이퍼', desc: '올해 파3 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[3] || []).slice() },
+        { id: 'par4', kind: 'title', icon: 'flag', name: '파4 지배자', desc: '올해 파4 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[4] || []).slice() },
+        { id: 'par5', kind: 'title', icon: 'long', name: '롱홀 헌터', desc: '올해 파5 홀 파 대비 평균 1위', holders: () => (golferParSpecialists[5] || []).slice() },
         { id: 'uptrend', kind: 'title', icon: 'up', name: '상승세', desc: '최근 경기 타수가 계속 줄어드는 중', holders: () => golfers.filter(g => golferUptrendMap[g]) },
         { id: 'rebound', kind: 'title', icon: 'rebound', name: '극적 반전', desc: '이번 차수에 직전 차수보다 타수를 가장 많이 줄임', holders: () => golfers.filter(g => golferReboundMap[g]),
           metric: g => { const d = golferReboundDiff && golferReboundDiff[g]; return d === undefined ? '-' : (d > 0 ? `${d}타 줄임` : (d < 0 ? `${-d}타 늘림` : '변동 없음')); } },
-        { id: 'rival', kind: 'title', icon: 'swords', name: '영원의 라이벌', desc: '1:1 매치 무승부 최다', holders: () => golfers.filter(g => golferRivalMap[g]) },
+        { id: 'rival', kind: 'title', icon: 'swords', name: '영원의 라이벌', desc: '올해 1:1 매치 무승부 최다', holders: () => golfers.filter(g => golferRivalMap[g]) },
         // 불사조 — 직전 차수에 나보다 계급이 높던 상대를 1:1로 이긴 횟수 1위(calc.js의 upsetWins). 멤버 현황에 각자의 승수를 적는다.
-        { id: 'phoenix', kind: 'title', icon: 'flame', name: '불사조', desc: '직전 차수 상위 계급을 상대로 1:1 최다승', holders: () => golfers.filter(g => golferPhoenixWins[g]),
+        { id: 'phoenix', kind: 'title', icon: 'flame', name: '불사조', desc: '올해 직전 차수 상위 계급을 상대로 1:1 최다승', holders: () => golfers.filter(g => golferPhoenixWins[g]),
           metric: g => `하극상 ${(golferUpsetWins && golferUpsetWins[g]) || 0}승` }
     ]},
     // 라운드 미션(mission.js) — 판정·포인트는 그쪽이 홀 기록에서 셈한 값을 읽기만 한다.
@@ -224,10 +224,10 @@ const BADGE_GROUPS = [
     ]},
     // 놀리는 뱃지 — 사용자 요청으로 넣었다. 색을 따로(`tease`) 두어 자랑 뱃지와 갈라 보이게 한다.
     { id: 'tease', title: '불명예 뱃지', sub: '받고 싶지 않지만 모이는 뱃지', badges: [
-        { id: 'donor', kind: 'title', tier: 'tease', icon: 'coin', name: '기부왕', desc: '합산 정산 금액 손실 1위', holders: () => golfers.filter(g => golferDonorMap[g]) },
-        { id: 'bombSquad', kind: 'title', tier: 'tease', icon: 'bomb', name: '폭탄 처리반', desc: '통산 양파 개수 1위', holders: () => golferMaxDoublePar.slice() },
+        { id: 'donor', kind: 'title', tier: 'tease', icon: 'coin', name: '기부왕', desc: '올해 합산 정산 금액 손실 1위', holders: () => golfers.filter(g => golferDonorMap[g]) },
+        { id: 'bombSquad', kind: 'title', tier: 'tease', icon: 'bomb', name: '폭탄 처리반', desc: '올해 양파 개수 1위', holders: () => golferMaxDoublePar.slice() },
         { id: 'downtrend', kind: 'title', tier: 'tease', icon: 'down', name: '하락세', desc: '최근 경기 타수가 계속 늘어나는 중', holders: () => golfers.filter(g => golferDowntrendMap[g]) },
-        { id: 'swing', kind: 'title', tier: 'tease', icon: 'wave', name: '기복왕', desc: '라운드별 타수 기복 최대', holders: () => golfers.filter(g => golferFluctuationMap[g]) },
+        { id: 'swing', kind: 'title', tier: 'tease', icon: 'wave', name: '기복왕', desc: '올해 라운드별 타수 기복 최대', holders: () => golfers.filter(g => golferFluctuationMap[g]) },
         { id: 'sparrow1', kind: 'life', tier: 'tease', icon: 'bird', name: '참새 추락', cond: '참새 1회', desc: '계급 정산에서 처음으로 참새', first: g => rankRunRound(g, 3, 1) },
         { id: 'sparrow2', kind: 'life', tier: 'tease', icon: 'bird', name: '참새 2연속', cond: '2경기 연속', desc: '2경기 연속 참새 계급', first: g => rankRunRound(g, 3, 2) },
         { id: 'club100', kind: 'life', tier: 'tease', icon: 'hundred', name: '100타 클럽', cond: '100타 이상', desc: '한 라운드 100타 이상 기록',
@@ -404,6 +404,15 @@ function badgeCount(sections) {
 function renderBadgePage() {
     const box = document.getElementById('badgePage');
     if (!box || typeof golfers === 'undefined') return;
+    // `뱃지 | 트로피장` 전환(ui-awards.js) — 트로피장이면 연말 시상 결과를 그린다.
+    const viewSeg = typeof badgeViewSegHtml === 'function' ? badgeViewSegHtml() : '';
+    if (typeof badgeView !== 'undefined' && badgeView === 'trophy' && typeof trophyCaseHtml === 'function') {
+        const th = viewSeg + trophyCaseHtml();
+        if (th === badgeLastHtml) return;
+        badgeLastHtml = th;
+        box.innerHTML = th;
+        return;
+    }
     const titleCache = badgeTitleCache();
     const all = {};
     golfers.forEach(g => { all[g] = collectBadges(g, titleCache); });
@@ -444,13 +453,13 @@ function renderBadgePage() {
     const secHtml = sections.map(sec => {
         const c = sec.items.filter(s => s.earned).length;
         return `<div class="bdg-card bdg-sec${sec.group.id === 'tease' ? ' tease' : ''}">
-            <div class="bdg-sec-head"><div><div class="bdg-sec-title">${sec.group.title}</div><div class="bdg-sec-sub">${sec.group.sub}</div></div>
+            <div class="bdg-sec-head"><div><div class="bdg-sec-title">${sec.group.title}${sec.group.id === 'title' && typeof seasonPillHtml === 'function' ? ' ' + seasonPillHtml() : ''}</div><div class="bdg-sec-sub">${sec.group.sub}</div></div>
             <div class="bdg-sec-count">${c} / ${sec.items.length}</div></div>
             <div class="bdg-grid">${sec.items.map(s => badgeTileHtml(s, latest, g)).join('')}</div>
         </div>`;
     }).join('');
 
-    const html = `
+    const html = viewSeg + `
         <div class="bdg-people">${chips}</div>
         <div class="bdg-card bdg-me">
             <div class="bdg-me-row">

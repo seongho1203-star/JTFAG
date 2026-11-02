@@ -1,0 +1,245 @@
+// ◇ ui-awards.js — 연말 시상식 화면: 시즌 알약 · 트로피장 · 시상식 연출 · 관리자 지정(마지막 차수·공로상)
+// ◇ 계산은 season.js(시즌)와 awards.js(시상)가 한다. 여기는 그리고 여닫기만 한다. 아무것도 저장하지 않는다(관리자 지정만 예외).
+
+// ── 시즌 알약 ────────────────────────────────────────────
+function seasonPillHtml() { return `<span class="season-pill">${currentSeason()} 시즌</span>`; }
+
+// ── 뱃지 탭의 `뱃지 | 트로피장` 전환 ─────────────────────────
+let badgeView = 'badges';     // 'badges' | 'trophy'
+let trophyYear = 0;           // 0이면 자동(마무리된 가장 최근 시즌, 없으면 지금 시즌)
+let trophyName = '';
+
+function badgeViewSegHtml() {
+    return `<div class="tc-seg" role="tablist" aria-label="뱃지 화면 전환">
+        <button type="button" role="tab" aria-selected="${badgeView === 'badges'}" class="${badgeView === 'badges' ? 'on' : ''}" onclick="setBadgeView('badges')">뱃지</button>
+        <button type="button" role="tab" aria-selected="${badgeView === 'trophy'}" class="${badgeView === 'trophy' ? 'on' : ''}" onclick="setBadgeView('trophy')">트로피장</button>
+    </div>`;
+}
+function setBadgeView(v) {
+    badgeView = v === 'trophy' ? 'trophy' : 'badges';
+    badgeLastHtml = '';
+    renderBadgePage();
+}
+function selectTrophyYear(y) { trophyYear = y; badgeLastHtml = ''; renderBadgePage(); }
+function selectTrophyPerson(n) { if (golfers.includes(n)) { trophyName = n; badgeLastHtml = ''; renderBadgePage(); } }
+
+function trophyYearNow() {
+    const tabs = seasonTabs();
+    if (trophyYear && tabs.includes(trophyYear)) return trophyYear;
+    const closed = closedSeasons();
+    return closed.length ? closed[closed.length - 1] : currentSeason();
+}
+
+const TC_CUP = `<svg width="22" height="22" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h24v14a12 12 0 0 1-24 0V10z"/><path d="M20 14H10v4a10 10 0 0 0 10 10M44 14h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 54h20"/></svg>`;
+
+function trophyCaseHtml() {
+    const y = trophyYearNow();
+    const me = localStorage.getItem('jtfag_my_name');
+    if (!trophyName || !golfers.includes(trophyName)) trophyName = golfers.includes(me) ? me : golfers[0];
+    const g = trophyName;
+    const open = awardsOpen(y);
+    const tabs = seasonTabs().map(t => `<button type="button" class="${t === y ? 'on' : ''}" onclick="selectTrophyYear(${t})">${t}</button>`).join('');
+    const bar = `<div class="tc-bar"><div class="tc-years" role="tablist" aria-label="시즌">${tabs}</div>
+        ${open ? `<button type="button" class="tc-replay" onclick="openAwardsCeremony(${y}, true)">시상식 다시 보기</button>` : ''}</div>`;
+
+    if (!open) {
+        const cards = golfers.map(n => `<button type="button" class="bdg-person${n === g ? ' on' : ''}" onclick="selectTrophyPerson('${n}')"><span class="bdg-pname">${escapeHtml(n)}</span><span class="bdg-pcount">수상 0</span></button>`).join('');
+        return `${bar}
+            <div class="bdg-people">${cards}</div>
+            <div class="tc-wait">
+                <div class="tc-wait-t">${y} 시즌 시상식</div>
+                <div class="tc-wait-s">${escapeHtml(seasonPendingText(y))}</div>
+            </div>
+            <div class="tc-grid">${['올해의 골퍼'].concat(AWARD_ORDER.map(id => ({ avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', rebound: '극적 반전상', late: '뒷심상', donor: '기부왕', merit: '공로상' }[id]))).map(nm =>
+                `<div class="tc-cell no"><div class="tc-cell-h">${TC_CUP}<span>${nm}</span></div><div class="tc-cell-n">발표 전</div></div>`).join('')}</div>`;
+    }
+
+    const aw = computeAwards(y);
+    const st = aw.stats[g];
+    const cards = golfers.map(n => `<button type="button" class="bdg-person${n === g ? ' on' : ''}" onclick="selectTrophyPerson('${n}')"><span class="bdg-pname">${escapeHtml(n)}</span><span class="bdg-pcount">수상 ${aw.tally[n]}</span></button>`).join('');
+    const stat = [
+        ['평균', st.avg === null ? '-' : st.avg.toFixed(1)],
+        ['베스트', st.min ? st.min.v : '-'],
+        ['버디', st.holes.birdie],
+        ['독수리', `${st.counts[0]}회`]
+    ].map(([k, v]) => `<div class="tc-stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+    const cell = (name, holders, gotNote, manual) => {
+        const got = holders.includes(g);
+        const note = got ? gotNote : (holders.length ? `시즌 1위 ${holders.map(escapeHtml).join('·')}` : (manual ? '관리자 지정 전' : '해당 없음'));
+        return `<div class="tc-cell ${got ? 'got' : 'no'}"><div class="tc-cell-h">${TC_CUP}<span>${name}</span></div><div class="tc-cell-n">${note}</div></div>`;
+    };
+    const grandNote = aw.grand.rows.find(r => r.g === g);
+    const cells = [cell('올해의 골퍼', aw.grand.holders, `계급 점수 ${grandNote ? grandNote.points : 0}점`)]
+        .concat(aw.awards.map(a => cell(escapeHtml(a.name), a.holders, escapeHtml(a.metric) + (a.holders.length > 1 && !/공동/.test(a.metric) ? ' · 공동' : ''), a.manual))).join('');
+    return `${bar}
+        <div class="bdg-people">${cards}</div>
+        <div class="bdg-card tc-stats">${stat}</div>
+        <div class="tc-grid">${cells}</div>
+        <div class="bdg-foot">획득한 상은 금색, 아직 받지 못한 상은 점선으로 보입니다. 지난 시즌 트로피는 연도 탭에 영구 보관됩니다.</div>`;
+}
+
+// ── 시상식 연출 ─────────────────────────────────────────────
+// 입장 → 부문별 발표(수상자가 있는 부문만) → 대상. 화면을 누르면 다음으로 넘어가고, 기기마다 시즌당 한 번만 저절로 뜬다.
+// 마무리된 시즌이 아니면 열리지 않는다(재생 단추도 트로피장에서 마무리된 시즌에만 보인다).
+let awardsCeremony = null;
+
+const AW_ICON = `<svg width="52" height="52" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="11"/><circle cx="32" cy="32" r="3" fill="#e7c46a"/></svg>`;
+const AW_CROWN = `<svg width="84" height="84" viewBox="0 0 64 64" fill="#e7c46a" stroke="#e7c46a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 46l6-26 14 14 4-20 4 20 14-14 6 26z"/><rect x="10" y="50" width="44" height="6" rx="2"/></svg>`;
+const AW_CUP = `<svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h24v14a12 12 0 0 1-24 0V10z"/><path d="M20 14H10v4a10 10 0 0 0 10 10M44 14h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 54h20M26 46h12v8H26z"/></svg>`;
+
+function awardsSlides(y) {
+    const aw = computeAwards(y);
+    const shown = aw.awards.filter(a => a.holders.length);
+    const total = shown.length + (aw.grand.holders.length ? 1 : 0);
+    const dots = i => Array.from({ length: total }, (_, k) => `<span class="aw-dot${k <= i ? ' on' : ''}"></span>`).join('');
+    const slides = [];
+    const n = seasonRoundIdx(y).length;
+    slides.push(`<div class="aw-intro">
+        <div class="aw-eyebrow">JTFAG · SEASON AWARDS</div>
+        <div class="aw-cup">${AW_CUP}</div>
+        <div class="aw-year">${y}</div>
+        <div class="aw-han aw-big">연말 시상식</div>
+        <div class="aw-lead">${n}경기 · 네 명 · 한 시즌<br>올 한 해의 주인공을 발표합니다</div>
+        <div class="aw-chips"><span>시상 부문 ${total}개</span><span>${y}.01 ~ ${y}.12</span></div>
+        <button type="button" class="aw-go" data-next="1">시상식 입장</button>
+        <div class="aw-foot">새 시즌(${y + 1})은 계급·타수 금액·시즌 타이틀이 0에서 다시 시작합니다</div>
+    </div>`);
+    shown.forEach((a, i) => {
+        const rows = a.rows.filter(r => a.dir === 'max' ? r.v > 0 : true);
+        const bar = r => { const w = a.dir === 'max' ? (a.best > 0 ? r.v / a.best : 0) : (r.v > 0 ? a.best / r.v : 0); return Math.max(6, Math.round(w * 100)); };
+        slides.push(`<div class="aw-slide">
+            <div class="aw-top"><span class="aw-eyebrow">AWARD ${String(i + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span><span class="aw-dots">${dots(i)}</span></div>
+            <div class="aw-title">${AW_ICON}<div class="aw-han aw-name">${escapeHtml(a.name)}</div><div class="aw-rule">${escapeHtml(a.rule)}</div></div>
+            <div class="aw-win"><div class="aw-eyebrow">WINNER</div>
+                <div class="aw-han aw-who${a.holders.length > 1 ? ' multi' : ''}">${a.holders.map(escapeHtml).join(' · ')}</div>
+                <div class="aw-metric">${escapeHtml(a.metric)}</div></div>
+            ${rows.length ? `<div class="aw-rows">${rows.map(r => `<div class="aw-row${a.holders.includes(r.g) ? ' top' : ''}">
+                <span class="aw-rn">${escapeHtml(r.g)}</span><span class="aw-bar"><i style="width:${bar(r)}%"></i></span><span class="aw-rv">${escapeHtml(r.text)}</span></div>`).join('')}</div>` : ''}
+            <div class="aw-tap">화면을 누르면 다음 발표로 넘어갑니다</div>
+        </div>`);
+    });
+    if (aw.grand.holders.length) {
+        const top = aw.grand.rows.find(r => aw.grand.holders.includes(r.g));
+        slides.push(`<div class="aw-grand">
+            <div class="aw-eyebrow">GRAND PRIZE · ${y}</div>
+            <div class="aw-crown">${AW_CROWN}</div>
+            <div class="aw-gwho"><div class="aw-glead">올해의 골퍼</div>
+                <div class="aw-han aw-gname${aw.grand.holders.length > 1 ? ' multi' : ''}">${aw.grand.holders.map(escapeHtml).join(' · ')}</div>
+                <div class="aw-gsub">계급 점수 <b>${top.points}</b>점 · 독수리 ${top.eagle}회</div></div>
+            <div class="aw-table">
+                <div class="aw-trow head"><span class="c1">순위</span><span class="c2"></span><span class="c3">독수리</span><span class="c4">계급 점수</span></div>
+                ${aw.grand.rows.map(r => `<div class="aw-trow${aw.grand.holders.includes(r.g) ? ' top' : ''}"><span class="c1">${r.rank}</span><span class="c2">${escapeHtml(r.g)}</span><span class="c3">${r.eagle}회</span><span class="c4">${r.points}</span></div>`).join('')}
+            </div>
+            <div class="aw-notes">
+                <div><b>계급 점수</b> 독수리 3점 · 매 2점 · 학 1점 · 참새 0점 (${aw.grand.ranked}경기)</div>
+                <div><b>동점</b> ${aw.grand.tieBroken ? `계급 점수가 같아 평균 타수(${top.avg === null ? '-' : top.avg.toFixed(1) + '타'})가 낮은 쪽이 앞섭니다` : '평균 타수가 낮은 쪽이 앞섭니다'}</div>
+            </div>
+            <button type="button" class="aw-go gold" data-case="1">트로피장 보기</button>
+        </div>`);
+    }
+    return slides;
+}
+
+function openAwardsCeremony(y, replay, force) {
+    if ((!force && !awardsOpen(y)) || document.querySelector('.aw-host')) return;
+    if (typeof loadEagleFonts === 'function') loadEagleFonts();
+    const slides = awardsSlides(y);
+    if (!slides.length) return;
+    if (!force) markAwardsSeen(y);
+    const o = document.createElement('div');
+    o.className = 'reveal-overlay aw-host';
+    o.innerHTML = `<div class="aw-stage" id="awStage"></div><button type="button" class="aw-skip" data-skip="1">건너뛰기</button>`;
+    document.body.appendChild(o);
+    awardsCeremony = { y, i: 0, slides, o };
+    const last = slides.length - 1;
+    const show = i => {
+        const c = awardsCeremony; if (!c) return;
+        c.i = i;
+        const st = o.querySelector('#awStage');
+        st.innerHTML = `<div class="aw-pane">${slides[i]}</div>`;
+        o.querySelector('.aw-skip').style.display = i === last ? 'none' : '';
+        if (i === last && typeof dropConfetti === 'function' && slides.length > 1) setTimeout(() => dropConfetti(o, 60, ['#e7c46a', '#ffffff', '#9fb9e6', '#fde68a']), 500);
+    };
+    const close = (toCase) => {
+        o.classList.remove('on');
+        awardsCeremony = null;
+        setTimeout(() => {
+            o.remove();
+            if (toCase) { trophyYear = y; setBadgeView('trophy'); if (typeof showPage === 'function') showPage('badges'); }
+            if (!replay && typeof afterRevealEffects === 'function') afterRevealEffects();
+        }, 300);
+    };
+    o.onclick = e => {
+        const c = awardsCeremony; if (!c) return;
+        const t = e.target.closest('button');
+        if (t && t.dataset.skip) return close(false);
+        if (t && t.dataset.case) return close(true);
+        if (t && !t.dataset.next) return;
+        if (c.i < last) show(c.i + 1);
+    };
+    show(0);
+    requestAnimationFrame(() => o.classList.add('on'));
+}
+
+// 접속·갱신마다 부른다 — 이 기기에서 아직 안 본, 마무리된 시즌이 있으면 한 번 띄운다(입장 인사말·결과 발표 뒤).
+function checkAwardsCeremony() {
+    if (typeof isLoaded !== 'undefined' && !isLoaded) return;
+    if (typeof entranceBlocked === 'function' && entranceBlocked()) return;
+    if (document.querySelector('.reveal-overlay, .celebrate-overlay, .bdg-unlock')) return;
+    const y = awardsUnseenYear();
+    if (!y) return;
+    openAwardsCeremony(y, false);
+}
+
+// ── 관리자 지정 — 시즌 마지막 차수 · 공로상 ─────────────────────
+let seasonPick = { last: 0, year: 0, name: '', note: '' };
+
+async function openSeasonFinalPrompt() {
+    const y = currentSeason();
+    const total = appData.totalRounds || 0;
+    const cur = seasonFinalRound(y);
+    const opts = ['<option value="0">지정 안 함 (12월 31일까지)</option>']
+        .concat(Array.from({ length: total }, (_, i) => total - i).map(n => `<option value="${n}"${n === cur ? ' selected' : ''}>${n}차</option>`)).join('');
+    seasonPick.last = cur;
+    const ok = await showConfirmPrompt(`<b>${y} 시즌 마지막 차수</b><br>
+        <select onchange="seasonPick.last = Number(this.value)" style="margin:10px 0 8px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${opts}</select>
+        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">그 차수의 스코어가 등록되고 네 명의 정산 입력이 끝나면 시상식이 자동으로 열리고 새 시즌이 시작됩니다. 그 뒤 차수는 다음 시즌으로 셉니다. 이미 스코어와 정산 입력이 끝난 차수를 지정하면 곧바로 시상식이 열리고 되돌릴 수 없습니다. 지정하지 않으면 ${y}년 12월 31일이 지나야 열립니다.</span>`, '저장', '#2b5394');
+    if (!ok) return;
+    const n = seasonPick.last;
+    if (n === cur) return;
+    if (!appData.seasonFinal || typeof appData.seasonFinal !== 'object') appData.seasonFinal = {};
+    appData.seasonFinal[y] = n;   // 해제는 0으로 적는다(합칠 때 되살아나지 않게)
+    syncToSupabase(appData);
+    renderAll();
+    showToast(n ? `🏁 ${y} 시즌 마지막 차수를 ${n}차로 지정했습니다.` : `🏁 ${y} 시즌 마지막 차수 지정을 해제했습니다.`);
+}
+
+async function openSeasonMeritPrompt() {
+    // 공로상은 어느 시즌 것인지 고른다 — 마지막 차수 정산이 끝나 시즌이 막 넘어간 뒤에도 방금 끝난 시즌 것을 지정해야 하기 때문이다.
+    const years = seasonTabs();
+    const closed = closedSeasons();
+    seasonPick.year = closed.length ? closed[closed.length - 1] : years[years.length - 1];
+    const cur = (appData.seasonSpecial && appData.seasonSpecial[seasonPick.year]) || {};
+    seasonPick.name = golfers.includes(cur.name) ? cur.name : '';
+    seasonPick.note = cur.note || '';
+    const yearOpts = years.slice().reverse().map(t => `<option value="${t}"${t === seasonPick.year ? ' selected' : ''}>${t} 시즌</option>`).join('');
+    const opts = ['<option value="">지정 안 함</option>'].concat(golfers.map(g => `<option value="${g}"${g === seasonPick.name ? ' selected' : ''}>${escapeHtml(g)}</option>`)).join('');
+    const ok = await showConfirmPrompt(`<b>공로상 지정</b><br>
+        <select onchange="seasonPick.year = Number(this.value)" aria-label="시즌" style="margin:10px 0 6px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${yearOpts}</select>
+        <select onchange="seasonPick.name = this.value" aria-label="수상자" style="margin:0 0 6px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${opts}</select>
+        <input type="text" maxlength="30" value="${escapeHtml(seasonPick.note)}" oninput="seasonPick.note = this.value" aria-label="공로 내용" style="margin:0 0 8px; width:100%; box-sizing:border-box; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">
+        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">모임에 기여한 사람 한 명을 직접 지정합니다. 시즌, 수상자, 공로 내용(예: 총무 수고) 순서로 고릅니다. 시상식과 트로피장에 그대로 나옵니다.</span>`, '저장', '#2b5394');
+    if (!ok) return;
+    const y = seasonPick.year;
+    if (!appData.seasonSpecial || typeof appData.seasonSpecial !== 'object') appData.seasonSpecial = {};
+    appData.seasonSpecial[y] = seasonPick.name ? { name: seasonPick.name, note: seasonPick.note.trim() } : { name: '', note: '' };
+    syncToSupabase(appData);
+    renderAll();
+    showToast(seasonPick.name ? `🏅 ${y} 공로상을 ${seasonPick.name}님으로 지정했습니다.` : `🏅 ${y} 공로상 지정을 해제했습니다.`);
+}
+
+// 관리자 메뉴 → `🎬 시상식 미리보기` — 시즌이 안 끝났어도 지금 기록으로 한 번 훑어본다. 아무것도 저장하지 않는다(기기 기록도 안 건드린다).
+function previewAwardsCeremony() {
+    closeAdminModal();
+    openAwardsCeremony(currentSeason(), true, true);
+}

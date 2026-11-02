@@ -65,10 +65,13 @@ function defaultMoneyRound() {
 // 찬조 합계 — 모임을 위해 그 사람이 쓴 돈. `roundMoney[차수][이름].donate`에 있다.
 // 정산에서 나온 값이 아니라 따로 적은 값이라, 합산에서 그만큼 **뺀다**
 // (-50만인 사람이 5만을 찬조하면 -55만). 예전 payload에는 키가 없으므로 없으면 0.
-function donationOf(name) {
+// season을 주면 그 시즌 차수만 더한다(시즌이 바뀌면 요약의 찬조도 0에서 다시 시작한다). 안 주면 지금 시즌이다.
+function donationOf(name, season) {
     if (!appData.roundMoney) return 0;
+    const sm = seasonMap(), want = season === undefined ? currentSeason() : season;
     let sum = 0;
     for (let r = 0; r < (appData.totalRounds || 0); r++) {
+        if (want !== null && sm[r] !== want) continue;
         const m = appData.roundMoney[r] && appData.roundMoney[r][name];
         sum += Number(m && m.donate) || 0;
     }
@@ -77,14 +80,16 @@ function donationOf(name) {
 
 // 파3·파4·파5 각각에서 파 대비 평균이 가장 좋은 사람을 가린다.
 // ROUND_HOLES(stats.js)의 홀 단위 기록이 있어야 하고, 없으면 아무도 뽑지 않는다.
-function computeParSpecialists() {
+function computeParSpecialists(season) {
     golferParSpecialists = { 3: [], 4: [], 5: [] };
     if (typeof ROUND_HOLES === 'undefined') return;
+    const sm = seasonMap(), want = season === undefined ? currentSeason() : season;
 
     const sums = {};   // sums[파][이름] = { 합, 홀수 }
     [3, 4, 5].forEach(p => { sums[p] = {}; golfers.forEach(g => sums[p][g] = { total: 0, holes: 0 }); });
 
     Object.keys(ROUND_HOLES).forEach(round => {
+        if (want !== null && sm[Number(round) - 1] !== want) return;   // 그 시즌 차수만(시즌 타이틀이다)
         const par = ROUND_HOLES[round].par, rel = ROUND_HOLES[round].rel;
         if (!par || !rel) return;
         golfers.forEach(g => {
@@ -156,7 +161,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-mission-king">🎯 미션왕</div>`, desc: "올해 누적 획득 미션 포인트 1위" });
     }
     if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
-        badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
+        badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "올해 평균 타수 1위" });
     }
     if (overallMinScore !== Infinity && golferMinScores[g] === overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-best-score">🎯 최저타 ${overallMinScore}타</div>`, desc: "리그 전체 기록 중 가장 낮은 최저타 달성" });
@@ -169,10 +174,10 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-rebound">🔥 극적 반전</div>`, desc: "이번 차수에 직전 차수보다 타수를 가장 많이 줄임" });
     }
     if (golferPhoenixWins[g]) {
-        badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "상위 계급을 상대로 1:1 최다승 기록" });
+        badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "올해 상위 계급을 상대로 1:1 최다승 기록" });
     }
     if (golferDonorMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "합산 정산 금액 손실 1위" });
+        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 합산 정산 금액 손실 1위" });
     }
     if (golferUptrendMap[g]) {
         badges.push({ html: `<div class="season-badge badge-uptrend">📈 상승세</div>`, desc: "최근 경기 스코어가 지속적으로 줄어드는 중" });
@@ -181,10 +186,10 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-downtrend">📉 하락세</div>`, desc: "최근 경기 스코어가 지속적으로 늘어나는 중" });
     }
     if (golferFluctuationMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "라운드별 스코어 기복이 가장 큼" });
+        badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "올해 라운드별 스코어 기복이 가장 큼" });
     }
     if (golferRivalMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "1:1 매치에서 가장 많은 무승부를 기록함" });
+        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "올해 1:1 매치에서 가장 많은 무승부를 기록함" });
     }
 
     if (myStats[g].holeInOne > 0) {
@@ -194,23 +199,23 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-eagle-hit">${imgE} 이글 헌터</div>`, desc: "통산 이글 기록자" });
     }
     if (golferMaxBirdie.includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-birdie">🦋 버디 수집가</div>`, desc: "리그 내 누적 버디 횟수 1위" });
+        badges.push({ html: `<div class="season-badge badge-birdie">🦋 버디 수집가</div>`, desc: "올해 버디 횟수 1위" });
     }
     if (golferMaxPar.includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-par">🛡️ 철벽 방어</div>`, desc: "리그 내 누적 파 횟수 1위" });
+        badges.push({ html: `<div class="season-badge badge-par">🛡️ 철벽 방어</div>`, desc: "올해 파 횟수 1위" });
     }
     if (golferMaxDoublePar.includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-bomb">💣 폭탄 처리반</div>`, desc: "리그 내 누적 양파 횟수 1위" });
+        badges.push({ html: `<div class="season-badge badge-bomb">💣 폭탄 처리반</div>`, desc: "올해 양파 횟수 1위" });
     }
 
     if (golferParSpecialists[3].includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-par3">🎯 숏홀 스나이퍼</div>`, desc: "파3 홀 파 대비 평균 1위" });
+        badges.push({ html: `<div class="season-badge badge-par3">🎯 숏홀 스나이퍼</div>`, desc: "올해 파3 홀 파 대비 평균 1위" });
     }
     if (golferParSpecialists[4].includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-par4">🎪 파4 지배자</div>`, desc: "파4 홀 파 대비 평균 1위" });
+        badges.push({ html: `<div class="season-badge badge-par4">🎪 파4 지배자</div>`, desc: "올해 파4 홀 파 대비 평균 1위" });
     }
     if (golferParSpecialists[5].includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-par5">💪 롱홀 헌터</div>`, desc: "파5 홀 파 대비 평균 1위" });
+        badges.push({ html: `<div class="season-badge badge-par5">💪 롱홀 헌터</div>`, desc: "올해 파5 홀 파 대비 평균 1위" });
     }
 
     if (badges.length === 0) {
@@ -308,8 +313,23 @@ function computeRaveAwards() {
     return out;
 }
 
+// 한 사람의 그 시즌 홀 기록 개수(버디·파·양파·이글·홀인원) — ROUND_STATS(차수별 집계)를 시즌 차수만 더한다.
+function seasonHoleCounts(g, season) {
+    const out = { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 };
+    if (typeof ROUND_STATS === 'undefined') return out;
+    const sm = seasonMap();
+    Object.keys(ROUND_STATS).forEach(no => {
+        if (season !== null && sm[Number(no) - 1] !== season) return;
+        const t = ROUND_STATS[no] && ROUND_STATS[no][g];
+        if (t) Object.keys(out).forEach(k => { out[k] += t[k] || 0; });
+    });
+    return out;
+}
+
 function processAllRoundSettlements() {
     const totalRounds = appData.totalRounds;
+    // 시즌이 바뀌면 누적 계급·타수 금액·찬조와 시즌 타이틀이 0에서 다시 시작한다(사용자 요청). 지금 시즌 차수만 센다.
+    const SEASON = currentSeason(), sm = seasonMap();
     const totalRankProfit = {};
     const roundRankProfit = {};
     golferRankHistory = {}; 
@@ -354,17 +374,20 @@ function processAllRoundSettlements() {
     let maxPar = 0;
     let maxDPar = 0;
 
+    // 버디·파·양파 1위는 시즌 타이틀 — 지금 시즌 기록만 센다(평생 단계 뱃지는 badges.js가 따로 통산으로 센다).
+    const seasonCnt = {};
+    golfers.forEach(g => { seasonCnt[g] = seasonHoleCounts(g, SEASON); });
     golfers.forEach(g => {
-        if (myStats[g].birdie > maxBirdie) { maxBirdie = myStats[g].birdie; }
-        if (myStats[g].par > maxPar) { maxPar = myStats[g].par; }
-        if (myStats[g].doublePar > maxDPar) { maxDPar = myStats[g].doublePar; }
+        if (seasonCnt[g].birdie > maxBirdie) { maxBirdie = seasonCnt[g].birdie; }
+        if (seasonCnt[g].par > maxPar) { maxPar = seasonCnt[g].par; }
+        if (seasonCnt[g].doublePar > maxDPar) { maxDPar = seasonCnt[g].doublePar; }
     });
 
-    golferMaxBirdie = golfers.filter(g => myStats[g].birdie === maxBirdie && maxBirdie > 0);
-    golferMaxPar = golfers.filter(g => myStats[g].par === maxPar && maxPar > 0);
-    golferMaxDoublePar = golfers.filter(g => myStats[g].doublePar === maxDPar && maxDPar > 0);
+    golferMaxBirdie = golfers.filter(g => seasonCnt[g].birdie === maxBirdie && maxBirdie > 0);
+    golferMaxPar = golfers.filter(g => seasonCnt[g].par === maxPar && maxPar > 0);
+    golferMaxDoublePar = golfers.filter(g => seasonCnt[g].doublePar === maxDPar && maxDPar > 0);
 
-    computeParSpecialists();
+    computeParSpecialists(SEASON);
 
     golfers.forEach(g => {
         if (appData.scores && appData.scores[g]) {
@@ -400,6 +423,10 @@ function processAllRoundSettlements() {
             ? appData.scores[g].filter(s => s !== "" && s !== null && !isNaN(parseFloat(s))).map(s => parseFloat(s))
             : [];
 
+        // 기복은 시즌 타이틀이라 그 시즌 타수의 최고·최저 차이로 본다.
+        const seasonScores = ((appData.scores && appData.scores[g]) || [])
+            .map((s, r) => (sm[r] === SEASON ? parseFloat(s) : NaN)).filter(v => !isNaN(v) && v > 0);
+
         if (validScores.length >= 2) {
             const len = validScores.length;
             const last = validScores[len - 1];
@@ -414,9 +441,9 @@ function processAllRoundSettlements() {
                 if (prev1 < last - 2) golferDowntrendMap[g] = true;
             }
 
-            const maxS = Math.max(...validScores);
-            const minS = Math.min(...validScores);
-            golferFluctuationRange[g] = maxS - minS;
+        }
+        if (seasonScores.length >= 2) {
+            golferFluctuationRange[g] = Math.max(...seasonScores) - Math.min(...seasonScores);
         }
     });
 
@@ -468,7 +495,7 @@ function processAllRoundSettlements() {
                     const loser = winner === g1 ? g2 : g1;
                     const wPrev = golferRankHistory[winner].slice(-1)[0];
                     const lPrev = golferRankHistory[loser].slice(-1)[0];
-                    if (wPrev !== undefined && lPrev !== undefined && wPrev > lPrev) upsetWins[winner]++;
+                    if (sm[r] === SEASON && wPrev !== undefined && lPrev !== undefined && wPrev > lPrev) upsetWins[winner]++;
                 }
 
                 matchResults[g1].totalDiff += (g2Adjusted - g1Adjusted);
@@ -476,7 +503,7 @@ function processAllRoundSettlements() {
             }
         }
 
-        golfers.forEach(g => {
+        if (sm[r] === SEASON) golfers.forEach(g => {
             globalTies[g] += matchResults[g].ties;
         });
 
@@ -502,7 +529,7 @@ function processAllRoundSettlements() {
             const rankInfo = RANK_CONFIG[index];
             const profit = rankPenaltyAt(r, index);
             
-            totalRankProfit[golferName] += profit;
+            if (sm[r] === SEASON) totalRankProfit[golferName] += profit;   // 요약 카드의 계급 합은 시즌 몫만
             roundRankProfit[golferName][r] = profit;
             golferRankHistory[golferName].push(index);
             // 계급이 매겨진 마지막 차수. 결과 발표 연출(ui.js)이 이 차수를 보여 준다.
@@ -550,12 +577,17 @@ function processAllRoundSettlements() {
             golferMinScores[g] = userMin;
             if (userMin < overallMinScore) { overallMinScore = userMin; }
 
-            const sum = validScores.reduce((acc, curr) => acc + curr, 0);
-            const userAvg = sum / validScores.length;
+        } else {
+            golferMinScores[g] = null;
+        }
+        // 평균 타수 1위는 시즌 타이틀 — 지금 시즌 타수만 평균 낸다. 최저타는 라이프 베스트라 통산 그대로다.
+        const inSeason = ((appData.scores && appData.scores[g]) || [])
+            .map((s, r) => (sm[r] === SEASON ? parseFloat(s) : NaN)).filter(v => !isNaN(v) && v > 0);
+        if (inSeason.length > 0) {
+            const userAvg = inSeason.reduce((acc, curr) => acc + curr, 0) / inSeason.length;
             golferAvgScores[g] = userAvg;
             if (userAvg < overallMinAvg) { overallMinAvg = userAvg; }
         } else {
-            golferMinScores[g] = null;
             golferAvgScores[g] = null;
         }
     });
@@ -566,6 +598,7 @@ function processAllRoundSettlements() {
 
         if (appData.roundMoney) {
             for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                if (sm[rIdx] !== SEASON) continue;   // 시즌이 바뀌면 타수 금액도 0에서 다시 시작
                 const rMoney = appData.roundMoney[rIdx];
                 if (!rMoney) continue;
 
@@ -593,6 +626,8 @@ function processAllRoundSettlements() {
         golferDonorMap[donorWinner] = true;
     }
 
+    const seasonPill = document.getElementById('seasonPillSummary');
+    if (seasonPill) seasonPill.textContent = `${SEASON} 시즌`;
     const summaryGrid = document.getElementById('summaryGrid');
     if (summaryGrid) {
         summaryGrid.innerHTML = "";
@@ -602,6 +637,7 @@ function processAllRoundSettlements() {
 
             if (appData.roundMoney) {
                 for (let rIdx = 0; rIdx < totalRounds; rIdx++) {
+                    if (sm[rIdx] !== SEASON) continue;
                     const rMoney = appData.roundMoney[rIdx];
                     if (!rMoney) continue;
 

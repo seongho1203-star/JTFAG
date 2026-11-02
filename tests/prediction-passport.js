@@ -65,7 +65,7 @@ function make() {
         MSN_CHEVRON: '<svg></svg>' };
     ctx.window = ctx; vm.createContext(ctx);
     const run = code => vm.runInContext(code, ctx);
-    ['stats.js', 'api.js', 'prediction.js', 'passport.js'].forEach(name => run(src(name)));
+    ['stats.js', 'api.js', 'season.js', 'prediction.js', 'passport.js'].forEach(name => run(src(name)));
     ctx.syncToSupabase = data => new Promise(resolve => saves.push({ data: plain(data), resolve }));
     run(`appData={...getDefaultData(),totalRounds:11,nextRoundNo:11,nextRoundISO:'2026-10-26',nextRoundDate:'10월 26일 오전 7:00 디오션CC',roundCourses:{11:'디오션CC'},scores:Object.fromEntries(golfers.map(g=>[g,Array(11).fill('')]))};leagueReadReady=true;isLoaded=true;`);
     return { ctx, run, store, host, toasts, saves, timers, overlays,

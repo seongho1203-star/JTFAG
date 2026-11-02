@@ -550,7 +550,8 @@ async function fetchFromSupabase() {
         // 미션·멀리건은 더하기만 하는 값 — 낡은 폰이 덮어써 빠진 것을 앞 상태와 이 기기 기록에서 되살린다(mission.js)
         const predictionsRestored = typeof mergePredictionData === 'function' && mergePredictionData(prevData);
         const missionsRestored = typeof mergeMissionData === 'function' && mergeMissionData(prevData);
-        if (predictionsRestored || missionsRestored) syncToSupabase(appData);
+        const seasonRestored = typeof mergeSeasonData === 'function' && mergeSeasonData(prevData);
+        if (predictionsRestored || missionsRestored || seasonRestored) syncToSupabase(appData);
         isLoaded = true;
         renderNoticeArea();
         renderAll();

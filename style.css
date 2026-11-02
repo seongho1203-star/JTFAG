@@ -2350,3 +2350,94 @@ button.fl-amt.tap { font-family: inherit; background: #f7f7f5; border: 1px solid
 button.fl-amt.tap:active { background: #e9eff9; border-color: #c9d6ec; }
 .fl-calc-head em { font-style: normal; font-size: 0.62rem; font-weight: 600; color: var(--text-sub); margin-left: 6px; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 button.fl-amt.tap { justify-self: end; }
+
+/* ── 연말 시상식 · 트로피장 · 시즌 알약 (ui-awards.js) ──
+   시즌 알약은 카드 제목 줄에 붙는 작은 글자라 홈 높이를 안 바꾼다. 트로피장은 흰 카드 · 가는 선 · 남색 하나(1번 클린 화이트).
+   시상식은 연출이라 어두운 남색 · 금색(독수리 대관식과 같은 결). transform·opacity만, 한 번 돌고 끝난다. */
+.season-pill { display: inline-block; vertical-align: middle; margin-left: 4px; padding: 3px 8px; border-radius: 999px; background: #e9eef7; color: #2b5394; font-size: 0.66rem; font-weight: 800; letter-spacing: 0; line-height: 1.2; white-space: nowrap; }
+.tc-seg { display: flex; padding: 3px; margin-bottom: 10px; border-radius: 12px; background: #ececE8; }
+.tc-seg button { flex: 1 1 0; height: 34px; border: 0; border-radius: 9px; background: transparent; color: #5b6370; font-family: inherit; font-size: 0.86rem; font-weight: 600; }
+.tc-seg button.on { background: #ffffff; color: #1c2230; font-weight: 800; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.tc-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.tc-years { display: flex; gap: 6px; flex-wrap: wrap; }
+.tc-years button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: #f3f3f0; color: #5b6370; font-family: inherit; font-size: 0.78rem; font-weight: 600; }
+.tc-years button.on { background: #2b5394; color: #ffffff; font-weight: 800; }
+.tc-replay { min-height: 32px; padding: 0 12px; border: 1px solid #2b5394; border-radius: 8px; background: #ffffff; color: #2b5394; font-family: inherit; font-size: 0.74rem; font-weight: 800; white-space: nowrap; }
+.tc-stats { display: flex; justify-content: space-between; padding: 12px 8px; margin-top: 10px; }
+.tc-stat { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tc-stat .k { font-size: 0.7rem; color: #5b6370; font-weight: 600; }
+.tc-stat .v { font-size: 1.05rem; font-weight: 800; color: #1c2230; }
+.tc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.tc-cell { box-sizing: border-box; min-height: 74px; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; min-width: 0; }
+.tc-cell.got { border: 1px solid #e7c46a; background: #fff8e1; color: #7a5a00; }
+.tc-cell.no { border: 1px dashed #c8c8c2; background: transparent; color: #6b7280; }
+.tc-cell-h { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 800; min-width: 0; }
+.tc-cell-h span { min-width: 0; word-break: keep-all; }
+.tc-cell-h svg { flex: 0 0 auto; width: 20px; height: 20px; }
+.tc-cell-n { font-size: 0.72rem; font-weight: 600; word-break: keep-all; line-height: 1.35; }
+.tc-cell.got .tc-cell-n { color: #6b5200; }
+.tc-wait { margin-top: 10px; padding: 14px 16px; border-radius: 14px; background: #e9eef7; }
+.tc-wait-t { font-size: 0.86rem; font-weight: 800; color: #2b5394; }
+.tc-wait-s { margin-top: 4px; font-size: 0.78rem; line-height: 1.55; color: #3d4757; font-weight: 600; word-break: keep-all; }
+
+.aw-host { background: #0c1730; color: #f4ecd6; touch-action: manipulation; }
+.aw-host * { box-sizing: border-box; }
+.aw-stage { position: absolute; inset: 0; display: flex; }
+.aw-pane { flex: 1 1 auto; display: flex; opacity: 0; transform: translateY(24px); animation: rp-up 0.45s ease forwards; }
+.aw-pane > div { flex: 1 1 auto; display: flex; flex-direction: column; padding: calc(56px + env(safe-area-inset-top)) 26px calc(34px + env(safe-area-inset-bottom)); min-width: 0; }
+.aw-skip { position: absolute; right: 14px; top: calc(14px + env(safe-area-inset-top)); z-index: 2; min-height: 36px; padding: 0 12px; border: 1px solid #3a4768; border-radius: 999px; background: transparent; color: #aab2c6; font-family: inherit; font-size: 0.74rem; font-weight: 600; }
+.aw-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.22em; color: #e7c46a; font-family: 'Cinzel', serif !important; }
+.aw-han { font-family: 'Black Han Sans', 'Pretendard', sans-serif !important; font-weight: 400 !important; }
+.aw-intro { align-items: center; justify-content: space-between; text-align: center; gap: 14px; }
+.aw-cup { margin-top: 4px; }
+.aw-year { font-family: 'Cinzel', serif !important; font-weight: 700; font-size: clamp(3.2rem, 22vw, 4.9rem); line-height: 1; color: #e7c46a; letter-spacing: 0.04em; }
+.aw-big { font-size: clamp(1.9rem, 10vw, 2.4rem); line-height: 1.15; color: #f4ecd6; }
+.aw-lead { font-size: 0.88rem; line-height: 1.65; color: #c9c2ac; }
+.aw-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 0.74rem; color: #c9c2ac; }
+.aw-chips span { border: 1px solid #3a4768; border-radius: 999px; padding: 6px 12px; }
+.aw-go { width: 100%; min-height: 52px; border: 0; border-radius: 14px; background: #e7c46a; color: #0c1730; font-family: inherit; font-size: 1rem; font-weight: 800; }
+.aw-foot { font-size: 0.74rem; color: #aab2c6; line-height: 1.5; word-break: keep-all; }
+.aw-slide { gap: 22px; }
+.aw-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.aw-dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.aw-dot { width: 14px; height: 3px; border-radius: 2px; background: #2c3a5c; }
+.aw-dot.on { background: #e7c46a; }
+.aw-title { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding-top: 6px; }
+.aw-name { font-size: clamp(2rem, 11vw, 2.6rem); line-height: 1.1; }
+.aw-rule { font-size: 0.8rem; color: #c9c2ac; word-break: keep-all; }
+.aw-win { border: 1px solid #e7c46a; border-radius: 18px; padding: 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.aw-who { font-size: clamp(2rem, 12vw, 2.7rem); line-height: 1.15; color: #f4ecd6; word-break: keep-all; }
+.aw-who.multi { font-size: clamp(1.4rem, 8vw, 1.9rem); }
+.aw-metric { font-size: 0.92rem; color: #e7c46a; font-weight: 700; word-break: keep-all; }
+.aw-rows { display: flex; flex-direction: column; gap: 10px; }
+.aw-row { display: flex; align-items: center; gap: 10px; color: #f4ecd6; }
+.aw-rn { width: 52px; flex: 0 0 auto; font-size: 0.86rem; font-weight: 500; }
+.aw-bar { flex: 1 1 auto; height: 8px; border-radius: 4px; background: #1f2d4d; overflow: hidden; }
+.aw-bar i { display: block; height: 8px; border-radius: 4px; background: #8d97b3; }
+.aw-row.top .aw-rn, .aw-row.top .aw-rv { color: #e7c46a; font-weight: 800; }
+.aw-row.top .aw-bar i { background: #e7c46a; }
+.aw-rv { min-width: 44px; flex: 0 0 auto; text-align: right; font-size: 0.84rem; font-weight: 700; white-space: nowrap; }
+.aw-tap { margin-top: auto; text-align: center; font-size: 0.74rem; color: #aab2c6; }
+.aw-grand { align-items: center; gap: 16px; }
+.aw-crown { margin-top: 2px; }
+.aw-gwho { text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.aw-glead { font-size: 0.86rem; color: #c9c2ac; }
+.aw-gname { font-size: clamp(2.6rem, 17vw, 3.6rem); line-height: 1.1; color: #e7c46a; word-break: keep-all; }
+.aw-gname.multi { font-size: clamp(1.7rem, 10vw, 2.3rem); }
+.aw-gsub { font-size: 0.86rem; color: #f4ecd6; }
+.aw-gsub b { font-size: 1.3rem; color: #e7c46a; }
+.aw-table { width: 100%; background: #14234a; border-radius: 16px; padding: 4px 14px; }
+.aw-trow { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #1f2d4d; font-size: 0.94rem; }
+.aw-trow:last-child { border-bottom: 0; }
+.aw-trow.head { font-size: 0.68rem; color: #aab2c6; border-bottom: 1px solid #26365e; }
+.aw-trow .c1 { width: 30px; font-weight: 800; }
+.aw-trow .c2 { flex: 1 1 auto; font-weight: 800; min-width: 0; }
+.aw-trow .c3 { width: 56px; text-align: right; color: #c9c2ac; }
+.aw-trow .c4 { width: 66px; text-align: right; font-weight: 800; }
+.aw-trow.top .c1, .aw-trow.top .c2, .aw-trow.top .c4 { color: #e7c46a; }
+.aw-trow.head .c1, .aw-trow.head .c3, .aw-trow.head .c4 { font-weight: 500; color: #aab2c6; }
+.aw-notes { width: 100%; font-size: 0.74rem; line-height: 1.65; color: #aab2c6; word-break: keep-all; }
+.aw-notes b { color: #f4ecd6; font-weight: 600; }
+.aw-go.gold { margin-top: auto; }
+@media (prefers-reduced-motion: reduce) { .aw-pane { animation-duration: 0.01s; } }
+@media (max-height: 700px) { .aw-pane > div { padding-top: calc(46px + env(safe-area-inset-top)); gap: 12px; } .aw-slide { gap: 14px; } .aw-grand { gap: 10px; } }

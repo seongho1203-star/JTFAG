@@ -2,6 +2,7 @@
 // ◇ 로딩 순서가 곧 원래 순서다(index.html). 전역 함수·변수라 어느 조각에서든 그대로 부른다.
 function renderAll() {
     calculateAndRender();   // 차수별 결과 카드도 여기서(계산 뒤에) 그린다
+    if (typeof noteSeasonShut === 'function') noteSeasonShut();   // 시즌이 마무리됐으면 한 번 적어 둔다(season.js)
     renderMoneyTable();
     forceTableReflow();
     jumpToLatestRound();
@@ -12,6 +13,7 @@ function renderAll() {
     checkRankChange();
     checkRoundResultReveal();
     if (typeof checkMissionReveal === 'function') checkMissionReveal();
+    if (typeof checkAwardsCeremony === 'function') checkAwardsCeremony();   // 마무리된 시즌의 시상식(기기마다 한 번)
     checkEagleStreakCelebration();
     if (typeof renderMissionPage === 'function') renderMissionPage();
     if (typeof renderBadgePage === 'function') { renderBadgePage(); checkBadgeUnlocks(); }
@@ -57,6 +59,7 @@ function runEntranceEffects() {
 function afterRevealEffects() {
     // 미션 결과 발표가 뜨면 아래 넷은 entranceBlocked()에 막히고, 그 창을 닫을 때 다시 이 함수가 돈다.
     if (typeof checkMissionReveal === 'function') checkMissionReveal();
+    if (typeof checkAwardsCeremony === 'function') checkAwardsCeremony();
     animateFinalTotals();
     checkRankChange();
     checkEagleStreakCelebration();
@@ -344,7 +347,7 @@ function resetEffectSeen() {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && (k.startsWith('jtfag_eagle_') || k.startsWith('jtfag_rank_') || k === 'jtfag_result_seen')) keys.push(k);
+        if (k && (k.startsWith('jtfag_eagle_') || k.startsWith('jtfag_rank_') || k.startsWith('jtfag_awards_seen_') || k === 'jtfag_result_seen')) keys.push(k);
     }
     keys.forEach(k => localStorage.removeItem(k));
     // 결과 발표는 기록이 '아예 없으면' 처음 온 기기로 보고 안 띄운다(checkRoundResultReveal).

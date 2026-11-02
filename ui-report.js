@@ -251,6 +251,9 @@ function renderAdminModal() {
         <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 수정 잠금' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만'}</span></button>
         <button type="button" class="admin-btn" onclick="resetMissionRound()">🎯 미션 차수 초기화 <span class="admin-btn-sub">선택 차수의 미션을 다시 받기</span></button>
         <button type="button" class="admin-btn" onclick="restoreMissionRound()">↩️ 미션 차수 초기화 취소 <span class="admin-btn-sub">잘못 초기화한 차수 되살리기</span></button>
+        <button type="button" class="admin-btn" onclick="openSeasonFinalPrompt()">🏁 시즌 마지막 차수 지정 <span class="admin-btn-sub">${currentSeason()} 시즌 · ${seasonFinalRound(currentSeason()) ? seasonFinalRound(currentSeason()) + '차' : '미지정'}</span></button>
+        <button type="button" class="admin-btn" onclick="openSeasonMeritPrompt()">🏅 공로상 지정 <span class="admin-btn-sub">시상식에 나오는 상</span></button>
+        <button type="button" class="admin-btn" onclick="previewAwardsCeremony()">🎬 시상식 미리보기 <span class="admin-btn-sub">지금 기록으로 · 저장 안 함</span></button>
         <button type="button" class="admin-btn" onclick="previewEagleCrown()">🦅 독수리 대관식 미리보기 <span class="admin-btn-sub">누를 때마다 ${eaglePreviewNext}연속</span></button>
         <button type="button" class="admin-btn" onclick="resetEffectSeen()">🎬 연출 다시 보기 <span class="admin-btn-sub">이 기기의 연출 기록만 초기화</span></button>
         <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>

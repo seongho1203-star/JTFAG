@@ -21,7 +21,7 @@ assert.equal(run("predictionPoints('신성호',2026)"), 6);
 assert.equal(run("predictionPoints('신성호',2027)"), 0);
 assert.equal(run("predictionPoints('신성호',undefined,10)"), 0);
 assert.equal(run("missionPoints('신성호')"), previous + 6);
-assert.equal(run("missionSeasonPoints('신성호')"), 18);
+assert.equal(run("missionSeasonPoints('신성호')"), 21); // 카드 포인트는 점수째 이월 — 해마다 끊지 않는 보유 포인트(missionPoints와 같다)
 assert.equal(run("missionPoints('신성호',2027)"), 3);
 assert.equal(run("missionPoints('신성호',undefined,10)"), 12);
 assert.equal(run("missionPoints('신성호',undefined,11)"), 18);
@@ -30,7 +30,7 @@ run("appData.mulligans={'신성호':[{t:Date.now(),r:10}]}");
 assert.equal(run("mulliganInfo('신성호').left"), 3);
 // 멀리건을 쓰면 보유 포인트도 5점 차감된다(번 포인트는 그대로 — 사용권 셈·결과 발표용)
 assert.equal(run("missionPoints('신성호')"), 16);
-assert.equal(run("missionSeasonPoints('신성호')"), 13);
+assert.equal(run("missionSeasonPoints('신성호')"), 16);
 assert.equal(run("missionPointsEarned('신성호')"), 21);
 assert.deepEqual(plain(run("mulliganInfo('신성호')")), {pts:16,earned:4,used:1,cost:5,left:3,toNext:4});
 run("appData.mulligans={}"); // 이하 합산 규칙 검사는 멀리건 차감 없이
