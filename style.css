@@ -752,20 +752,31 @@ body:has(#imageViewModal.active) #customToast { bottom: calc(120px + env(safe-ar
 .trend-axis span { flex: 1; min-width: 0; text-align: center; font-size: 0.56rem; font-weight: 700; color: #94a3b8; }
 
 /* 관리자 메뉴 */
-.admin-state { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 0.78rem; font-weight: 800; color: #64748b; }
+.admin-state { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 0.78rem; font-weight: 800; color: #64748b; }
 .admin-state.on { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.35); color: #15803d; }
 .admin-state-btn { padding: 5px 12px; border-radius: 8px; border: none; background: #334155; color: #fff; font-family: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
 .admin-state.on .admin-state-btn { background: #15803d; }
 
-.admin-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.admin-btn { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; background: #ffffff; color: var(--text-main); font-family: inherit; font-size: 0.78rem; font-weight: 800; text-align: left; cursor: pointer; }
-
-.admin-btn.danger { color: #dc2626; }
-.storage-info { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
-.storage-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.66rem; font-weight: 700; color: #94a3b8; }
-.storage-bar { height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.admin-actions { margin-top: 4px; }
+.admin-group { margin-top: 14px; }
+.admin-group-t { padding: 0 4px 6px; font-size: 0.68rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.02em; }
+.admin-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.admin-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px; border: 0; border-top: 1px solid #f1f5f9; background: #fff; color: var(--text-main); font-family: inherit; font-size: 0.8rem; font-weight: 700; text-align: left; cursor: pointer; }
+.admin-row:first-child { border-top: 0; }
+.admin-row:active { background: #f8fafc; }
+.admin-row-t { flex: 1; min-width: 0; }
+.admin-row-s { flex: none; font-size: 0.7rem; font-weight: 700; color: #94a3b8; }
+.admin-row-go { flex: none; font-style: normal; color: #cbd5e1; font-size: 1rem; line-height: 1; }
+.admin-row.danger { color: #dc2626; }
+.admin-more > summary { cursor: pointer; list-style: none; }
+.admin-more > summary::-webkit-details-marker { display: none; }
+.admin-more > summary::after { content: ' ▾'; }
+.admin-more[open] > summary::after { content: ' ▴'; }
+.storage-info { margin-top: 16px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+.storage-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; font-size: 0.68rem; font-weight: 700; color: #94a3b8; }
+.storage-tap { padding: 0; border: 0; background: none; font-family: inherit; text-align: left; cursor: pointer; }
+.storage-bar { height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: 6px; overflow: hidden; }
 .storage-bar span { display: block; height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-.admin-btn-sub { float: right; color: var(--primary-gold); font-weight: 900; }
 
 /* 알림 설정 */
 .notify-num { width: 70px; height: 34px; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-family: inherit; font-size: 0.85rem; font-weight: 800; text-align: center; color: var(--text-main); }
@@ -821,7 +832,6 @@ body:has(#imageViewModal.active) #customToast { bottom: calc(120px + env(safe-ar
 .summary-item .rank-hawk,
 .summary-item .rank-crane,
 .summary-item .rank-sparrow { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
-.admin-btn.danger-strong { color: #dc2626; background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.3); }
 
 /* ─── 여행 일정 (trip.js) ─── */
 .trip-card { background: linear-gradient(145deg, #0f3d3a, #0f172a); color: #ffffff; border-radius: 14px; padding: 11px 14px; margin-bottom: 10px; border: 1px solid rgba(45, 212, 191, 0.45); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); cursor: pointer; transition: transform 0.1s ease, opacity 0.1s ease; }

@@ -1400,6 +1400,11 @@ fetchFromSupabase()  →  appData 전역 변수  →  renderAll()  →  DOM
 - **화면(`ui-awards.js`)** — ① 시즌 알약(`seasonPillHtml()` · 홈 `통합 정산 요약` 제목·미션 포인트 카드·뱃지의 시즌 타이틀 제목 — 높이를 안 바꾼다) ② 뱃지 탭 맨 위 `뱃지 | 트로피` 전환(`badgeView` · 여행 탭의 `여행 일정 / 스탬프`와 같은 가운데 밑줄 탭 `.passport-tabs` · 사용자 요청) — 트로피은 연도 탭 · 사람 넷(수상 수) · 평균/베스트/버디/독수리 · 트로피 격자(획득은 금색, 못 받은 상은 점선) · `시상식 다시 보기`
   ③ 시상식 연출(`openAwardsCeremony`) — 입장 → 수상자가 있는 부문만 차례로 → 대상 → `트로피 보기`. 화면을 누르면 넘어가고 `건너뛰기`가 있다. **저절로 뜨는 것은 관리자가 마지막 차수를 지정한 시즌뿐이다**(`awardsUnseenYear()`가 `seasonFinalRound(y) > 0`을 본다 · 사용자 요청 — 시상식은 경기 뒤 식사 자리에서 발표하므로 12월 31일이 지났다고 혼자 뜨면 안 된다. 날짜로만 마무리된 시즌은 트로피의 `시상식 다시 보기`로만 연다). 지정한 시즌은 이 기기에서 아직 안 봤으면 한 번 뜬다(`jtfag_awards_seen_{시즌}` · 입장 인사말 → 결과 발표 → 미션 결과 발표 뒤 `afterRevealEffects()` 안 · `reveal-overlay` 클래스라 다른 연출이 기다린다 · 관리자 `연출 다시 보기`가 이 기록도 지운다).
   홈에 카드는 더하지 않는다. transform·opacity만 움직이고 한 번 돌고 끝난다(제목 글꼴 Black Han Sans·Cinzel은 `loadEagleFonts()`가 부른다).
+- **관리자 메뉴는 묶음별 목록이다**(`renderAdminModal()` in ui-report.js · `.admin-group`·`.admin-card`·`.admin-row` · 사용자 요청 — 단추가 줄줄이 늘어서 지저분했다).
+  `운영`(알림 설정 · 알림 받는 기기 · 공금 장부 · 사진 용량 확인) · `정산 · 타수` · `미션 · 시즌` · `연출` 네 묶음은 늘 펼쳐 있고, **되돌리기 어려운 것(비밀번호 변경 · 이름 삭제 · 사진 이전 · 전체 데이터 초기화)은 맨 아래 접힌 `계정 · 초기화` 묶음**에 둔다(`adminMoreOpen` — 다시 그려도 펼침 유지).
+  줄은 `제목 · 보조 글(회색) · ›`뿐이고 그림문자는 안 쓴다. **새 항목은 `row()`로 알맞은 묶음에 더할 것** — 예전 `.admin-btn`·`.admin-btn-sub`는 걷어냈다.
+  **맨 아래 용량 표시는 사진 저장소 사용량이다**(`renderStorageUsage()` in ui-money.js · 예전엔 payload 용량 5MB 기준이었다). `📸 사진 용량 확인`과 같은 DB 함수 `photo_storage_usage()`를 부르되, `renderAll()`이 자주 부르므로
+  **메뉴를 열 때(`renderStorageUsage(true)`)만 새로 받고** 평소엔 마지막 값(`photoUsageLast`)을 다시 그린다. 줄을 누르면 차수별 상세 창이 열린다. 함수가 없으면 `확인할 수 없음`. 헤드리스 확인은 스크래치패드 `adm2.js`.
 - **관리자 메뉴(신성호만)** — `🏁 시즌 마지막 차수 지정` · `🏅 공로상 지정`(시즌·사람·공로 내용) · `🎬 시상식 미리보기`(시즌이 안 끝나도 지금 기록으로 훑어본다 · 저장·기기 기록 없음).
 - 검증: `node tests/season.js`(가상 시계·가상 기록 — 시즌 소속 · 12/31 · 마지막 차수+정산 · 도장 한 번 · 합치기 · 대상 동점 · 새 시즌 리셋). 앱 화면은 헤드리스로 `window.__NOW`(ISO 글)로 시계를 바꿔 본다(`seasonNow()`).
   **`tests/*`가 `season.js`를 불러와야 한다** — 새 테스트가 `calc.js`를 올릴 때 `season.js`를 먼저 올리지 않으면 `currentSeason is not defined`로 죽는다.

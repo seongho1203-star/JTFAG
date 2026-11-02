@@ -198,7 +198,7 @@ async function openAdminModal() {
     if (localStorage.getItem('jtfag_my_name') !== SCORE_OWNER) return;
     // 신성호는 비밀번호 없이 곧바로 열린다(사용자 요청). 다른 문(사진 이전 · 장부의 `관리자 인증`)은 그대로 비밀번호를 묻는다.
     if (!isFundUnlocked) { isFundUnlocked = true; updateLockUI(); }
-    renderAdminModal(); renderStorageUsage();
+    renderAdminModal(); renderStorageUsage(true);
     document.getElementById('adminModal').classList.add('active');
 }
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('active'); }
@@ -231,37 +231,53 @@ function previewEagleCrown() {
     celebrateEagleStreak(golfers.includes(me) ? me : golfers[0], n);
 }
 
+let adminMoreOpen = false;   // `계정 · 초기화` 묶음을 펼쳤는가 — 다시 그려도 유지한다
 function renderAdminModal() {
     const status = document.getElementById('adminStatus');
     const actions = document.getElementById('adminActions');
     if (!status || !actions) return;
 
     status.innerHTML = `<div class="admin-state on">
-            <span>🔓 관리자 권한 활성</span>
+            <span>관리자 권한 활성</span>
             <button type="button" class="admin-state-btn" onclick="adminLock()">잠금</button>
         </div>`;
 
+    // 묶음별로 나누고 줄 하나에 제목 · 보조 글 · 화살표만 둔다(사용자 요청 — 관리자 메뉴가 지저분했다).
+    // 자주 쓰는 것이 위, 되돌리기 어려운 것은 맨 아래 접힌 묶음이다.
     const legacy = countLegacyPhotos();
-    let btns = `
-        <button type="button" class="admin-btn" onclick="openNotifySettings()">🔔 알림 설정 <span class="admin-btn-sub">${getNotifySettings().daysBefore.map(notifyDayName).join(' · ')}</span></button>
-        <button type="button" class="admin-btn" onclick="openFundLedger()">📒 공금 장부</button>
-        <button type="button" class="admin-btn" onclick="openPushSubsModal()">🔔 알림 받는 기기</button>
-        <button type="button" class="admin-btn" onclick="openPhotoUsageModal()">📸 사진 용량 확인 <span class="admin-btn-sub">저장소 사용량</span></button>
-        <button type="button" class="admin-btn" onclick="toggleScoreEdit()">${isScoreUnlocked ? '🔒 타수 수정 잠금' : '✏️ 타수 직접 수정'} <span class="admin-btn-sub">${isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만'}</span></button>
-        <button type="button" class="admin-btn" onclick="toggleMoneyEdit()">${isMoneyUnlocked ? '🔒 정산 금액 수정 잠금' : '💰 정산 금액 전체 수정'} <span class="admin-btn-sub">${isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만'}</span></button>
-        <button type="button" class="admin-btn" onclick="resetMissionRound()">🎯 미션 차수 초기화 <span class="admin-btn-sub">선택 차수의 미션을 다시 받기</span></button>
-        <button type="button" class="admin-btn" onclick="restoreMissionRound()">↩️ 미션 차수 초기화 취소 <span class="admin-btn-sub">잘못 초기화한 차수 되살리기</span></button>
-        <button type="button" class="admin-btn" onclick="openSeasonFinalPrompt()">🏁 시즌 마지막 차수 지정 <span class="admin-btn-sub">${currentSeason()} 시즌 · ${seasonFinalRound(currentSeason()) ? seasonFinalRound(currentSeason()) + '차' : '미지정'}</span></button>
-        <button type="button" class="admin-btn" onclick="openSeasonMeritPrompt()">🏅 공로상 지정 <span class="admin-btn-sub">시상식에 나오는 상</span></button>
-        <button type="button" class="admin-btn" onclick="previewAwardsCeremony()">🎬 시상식 미리보기 <span class="admin-btn-sub">지금 기록으로 · 저장 안 함</span></button>
-        <button type="button" class="admin-btn" onclick="previewEagleCrown()">🦅 독수리 대관식 미리보기 <span class="admin-btn-sub">누를 때마다 ${eaglePreviewNext}연속</span></button>
-        <button type="button" class="admin-btn" onclick="resetEffectSeen()">🎬 연출 다시 보기 <span class="admin-btn-sub">이 기기의 연출 기록만 초기화</span></button>
-        <button type="button" class="admin-btn" onclick="adminRunAction(changeAdminPassword)">🔑 비밀번호 변경</button>
-        <button type="button" class="admin-btn danger" onclick="adminRunAction(deleteMyName)">👤 이 기기의 이름 삭제</button>`;
-    if (legacy > 0) {
-        btns += `<button type="button" class="admin-btn" onclick="adminRunAction(migratePhotosToStorage)">🗄️ 기존 사진 ${legacy}장 Storage로 이전</button>`;
-    }
-    btns += `<button type="button" class="admin-btn danger-strong" onclick="resetAllData()">🔄 전체 데이터 초기화</button>`;
+    const row = (label, sub, onclick, cls) => `<button type="button" class="admin-row${cls ? ' ' + cls : ''}" onclick="${onclick}">
+            <span class="admin-row-t">${label}</span>${sub ? `<span class="admin-row-s">${sub}</span>` : ''}<i class="admin-row-go">›</i></button>`;
+    const group = (title, rows) => `<div class="admin-group"><div class="admin-group-t">${title}</div><div class="admin-card">${rows.join('')}</div></div>`;
+    const season = currentSeason(), finalRound = seasonFinalRound(season);
+
+    let html = group('운영', [
+        row('알림 설정', getNotifySettings().daysBefore.map(notifyDayName).join(' · '), 'openNotifySettings()'),
+        row('알림 받는 기기', '', 'openPushSubsModal()'),
+        row('공금 장부', '', 'openFundLedger()'),
+        row('사진 용량 확인', '저장소 사용량', 'openPhotoUsageModal()')
+    ]) + group('정산 · 타수', [
+        row(isScoreUnlocked ? '타수 수정 잠금' : '타수 직접 수정', isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만', 'toggleScoreEdit()'),
+        row(isMoneyUnlocked ? '정산 금액 수정 잠금' : '정산 금액 전체 수정', isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만', 'toggleMoneyEdit()')
+    ]) + group('미션 · 시즌', [
+        row('미션 차수 초기화', '', 'resetMissionRound()'),
+        row('미션 차수 초기화 취소', '', 'restoreMissionRound()'),
+        row('시즌 마지막 차수 지정', `${season} · ${finalRound ? finalRound + '차' : '미지정'}`, 'openSeasonFinalPrompt()'),
+        row('공로상 지정', '', 'openSeasonMeritPrompt()')
+    ]) + group('연출', [
+        row('시상식 미리보기', '저장 안 함', 'previewAwardsCeremony()'),
+        row('독수리 대관식 미리보기', `${eaglePreviewNext}연속`, 'previewEagleCrown()'),
+        row('연출 다시 보기', '이 기기만', 'resetEffectSeen()')
+    ]);
+
+    const more = [
+        row('비밀번호 변경', '', 'adminRunAction(changeAdminPassword)'),
+        row('이 기기의 이름 삭제', '', 'adminRunAction(deleteMyName)', 'danger')
+    ];
+    if (legacy > 0) more.push(row(`기존 사진 ${legacy}장 저장소로 이전`, '', 'adminRunAction(migratePhotosToStorage)'));
+    more.push(row('전체 데이터 초기화', '', 'resetAllData()', 'danger'));
+    html += `<details class="admin-group admin-more"${adminMoreOpen ? ' open' : ''} ontoggle="adminMoreOpen = this.open">
+            <summary class="admin-group-t">계정 · 초기화</summary><div class="admin-card">${more.join('')}</div></details>`;
+    const btns = html;
     actions.innerHTML = btns;
 
 }

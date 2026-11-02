@@ -20,42 +20,46 @@ function jumpToLatestRound() {
     setTimeout(toEnd, 400);
 }
 
-function renderStorageUsage() {
-    const storageInfo = document.getElementById('storageInfoDisplay');
-    if (!storageInfo) return;
-
-    const jsonString = JSON.stringify(appData);
-    const bytes = new Blob([jsonString]).size;
-    
-    const maxBytes = 5 * 1024 * 1024; 
-    
-    const kb = (bytes / 1024).toFixed(1);
-    const mb = (bytes / (1024 * 1024)).toFixed(2);
-    
-    let displaySize = bytes > 1024 * 1024 ? `${mb} MB` : `${kb} KB`;
-    let percent = (bytes / maxBytes) * 100;
-    if (percent > 100) percent = 100;
-
-    let statusColor = "#16a34a"; 
-    let statusIcon = "🟢";
-    let statusText = "원활";
-
-    if (percent > 85) {
-        statusColor = "#dc2626"; 
-        statusIcon = "🔴";
-        statusText = "위험 (사진 삭제 권장)";
-    } else if (percent > 60) {
-        statusColor = "#eab308"; 
-        statusIcon = "🟡";
-        statusText = "주의 (사진 누적됨)";
+// 관리자 메뉴 맨 아래 용량 표시는 사진 저장소(round-photos) 사용량이다(사용자 요청 — 예전엔 payload 용량이었다).
+// 앱(anon 키)은 파일 목록을 못 읽으므로 DB 함수 `photo_storage_usage()`를 부른다(ui-photos.js의 `📸 사진 용량 확인`과 같은 값).
+// renderAll()이 자주 부르므로 평소엔 마지막으로 받은 값만 다시 그리고, 관리자 메뉴를 열 때(force)만 새로 받는다.
+let photoUsageLast = null;       // {total, files} — 받은 적이 있으면
+let photoUsageFailed = false;    // 함수가 없거나 못 받음
+let photoUsageBusy = false;
+function renderStorageUsage(force) {
+    const box = document.getElementById('storageInfoDisplay');
+    if (!box) return;
+    if (force && !photoUsageBusy && window._supabase) {
+        photoUsageBusy = true;
+        window._supabase.rpc('photo_storage_usage').then(({ data, error }) => {
+            if (error) throw error;
+            const rows = Array.isArray(data) ? data : [];
+            photoUsageLast = {
+                total: rows.reduce((a, r) => a + (Number(r.bytes) || 0), 0),
+                files: rows.reduce((a, r) => a + (Number(r.files) || 0), 0)
+            };
+            photoUsageFailed = false;
+        }).catch(() => { photoUsageFailed = !photoUsageLast; })
+          .finally(() => { photoUsageBusy = false; renderStorageUsage(); });
     }
 
-    storageInfo.innerHTML = `
-        <div class="storage-line">
-            <span>💾 데이터 용량</span>
-            <span style="color:${statusColor}; font-weight:800;">${statusIcon} ${displaySize} / 5.0 MB · ${statusText}</span>
-        </div>
-        <div class="storage-bar"><span style="width:${Math.max(percent, 1)}%; background:${statusColor};"></span></div>`;
+    const open = 'onclick="openPhotoUsageModal()"';
+    if (!photoUsageLast) {
+        box.innerHTML = `<button type="button" class="storage-line storage-tap" ${open}>
+            <span>사진 용량</span><span>${photoUsageFailed ? '확인할 수 없음' : '불러오는 중…'} ›</span></button>`;
+        return;
+    }
+    const limit = typeof PHOTO_STORAGE_LIMIT === 'number' ? PHOTO_STORAGE_LIMIT : 1024 * 1024 * 1024;
+    const { total, files } = photoUsageLast;
+    const percent = Math.min(100, total / limit * 100);
+    const color = percent > 85 ? '#dc2626' : percent > 60 ? '#eab308' : '#16a34a';
+    const status = percent > 85 ? '위험 (지난 차수 사진 삭제 권장)' : percent > 60 ? '주의' : '원활';
+    box.innerHTML = `
+        <button type="button" class="storage-line storage-tap" ${open}>
+            <span>사진 용량 · ${files}장</span>
+            <span style="color:${color}; font-weight:800;">${photoUsageSize(total)} / 1 GB · ${status} ›</span>
+        </button>
+        <div class="storage-bar"><span style="width:${Math.max(percent, 1)}%; background:${color};"></span></div>`;
 }
 
 // `전체`를 고르면 아래 차수 카드가 1차부터 지금까지 모두 보인다(사용자 요청). 위 정산 표는 금액 칸이 차수 하나에 묶여 있어
