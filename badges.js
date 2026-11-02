@@ -219,8 +219,8 @@ const BADGE_GROUPS = [
           first: g => missionFirst(g, x => x.ok && x.lv === 3) },
         { id: 'mAll', kind: 'life', tier: 'silver', icon: 'rings', name: '올클리어', cond: '넷 다 모두 성공', desc: '한 라운드에서 넷 모두 받은 미션을 다 성공',
           first: () => missionAllClear() },
-        { id: 'mKing', kind: 'title', icon: 'crown', name: '미션왕', desc: '올해 미션 포인트 1위', holders: () => missionKings(),
-          metric: g => `${missionSeasonPoints(g)}점` }
+        { id: 'mKing', kind: 'title', icon: 'crown', name: '미션왕', desc: '올해 누적 획득 미션 포인트 1위 (멀리건·다시 뽑기로 쓴 포인트는 빼지 않음)', holders: () => missionKings(),
+          metric: g => `${missionSeasonGained(g)}점` }
     ]},
     // 놀리는 뱃지 — 사용자 요청으로 넣었다. 색을 따로(`tease`) 두어 자랑 뱃지와 갈라 보이게 한다.
     { id: 'tease', title: '불명예 뱃지', sub: '받고 싶지 않지만 모이는 뱃지', badges: [

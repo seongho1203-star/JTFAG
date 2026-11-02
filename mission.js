@@ -373,6 +373,14 @@ function missionPoints(g, year, throughRound = Infinity) {
     return Math.max(0, missionPointsRaw(g, year, throughRound) - mulliganSpent(g, year, throughRound));
 }
 function missionSeasonPoints(g) { return missionPoints(g, missionYearNow()); }
+// 올해 누적 획득 포인트 — 쓴 것(다시 뽑기·멀리건 차감)을 빼지 않은 총 획득량. 미션왕이 이 값으로 정해진다
+// (사용자 요청 — 멀리건을 쓰면 보유 포인트가 줄어 미션왕이 바뀌었다).
+function missionSeasonGained(g) {
+    const y = missionYearNow();
+    const won = missionLog(g).filter(x => x.ok && x.y === y).reduce((t, x) => t + x.lv, 0);
+    const predicted = PREDICTION_ENABLED && typeof predictionPoints === 'function' ? predictionPoints(g, y, Infinity) : 0;
+    return Math.max(0, won + specialMissionPoints(g, y, Infinity) + predicted);
+}
 
 // 지금 다시 뽑을 수 있는가 — 받은 미션이 있고 · 이번 라운드에 아직 안 다시 뽑았고 · 포인트 2점이 있고 ·
 // 2점을 써도 이미 쓴 멀리건 사용권보다 받은 사용권이 적어지지 않을 때.
@@ -448,10 +456,10 @@ function mulliganCompCard(me) {
     </div>`;
 }
 
-// 미션왕 — 올해 포인트 1위(0점이면 없음 · 같으면 함께)
+// 미션왕 — 올해 누적 획득 포인트 1위(0점이면 없음 · 같으면 함께). 쓴 포인트는 빼지 않는다.
 function missionKings() {
     if (typeof golfers === 'undefined') return [];
-    const pts = golfers.map(g => missionSeasonPoints(g));
+    const pts = golfers.map(g => missionSeasonGained(g));
     const top = Math.max(0, ...pts);
     return top > 0 ? golfers.filter((g, i) => pts[i] === top) : [];
 }
@@ -1239,7 +1247,7 @@ function revealMissionResult(r) {
             <div class="b"><div class="n">${escapeHtml(x.g)}</div>${x.s.xs.map(m => `<div class="m${m.ok ? ' ok' : ''}">${m.ok ? '✓' : '✕'} ${escapeHtml(m.text)} · <b>${escapeHtml(m.got)}</b></div>`).join('')}</div>
             <span class="p">${x.s.pts ? '+' + x.s.pts : '실패'}</span></div>`).join('')}</div>
         <div class="mp-sum" style="animation-delay:${tail}s">
-            <span><b>${okN}명 성공</b>${kings.length ? ` · 미션 포인트 1위 <b>${kings.map(escapeHtml).join(', ')} ${missionSeasonPoints(kings[0])}점</b>` : ''}</span>
+            <span><b>${okN}명 성공</b>${kings.length ? ` · 누적 포인트 1위 <b>${kings.map(escapeHtml).join(', ')} ${missionSeasonGained(kings[0])}점</b>` : ''}</span>
             ${gained.map(x => `<span class="mp-gain">🎟️ <b>${escapeHtml(x.g)}</b> 멀리건 사용권 +${x.n}</span>`).join('')}
         </div>
         <div class="mp-tap" style="animation-delay:${tail + 0.5}s">화면을 누르면 넘어갑니다</div>`;

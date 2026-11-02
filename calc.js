@@ -153,7 +153,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
 
     // 미션왕(mission.js) — 올해 미션 포인트 1위. 요약 카드는 두 칸만 보이므로 독수리 연속 바로 뒤에 둔다.
     if (typeof missionKings === 'function' && missionKings().includes(g)) {
-        badges.push({ html: `<div class="season-badge badge-mission-king">🎯 미션왕</div>`, desc: "올해 미션 포인트 1위" });
+        badges.push({ html: `<div class="season-badge badge-mission-king">🎯 미션왕</div>`, desc: "올해 누적 획득 미션 포인트 1위" });
     }
     if (overallMinAvg !== Infinity && golferAvgScores[g] === overallMinAvg) {
         badges.push({ html: `<div class="season-badge badge-avg-1">🏆 평균타수 1위</div>`, desc: "리그 전체 참가자 중 평균 타수 1위" });
