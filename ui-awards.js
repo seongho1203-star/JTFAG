@@ -107,7 +107,7 @@ function awardsSlides(y) {
     shown.forEach((a, i) => {
         const rows = a.rows.filter(r => a.dir === 'max' ? r.v > 0 : true);
         const bar = r => { const w = a.dir === 'max' ? (a.best > 0 ? r.v / a.best : 0) : (r.v > 0 ? a.best / r.v : 0); return Math.max(6, Math.round(w * 100)); };
-        slides.push(`<div class="aw-slide">
+        slides.push(`<div class="aw-slide aw-pend">
             <div class="aw-top"><span class="aw-eyebrow">AWARD ${String(i + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span><span class="aw-dots">${dots(i)}</span></div>
             <div class="aw-title">${AW_ICON}<div class="aw-han aw-name">${escapeHtml(a.name)}</div><div class="aw-rule">${escapeHtml(a.rule)}</div></div>
             <div class="aw-win"><div class="aw-eyebrow">WINNER</div>
@@ -115,12 +115,12 @@ function awardsSlides(y) {
                 <div class="aw-metric">${escapeHtml(a.metric)}</div></div>
             ${rows.length ? `<div class="aw-rows">${rows.map(r => `<div class="aw-row${a.holders.includes(r.g) ? ' top' : ''}">
                 <span class="aw-rn">${escapeHtml(r.g)}</span><span class="aw-bar"><i style="width:${bar(r)}%"></i></span><span class="aw-rv">${escapeHtml(r.text)}</span></div>`).join('')}</div>` : ''}
-            <div class="aw-tap">화면을 누르면 다음 발표로 넘어갑니다</div>
+            <div class="aw-tap"><span class="aw-tap-a">화면을 누르면 수상자가 발표됩니다</span><span class="aw-tap-b">화면을 누르면 다음 발표로 넘어갑니다</span></div>
         </div>`);
     });
     if (aw.grand.holders.length) {
         const top = aw.grand.rows.find(r => aw.grand.holders.includes(r.g));
-        slides.push(`<div class="aw-grand">
+        slides.push(`<div class="aw-grand aw-pend">
             <div class="aw-eyebrow">GRAND PRIZE · ${y}</div>
             <div class="aw-crown">${AW_CROWN}</div>
             <div class="aw-gwho"><div class="aw-glead">올해의 골퍼</div>
@@ -134,15 +134,33 @@ function awardsSlides(y) {
                 <div><b>계급 점수</b> 독수리 3점 · 매 2점 · 학 1점 · 참새 0점 (${aw.grand.ranked}경기)</div>
                 <div><b>동점</b> ${aw.grand.tieBroken ? `계급 점수가 같아 평균 타수(${top.avg === null ? '-' : top.avg.toFixed(1) + '타'})가 낮은 쪽이 앞섭니다` : '평균 타수가 낮은 쪽이 앞섭니다'}</div>
             </div>
+            <div class="aw-tap aw-tap-grand"><span class="aw-tap-a">화면을 누르면 올해의 골퍼가 발표됩니다</span></div>
             <button type="button" class="aw-go gold" data-case="1">트로피 보기</button>
         </div>`);
     }
     return slides;
 }
 
+// 시상식 글꼴(Black Han Sans · Cinzel)이 다 도착한 뒤에 첫 장을 그린다 — 안 그러면 처음 볼 때 폰 기본 글꼴(얇음)로 그려졌다가
+// 글꼴이 오는 순간 굵게 바뀐다(사용자 제보 — `글자가 얇아졌다 두꺼워지는 현상`). 구글 글꼴 CSS가 붙기 전에는 `document.fonts.load()`가
+// 빈 손으로 곧바로 끝나므로 CSS(`#g3Fonts`)가 붙을 때까지 먼저 기다린다. 못 받아도 `ms`가 지나면 그냥 그린다(오프라인).
+function awardsFontsReady(ms = 3000) {
+    if (typeof loadEagleFonts === 'function') loadEagleFonts();
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    const link = document.getElementById('g3Fonts');
+    const sheet = new Promise(res => {
+        if (!link || link.sheet) return res();
+        link.addEventListener('load', res); link.addEventListener('error', res);
+    });
+    const ready = sheet.then(() => Promise.all([
+        document.fonts.load('400 1em "Black Han Sans"', '연말시상식 평균타수상 라베상 올해의골퍼 김지명 이관교 신성호 박승수'),
+        document.fonts.load('600 1em "Cinzel"', 'JTFAG SEASON AWARDS GRAND PRIZE WINNER 0123456789')
+    ])).catch(() => {});
+    return Promise.race([ready, new Promise(res => setTimeout(res, ms))]);
+}
+
 function openAwardsCeremony(y, replay, force) {
     if ((!force && !awardsOpen(y)) || document.querySelector('.aw-host')) return;
-    if (typeof loadEagleFonts === 'function') loadEagleFonts();
     const slides = awardsSlides(y);
     if (!slides.length) return;
     if (!force) markAwardsSeen(y);
@@ -150,15 +168,27 @@ function openAwardsCeremony(y, replay, force) {
     o.className = 'reveal-overlay aw-host';
     o.innerHTML = `<div class="aw-stage" id="awStage"></div><button type="button" class="aw-skip" data-skip="1">건너뛰기</button>`;
     document.body.appendChild(o);
-    awardsCeremony = { y, i: 0, slides, o };
+    awardsCeremony = { y, i: 0, slides, o, ready: false, pending: false };
     const last = slides.length - 1;
+    const confetti = () => {
+        if (typeof dropConfetti === 'function' && slides.length > 1) setTimeout(() => dropConfetti(o, 60, ['#e7c46a', '#ffffff', '#9fb9e6', '#fde68a']), 500);
+    };
     const show = i => {
         const c = awardsCeremony; if (!c) return;
         c.i = i;
         const st = o.querySelector('#awStage');
         st.innerHTML = `<div class="aw-pane">${slides[i]}</div>`;
+        // 부문 장은 두 번 누른다 — 첫 터치에 부문 이름만, 한 번 더 누르면 수상자(대상도 같다).
+        c.pending = !!st.querySelector('.aw-pend');
         o.querySelector('.aw-skip').style.display = i === last ? 'none' : '';
-        if (i === last && typeof dropConfetti === 'function' && slides.length > 1) setTimeout(() => dropConfetti(o, 60, ['#e7c46a', '#ffffff', '#9fb9e6', '#fde68a']), 500);
+        if (i === last && !c.pending) confetti();
+    };
+    const reveal = () => {
+        const c = awardsCeremony; if (!c) return;
+        const root = o.querySelector('.aw-pend');
+        c.pending = false;
+        if (root) root.classList.remove('aw-pend');
+        if (c.i === last) confetti();
     };
     const close = (toCase) => {
         o.classList.remove('on');
@@ -173,12 +203,18 @@ function openAwardsCeremony(y, replay, force) {
         const c = awardsCeremony; if (!c) return;
         const t = e.target.closest('button');
         if (t && t.dataset.skip) return close(false);
+        if (!c.ready) return;                       // 글꼴을 기다리는 동안은 넘기지 않는다
+        if (c.pending) return reveal();             // 발표 전이면 어느 단추를 눌러도 먼저 발표
         if (t && t.dataset.case) return close(true);
         if (t && !t.dataset.next) return;
         if (c.i < last) show(c.i + 1);
     };
-    show(0);
     requestAnimationFrame(() => o.classList.add('on'));
+    awardsFontsReady().then(() => {
+        if (!awardsCeremony || awardsCeremony.o !== o) return;   // 그 사이 건너뛰었다
+        awardsCeremony.ready = true;
+        show(0);
+    });
 }
 
 // 접속·갱신마다 부른다 — 이 기기에서 아직 안 본, 마무리된 시즌이 있으면 한 번 띄운다(입장 인사말·결과 발표 뒤).

@@ -253,8 +253,7 @@ function renderAdminModal() {
     let html = group('운영', [
         row('알림 설정', getNotifySettings().daysBefore.map(notifyDayName).join(' · '), 'openNotifySettings()'),
         row('알림 받는 기기', '', 'openPushSubsModal()'),
-        row('공금 장부', '', 'openFundLedger()'),
-        row('사진 용량 확인', '저장소 사용량', 'openPhotoUsageModal()')
+        row('공금 장부', '', 'openFundLedger()')
     ]) + group('정산 · 타수', [
         row(isScoreUnlocked ? '타수 수정 잠금' : '타수 직접 수정', isScoreUnlocked ? '수정 가능' : '홀 기록 없는 차수만', 'toggleScoreEdit()'),
         row(isMoneyUnlocked ? '정산 금액 수정 잠금' : '정산 금액 전체 수정', isMoneyUnlocked ? '전체 수정 가능' : '기본: 본인 항목만', 'toggleMoneyEdit()')
