@@ -2471,3 +2471,9 @@ button.fl-amt.tap { justify-self: end; }
 .total-summary-card h2 .season-pill { margin-left: auto; }
 .bdg-sec-right { display: flex; align-items: center; gap: 8px; flex: none; }
 .bdg-sec-right .season-pill { margin-left: 0; }
+
+/* 시상 부문별 엠블럼(사용자 요청 — 부문마다 모양·색이 다르게). 색은 인라인 --c, 정지 그림이고 처음 한 번만 떠오른다 */
+.aw-emblem { width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; color: var(--c, #e7c46a); border: 2px solid var(--c, #e7c46a); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c, #e7c46a) 30%, transparent), color-mix(in srgb, var(--c, #e7c46a) 6%, transparent) 72%); box-shadow: inset 0 0 0 5px #0c1730, inset 0 0 0 6.5px color-mix(in srgb, var(--c, #e7c46a) 50%, transparent); animation: aw-emblem-in 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes aw-emblem-in { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
+.tc-ico { display: inline-flex; flex: 0 0 auto; }
+.tc-ico svg { width: 22px; height: 22px; }

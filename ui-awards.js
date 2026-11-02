@@ -30,7 +30,34 @@ function trophyYearNow() {
     return closed.length ? closed[closed.length - 1] : currentSeason();
 }
 
-const TC_CUP = `<svg width="22" height="22" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h24v14a12 12 0 0 1-24 0V10z"/><path d="M20 14H10v4a10 10 0 0 0 10 10M44 14h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 54h20"/></svg>`;
+// 시상 부문별 그림 — 부문마다 모양과 색이 다르다(사용자 요청 — 모두 같은 과녁이라 구별이 안 됐다).
+// c = 어두운 시상식 바탕에서 쓰는 밝은 색, d = 흰 바탕 트로피 칸에서 쓰는 진한 색. 선 그림(viewBox 64)이고 그림문자는 안 쓴다.
+const AW_SET = {
+    avg: { c: '#e7c46a', d: '#b8860b', p: '<circle cx="28" cy="36" r="19"/><circle cx="28" cy="36" r="11"/><circle cx="28" cy="36" r="3" fill="currentColor"/><path d="M29.5 34.5L53 11M44 10h10v10"/>' },
+    rave: { c: '#6cc4ff', d: '#1f7fc4', p: '<path d="M20 55V9"/><path d="M20 11l26 9.5L20 31z" fill="currentColor" fill-opacity=".28"/><path d="M10 55h22"/><ellipse cx="47" cy="55" rx="8" ry="2.6"/><circle cx="47" cy="46.5" r="4"/>' },
+    eagle: { c: '#ffa94d', d: '#d9770a', p: '<path d="M32 25C25 14 12 11 3 19c7 1 11 5 12 10 3-3 7-3 10 1 2-3 5-3 7 0z" fill="currentColor" fill-opacity=".25"/><path d="M32 25C39 14 52 11 61 19c-7 1-11 5-12 10-3-3-7-3-10 1-2-3-5-3-7 0z" fill="currentColor" fill-opacity=".25"/><path d="M27 27c2-2.5 8-2.5 10 0l1.5 13-6.5 14-6.5-14z" fill="currentColor" fill-opacity=".4"/><circle cx="32" cy="18" r="4.6" fill="currentColor"/><path d="M36 17.5l5.5 2.5-5.5 2"/>' },
+    birdie: { c: '#5fd6a8', d: '#1f9d72', p: '<path d="M13 37c0-10 8-17 18-17 6 0 10 3 12 7l9 2-9 4c-1 9-8 15-17 15-8 0-13-4-13-11z" fill="currentColor" fill-opacity=".22"/><circle cx="38" cy="29" r="2" fill="currentColor"/><path d="M22 38c4 0 7 2 9 5M10 30l-5-5M10 36l-6 1"/><path d="M8 55h48M28 52v3M36 52v3"/>' },
+    mission: { c: '#b196ff', d: '#6d4fd6', p: '<path d="M32 7l19 7v15c0 13-8 21-19 27-11-6-19-14-19-27V14z" fill="currentColor" fill-opacity=".2"/><path d="M32 20l3.6 7.4 8.1 1.1-5.9 5.6 1.5 8L32 38.2l-7.3 3.9 1.5-8-5.9-5.6 8.1-1.1z" fill="currentColor"/>' },
+    life: { c: '#ff7b6b', d: '#d94a38', p: '<path d="M37 5L15 36h15l-4 23 23-33H34z" fill="currentColor" fill-opacity=".25"/><path d="M52 8v8M48 12h8M12 14v6M9 17h6"/>' },
+    devote: { c: '#ff8fb8', d: '#d6457f', p: '<path d="M32 55S9 41 9 25c0-7 5-12 12-12 5 0 9 3 11 7 2-4 6-7 11-7 7 0 12 5 12 12 0 16-23 30-23 30z" fill="currentColor" fill-opacity=".22"/><path d="M24 28c0-3 2-5 5-5"/>' },
+    donor: { c: '#9be26b', d: '#5a9b2a', p: '<circle cx="32" cy="32" r="23" fill="currentColor" fill-opacity=".16"/><path d="M19 21l6.5 22L32 29l6.5 14L45 21M16 30h32M16 36h32"/>' },
+    merit: { c: '#dfe5f2', d: '#6b7587', p: '<path d="M22 6l9 17M42 6l-9 17"/><circle cx="32" cy="39" r="15" fill="currentColor" fill-opacity=".16"/><path d="M32 30l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="currentColor"/>' },
+    grand: { c: '#e7c46a', d: '#b8860b', p: '<path d="M8 46l6-26 14 14 4-20 4 20 14-14 6 26z" fill="currentColor" fill-opacity=".3"/><rect x="10" y="50" width="44" height="6" rx="2" fill="currentColor"/>' }
+};
+function awSvg(id, size, extra) {
+    const d = AW_SET[id] || AW_SET.avg;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="${extra || 3}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d.p}</svg>`;
+}
+// 시상식 장 위쪽의 큰 엠블럼 — 부문 색 테두리 + 옅은 방사 바탕(정지 그림 · transform/opacity만 한 번 움직인다)
+function awEmblem(id) {
+    const d = AW_SET[id] || AW_SET.avg;
+    return `<span class="aw-emblem" style="--c:${d.c}">${awSvg(id, 50)}</span>`;
+}
+// 트로피 칸 머리의 작은 그림 — 받은 상은 부문 색, 못 받은 상은 칸의 회색 그대로
+function awMini(id, got) {
+    const d = AW_SET[id] || AW_SET.avg;
+    return `<span class="tc-ico"${got ? ` style="color:${d.d}"` : ''}>${awSvg(id, 20, 3.4)}</span>`;
+}
 
 function trophyCaseHtml() {
     const y = trophyYearNow();
@@ -50,8 +77,8 @@ function trophyCaseHtml() {
                 <div class="tc-wait-t">${y} 시즌 시상식</div>
                 <div class="tc-wait-s">${escapeHtml(seasonPendingText(y))}</div>
             </div>
-            <div class="tc-grid">${['올해의 골퍼'].concat(AWARD_ORDER.map(id => ({ avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', life: '인생경기상', devote: '헌신왕', donor: '기부왕', merit: '공로상' }[id]))).map(nm =>
-                `<div class="tc-cell no"><div class="tc-cell-h">${TC_CUP}<span>${nm}</span></div><div class="tc-cell-n">발표 전</div></div>`).join('')}</div>`;
+            <div class="tc-grid">${[['grand', '올해의 골퍼']].concat(AWARD_ORDER.map(id => [id, { avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', life: '인생경기상', devote: '헌신왕', donor: '기부왕', merit: '공로상' }[id]])).map(([id, nm]) =>
+                `<div class="tc-cell no"><div class="tc-cell-h">${awMini(id, false)}<span>${nm}</span></div><div class="tc-cell-n">발표 전</div></div>`).join('')}</div>`;
     }
 
     const aw = computeAwards(y);
@@ -63,14 +90,14 @@ function trophyCaseHtml() {
         ['버디', st.holes.birdie],
         ['독수리', `${st.counts[0]}회`]
     ].map(([k, v]) => `<div class="tc-stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
-    const cell = (name, holders, gotNote, manual) => {
+    const cell = (id, name, holders, gotNote, manual) => {
         const got = holders.includes(g);
         const note = got ? gotNote : (holders.length ? `시즌 1위 ${holders.map(escapeHtml).join('·')}` : (manual ? '관리자 지정 전' : '해당 없음'));
-        return `<div class="tc-cell ${got ? 'got' : 'no'}"><div class="tc-cell-h">${TC_CUP}<span>${name}</span></div><div class="tc-cell-n">${note}</div></div>`;
+        return `<div class="tc-cell ${got ? 'got' : 'no'}"><div class="tc-cell-h">${awMini(id, got)}<span>${name}</span></div><div class="tc-cell-n">${note}</div></div>`;
     };
     const grandNote = aw.grand.rows.find(r => r.g === g);
-    const cells = [cell('올해의 골퍼', aw.grand.holders, `계급 점수 ${grandNote ? grandNote.points : 0}점`)]
-        .concat(aw.awards.map(a => cell(escapeHtml(a.name), a.holders, escapeHtml(a.metric) + (a.holders.length > 1 && !/공동/.test(a.metric) ? ' · 공동' : ''), a.manual))).join('');
+    const cells = [cell('grand', '올해의 골퍼', aw.grand.holders, `계급 점수 ${grandNote ? grandNote.points : 0}점`)]
+        .concat(aw.awards.map(a => cell(a.id, escapeHtml(a.name), a.holders, escapeHtml(a.metric) + (a.holders.length > 1 && !/공동/.test(a.metric) ? ' · 공동' : ''), a.manual))).join('');
     return `${bar}
         <div class="bdg-people">${cards}</div>
         <div class="bdg-card tc-stats">${stat}</div>
@@ -83,7 +110,6 @@ function trophyCaseHtml() {
 // 마무리된 시즌이 아니면 열리지 않는다(재생 단추도 트로피에서 마무리된 시즌에만 보인다).
 let awardsCeremony = null;
 
-const AW_ICON = `<svg width="52" height="52" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="11"/><circle cx="32" cy="32" r="3" fill="#e7c46a"/></svg>`;
 const AW_CROWN = `<svg width="84" height="84" viewBox="0 0 64 64" fill="#e7c46a" stroke="#e7c46a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 46l6-26 14 14 4-20 4 20 14-14 6 26z"/><rect x="10" y="50" width="44" height="6" rx="2"/></svg>`;
 const AW_CUP = `<svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h24v14a12 12 0 0 1-24 0V10z"/><path d="M20 14H10v4a10 10 0 0 0 10 10M44 14h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 54h20M26 46h12v8H26z"/></svg>`;
 
@@ -109,7 +135,7 @@ function awardsSlides(y) {
         const bar = r => { const w = a.dir === 'max' ? (a.best > 0 ? r.v / a.best : 0) : (r.v > 0 ? a.best / r.v : 0); return Math.max(6, Math.round(w * 100)); };
         slides.push(`<div class="aw-slide aw-pend">
             <div class="aw-top"><span class="aw-eyebrow">AWARD ${String(i + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span><span class="aw-dots">${dots(i)}</span></div>
-            <div class="aw-title">${AW_ICON}<div class="aw-han aw-name">${escapeHtml(a.name)}</div><div class="aw-rule">${escapeHtml(a.rule)}</div></div>
+            <div class="aw-title">${awEmblem(a.id)}<div class="aw-han aw-name">${escapeHtml(a.name)}</div><div class="aw-rule">${escapeHtml(a.rule)}</div></div>
             <div class="aw-win"><div class="aw-eyebrow">WINNER</div>
                 <div class="aw-han aw-who${a.holders.length > 1 ? ' multi' : ''}">${a.holders.map(escapeHtml).join(' · ')}</div>
                 <div class="aw-metric">${escapeHtml(a.metric)}</div></div>
