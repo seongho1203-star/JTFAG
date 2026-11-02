@@ -132,7 +132,7 @@ function awardsSlides(y) {
             </div>
             <div class="aw-notes">
                 <div><b>계급 점수</b> 독수리 3점 · 매 2점 · 학 1점 · 참새 0점 (${aw.grand.ranked}경기)</div>
-                <div><b>동점</b> ${aw.grand.tieBroken ? `계급 점수가 같아 평균 타수(${top.avg === null ? '-' : top.avg.toFixed(1) + '타'})가 낮은 쪽이 앞섭니다` : '평균 타수가 낮은 쪽이 앞섭니다'}</div>
+                <div><b>동점</b> ${aw.grand.tieBroken ? (aw.grand.tieBy === 'eagle' ? `계급 점수가 같아 독수리를 가장 많이 한 사람(${top.eagle}회)이 앞섭니다` : `계급 점수와 독수리 횟수가 같아 평균 타수(${top.avg === null ? '-' : top.avg.toFixed(1) + '타'})가 낮은 쪽이 앞섭니다`) : '독수리를 가장 많이 한 사람이 앞섭니다'}</div>
             </div>
             <div class="aw-tap aw-tap-grand"><span class="aw-tap-a">화면을 누르면 올해의 골퍼가 발표됩니다</span></div>
             <button type="button" class="aw-go gold" data-case="1">트로피 보기</button>

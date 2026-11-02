@@ -177,7 +177,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "올해 상위 계급을 상대로 1:1 최다승 기록" });
     }
     if (golferDonorMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 돈을 가장 많이 잃거나 쓴 사람" });
+        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 정산에서 돈을 가장 많이 잃은 사람" });
     }
     if (golferUptrendMap[g]) {
         badges.push({ html: `<div class="season-badge badge-uptrend">📈 상승세</div>`, desc: "최근 경기 스코어가 지속적으로 줄어드는 중" });
@@ -613,7 +613,7 @@ function processAllRoundSettlements() {
             }
         }
         golferFinalNetProfitMap[g] = rankProfit + totalPureStrokeProfit - donationOf(g);
-        donorBase[g] = rankProfit + totalPureStrokeProfit - donationOf(g);   // 기부왕 = 잃거나 쓴 돈(계급·타수 + 찬조 · 사용자 요청)
+        donorBase[g] = rankProfit + totalPureStrokeProfit;   // 기부왕 = 계급·타수 정산에서 잃은 돈(찬조는 헌신왕이 따로 본다 · 사용자 요청)
     });
 
     let minNetProfit = Infinity;

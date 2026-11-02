@@ -97,14 +97,15 @@ assert.equal(run('appData.seasonFinal[2026]'), 0, '해제(0)를 낡은 값이 �
 run('appData.seasonFinal={};appData.seasonShut={};appData.seasonSpecial={}');
 console.log('PASS: 마무리 도장 한 번만 · 합치기 되살림 · 해제 보존');
 
-// 7) 시상 — 2026 실제 기록(14경기) 기준: 대상은 계급 점수 20 동점 → 평균 타수가 낮은 김지명
+// 7) 시상 — 2026 실제 기록(14경기) 기준: 대상은 계급 점수 20 동점 → 독수리가 더 많은 이관교
 m.ctx.MISSION = { '이관교': 12, '김지명': 9, '신성호': 4, '박승수': 3 };
 run("missionSeasonGained=(g)=>MISSION[g];appData.roundMoney[13]['이관교'].donate=150000;appData.seasonSpecial={2026:{name:'신성호',note:'총무 수고'}};processAllRoundSettlements()");
 const aw = plain(run('computeAwards(2026)'));
 const by = id => aw.awards.find(a => a.id === id);
-assert.deepEqual(aw.grand.holders, ['김지명'], '대상 동점이면 평균 타수가 낮은 쪽');
+assert.deepEqual(aw.grand.holders, ['이관교'], '대상 동점이면 독수리를 가장 많이 한 사람(평균 타수가 더 낮은 김지명이 아니다)');
 assert.equal(aw.grand.tieBroken, true);
-assert.deepEqual(aw.grand.rows.map(r => [r.g, r.points]), [['김지명', 20], ['이관교', 20], ['신성호', 17], ['박승수', 15]]);
+assert.equal(aw.grand.tieBy, 'eagle');
+assert.deepEqual(aw.grand.rows.map(r => [r.g, r.points]), [['이관교', 20], ['김지명', 20], ['신성호', 17], ['박승수', 15]]);
 assert.equal(aw.grand.ranked, 12);
 assert.deepEqual(by('avg').holders, ['김지명']);
 assert.match(by('avg').metric, /시즌 평균 87\.0타/);
@@ -116,17 +117,23 @@ assert.deepEqual(by('life').holders, ['박승수'], '인생경기상 = 평균보
 assert.match(by('life').metric, /3차 88타 · 시즌 평균\(96\.6타\)보다 8\.6타 낮음/);
 assert.deepEqual(by('devote').holders, ['이관교'], '헌신왕 = 찬조 최다');
 assert.match(by('devote').metric, /찬조 150,000원/);
+assert.equal(by('avg').rule, '2026시즌 평균 타수 1위');
+assert.equal(by('rave').rule, '2026시즌 라운드 최저타');
+assert.equal(by('birdie').rule, '2026시즌 버디가 가장 많은 사람');
+assert.equal(by('mission').rule, '2026시즌 미션 누적 획득 포인트 1위');
+assert.equal(by('life').rule, '2026시즌 평균보다 가장 낮게 친 라운드');
+assert.equal(by('merit').rule, 'JTFAG를 위해 공로한 바가 큰 사람');
 console.log('기부왕', by('donor').holders, by('donor').metric, by('donor').rows.map(r => r.g + r.v).join(' '));
-assert.deepEqual(by('donor').holders, ['박승수'], '기부왕 = 잃거나 쓴 돈(계급·타수 + 찬조) 최다');
-assert.match(by('donor').metric, /^잃거나 쓴 돈 660,000원$/);
-assert.equal(by('donor').rows.find(r => r.g === '이관교').v, 640000, '이관교 = 정산 손실 490,000 + 찬조 150,000');
+assert.deepEqual(by('donor').holders, ['박승수'], '기부왕 = 계급·타수 정산에서 잃은 돈 최다');
+assert.equal(by('donor').metric, '660,000원', '금액만 표시한다');
+assert.equal(by('donor').rows.find(r => r.g === '이관교').v, 490000, '이관교 = 정산 손실 490,000 — 찬조 150,000은 헌신왕 몫이라 안 섞는다');
 assert.deepEqual(by('merit').holders, ['신성호']);
 assert.equal(by('merit').metric, '총무 수고');
 assert.equal(aw.awards.length, 9);
 // 공로상을 안 정하면 수상자가 없다
 run('appData.seasonSpecial={}');
 assert.deepEqual(plain(run('computeAwards(2026)')).awards.find(a => a.id === 'merit').holders, []);
-console.log('PASS: 대상(계급 점수·동점 시 평균 타수)과 부문 수상자 · 공동 수상 · 공로상 지정');
+console.log('PASS: 대상(계급 점수·동점 시 독수리 횟수)과 부문 수상자 · 공동 수상 · 공로상 지정');
 
 // 8) 시즌 리셋 — 2027 첫 라운드(15차)가 생기면 요약·찬조·계급 합이 새로 시작하고, 목표 타수는 이어진다
 run("appData.totalRounds=15;appData.roundDates={15:'2027-03-01'};golfers.forEach((g,i)=>{appData.scores[g].push([88,86,90,95][i])});appData.roundMoney.push(Object.fromEntries(golfers.map(g=>[g,{start:100000,end:90000}])));appData.roundMoney[14]['박승수'].donate=20000;appData.seasonFinal={}");
@@ -140,7 +147,7 @@ assert.equal(run("Object.keys(cachedRoundRankProfit['김지명']).length"), 13, 
 const cur = plain(run('computeAwards(2027)'));
 assert.equal(cur.stats['김지명'].ranked, 1);
 assert.equal(cur.stats['김지명'].counts.reduce((a, b) => a + b, 0), 1, '2027 계급 횟수는 15차 하나');
-assert.equal(plain(run('computeAwards(2026)')).grand.holders[0], '김지명', '2026 결과는 2027 기록에 안 흔들린다');
+assert.equal(plain(run('computeAwards(2026)')).grand.holders[0], '이관교', '2026 결과는 2027 기록에 안 흔들린다');
 console.log('PASS: 새 시즌에 찬조·계급 횟수가 0에서 시작하고, 지난 시즌 시상은 그대로이며 차수 번호가 이어진다');
 
 // 9) 이 기기에서 처음 보는 시상식만 한 번 띄운다
