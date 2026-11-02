@@ -177,7 +177,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-phoenix">${imgE} 불사조</div>`, desc: "올해 상위 계급을 상대로 1:1 최다승 기록" });
     }
     if (golferDonorMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 계급·타수 정산에서 가장 많이 잃은 사람" });
+        badges.push({ html: `<div class="season-badge badge-donor">💸 기부왕</div>`, desc: "올해 돈을 가장 많이 잃은 사람" });
     }
     if (golferUptrendMap[g]) {
         badges.push({ html: `<div class="season-badge badge-uptrend">📈 상승세</div>`, desc: "최근 경기 스코어가 지속적으로 줄어드는 중" });

@@ -8,7 +8,7 @@
 // 부문 수상은 동점이면 모두 받는다(공동).
 
 const RANK_POINTS = [3, 2, 1, 0];
-const AWARD_ORDER = ['avg', 'rave', 'eagle', 'birdie', 'mission', 'rebound', 'devote', 'donor', 'merit'];
+const AWARD_ORDER = ['avg', 'rave', 'eagle', 'birdie', 'mission', 'life', 'devote', 'donor', 'merit'];
 
 // 그 시즌의 사람별 기록 — processAllRoundSettlements()가 채운 계급 이력과 기록을 시즌 차수만 걸러 읽는다.
 function seasonStats(y) {
@@ -32,13 +32,8 @@ function seasonStats(y) {
         let min = null;
         scored.forEach(x => { if (min === null || x.v < min.v) min = x; });
 
-        // 극적 반전 — 시즌 안에서 바로 앞 차수보다 타수를 가장 많이 줄인 한 번
-        let drop = null;
-        for (let i = 1; i < scored.length; i++) {
-            if (scored[i].r !== scored[i - 1].r + 1) continue;
-            const d = scored[i - 1].v - scored[i].v;
-            if (d > 0 && (drop === null || d > drop.diff)) drop = { diff: d, from: scored[i - 1], to: scored[i] };
-        }
+        // 인생경기 — 그 시즌 자기 평균보다 가장 낮게 친 한 라운드(평균 − 최저타). 2경기 이상이어야 값이 생긴다.
+        const peak = (min && scored.length > 1) ? Math.round((avg - min.v) * 100) / 100 : null;
 
         // 기부왕 — 그 시즌 계급·타수 정산에서 잃은 돈(찬조는 넣지 않는다). 요약 카드의 `계급`·`타수` 합과 같은 셈이다:
         // 계급 정산은 그 차수 벌금 그대로, 타수 정산은 (남은−시작)에서 계급분을 뺀 값이 마이너스일 때만(남은 금액이 적히고 스코어가 들어온 차수).
@@ -55,7 +50,7 @@ function seasonStats(y) {
         const lost = -(rankLoss + strokeLoss);   // 잃은 돈(양수)
 
         out[g] = {
-            g, counts, ranked, rankPoints, scored, avg, min, drop, lost,
+            g, counts, ranked, rankPoints, scored, avg, min, peak, lost,
             holes: seasonHoleCounts(g, y),
             donation: donationOf(g, y),
             mission: missionSeasonGained(g, y)
@@ -102,9 +97,9 @@ function computeAwards(y) {
         h => `버디 ${st[h[0]].holes.birdie}개${h.length > 1 ? ' (공동)' : ''}`, (g, v) => `${v}개`, '개');
     add('mission', '미션왕', '그 시즌 미션 누적 획득 포인트 1위', awardLeaders(vals(s => s.mission), 'max'),
         h => `누적 획득 ${st[h[0]].mission}점`, (g, v) => `${v}점`, '점');
-    add('rebound', '극적 반전상', '바로 앞 차수보다 타수를 가장 많이 줄인 한 번', awardLeaders(vals(s => s.drop ? s.drop.diff : null), 'max'),
-        h => { const d = st[h[0]].drop; return `${d.from.r + 1}차 ${d.from.v}타 → ${d.to.r + 1}차 ${d.to.v}타 (−${d.diff})`; },
-        (g, v) => `−${v}타`, '타');
+    add('life', '인생경기상', '시즌 평균보다 가장 낮게 친 한 라운드', awardLeaders(vals(s => s.peak), 'max'),
+        h => `${st[h[0]].min.r + 1}차 ${st[h[0]].min.v}타 · 시즌 평균(${st[h[0]].avg.toFixed(1)}타)보다 ${st[h[0]].peak.toFixed(1)}타 낮음`,
+        (g, v) => `−${v.toFixed(1)}타`, '타');
     add('devote', '헌신왕', '모임을 위해 찬조한 금액이 가장 큰 사람', awardLeaders(vals(s => s.donation), 'max'),
         h => `찬조 ${awardWon(st[h[0]].donation)}`, (g, v) => awardWon(v), '원');
     add('donor', '기부왕', '계급·타수 정산에서 가장 많이 잃은 사람 (찬조 제외)', awardLeaders(vals(s => s.lost), 'max'),
@@ -148,9 +143,11 @@ function computeAwards(y) {
 function awardsOpen(y) { return seasonClosed(y); }
 
 // 시상식을 처음 보여 줄 시즌 — 이 기기에서 아직 안 본, 마무리된 가장 이른 시즌(없으면 0)
+// **관리자가 마지막 차수를 지정한 시즌만 저절로 뜬다**(사용자 요청 — 시상식은 경기 뒤 식사 자리에서 발표하므로 12월 31일이 지났다고 혼자 뜨면 안 된다).
+// 날짜로만 마무리된 시즌은 트로피에서 다시 보기로만 연다.
 function awardsUnseenYear() {
     const list = closedSeasons();
-    for (const y of list) { if (!awardsSeen(y)) return y; }
+    for (const y of list) { if (seasonFinalRound(y) > 0 && !awardsSeen(y)) return y; }
     return 0;
 }
 function awardsSeen(y) { try { return !!localStorage.getItem(`jtfag_awards_seen_${y}`); } catch (e) { return true; } }

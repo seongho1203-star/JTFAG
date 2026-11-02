@@ -50,7 +50,7 @@ function trophyCaseHtml() {
                 <div class="tc-wait-t">${y} 시즌 시상식</div>
                 <div class="tc-wait-s">${escapeHtml(seasonPendingText(y))}</div>
             </div>
-            <div class="tc-grid">${['올해의 골퍼'].concat(AWARD_ORDER.map(id => ({ avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', rebound: '극적 반전상', devote: '헌신왕', donor: '기부왕', merit: '공로상' }[id]))).map(nm =>
+            <div class="tc-grid">${['올해의 골퍼'].concat(AWARD_ORDER.map(id => ({ avg: '평균 타수상', rave: '라베상', eagle: '독수리왕', birdie: '버디왕', mission: '미션왕', life: '인생경기상', devote: '헌신왕', donor: '기부왕', merit: '공로상' }[id]))).map(nm =>
                 `<div class="tc-cell no"><div class="tc-cell-h">${TC_CUP}<span>${nm}</span></div><div class="tc-cell-n">발표 전</div></div>`).join('')}</div>`;
     }
 
@@ -203,7 +203,7 @@ async function openSeasonFinalPrompt() {
     seasonPick.last = cur;
     const ok = await showConfirmPrompt(`<b>${y} 시즌 마지막 차수</b><br>
         <select onchange="seasonPick.last = Number(this.value)" style="margin:10px 0 8px; width:100%; padding:8px; border-radius:8px; border:1px solid #d8dbd2; font-size:0.9rem; font-weight:700; background:#fff;">${opts}</select>
-        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">그 차수의 스코어가 등록되고 네 명의 정산 입력이 끝나면 시상식이 자동으로 열리고 새 시즌이 시작됩니다. 그 뒤 차수는 다음 시즌으로 셉니다. 이미 스코어와 정산 입력이 끝난 차수를 지정하면 곧바로 시상식이 열리고 되돌릴 수 없습니다. 지정하지 않으면 ${y}년 12월 31일이 지나야 열립니다.</span>`, '저장', '#2b5394');
+        <span style="font-size:0.78rem;color:#6b7075;font-weight:600">그 차수의 스코어가 등록되고 네 명의 정산 입력이 끝나면 시상식이 자동으로 열리고 새 시즌이 시작됩니다. 공로상은 이 지정 전에 먼저 정해 두세요. 그 뒤 차수는 다음 시즌으로 셉니다. 이미 스코어와 정산 입력이 끝난 차수를 지정하면 곧바로 시상식이 열리고 되돌릴 수 없습니다. 지정하지 않으면 ${y}년 12월 31일이 지나야 열립니다.</span>`, '저장', '#2b5394');
     if (!ok) return;
     const n = seasonPick.last;
     if (n === cur) return;

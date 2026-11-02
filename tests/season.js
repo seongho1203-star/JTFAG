@@ -112,8 +112,8 @@ assert.deepEqual(by('rave').holders, ['김지명']);
 assert.match(by('rave').metric, /11차 82타/);
 assert.deepEqual(by('eagle').holders, ['이관교']);
 assert.deepEqual(by('mission').holders, ['이관교']);
-assert.deepEqual(by('rebound').holders, ['김지명']);
-assert.match(by('rebound').metric, /10차 93타 → 11차 82타 \(−11\)/);
+assert.deepEqual(by('life').holders, ['박승수'], '인생경기상 = 평균보다 가장 낮게 친 한 라운드');
+assert.match(by('life').metric, /3차 88타 · 시즌 평균\(96\.6타\)보다 8\.6타 낮음/);
 assert.deepEqual(by('devote').holders, ['이관교'], '헌신왕 = 찬조 최다');
 assert.match(by('devote').metric, /찬조 150,000원/);
 console.log('기부왕', by('donor').holders, by('donor').metric, by('donor').rows.map(r => r.g + r.v).join(' '));
@@ -143,7 +143,12 @@ assert.equal(plain(run('computeAwards(2026)')).grand.holders[0], '김지명', '2
 console.log('PASS: 새 시즌에 찬조·계급 횟수가 0에서 시작하고, 지난 시즌 시상은 그대로이며 차수 번호가 이어진다');
 
 // 9) 이 기기에서 처음 보는 시상식만 한 번 띄운다
-assert.equal(run('awardsUnseenYear()'), 2026);
+// 날짜(12/31)만 지난 시즌은 저절로 안 뜬다 — 시상식은 식사 자리에서 발표하므로 관리자가 마지막 차수를 지정해야 뜬다
+run('appData.seasonFinal={}');
+assert.equal(run('seasonClosed(2026)'), true);
+assert.equal(run('awardsUnseenYear()'), 0, '마지막 차수 지정이 없으면 자동으로 안 뜸');
+run('appData.seasonFinal={2026:14}');
+assert.equal(run('awardsUnseenYear()'), 2026, '마지막 차수를 지정하면 뜸');
 run('markAwardsSeen(2026)');
 assert.equal(run('awardsUnseenYear()'), 0);
-console.log('PASS: 시상식은 시즌마다 기기당 한 번');
+console.log('PASS: 시상식은 마지막 차수를 지정한 시즌만 · 기기당 한 번');
