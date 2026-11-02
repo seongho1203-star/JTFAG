@@ -117,8 +117,9 @@ assert.match(by('life').metric, /3차 88타 · 시즌 평균\(96\.6타\)보다 8
 assert.deepEqual(by('devote').holders, ['이관교'], '헌신왕 = 찬조 최다');
 assert.match(by('devote').metric, /찬조 150,000원/);
 console.log('기부왕', by('donor').holders, by('donor').metric, by('donor').rows.map(r => r.g + r.v).join(' '));
-assert.deepEqual(by('donor').holders, ['박승수'], '기부왕 = 계급·타수 정산에서 가장 많이 잃은 사람(찬조 제외)');
-assert.match(by('donor').metric, /^계급·타수 정산 −[\d,]+원$/);
+assert.deepEqual(by('donor').holders, ['박승수'], '기부왕 = 잃거나 쓴 돈(계급·타수 + 찬조) 최다');
+assert.match(by('donor').metric, /^잃거나 쓴 돈 660,000원$/);
+assert.equal(by('donor').rows.find(r => r.g === '이관교').v, 640000, '이관교 = 정산 손실 490,000 + 찬조 150,000');
 assert.deepEqual(by('merit').holders, ['신성호']);
 assert.equal(by('merit').metric, '총무 수고');
 assert.equal(aw.awards.length, 9);

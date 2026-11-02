@@ -35,7 +35,7 @@ function seasonStats(y) {
         // 인생경기 — 그 시즌 자기 평균보다 가장 낮게 친 한 라운드(평균 − 최저타). 2경기 이상이어야 값이 생긴다.
         const peak = (min && scored.length > 1) ? Math.round((avg - min.v) * 100) / 100 : null;
 
-        // 기부왕 — 그 시즌 계급·타수 정산에서 잃은 돈(찬조는 넣지 않는다). 요약 카드의 `계급`·`타수` 합과 같은 셈이다:
+        // 기부왕 — 그 시즌 계급·타수 정산에서 잃은 돈 + 찬조로 쓴 돈(사용자 요청). 요약 카드 `합산`의 손실과 같은 셈이다:
         // 계급 정산은 그 차수 벌금 그대로, 타수 정산은 (남은−시작)에서 계급분을 뺀 값이 마이너스일 때만(남은 금액이 적히고 스코어가 들어온 차수).
         let rankLoss = 0, strokeLoss = 0;
         rounds.forEach(r => {
@@ -47,7 +47,8 @@ function seasonStats(y) {
                 if (pure < 0) strokeLoss += pure;
             }
         });
-        const lost = -(rankLoss + strokeLoss);   // 잃은 돈(양수)
+        const donation = donationOf(g, y);
+        const lost = -(rankLoss + strokeLoss) + donation;   // 잃거나 쓴 돈(양수)
 
         out[g] = {
             g, counts, ranked, rankPoints, scored, avg, min, peak, lost,
@@ -102,8 +103,8 @@ function computeAwards(y) {
         (g, v) => `−${v.toFixed(1)}타`, '타');
     add('devote', '헌신왕', '모임을 위해 찬조한 금액이 가장 큰 사람', awardLeaders(vals(s => s.donation), 'max'),
         h => `찬조 ${awardWon(st[h[0]].donation)}`, (g, v) => awardWon(v), '원');
-    add('donor', '기부왕', '계급·타수 정산에서 가장 많이 잃은 사람 (찬조 제외)', awardLeaders(vals(s => s.lost), 'max'),
-        h => `계급·타수 정산 −${awardWon(st[h[0]].lost)}`, (g, v) => `−${awardWon(v)}`, '원');
+    add('donor', '기부왕', '계급·타수 정산에서 잃거나 찬조로 쓴 돈이 가장 많은 사람', awardLeaders(vals(s => s.lost), 'max'),
+        h => `잃거나 쓴 돈 ${awardWon(st[h[0]].lost)}`, (g, v) => `−${awardWon(v)}`, '원');
 
     // 공로상 — 관리자가 직접 지정한다. 지정 전에는 수상자가 없다.
     const sp = (appData.seasonSpecial && appData.seasonSpecial[y]) || null;
