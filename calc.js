@@ -675,8 +675,8 @@ function processAllRoundSettlements() {
 
             summaryGrid.innerHTML += `
                 <div class="summary-item">
-                    <div class="name" onclick="openPersonalReport('${g}')">${g}</div>
-                    <div class="sum-rank"><span class="rank-badge ${currentRankInfo.class}">${currentRankInfo.icon}<span class="rank-name">${currentRankInfo.name}</span></span></div>
+                    <div class="name" role="button" tabindex="0" aria-label="${g} 명예의 전당 열기" onclick="openPersonalReport('${g}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPersonalReport('${g}');}">${g}</div>
+                    <div class="sum-rank" onclick="openPersonalReport('${g}')"><span class="rank-badge ${currentRankInfo.class}">${currentRankInfo.icon}<span class="rank-name">${currentRankInfo.name}</span></span></div>
                     <div class="sum-details">
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                         <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
