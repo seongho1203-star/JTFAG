@@ -2486,3 +2486,7 @@ button.fl-amt.tap { justify-self: end; }
 .summary-item .name::after { content: '\203A'; margin-left: 3px; font-weight: 700; color: var(--primary-gold); }
 .summary-item .sum-rank { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s ease, opacity 0.1s ease; }
 .summary-item .sum-rank:active { transform: scale(0.96); opacity: 0.85; }
+
+/* 갤러리 일괄 저장 단추 — 업로드 단추 바로 아래, 같은 폭. 테두리만 있는 보조 단추라 주된 일(업로드)과 갈린다. */
+.photo-bulk-btn { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; background: #fff !important; color: var(--primary-gold, #2b5394) !important; border: 1px solid var(--accent-line, #d6e0f0) !important; }
+.photo-bulk-btn[hidden] { display: none; }

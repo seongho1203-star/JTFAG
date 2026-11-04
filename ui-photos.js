@@ -8,6 +8,7 @@ function countLegacyPhotos() {
 
 function renderRoundPhotos() {
     const grid = document.getElementById('photoGrid'); grid.innerHTML = "";
+    if (typeof paintPhotoBulk === 'function') { if (photoBulk && photoBulk.round !== selectedPhotoRoundIdx) photoBulk = null; paintPhotoBulk(); }
 
     const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) ? appData.roundPhotos[selectedPhotoRoundIdx] : [];
     if (photos.length === 0) { grid.innerHTML = `<div style="grid-column: span 2; text-align:center; padding: 20px; color:#94a3b8; font-size: 0.8rem;">등록된 사진이 없습니다.</div>`; return; }
@@ -572,11 +573,11 @@ function photoSavedMark() {
 /* 사진 앱은 촬영 시각(EXIF)으로 줄을 세운다 — 한 달 전 사진을 저장하면 그 시절 사진들 사이에 끼어 저장된 줄 모른다(사용자 제보).
    JPEG의 촬영·수정 시각(EXIF 0x0132·0x9003·0x9004, XMP 날짜)을 지금으로 같은 길이만큼 덮어쓴다. 바이트 위치가 안 바뀌므로 아이폰 HDR 정보(게인 맵) 같은 나머지는 그대로다.
    바뀌었으면 true. */
-function photoStampNow(buf) {
+function photoStampNow(buf, at) {
     const u8 = new Uint8Array(buf);
     if (u8.length < 4 || u8[0] !== 0xFF || u8[1] !== 0xD8) return false;
     const dv = new DataView(buf);
-    const d = new Date();
+    const d = at instanceof Date ? at : new Date();
     const p2 = n => String(n).padStart(2, '0');
     const hms = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
     const exifText = `${d.getFullYear()}:${p2(d.getMonth() + 1)}:${p2(d.getDate())} ${hms}`;
@@ -662,6 +663,177 @@ async function downloadCurrentPhoto() {
         if (error && error.name === 'AbortError') return;   // 시트를 그냥 닫은 것
         if (error && error.name === 'NotAllowedError') { showToast('📷 저장 준비가 끝났습니다. 저장 단추를 한 번 더 눌러 주세요.'); return; }   // 내려받는 사이 폰이 누른 직후로 안 쳤다 — 이제 담아 뒀으니 바로 열린다
         console.error("다운로드 에러:", error); showToast("⚠️ 저장에 실패했습니다. 사진을 길게 눌러 '이미지 저장'을 선택해 주세요.");
+    }
+}
+
+
+/* ── 일괄 저장 ─────────────────────────────────────────────────────
+   갤러리 맨 위 `일괄 저장`이 그 차수의 사진을 원본째 한꺼번에 저장한다(사용자 요청).
+   · PC — 원본을 모두 받아 ZIP 한 파일로 묶어 내려받는다(`photoZip()` — 압축 없이 담는 형식이라 원본 그대로이고 몇 줄이면 된다).
+   · 폰 — 사진 앱으로 직접 쓸 수 없어 시스템 저장 시트(`navigator.share`에 파일 여러 개)를 쓴다. 두 가지가 걸려 있다:
+     ① 시트는 **누른 직후**에만 열린다 — 받는 데 몇 초 걸리므로 `받기`와 `저장 시트 열기`를 두 번 눌러 나눈다.
+     ② 원본이 3~5MB라 50장을 한꺼번에 들면 폰 메모리가 모자란다 — `PHOTO_BULK_BATCH`(10)장씩 나눠 받는다.
+   폰 저장본은 `photoStampNow()`로 촬영 시각을 지금으로 바꾼다(올린 차례가 사진 앱 순서가 되게 1초씩 차이를 둔다). PC의 ZIP은 원본 그대로다.
+   사진은 순번이 아니라 시작할 때 잡아 둔 주소 목록으로 받는다 — 받는 동안 남이 지워도 엉뚱한 사진이 끼지 않는다. */
+const PHOTO_BULK_BATCH = 10;
+const PHOTO_BULK_PARALLEL = 3;
+let photoBulk = null;   // { round, srcs, phase: 'idle'|'working'|'ready', batch, files, busy }
+
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+
+// 압축 없이 담는(store) ZIP. files = [{name, data:Uint8Array}]. 파일 이름은 UTF-8로 적는다(한글 이름 — 비트 11).
+function photoZip(files) {
+    const enc = new TextEncoder();
+    const parts = [], central = [];
+    let offset = 0;
+    const now = new Date();
+    const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+    const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    files.forEach(f => {
+        const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+        const lh = new DataView(new ArrayBuffer(30));
+        lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+        lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+        lh.setUint32(18, size, true); lh.setUint32(22, size, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+        parts.push(lh.buffer, name, f.data);
+        const ch = new DataView(new ArrayBuffer(46));
+        ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+        ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+        ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, name.length, true);
+        ch.setUint32(42, offset, true);
+        central.push(ch.buffer, name);
+        offset += 30 + name.length + size;
+    });
+    const csize = central.reduce((n, b) => n + (b.byteLength !== undefined ? b.byteLength : b.length), 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, csize, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
+}
+
+async function photoBlobFromSrc(src) {
+    if (src.startsWith('data:')) { const r = await fetch(src); return r.blob(); }
+    const res = await fetch(src);
+    if (!res.ok) throw new Error('사진을 불러오지 못했습니다.');
+    return res.blob();
+}
+
+function photoBulkNum(i) { return String(i + 1).padStart(2, '0'); }
+function photoBulkName(round, i, blob) { return `JTFAG_${round + 1}차_${photoBulkNum(i)}.${(PHOTO_EXT && PHOTO_EXT[blob.type]) || 'jpg'}`; }
+
+// 갤러리 맨 위 단추·진행 막대를 지금 상태에 맞춘다.
+function paintPhotoBulk(text, ratio) {
+    const btn = document.getElementById('photoBulkBtn');
+    const box = document.getElementById('photoBulkProgress');
+    const photos = (appData.roundPhotos && appData.roundPhotos[selectedPhotoRoundIdx]) || [];
+    if (btn) {
+        btn.hidden = photos.length === 0;
+        const st = photoBulk && photoBulk.round === selectedPhotoRoundIdx ? photoBulk : null;
+        const n = photos.length;
+        let label = `일괄 저장 (${n}장)`;
+        if (st && st.phase === 'ready') {
+            const from = st.batch * PHOTO_BULK_BATCH + 1, to = Math.min(n, from + st.files.length - 1);
+            label = `저장 시트 열기 (${from}~${to}장)`;
+        } else if (st && st.phase === 'idle' && st.batch > 0 && st.batch * PHOTO_BULK_BATCH < st.srcs.length) {
+            const from = st.batch * PHOTO_BULK_BATCH + 1, to = Math.min(st.srcs.length, from + PHOTO_BULK_BATCH - 1);
+            label = `다음 ${from}~${to}장 받기`;
+        }
+        btn.querySelector('span').textContent = label;
+        btn.disabled = !!(st && st.phase === 'working') || photoUploading;
+    }
+    if (box) {
+        if (text) {
+            box.hidden = false;
+            const t = box.querySelector('.pup-text'); if (t) t.textContent = text;
+            const f = box.querySelector('.pup-fill'); if (f) f.style.width = Math.round((ratio || 0) * 100) + '%';
+        } else box.hidden = true;
+    }
+}
+
+// 주소 목록을 PHOTO_BULK_PARALLEL개씩 받는다. 받은 바이트로 진행률을 낸다.
+async function photoBulkFetch(round, srcs, offset, label) {
+    const blobs = new Array(srcs.length);
+    let done = 0, bytes = 0, next = 0;
+    async function worker() {
+        while (next < srcs.length) {
+            const i = next++;
+            const blob = await photoBlobFromSrc(srcs[i]);
+            blobs[i] = blob; done++; bytes += blob.size;
+            paintPhotoBulk(`${label} ${done}/${srcs.length}장 받는 중 · ${photoMB(bytes)}`, done / srcs.length);
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(PHOTO_BULK_PARALLEL, srcs.length) }, worker));
+    return blobs;
+}
+
+async function photoBulkDownload() {
+    const round = selectedPhotoRoundIdx;
+    const all = ((appData.roundPhotos && appData.roundPhotos[round]) || []).filter(s => typeof s === 'string' && s);
+    if (!all.length) return;
+    if (navigator.userAgent.match(/kakaotalk/i)) { showToast("⚠️ 카카오톡 인앱 브라우저에서는 저장이 제한됩니다. '다른 브라우저로 열기'를 이용해 주세요."); return; }
+    if (photoUploading) { showToast('⏳ 업로드가 끝난 뒤에 저장할 수 있습니다.'); return; }
+    if (!photoBulk || photoBulk.round !== round || photoBulk.phase === 'idle' && photoBulk.batch === 0) photoBulk = { round, srcs: all.slice(), phase: 'idle', batch: 0, files: [] };
+    const st = photoBulk;
+    if (st.phase === 'working') return;
+    const touch = isTouchDevice();
+
+    // 폰 2단계 — 받아 둔 묶음을 저장 시트로 연다(누른 직후라 열린다).
+    if (st.phase === 'ready') {
+        try {
+            if (!(navigator.share && navigator.canShare && navigator.canShare({ files: st.files }))) throw Object.assign(new Error('unsupported'), { name: 'Unsupported' });
+            await navigator.share({ files: st.files, title: `JTFAG ${round + 1}차 사진 저장` });
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;   // 시트를 닫았다 — 받아 둔 것은 그대로 두니 다시 누르면 열린다
+            if (e && e.name === 'Unsupported') { showToast('⚠️ 이 기기에서는 일괄 저장을 지원하지 않습니다. 사진을 눌러 한 장씩 저장해 주세요.'); photoBulk = null; paintPhotoBulk(); return; }
+            console.error('일괄 저장 에러:', e); showToast('⚠️ 저장에 실패했습니다. 다시 눌러 주세요.'); return;
+        }
+        const wrote = st.files.length;
+        st.batch++; st.files = []; st.phase = 'idle';
+        if (st.batch * PHOTO_BULK_BATCH >= st.srcs.length) {
+            showToast(`✅ ${st.srcs.length}장 저장 요청을 마쳤습니다. 사진 앱의 최근 항목에서 확인해 주세요.`);
+            photoBulk = null;
+        } else showToast(`✅ ${wrote}장 저장 요청을 마쳤습니다. 이어서 다음 사진을 받아 주세요.`);
+        paintPhotoBulk();
+        return;
+    }
+
+    st.phase = 'working'; paintPhotoBulk('준비하는 중…', 0);
+    try {
+        if (!touch) {   // PC — 전부 받아 ZIP 하나로
+            const blobs = await photoBulkFetch(round, st.srcs, 0, `${round + 1}차`);
+            paintPhotoBulk('ZIP 파일로 묶는 중…', 1);
+            const files = [];
+            for (let i = 0; i < blobs.length; i++) files.push({ name: photoBulkName(round, i, blobs[i]), data: new Uint8Array(await blobs[i].arrayBuffer()) });
+            const zip = photoZip(files);
+            const url = URL.createObjectURL(zip);
+            const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = `JTFAG_round${round + 1}_photos.zip`;   // 바깥 파일 이름은 영문 — 한글 이름을 못 받아 `download`로 저장하는 환경이 있다
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            showToast(`💾 ${files.length}장을 ZIP 파일로 저장했습니다.`);
+            photoBulk = null; paintPhotoBulk();
+            return;
+        }
+        // 폰 1단계 — 한 묶음을 받아 둔다
+        const from = st.batch * PHOTO_BULK_BATCH;
+        const slice = st.srcs.slice(from, from + PHOTO_BULK_BATCH);
+        const blobs = await photoBulkFetch(round, slice, from, `${from + 1}~${from + slice.length}장`);
+        const base = Date.now() - st.srcs.length * 1000;   // 올린 차례대로 사진 앱에 쌓이게 1초씩 차이를 둔다
+        const files = [];
+        for (let i = 0; i < blobs.length; i++) {
+            let blob = blobs[i];
+            if (/jpe?g/i.test(blob.type || '')) {
+                try { const buf = await blob.arrayBuffer(); if (photoStampNow(buf, new Date(base + (from + i) * 1000))) blob = new Blob([buf], { type: blobs[i].type }); } catch (e) { blob = blobs[i]; }
+            }
+            files.push(new File([blob], photoBulkName(round, from + i, blobs[i]), { type: blob.type || 'image/jpeg' }));
+        }
+        st.files = files; st.phase = 'ready';
+        paintPhotoBulk();
+        showToast(`📷 ${files.length}장 준비가 끝났습니다. '저장 시트 열기'를 눌러 주세요.`);
+    } catch (e) {
+        console.error('일괄 저장 에러:', e);
+        showToast('⚠️ 사진을 받지 못했습니다. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.');
+        st.phase = 'idle'; st.files = []; paintPhotoBulk();
     }
 }
 
