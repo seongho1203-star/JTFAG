@@ -20,6 +20,35 @@ const EAGLE_FILM_URLS = ['three', 'four', 'five'].flatMap(id => [`eagle-${id}.mp
     .map(file => new URL(`assets/celebrations/eagle-${id}-v1/${file}`, self.registration.scope).href));
 const eagleFilmRequests = new Map();
 
+// 배지·트로피 일러스트는 처음 표시할 때만 받는다. HTML·JS·정산 데이터는 저장하지 않는다.
+const ACHIEVEMENT_ART_CACHE_PREFIX = 'jtfag-achievement-art-';
+const ACHIEVEMENT_ART_CACHE = ACHIEVEMENT_ART_CACHE_PREFIX + 'v1';
+const ACHIEVEMENT_ART_URLS = ['records', 'ranks', 'titles', 'missions', 'humour', 'trophies']
+    .map(id => new URL(`assets/achievements/v1/${id}.webp`, self.registration.scope).href);
+const achievementArtRequests = new Map();
+
+async function cachedAchievementArt(url) {
+    let cache;
+    try {
+        cache = await caches.open(ACHIEVEMENT_ART_CACHE);
+        const saved = await cache.match(url);
+        if (saved) return saved;
+    } catch (e) {}
+    let pending = achievementArtRequests.get(url);
+    if (!pending) {
+        pending = (async () => {
+            const response = await fetch(url, {credentials: 'same-origin'});
+            if (cache && response.ok && /^image\/webp(?:;|$)/i.test(response.headers.get('content-type') || '')) {
+                try { await cache.put(url, response.clone()); } catch (e) {}
+            }
+            return response;
+        })();
+        achievementArtRequests.set(url, pending);
+        pending.then(() => achievementArtRequests.delete(url), () => achievementArtRequests.delete(url));
+    }
+    return (await pending).clone();
+}
+
 async function cachedEagleFilm(request) {
     const url = request.url;
     let cache, response;
@@ -148,7 +177,8 @@ self.addEventListener('activate', event => {
             const keys = await caches.keys();
             await Promise.all(keys.filter(key => (key.startsWith(RANK_ICON_CACHE_PREFIX) && key !== RANK_ICON_CACHE)
                 || (key.startsWith(CLUB_MARK_CACHE_PREFIX) && key !== CLUB_MARK_CACHE)
-                || (key.startsWith(EAGLE_FILM_CACHE_PREFIX) && key !== EAGLE_FILM_CACHE)).map(key => caches.delete(key)));
+                || (key.startsWith(EAGLE_FILM_CACHE_PREFIX) && key !== EAGLE_FILM_CACHE)
+                || (key.startsWith(ACHIEVEMENT_ART_CACHE_PREFIX) && key !== ACHIEVEMENT_ART_CACHE)).map(key => caches.delete(key)));
         } catch (e) {}
         await self.clients.claim();
     })());
@@ -159,7 +189,9 @@ self.addEventListener('message', event => {
 
 // 등급 이미지는 저장본을 먼저 쓰며, 캐시가 있으면 네트워크 요청·재검증을 하지 않는다.
 self.addEventListener('fetch', (event) => {
-    if (event.request.method === 'GET' && RANK_ICON_URLS.includes(event.request.url)) {
+    if (event.request.method === 'GET' && ACHIEVEMENT_ART_URLS.includes(event.request.url)) {
+        event.respondWith(cachedAchievementArt(event.request.url));
+    } else if (event.request.method === 'GET' && RANK_ICON_URLS.includes(event.request.url)) {
         event.respondWith(cachedRankIcon(event.request.url));
     } else if (event.request.method === 'GET' && (CLUB_MARK_URLS.includes(event.request.url)
         || event.request.url.startsWith(CLUB_MARK_BASE) && AUTO_MARK_FILE.test(event.request.url.slice(CLUB_MARK_BASE.length)))) {
@@ -201,3 +233,4 @@ self.addEventListener('notificationclick', (event) => {
         })
     );
 });
+

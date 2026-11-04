@@ -305,6 +305,13 @@ function badgeIcon(name, size, color, width, fill) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill || 'none'}"${fill ? ' fill-opacity="0.12"' : ''} stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BADGE_ICONS[name] || ''}"/></svg>`;
 }
 
+// 항목 ID와 달성 단계로 원본 일러스트를 고른다. 자물쇠·체크 같은 보조 표시는 선 아이콘을 유지한다.
+function badgeArtwork(s, size, level) {
+    const artLevel = level === undefined ? s.level : level;
+    const art = typeof achievementArt === 'function' ? achievementArt('badge', s.def.id, size, artLevel) : '';
+    return art || badgeIcon(s.def.icon, size, badgeTierOf(s, level).c, 1.9);
+}
+
 // ── 뱃지 화면 ─────────────────────────────────────────────
 let badgeViewName = null;     // 지금 보는 사람. 처음엔 이 기기 주인
 let badgeLastHtml = '';
@@ -362,8 +369,8 @@ function badgeTileHtml(s, latest, name = badgeViewName) {
     const target = d.kind === 'tier' ? (locked ? d.steps[0] : s.next) : 0;
     const pct = prog ? Math.min(100, Math.round(s.value / target * 100)) : 0;
     return `<button type="button" class="bdg-tile${locked ? ' locked' : ''}" onclick="openBadgeDetail('${d.id}')" aria-label="${escapeHtml(d.name)} ${locked ? '미획득' : '획득'}">
-        <span class="bdg-medal" style="--bc:${t.c};--bf:${t.f}">
-            ${badgeIcon(d.icon, 26, locked ? '#b4b8bd' : t.c, 1.9, locked ? '' : t.c)}
+        <span class="bdg-medal illustrated" style="--bc:${t.c};--bf:${t.f}">
+            ${badgeArtwork(s, 68)}
             ${locked ? `<span class="bdg-lock">${badgeIcon('lock', 11, '#9aa0a8', 2.4)}</span>` : ''}
             ${isNew ? '<span class="bdg-new">NEW</span>' : ''}
         </span>
@@ -511,7 +518,7 @@ function openBadgeDetail(id) {
             const current = s.level === i;
             const pct = Math.min(100, Math.round(s.value / n * 100));
             return `<div class="bdg-step${done ? ' done' : ''}${!done && !current ? ' later' : ''}">
-                <span class="bdg-step-dot" style="--bc:${tier.c}">${done ? badgeIcon('tick', 16, '#ffffff', 2.6) : (i + 1)}</span>
+                <span class="bdg-step-art" aria-hidden="true">${badgeArtwork(s, 40, i + 1)}</span>
                 <div class="bdg-step-body">
                     <div class="bdg-step-top"><span>${tier.name} · ${badgeQty(def, n)}</span>${current ? `<b>${s.value} / ${n}</b>` : ''}</div>
                     ${done ? `<div class="bdg-step-sub">${s.reached[i] + 1}차에 획득</div>` : ''}
@@ -543,7 +550,7 @@ function openBadgeDetail(id) {
     o.innerHTML = `<div class="bdg-sheet" role="dialog" aria-label="${escapeHtml(def.name)}">
         <div class="bdg-grip"></div>
         <div class="bdg-big">
-            <span class="bdg-medal big${locked ? ' locked' : ''}" style="--bc:${t.c};--bf:${t.f}">${badgeIcon(def.icon, 48, locked ? '#b4b8bd' : t.c, 1.7, locked ? '' : t.c)}</span>
+            <span class="bdg-medal illustrated big${locked ? ' locked' : ''}" style="--bc:${t.c};--bf:${t.f}">${badgeArtwork(s, 128)}</span>
             <div class="bdg-big-name"><span>${escapeHtml(def.name)}</span><em style="color:${locked ? '#8a9097' : t.c};background:${locked ? '#f1f1ef' : t.f}">${label}</em></div>
             <div class="bdg-big-desc">${escapeHtml(def.desc)}</div>
             <div class="bdg-big-who">${escapeHtml(g)}님 기준</div>
@@ -627,7 +634,7 @@ function showBadgeUnlock(me, queue) {
         o.innerHTML = `<div class="bdg-u-rings"><span></span><span></span><span></span></div>
             <div class="bdg-u-body${tease ? ' tease' : ''}">
                 <div class="bdg-u-kicker">${tease ? '불명예 뱃지' : 'NEW BADGE'}</div>
-                <div class="bdg-u-medal" style="--bc:${tier.d}">${badgeIcon(d.icon, 70, '#eef1f5', 1.6)}</div>
+                <div class="bdg-u-medal illustrated" style="--bc:${tier.d}">${badgeArtwork(s, 180, k.level || undefined)}</div>
                 ${stars}
                 <div class="bdg-u-name">${escapeHtml(d.name)}</div>
                 <div class="bdg-u-what" style="color:${tier.d}">${what}</div>
@@ -655,3 +662,4 @@ function showBadgeUnlock(me, queue) {
     paint();
     requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('show')));
 }
+

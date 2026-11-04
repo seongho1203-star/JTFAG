@@ -45,18 +45,20 @@ const AW_SET = {
     grand: { c: '#e7c46a', d: '#b8860b', p: '<path d="M8 46l6-26 14 14 4-20 4 20 14-14 6 26z" fill="currentColor" fill-opacity=".3"/><rect x="10" y="50" width="44" height="6" rx="2" fill="currentColor"/>' }
 };
 function awSvg(id, size, extra) {
+    const art = typeof achievementArt === 'function' ? achievementArt('trophy', id, size) : '';
+    if (art) return art;
     const d = AW_SET[id] || AW_SET.avg;
     return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="${extra || 3}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d.p}</svg>`;
 }
 // 시상식 장 위쪽의 큰 엠블럼 — 부문 색 테두리 + 옅은 방사 바탕(정지 그림 · transform/opacity만 한 번 움직인다)
 function awEmblem(id) {
     const d = AW_SET[id] || AW_SET.avg;
-    return `<span class="aw-emblem" style="--c:${d.c}">${awSvg(id, 50)}</span>`;
+    return `<span class="aw-emblem illustrated" style="--c:${d.c}">${awSvg(id, 112)}</span>`;
 }
 // 트로피 칸 머리의 작은 그림 — 받은 상은 부문 색, 못 받은 상은 칸의 회색 그대로
 function awMini(id, got) {
     const d = AW_SET[id] || AW_SET.avg;
-    return `<span class="tc-ico"${got ? ` style="color:${d.d}"` : ''}>${awSvg(id, 20, 3.4)}</span>`;
+    return `<span class="tc-ico"${got ? ` style="color:${d.d}"` : ''}>${awSvg(id, 92, 3.4)}</span>`;
 }
 
 function trophyCaseHtml() {
@@ -110,8 +112,8 @@ function trophyCaseHtml() {
 // 마무리된 시즌이 아니면 열리지 않는다(재생 단추도 트로피에서 마무리된 시즌에만 보인다).
 let awardsCeremony = null;
 
-const AW_CROWN = `<svg width="84" height="84" viewBox="0 0 64 64" fill="#e7c46a" stroke="#e7c46a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 46l6-26 14 14 4-20 4 20 14-14 6 26z"/><rect x="10" y="50" width="44" height="6" rx="2"/></svg>`;
-const AW_CUP = `<svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h24v14a12 12 0 0 1-24 0V10z"/><path d="M20 14H10v4a10 10 0 0 0 10 10M44 14h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 54h20M26 46h12v8H26z"/></svg>`;
+const AW_CROWN = (typeof achievementArt === 'function' && achievementArt('trophy', 'grand', 112)) || `<svg width="84" height="84" viewBox="0 0 64 64" fill="#e7c46a" stroke="#e7c46a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 46l6-26 14 14 4-20 4 20 14-14 6 26z"/><rect x="10" y="50" width="44" height="6" rx="2"/></svg>`;
+const AW_CUP = (typeof achievementArt === 'function' && achievementArt('trophy', 'grand', 96)) || `<svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#e7c46a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h24v14a12 12 0 0 1-24 0V10z"/><path d="M20 14H10v4a10 10 0 0 0 10 10M44 14h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 54h20M26 46h12v8H26z"/></svg>`;
 
 function awardsSlides(y) {
     const aw = computeAwards(y);
@@ -305,3 +307,4 @@ function previewAwardsCeremony() {
     closeAdminModal();
     openAwardsCeremony(currentSeason(), true, true);
 }
+

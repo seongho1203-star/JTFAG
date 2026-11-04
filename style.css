@@ -2490,3 +2490,24 @@ button.fl-amt.tap { justify-self: end; }
 /* 갤러리 일괄 저장 단추 — 업로드 단추 바로 아래, 같은 폭. 테두리만 있는 보조 단추라 주된 일(업로드)과 갈린다. */
 .photo-bulk-btn { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; background: #fff !important; color: var(--primary-gold, #2b5394) !important; border: 1px solid var(--accent-line, #d6e0f0) !important; }
 .photo-bulk-btn[hidden] { display: none; }
+
+
+/* JTFAG 배지·트로피 일러스트 — 승인된 원본 시트의 그림만 표시한다. */
+.jtfag-art { position: relative; display: inline-block; flex: 0 0 auto; vertical-align: middle; line-height: 0; pointer-events: none; }
+.jtfag-art-window { position: absolute; display: block; overflow: hidden; }
+.jtfag-art .jtfag-art-window img { position: absolute; display: block; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; object-fit: fill; pointer-events: none; user-select: none; }
+.bdg-medal.illustrated { width: clamp(54px, 16vw, 68px); height: clamp(54px, 16vw, 68px); margin: 2px 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.bdg-medal.illustrated > .jtfag-art { width: 100% !important; height: 100% !important; }
+.bdg-tile.locked .bdg-medal.illustrated, .bdg-medal.illustrated.locked { border: 0; background: none; box-shadow: none; }
+.bdg-tile.locked .jtfag-art, .bdg-medal.illustrated.locked .jtfag-art { filter: grayscale(1); opacity: 0.48; }
+.bdg-medal.illustrated .bdg-lock { width: 18px; height: 18px; right: -1px; bottom: -1px; }
+.bdg-medal.illustrated .bdg-new { right: -1px; top: -2px; }
+.bdg-medal.illustrated.big { width: 128px; height: 128px; margin: 4px; border: 0; box-shadow: none; }
+.bdg-step-art { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; }
+.bdg-step:not(.done) .bdg-step-art .jtfag-art { filter: grayscale(1); opacity: 0.5; }
+.bdg-u-medal.illustrated { width: 180px; height: 180px; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.tc-cell { min-height: 164px; align-items: center; justify-content: center; padding: 12px 8px; text-align: center; }
+.tc-cell-h { flex-direction: column; justify-content: center; gap: 8px; text-align: center; }
+.tc-ico { width: 92px; height: 92px; align-items: center; justify-content: center; }
+.tc-cell.no .tc-ico .jtfag-art { filter: grayscale(1); opacity: 0.48; }
+.aw-emblem.illustrated { width: 112px; height: 112px; border: 0; border-radius: 0; background: none; box-shadow: none; }
