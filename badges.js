@@ -302,7 +302,18 @@ function badgeQty(def, n) { return `${def.unit} ${n}${def.count || '개'}`; }
 
 // fill을 주면 선 그림 안쪽에 그 색을 12%로 깐다(메달 그림용 — 시안 A). 안 주면 예전처럼 속이 빈 선 그림이다.
 function badgeIcon(name, size, color, width, fill) {
-    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill || 'none'}"${fill ? ' fill-opacity="0.12"' : ''} stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BADGE_ICONS[name] || ''}"/></svg>`;
+    // Premium medallion frame; keep the original badge-specific symbol and scoring logic unchanged.
+    const symbol = BADGE_ICONS[name] || '';
+    const medal = name === 'trophy' || name === 'crown'
+        ? '<path d="M7 2.5h10v3.2H7zM9 5.7v2.1M15 5.7v2.1" fill="none" stroke="currentColor" stroke-width=".7" opacity=".55"/>'
+        : '';
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="11.1" fill="${fill || '#fff'}" fill-opacity=".18" stroke="${color}" stroke-width=".65" opacity=".48"/>
+      <circle cx="12" cy="12" r="9.35" fill="${fill || '#fff'}" fill-opacity=".22" stroke="${color}" stroke-width=".9"/>
+      <circle cx="12" cy="12" r="7.9" stroke="${color}" stroke-width=".35" opacity=".32"/>
+      ${medal}
+      <path d="${symbol}" fill="${fill ? color : 'none'}" fill-opacity="${fill ? '.10' : '0'}" stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
 }
 
 // ── 뱃지 화면 ─────────────────────────────────────────────
