@@ -302,15 +302,7 @@ function badgeQty(def, n) { return `${def.unit} ${n}${def.count || '개'}`; }
 
 // fill을 주면 선 그림 안쪽에 그 색을 12%로 깐다(메달 그림용 — 시안 A). 안 주면 예전처럼 속이 빈 선 그림이다.
 function badgeIcon(name, size, color, width, fill) {
-    const symbol = BADGE_ICONS[name] || '';
-    const ribbon = '<path d="M8 33L3 43l9-1 5 7 5-13M40 33l5 13 5-7 9 1-5-10" fill="' + color + '" stroke="#fff0bd" stroke-width="1.2" stroke-linejoin="round"/>';
-    return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      ${ribbon}
-      <path d="M32 2 38 7 46 6 49 14 57 18 55 27 60 34 53 40 51 49 42 50 36 57 28 54 20 58 15 50 7 48 7 39 1 33 6 25 4 17 13 13 17 5 26 7z" fill="${fill || '#fff'}" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M32 7 37 11 44 10 47 17 53 20 51 27 56 33 49 38 47 45 40 46 35 52 28 49 21 53 17 46 10 44 10 38 5 33 10 26 8 20 16 16 19 9 26 11z" stroke="#fff5d2" stroke-width="1.2" stroke-linejoin="round"/>
-      <circle cx="32" cy="29" r="17" fill="${color}" fill-opacity=".15" stroke="${color}" stroke-width="1.2"/>
-      <path d="${symbol}" transform="translate(20 17) scale(1)" fill="${fill ? color : 'none'}" fill-opacity=".16" stroke="${color}" stroke-width="${width || 2}" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill || 'none'}"${fill ? ' fill-opacity="0.12"' : ''} stroke="${color}" stroke-width="${width || 1.9}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BADGE_ICONS[name] || ''}"/></svg>`;
 }
 
 // ── 뱃지 화면 ─────────────────────────────────────────────
