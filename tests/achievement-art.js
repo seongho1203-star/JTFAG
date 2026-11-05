@@ -16,6 +16,12 @@ const trophies = JSON.parse(run('JSON.stringify(ACHIEVEMENT_TROPHY_ART)'));
 assert.equal(defs.length, 51);
 assert.equal(Object.keys(badges).length, 61);
 assert.equal(Object.keys(trophies).length, 10);
+const butterflyKeys = ['firstBirdie','multiBirdie','tripleBirdie','backToBack','birdies:1','birdies:2','birdies:3','birdie1'];
+const butterflyAtlas = atlases.findIndex(a=>a.file==='assets/achievements/v2/birdie-butterflies.webp');
+assert.ok(butterflyAtlas>=0,'The corrected butterfly artwork has a distinct asset URL');
+for (const [id,rect] of Object.entries(badges)) {
+    assert.equal(rect[0]===butterflyAtlas,butterflyKeys.includes(id),id+' uses its intended artwork');
+}
 for (const def of defs) {
     for (let level = 1; level <= (def.kind === 'tier' ? 3 : 1); level++) {
         const key = def.kind === 'tier' ? `${def.id}:${level}` : def.id;
@@ -37,6 +43,9 @@ for (const atlas of atlases) {
 }
 assert.match(run("achievementArt('badge','birdies',64,0)"), /birdies:1/);
 assert.match(run("achievementArt('badge','birdies',64,99)"), /birdies:3/);
+for(const id of ['firstBirdie','multiBirdie','tripleBirdie','backToBack','birdie1']) {
+    assert.match(run(`achievementArt('badge','${id}',128)`),/v2\/birdie-butterflies\.webp/);
+}
 assert.equal(run("achievementArt('badge','missing')"), '');
 for (const id of Object.keys(trophies)) assert.match(run(`awSvg('${id}', 92)`), /data-achievement-kind="trophy"/);
 assert.match(run('AW_CUP'), /data-achievement-id="grand"/);
@@ -75,6 +84,16 @@ async function checkCache() {
     assert.ok(entries.has(missing),'Failed request can be retried');
     disableCache=true;
     await cached(url.replace('records','ranks'));
+    disableCache=false;
+    const butterflyUrl='https://example.test/JTFAG/assets/achievements/v2/birdie-butterflies.webp';
+    let correctedImage;
+    handlers.fetch({request:{method:'GET',url:butterflyUrl,mode:'cors'},respondWith:p=>{correctedImage=p;}});
+    assert.ok(correctedImage,'The new butterfly asset is handled by the image cache');
+    assert.equal(await (await correctedImage).text(),'image');
+    const beforeHit=requests.length;
+    failNetwork=true;
+    assert.equal(await (await cached(butterflyUrl)).text(),'image');
+    assert.equal(requests.length,beforeHit,'All corrected birdie badges reuse the cached asset offline');
     let intercepted=false;
     handlers.fetch({request:{method:'GET',url:'https://example.test/JTFAG/badges.js',mode:'cors'},respondWith:()=>{intercepted=true;}});
     assert.equal(intercepted,false,'Application code is never cached by the image handler');
