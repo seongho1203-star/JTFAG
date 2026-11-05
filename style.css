@@ -2527,6 +2527,41 @@ img.jtfag-rank { aspect-ratio: 1; object-fit: contain; object-position: center; 
 
 .g3-disc { border-radius: 0; overflow: visible; background: transparent; box-shadow: none; }
 
+/* 통합 정산 요약의 독수리 전용 오로라. 그림 뒤에서만 흐르고 16초 후 정지한다. */
+.summary-item .sum-rank .rank-eagle { --summary-eagle-size:clamp(42px,13vw,56px); position:relative; isolation:isolate; }
+.summary-item .sum-rank .rank-eagle::before,
+.summary-item .sum-rank .rank-eagle::after {
+    content:''; position:absolute; z-index:0; top:-5px; left:50%;
+    width:calc(var(--summary-eagle-size) + 20px); height:calc(var(--summary-eagle-size) + 10px);
+    pointer-events:none; border-radius:46% 58% 48% 54% / 58% 45% 60% 46%;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 48%,#000 20%,transparent 72%);
+    mask-image:radial-gradient(ellipse at 50% 48%,#000 20%,transparent 72%);
+}
+.summary-item .sum-rank .rank-eagle::before {
+    background:radial-gradient(ellipse at 23% 35%,#46dbbfa6,transparent 60%),radial-gradient(ellipse at 78% 28%,#a48ae678,transparent 58%),radial-gradient(ellipse at 50% 78%,#f2ce848c,transparent 62%),radial-gradient(ellipse at 50% 45%,#64d9cc70,transparent 72%);
+    opacity:.84; transform:translateX(-50%) rotate(-8deg) scale(1);
+    animation:summary-eagle-aurora-field 8s ease-in-out 2 alternate both;
+}
+.summary-item .sum-rank .rank-eagle::after {
+    background:radial-gradient(circle at 23% 24%,#fff4c9 0 1px,transparent 1.8px),radial-gradient(circle at 77% 34%,#fff 0 1px,transparent 1.8px),linear-gradient(112deg,transparent 12%,#77e5cb8c 25%,transparent 34%,#8ae6cf73 43%,#baa0ef70 54%,transparent 66%,#efd69a80 77%,transparent 87%);
+    opacity:.7; transform:translateX(-50%) skewX(-12deg) rotate(-14deg) scale(.95,1.04);
+    animation:summary-eagle-aurora-curtain 8s ease-in-out 2 alternate both;
+}
+.summary-item .sum-rank .rank-eagle > .jtfag-rank,
+.summary-item .sum-rank .rank-eagle > .rank-name { position:relative; z-index:1; }
+@keyframes summary-eagle-aurora-field {
+    0%,100% { opacity:.84; transform:translateX(-50%) rotate(-8deg) scale(1); }
+    50% { opacity:1; transform:translateX(-46%) rotate(10deg) scale(1.08,.93); }
+}
+@keyframes summary-eagle-aurora-curtain {
+    0%,100% { opacity:.7; transform:translateX(-50%) skewX(-12deg) rotate(-14deg) scale(.95,1.04); }
+    50% { opacity:.94; transform:translateX(-55%) skewX(9deg) rotate(5deg) scale(1.06,.94); }
+}
+@media (prefers-reduced-motion:reduce) {
+    .summary-item .sum-rank .rank-eagle::before,
+    .summary-item .sum-rank .rank-eagle::after { animation:none; }
+}
+
 /* 독수리 대관식 v2. 모든 모션은 유한한 transform/opacity 애니메이션이다. */
 .celebrate-overlay.eagle-coronation { background:#020403; color:#f8edcf; padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px); box-sizing:border-box; isolation:isolate; transition:opacity .26s ease; }
 .ec-stage { --ec-depth:#143c2b; position:relative; width:min(100vw,calc((100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * .5625)); aspect-ratio:9/16; container-type:inline-size; overflow:hidden; background:#030807; text-align:center; font-family:Arial,'Noto Sans KR',sans-serif; }
