@@ -150,11 +150,11 @@ const BADGE_GROUPS = [
           first: g => firstRound(g, r => parRun(g, r, 5)) },
         { id: 'backToBack', kind: 'life', tier: 'gold', icon: 'b2b', name: '백투백 버디', cond: '2홀 연속 버디', desc: '2개 홀 연속 버디 이하 기록',
           first: g => firstRound(g, r => anyHole(g, r, (i, h) => i > 0 && h.rel[i] < 0 && h.rel[i - 1] < 0)) },
-        { id: 'birdieRush', kind: 'life', tier: 'gold', icon: 'tripleBird', name: '버디 러시', cond: '15차부터 3홀 연속 버디 이상', desc: '15차 이후 한 라운드에서 3개 홀 연속 버디 이상 기록',
+        { id: 'birdieRush', kind: 'life', tier: 'gold', icon: 'tripleBird', name: '버디 러시', cond: '3홀 연속 버디 이상', desc: '한 라운드에서 3개 홀 연속 버디 이상 기록',
           first: g => firstRound(g, r => anyHole(g, r, (i, h) => i >= 2 && h.rel[i] < 0 && h.rel[i - 1] < 0 && h.rel[i - 2] < 0), 15) },
         { id: 'half39', kind: 'life', tier: 'silver', icon: 'half', name: '하프 30대', cond: '9홀 39타 이하', desc: '전반 또는 후반 9홀을 39타 이하로 마무리',
           first: g => firstRound(g, r => { const hv = halves(g, r); return !!hv && Math.min(hv[0], hv[1]) <= 39; }) },
-        { id: 'noBogeyHalf', kind: 'life', tier: 'gold', icon: 'half', name: '노보기 하프', cond: '15차부터 9홀 노보기', desc: '15차 이후 전반 또는 후반 9홀을 모두 파 이상으로 마무리',
+        { id: 'noBogeyHalf', kind: 'life', tier: 'gold', icon: 'half', name: '노보기 하프', cond: '9홀 노보기', desc: '전반 또는 후반 9홀을 모두 파 이상으로 마무리',
           first: g => firstRound(g, r => {
               const h = badgeHoles(g, r);
               if (!h || h.par.length !== 18 || h.rel.length !== 18) return false;
