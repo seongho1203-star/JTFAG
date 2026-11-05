@@ -2527,8 +2527,9 @@ img.jtfag-rank { aspect-ratio: 1; object-fit: contain; object-position: center; 
 
 .g3-disc { border-radius: 0; overflow: visible; background: transparent; box-shadow: none; }
 
-/* 통합 정산 요약: 전설 아이템처럼 독수리에서 금빛 광선·기운·입자가 계속 피어오른다. */
+/* 통합 정산 요약·뱃지 상단: 독수리에서 같은 금빛 광선·기운·입자가 계속 피어오른다. */
 .summary-item .sum-rank .rank-eagle { --summary-eagle-size:clamp(42px,13vw,56px); position:relative; isolation:isolate; }
+.bdg-avatar.rank-eagle { --summary-eagle-size:52px; }
 .summary-eagle-loot { width:var(--summary-eagle-size); height:var(--summary-eagle-size); position:relative; display:inline-flex; justify-content:center; align-items:center; isolation:isolate; line-height:0; }
 .summary-eagle-loot > img.jtfag-rank { position:relative; z-index:1; }
 .summary-loot-fx { position:absolute; z-index:0; left:-25%; top:-12%; width:150%; height:125%; overflow:hidden; pointer-events:none; -webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent); mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent); }

@@ -10,10 +10,10 @@ function formatFinalBalance(v) {
     return (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만";
 }
 
-// 통합 정산 요약 전용. 원본 등급 그림을 유지하고 독수리에만 전설 아이템의 발광 효과를 붙인다.
-function summaryRankArt(rankInfo, index = 0) {
+// 통합 정산 요약과 뱃지 상단의 공통 등급 효과. 화면별 ID로 SVG 그라데이션 충돌을 막는다.
+function summaryRankArt(rankInfo, index = 0, context = 'summary') {
     if (rankInfo.class !== 'rank-eagle') return rankInfo.icon;
-    const id = `summary-loot-${Math.max(0, Math.floor(Number(index) || 0))}`;
+    const id = `${context}-loot-${Math.max(0, Math.floor(Number(index) || 0))}`;
     const sparks = [[17,85,2.1,-.2,-5],[100,80,2.7,-1.4,6],[27,70,2.5,-1.1,-7],[91,63,2.2,-.7,5],[43,75,2.8,-2.1,-4],[76,81,2.4,-1.8,7],[59,49,3.1,-1.6,2]];
     return `<span class="summary-eagle-loot"><svg class="summary-loot-fx" viewBox="0 0 120 100" aria-hidden="true" focusable="false">
         <defs>

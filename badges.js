@@ -446,6 +446,7 @@ function renderBadgePage() {
     const played = (appData.scores && appData.scores[g] || []).filter(v => !isNaN(parseFloat(v))).length;
     const rankLine = rankIdx >= 0 ? `${RANK_CONFIG[rankIdx].name}등급 · ${played}경기 참가` : `${played}경기 참가`;
     const img = rankIdx >= 0 ? rankImageSrc(rankIdx) : '';
+    const avatarArt = img ? summaryRankArt({ class: RANK_CONFIG[rankIdx].class, icon: `<img class="jtfag-rank" src="${img}" alt="">` }, golfers.indexOf(g), 'badge') : badgeIcon('eagle', 26, '#2b5394');
     const goal = badgeNextGoal(sections);
     const goalHtml = goal ? (() => {
         const d = goal.s.def;
@@ -470,7 +471,7 @@ function renderBadgePage() {
         <div class="bdg-people">${chips}</div>
         <div class="bdg-card bdg-me">
             <div class="bdg-me-row">
-                <span class="bdg-avatar${rankIdx >= 0 ? ' ' + RANK_CONFIG[rankIdx].class : ''}">${img ? `<img class="jtfag-rank" src="${img}" alt="">` : badgeIcon('eagle', 26, '#2b5394')}</span>
+                <span class="bdg-avatar${rankIdx >= 0 ? ' ' + RANK_CONFIG[rankIdx].class : ''}">${avatarArt}</span>
                 <div class="bdg-me-name"><div class="nm">${escapeHtml(g)}</div><div class="sub">${rankLine}</div></div>
                 <div class="bdg-me-count"><div class="big">${got}<span> / ${total}</span></div><div class="sub">수집 ${pct}%</div></div>
             </div>
