@@ -13,7 +13,7 @@ const defs = JSON.parse(run('JSON.stringify(BADGE_GROUPS.flatMap(group => group.
 const atlases = JSON.parse(run('JSON.stringify(ACHIEVEMENT_ATLASES)'));
 const badges = JSON.parse(run('JSON.stringify(ACHIEVEMENT_BADGE_ART)'));
 const trophies = JSON.parse(run('JSON.stringify(ACHIEVEMENT_TROPHY_ART)'));
-assert.equal(defs.length, 51);
+assert.equal(defs.length, 53);
 assert.equal(Object.keys(badges).length, 61);
 assert.equal(Object.keys(trophies).length, 10);
 const birdieTrophyAtlas=atlases.findIndex(a=>a.file==='assets/achievements/v2/birdie-king-butterfly.webp');
