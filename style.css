@@ -2411,8 +2411,9 @@ button.fl-amt.tap { justify-self: end; }
 .aw-foot { font-size: 0.74rem; color: #aab2c6; line-height: 1.5; word-break: keep-all; }
 .aw-slide { gap: 22px; }
 .aw-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.aw-dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-.aw-dot { width: 14px; height: 3px; border-radius: 2px; background: #2c3a5c; }
+.aw-top .aw-eyebrow { white-space: nowrap; flex: none; }   /* `AWARD 07 /` · `10`으로 갈라지지 않게 */
+.aw-dots { display: flex; flex: 1 1 0; min-width: 0; gap: 4px; flex-wrap: nowrap; justify-content: flex-end; }   /* 점이 많아도 한 줄 — 칸이 모자라면 점이 줄어든다 */
+.aw-dot { flex: 1 1 0; max-width: 14px; min-width: 3px; height: 3px; border-radius: 2px; background: #2c3a5c; }
 .aw-dot.on { background: #e7c46a; }
 .aw-title { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding-top: 6px; }
 .aw-name { font-size: clamp(2rem, 11vw, 2.6rem); line-height: 1.1; }
