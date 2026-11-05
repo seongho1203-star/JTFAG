@@ -28,7 +28,11 @@ birdie season title.
 The collection, detail view, level ladder and unlock popup share this mapping.
 The ninth correction, the humour badge "버디값", uses the matching transparent
 `v2/birdie-tax-butterfly.webp` image while retaining its playful style and -1/+2 invoice.
-Other badges and trophies retain their original artwork.
+The birdie king trophy also uses the butterfly motif through the transparent
+`v2/birdie-king-butterfly.webp` asset. Its gold pedestal, JTFAG plaque, golf ball,
+emerald jewel and laurel are preserved. Trophy case and award ceremony share
+the `birdie` mapping; the SVG fallback also depicts a butterfly.
+All remaining badges and trophies retain their original artwork.
 
 Each replacement was edited with the built-in ImageGen tool using the original
 medal as reference: preserve the metal, enamel, laurel, jewels, tier and numbers;
