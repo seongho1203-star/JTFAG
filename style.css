@@ -2540,10 +2540,10 @@ img.jtfag-rank { aspect-ratio: 1; object-fit: contain; object-position: center; 
 .summary-loot-rays { animation:summary-loot-rays 3.2s ease-in-out -.7s infinite; }
 .summary-loot-streak, .summary-loot-spark { transform-box:fill-box; transform-origin:center; animation:summary-loot-streak var(--loot-time) linear var(--loot-delay) infinite both; }
 .summary-loot-spark { animation-name:summary-loot-spark; }
-@keyframes summary-loot-glow { 0%,100% { opacity:.55; transform:scale(.88,1); } 50% { opacity:.95; transform:scale(1.06,.95); } }
-@keyframes summary-loot-rays { 0%,100% { opacity:.45; transform:scale(.84,.8) rotate(-4deg); } 50% { opacity:1; transform:scale(1.06,1.04) rotate(4deg); } }
-@keyframes summary-loot-streak { 0% { opacity:0; transform:translateY(12px) scaleY(.55); } 16% { opacity:1; } 72% { opacity:.9; } 100% { opacity:0; transform:translateY(-54px) scaleY(1.1); } }
-@keyframes summary-loot-spark { 0% { opacity:0; transform:translate(0,9px) scale(.3); } 20% { opacity:1; transform:translate(0,-1px) scale(1); } 65% { opacity:.95; transform:translate(var(--loot-dx),-20px) scale(.85); } 100% { opacity:0; transform:translate(var(--loot-dx),-45px) scale(.15); } }
+@keyframes summary-loot-glow { 0%,100% { opacity:.72; transform:scale(.88,1); } 50% { opacity:1; transform:scale(1.06,.95); } }
+@keyframes summary-loot-rays { 0%,100% { opacity:.6; transform:scale(.84,.8) rotate(-4deg); } 50% { opacity:1; transform:scale(1.06,1.04) rotate(4deg); } }
+@keyframes summary-loot-streak { 0% { opacity:0; transform:translateY(12px) scaleY(.55); } 16% { opacity:1; } 72% { opacity:1; } 84% { opacity:.9; } 100% { opacity:0; transform:translateY(-54px) scaleY(1.1); } }
+@keyframes summary-loot-spark { 0% { opacity:0; transform:translate(0,9px) scale(.3); } 20% { opacity:1; transform:translate(0,-1px) scale(1); } 65% { opacity:1; transform:translate(var(--loot-dx),-20px) scale(.85); } 80% { opacity:.9; } 100% { opacity:0; transform:translate(var(--loot-dx),-45px) scale(.15); } }
 @media (prefers-reduced-motion:reduce) {
     .summary-loot-fx * { animation:none !important; }
     .summary-loot-glow { opacity:.65; }
