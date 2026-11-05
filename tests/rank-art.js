@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const source = name => fs.readFileSync(path.join(root,name),'utf8');
 const m = make();
 const ranks = JSON.parse(m.run('JSON.stringify(RANK_CONFIG)'));
-const files = ['eagle','falcon','crane','sparrow'];
+const files = ['eagle','falcon','crane','sparrow-folded'];
 const urls = files.map(name=>'assets/ranks/v1/'+name+'.webp');
 files.forEach((name,i)=>{
     assert.match(ranks[i].icon,new RegExp('src="'+urls[i].replaceAll('.','\\.')+'"'));
@@ -50,7 +50,7 @@ async function cacheTest(){
     const cache={match:async u=>entries.get(u)?.clone(),put:async(u,r)=>entries.set(u,r.clone())};
     const ctx=vm.createContext({Map,URL,Response,Promise,Number,console,
         self:{registration:{scope:'https://example.test/JTFAG/'},addEventListener:(t,f)=>{handlers[t]=f;},clients:{claim:async()=>{}}},
-        caches:{open:async()=>cache,keys:async()=>['jtfag-rank-icons-v1','jtfag-rank-icons-v2','jtfag-club-marks-v1','unrelated'],delete:async k=>removed.push(k)},
+        caches:{open:async()=>cache,keys:async()=>['jtfag-rank-icons-v1','jtfag-rank-icons-v2','jtfag-rank-icons-v3','jtfag-club-marks-v1','unrelated'],delete:async k=>removed.push(k)},
         fetch:async u=>{requests.push(u);return new Response('rank',{headers:{'content-type':'image/webp'}});}});
     vm.runInContext(source('sw.js'),ctx);
     const actual=JSON.parse(vm.runInContext('JSON.stringify(RANK_ICON_URLS)',ctx));
@@ -60,7 +60,7 @@ async function cacheTest(){
     await vm.runInContext('cachedRankIcon(RANK_ICON_URLS[0])',ctx);
     assert.equal(requests.length,1,'cached rank must avoid another network request');
     let activation;handlers.activate({waitUntil:p=>{activation=p;}});await activation;
-    assert.deepEqual(removed,['jtfag-rank-icons-v1']);
+    assert.deepEqual(removed,['jtfag-rank-icons-v1','jtfag-rank-icons-v2']);
     console.log('PASS: rank image download sharing, cache hits and old-cache cleanup');
 }
 cacheTest().catch(error=>{console.error(error);process.exitCode=1;});

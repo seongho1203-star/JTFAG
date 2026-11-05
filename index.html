@@ -97,7 +97,7 @@
             var g = JSON.parse(localStorage.getItem('jtfag_greet') || 'null');
             if (!n || !g || g.name !== n) return;
             // 이전 접속의 그림이 기기에 남아 있어도 새 등급 일러스트로 먼저 표시한다.
-            var rankPics = { '독수리': 'eagle', '매': 'falcon', '학': 'crane', '참새': 'sparrow' };
+            var rankPics = { '독수리': 'eagle', '매': 'falcon', '학': 'crane', '참새': 'sparrow-folded' };
             if (Object.prototype.hasOwnProperty.call(rankPics, g.rankName)) {
                 var currentPic = 'assets/ranks/v1/' + rankPics[g.rankName] + '.webp';
                 if (g.pic !== currentPic) {

@@ -26,7 +26,7 @@ const RANK_CONFIG = {
     0: { name: "독수리", icon: `<img class="jtfag-rank" data-rank="0" src="assets/ranks/v1/eagle.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: 0, class: "rank-eagle" },
     1: { name: "매", icon: `<img class="jtfag-rank" data-rank="1" src="assets/ranks/v1/falcon.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -40000, class: "rank-hawk" },
     2: { name: "학", icon: `<img class="jtfag-rank" data-rank="2" src="assets/ranks/v1/crane.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -60000, class: "rank-crane" },
-    3: { name: "참새", icon: `<img class="jtfag-rank" data-rank="3" src="assets/ranks/v1/sparrow.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
+    3: { name: "참새", icon: `<img class="jtfag-rank" data-rank="3" src="assets/ranks/v1/sparrow-folded.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
 };
 
 /* 계급벌금 — 11차부터 독수리 2만 · 매 3만 · 학 4만 · 참새 6만(합 15만)이다.

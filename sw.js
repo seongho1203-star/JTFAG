@@ -1,9 +1,9 @@
 // 라운드 알림 수신 + 등급 이미지·골프장 마크 캐시.
 // HTML·CSS·JS·정산 데이터는 캐시하지 않아 배포와 실시간 데이터가 바로 반영된다.
 const RANK_ICON_CACHE_PREFIX = 'jtfag-rank-icons-';
-const RANK_ICON_CACHE = RANK_ICON_CACHE_PREFIX + 'v2';  // 같은 주소의 그림을 교체하면 버전을 올린다.
+const RANK_ICON_CACHE = RANK_ICON_CACHE_PREFIX + 'v3';  // 같은 주소의 그림을 교체하면 버전을 올린다.
 const RANK_ICON_BASE = new URL('assets/ranks/v1/', self.registration.scope).href;
-const RANK_ICON_URLS = ['eagle.webp', 'falcon.webp', 'crane.webp', 'sparrow.webp'].map(file => RANK_ICON_BASE + file);
+const RANK_ICON_URLS = ['eagle.webp', 'falcon.webp', 'crane.webp', 'sparrow-folded.webp'].map(file => RANK_ICON_BASE + file);
 const rankIconRequests = new Map();
 const CLUB_MARK_CACHE_PREFIX = 'jtfag-club-marks-';
 const CLUB_MARK_CACHE = CLUB_MARK_CACHE_PREFIX + 'v1';

@@ -7,7 +7,7 @@ The four transparent WebP assets in `v1/` use the approved individual previews:
 | 0 | 독수리 | `eagle.webp` |
 | 1 | 매 | `falcon.webp` |
 | 2 | 학 | `crane.webp` |
-| 3 | 참새 | `sparrow.webp` |
+| 3 | 참새 | `sparrow-folded.webp` |
 
 The original dimensions and alpha channels are retained; only image encoding
 changes for efficient delivery. `RANK_CONFIG` in `api.js` is the shared source
