@@ -435,6 +435,7 @@ function loadEagleFonts() {
 }
 
 function celebrateEagleStreak(name, streak) {
+    if (typeof showEagleCoronation === 'function') return showEagleCoronation(name, eagleStreakRounds(name, streak), streak);
     if (typeof closeEagleFilm === 'function') closeEagleFilm(true);
     const existing = document.querySelector('.celebrate-overlay');
     if (existing) existing.remove();

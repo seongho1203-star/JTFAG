@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07100d">
+  <title>독수리 대관식 미리보기 · JTFAG</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Cinzel:wght@400;600;800&display=swap">
+  <style>
+    body.crown-preview { margin:0; min-height:100dvh; background:radial-gradient(ellipse at 50% 0,#173d2b,#07100d 65%); color:#f7edda; font-family:Arial,'Noto Sans KR',sans-serif; padding:36px 22px; box-sizing:border-box; }
+    .crown-preview main { width:min(100%,420px); margin:0 auto; }
+    .cp-brand { color:#d9bd80; letter-spacing:.3em; font:600 15px 'Cinzel',Georgia,serif; }
+    .cp-art { display:block; width:210px; max-width:65%; aspect-ratio:1; object-fit:contain; margin:26px auto 15px; filter:drop-shadow(0 0 25px #d5a54922); }
+    .crown-preview h1 { font-size:28px; letter-spacing:-.04em; margin:0 0 13px; }
+    .cp-intro { color:#b9c3b9; font-size:14px; line-height:1.8; margin-bottom:27px; }
+    .cp-name { display:block; color:#d8cba9; font-size:12px; margin-bottom:9px; }
+    .crown-preview input { width:100%; height:48px; padding:0 14px; box-sizing:border-box; color:#fff2d7; border:1px solid #ad925644; border-radius:10px; background:#08100ccc; font-size:16px; }
+    .cp-buttons { display:grid; gap:10px; margin-top:18px; }
+    .cp-buttons button { min-height:63px; width:100%; display:flex; align-items:center; justify-content:space-between; padding:13px 17px; border:1px solid #d4b57455; border-radius:13px; color:#f0d59d; background:linear-gradient(110deg,#b1944c1f,#b1944c08); cursor:pointer; text-align:left; }
+    .cp-buttons button:nth-child(2) { color:#ffbc8b; border-color:#ce8b5e55; background:linear-gradient(110deg,#ca7c3822,#ca7c3807); }
+    .cp-buttons button:nth-child(3) { color:#d6c1ff; border-color:#a385cf55; background:linear-gradient(110deg,#9b6edf25,#9b6edf09); }
+    .cp-buttons b { font-size:17px; } .cp-buttons span { font-size:12px; letter-spacing:.04em; }
+    .cp-note { color:#8c9a8e; font-size:11px; line-height:1.8; margin:18px 0 22px; }
+    .cp-home { color:#d1c398; font-size:12px; text-decoration:none; }
+    .crown-preview button:focus-visible, .crown-preview input:focus-visible { outline:2px solid #f4d99c; outline-offset:3px; }
+  </style>
+  <script>const EAGLE_HERO_URL='assets/ranks/v1/eagle.webp';</script>
+  <script defer src="eagle-coronation.js"></script>
+</head>
+<body class="crown-preview">
+  <main>
+    <div class="cp-brand">JTFAG</div>
+    <img class="cp-art" src="assets/ranks/v1/eagle.webp" alt="금빛 날개를 펼친 독수리">
+    <h1>독수리 대관식</h1>
+    <p class="cp-intro">날갯짓으로 시작하는 왕의 귀환.<br>연속 기록에 어울리는 대관식을 감상해 보세요.</p>
+    <label class="cp-name" for="cp-name">대관식에 표시할 이름</label>
+    <input id="cp-name" value="신성호" maxlength="12" autocomplete="off">
+    <div class="cp-buttons">
+      <button type="button" data-streak="3"><b>3연속 재생</b><span>명예의 전당 →</span></button>
+      <button type="button" data-streak="4"><b>4연속 재생</b><span>불패의 군림 →</span></button>
+      <button type="button" data-streak="5"><b>5연속 재생</b><span>JTFAG 전설 →</span></button>
+    </div>
+    <p class="cp-note">연출 확인용 예시 기록입니다. 재생 버튼을 누르면 음악과 함께 시작합니다. 기기에서 소리가 차단되면 대관식의 ‘소리 켜기’를 눌러 주세요.</p>
+    <a class="cp-home" href="./">JTFAG 앱으로 돌아가기 ↗</a>
+  </main>
+  <script>
+    document.querySelectorAll('[data-streak]').forEach(button=>button.addEventListener('click',()=>{
+      const streak=Number(button.dataset.streak);
+      const rounds=Array.from({length:streak},(_,i)=>({no:i+1,score:[79,78,76,75,74][i]}));
+      showEagleCoronation(document.getElementById('cp-name').value.trim()||'신성호',rounds,streak);
+    }));
+  </script>
+</body>
+</html>
