@@ -19,6 +19,9 @@ assert.equal(Object.keys(trophies).length, 10);
 const butterflyKeys = ['firstBirdie','multiBirdie','tripleBirdie','backToBack','birdies:1','birdies:2','birdies:3','birdie1'];
 const butterflyAtlas = atlases.findIndex(a=>a.file==='assets/achievements/v2/birdie-butterflies.webp');
 assert.ok(butterflyAtlas>=0,'The corrected butterfly artwork has a distinct asset URL');
+const butterflyTaxAtlas=atlases.findIndex(a=>a.file==='assets/achievements/v2/birdie-tax-butterfly.webp');
+assert.ok(butterflyTaxAtlas>=0);
+assert.equal(badges.birdieTax[0],butterflyTaxAtlas,'The humour birdie badge also uses a butterfly');
 for (const [id,rect] of Object.entries(badges)) {
     assert.equal(rect[0]===butterflyAtlas,butterflyKeys.includes(id),id+' uses its intended artwork');
 }
@@ -47,6 +50,7 @@ for(const id of ['firstBirdie','multiBirdie','tripleBirdie','backToBack','birdie
     assert.match(run(`achievementArt('badge','${id}',128)`),/v2\/birdie-butterflies\.webp/);
 }
 assert.equal(run("achievementArt('badge','missing')"), '');
+assert.match(run("achievementArt('badge','birdieTax',128)"),/v2\/birdie-tax-butterfly\.webp/);
 for (const id of Object.keys(trophies)) assert.match(run(`awSvg('${id}', 92)`), /data-achievement-kind="trophy"/);
 assert.match(run('AW_CUP'), /data-achievement-id="grand"/);
 assert.match(run('AW_CROWN'), /data-achievement-id="grand"/);
@@ -94,6 +98,11 @@ async function checkCache() {
     failNetwork=true;
     assert.equal(await (await cached(butterflyUrl)).text(),'image');
     assert.equal(requests.length,beforeHit,'All corrected birdie badges reuse the cached asset offline');
+    failNetwork=false;
+    let taxImage;
+    handlers.fetch({request:{method:'GET',url:butterflyUrl.replace('birdie-butterflies','birdie-tax-butterfly'),mode:'cors'},respondWith:p=>{taxImage=p;}});
+    assert.ok(taxImage,'The butterfly humour badge is also cached');
+    assert.equal(await (await taxImage).text(),'image');
     let intercepted=false;
     handlers.fetch({request:{method:'GET',url:'https://example.test/JTFAG/badges.js',mode:'cors'},respondWith:()=>{intercepted=true;}});
     assert.equal(intercepted,false,'Application code is never cached by the image handler');

@@ -25,7 +25,8 @@ const ACHIEVEMENT_ART_CACHE_PREFIX = 'jtfag-achievement-art-';
 const ACHIEVEMENT_ART_CACHE = ACHIEVEMENT_ART_CACHE_PREFIX + 'v1';
 const ACHIEVEMENT_ART_URLS = ['records', 'ranks', 'titles', 'missions', 'humour', 'trophies']
     .map(id => new URL(`assets/achievements/v1/${id}.webp`, self.registration.scope).href)
-    .concat(new URL('assets/achievements/v2/birdie-butterflies.webp', self.registration.scope).href);
+    .concat(['birdie-butterflies.webp','birdie-tax-butterfly.webp']
+        .map(file=>new URL(`assets/achievements/v2/${file}`,self.registration.scope).href));
 const achievementArtRequests = new Map();
 
 async function cachedAchievementArt(url) {

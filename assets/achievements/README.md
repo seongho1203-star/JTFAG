@@ -24,14 +24,17 @@ replacing an existing URL; a new URL can reuse the existing image cache.
 The user uses a butterfly as the JTFAG birdie symbol. The static transparent
 `v2/birdie-butterflies.webp` atlas replaces eight bird motifs: first birdie,
 multi birdie, triple birdie, back-to-back, the 3/10/30 collector levels, and the
-birdie season title. Other badges and trophies retain their original artwork.
+birdie season title.
 The collection, detail view, level ladder and unlock popup share this mapping.
+The ninth correction, the humour badge "버디값", uses the matching transparent
+`v2/birdie-tax-butterfly.webp` image while retaining its playful style and -1/+2 invoice.
+Other badges and trophies retain their original artwork.
 
 Each replacement was edited with the built-in ImageGen tool using the original
 medal as reference: preserve the metal, enamel, laurel, jewels, tier and numbers;
 replace the bird with a recognizable emerald/gold butterfly with four wings
 and two antennae; render a single full badge on a transparent background with
-no caption. The final images are packed into one WebP for shared download and
+no caption. The eight standard images are packed into one WebP for shared download and
 decoding. The new URL is added to the existing image cache so unchanged `v1`
 assets remain reusable. There are still 61 badge illustrations and 10 trophies;
 achievement rules and saved records are unchanged.
