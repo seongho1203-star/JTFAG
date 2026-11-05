@@ -2512,3 +2512,17 @@ button.fl-amt.tap { justify-self: end; }
 .tc-ico { width: 92px; height: 92px; align-items: center; justify-content: center; }
 .tc-cell.no .tc-ico .jtfag-art { filter: grayscale(1); opacity: 0.48; }
 .aw-emblem.illustrated { width: 112px; height: 112px; border: 0; border-radius: 0; background: none; box-shadow: none; }
+
+/* 승인된 독수리·매·학·참새 등급 일러스트 — 투명한 날개와 월계관을 자르지 않는다. */
+img.jtfag-rank { aspect-ratio: 1; object-fit: contain; object-position: center; border-radius: 0; flex-shrink: 0; }
+.summary-item .sum-rank .rank-badge img.jtfag-rank { width: clamp(42px, 13vw, 56px) !important; height: clamp(42px, 13vw, 56px) !important; padding: 0; border-radius: 0; background: transparent !important; box-shadow: none !important; }
+.bdg-avatar[class*="rank-"] { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+.bdg-avatar img.jtfag-rank { width: 52px; height: 52px; }
+.stat-label img.jtfag-rank { width: 20px; height: 20px !important; margin-right: 3px; }
+.rc-row { grid-template-columns: 26px 4.3em minmax(0, 1fr) auto; gap: 7px; }
+.rc-no.illustrated { width: 26px; height: 28px; border-radius: 0; background: transparent; position: relative; display: block; }
+.rc-no.illustrated img.jtfag-rank { width: 26px; height: 26px !important; display: block; }
+.rc-rank-number { position: absolute; right: -1px; bottom: -1px; min-width: 10px; height: 10px; line-height: 10px; padding: 0 1px; border-radius: 3px; background: #fff; border: 1px solid #d8dce3; color: #334155; font-size: 7px; text-align: center; }
+.g3-disc img { object-fit: contain; object-position: center; }
+
+.g3-disc { border-radius: 0; overflow: visible; background: transparent; box-shadow: none; }

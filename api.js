@@ -21,12 +21,12 @@ let isMoneyUnlocked = false;
 
 const golfers = ["이관교", "김지명", "신성호", "박승수"];
 
-// 🔥 독수리 이미지 최신 버전(IMG_8343)으로 교체 완료 🔥
+// 등급 이미지는 승인된 독수리·매·학·참새 투명 일러스트를 공통으로 사용한다.
 const RANK_CONFIG = {
-    0: { name: "독수리", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8343.png" style="height: 1.1em; vertical-align: middle;">`, penalty: 0, class: "rank-eagle" },
-    1: { name: "매", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8331.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -40000, class: "rank-hawk" },
-    2: { name: "학", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8333.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -60000, class: "rank-crane" },
-    3: { name: "참새", icon: `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8335.png" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
+    0: { name: "독수리", icon: `<img class="jtfag-rank" data-rank="0" src="assets/ranks/v1/eagle.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: 0, class: "rank-eagle" },
+    1: { name: "매", icon: `<img class="jtfag-rank" data-rank="1" src="assets/ranks/v1/falcon.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -40000, class: "rank-hawk" },
+    2: { name: "학", icon: `<img class="jtfag-rank" data-rank="2" src="assets/ranks/v1/crane.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -60000, class: "rank-crane" },
+    3: { name: "참새", icon: `<img class="jtfag-rank" data-rank="3" src="assets/ranks/v1/sparrow.webp" alt="" style="height: 1.1em; vertical-align: middle;">`, penalty: -100000, class: "rank-sparrow" }
 };
 
 /* 계급벌금 — 11차부터 독수리 2만 · 매 3만 · 학 4만 · 참새 6만(합 15만)이다.
@@ -52,7 +52,7 @@ const RAVE_PAY_PER_STROKE = 10000;
 
    너무 큰 파일은 피할 것. 화면을 꽉 채운 채 매 프레임 그려지므로,
    가로 600px 안쪽 · 1~2MB 안쪽이면 안드로이드에서도 무리가 없다. */
-const EAGLE_HERO_URL = "https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8606.gif";
+const EAGLE_HERO_URL = "assets/ranks/v1/eagle.webp";
 
 // 전국 골프장 좌표는 courses.js(GOLF_COURSES)에 있다 — OSM에서 받아 워크플로가 만든다.
 // 아래는 예전부터 쓰던 짧은 이름들이다. 옛 일정 문구("… 푸른솔")에도 날씨가 뜨도록 남겨 둔다.

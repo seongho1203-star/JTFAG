@@ -220,7 +220,7 @@ function roundCardHtml(r, me) {
             }
             if (useNet && ni) small = `<small><em class="${ni.net <= 0 ? 'ok' : 'miss'}">${sign(ni.net)}</em></small>`;
         }
-        const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no" style="background:${RANK_CIRCLE[x.rank]}" title="${RANK_CONFIG[x.rank].name}">${x.rank + 1}</span>`;
+        const no = x.rank === null ? '<span class="rc-no off"></span>' : `<span class="rc-no illustrated" title="${RANK_CONFIG[x.rank].name}" aria-label="${RANK_CONFIG[x.rank].name} ${x.rank + 1}위">${RANK_CONFIG[x.rank].icon}<b class="rc-rank-number">${x.rank + 1}</b></span>`;
         const val = (appData.scores && appData.scores[g] && appData.scores[g][r] !== undefined) ? appData.scores[g][r] : '';
         const score = editable
             ? `<input type="text" id="score_input_${g}_${r}" class="rc-input" inputmode="numeric" pattern="[0-9]*" value="${escapeHtml(String(val))}" placeholder="타수" onfocus="this.select()" onchange="updateScore('${g}', ${r}, this.value)">`
@@ -828,4 +828,5 @@ async function removePushSub(idx) {
    커밋되고, 배포된 뒤 접속하면 표의 타수가 저절로 채워진다.
    payload.scoreRequests 한 건 = {id, round, url, time, by, status, note}
    round는 차수(1부터), status는 대기 / 완료 / 실패. */
+
 

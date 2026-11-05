@@ -135,7 +135,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
     let badges = [];
     const ranks = golferRankHistory[g] || [];
     
-    const imgE = `<img src="https://xhulylksiexhtifyrokp.supabase.co/storage/v1/object/public/rank-icon/IMG_8343.png" style="height: 1.1em; vertical-align: middle;">`;
+    const imgE = RANK_CONFIG[0].icon;
 
     const myStats = (typeof CUMULATIVE_STATS !== 'undefined') ? CUMULATIVE_STATS : {
         "이관교": { holeInOne: 0, eagle: 0, birdie: 0, par: 0, doublePar: 0 },
@@ -832,3 +832,4 @@ function roundsByCourse() {
     }
     return [...map.values()];
 }
+
