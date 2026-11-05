@@ -209,7 +209,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "올해 라운드별 스코어 기복이 가장 큼" });
     }
     if (golferRivalMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "올해 1:1 매치에서 가장 많은 무승부를 기록함" });
+        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "올해 1:1 매치에서 승수와 패수 차이가 가장 적음" });
     }
 
     if (myStats[g].holeInOne > 0) {
@@ -364,8 +364,8 @@ function processAllRoundSettlements() {
     golferDowntrendMap = {};
     golferFluctuationMap = {};
     golferRivalMap = {}; 
+    golferRivalRecordMap = {};
 
-    const globalTies = {};
     // 불사조 — 직전 차수에 나보다 높은 계급이던 사람을 그 차수 1:1에서 이긴 횟수(하극상).
     const upsetWins = {};
 
@@ -379,7 +379,7 @@ function processAllRoundSettlements() {
         golferDowntrendMap[g] = false;
         golferFluctuationMap[g] = false;
         golferRivalMap[g] = false;
-        globalTies[g] = 0;
+        golferRivalRecordMap[g] = { wins: 0, losses: 0 };
         upsetWins[g] = 0;
     });
 
@@ -524,7 +524,8 @@ function processAllRoundSettlements() {
         }
 
         if (sm[r] === SEASON) golfers.forEach(g => {
-            globalTies[g] += matchResults[g].ties;
+            golferRivalRecordMap[g].wins += matchResults[g].wins;
+            golferRivalRecordMap[g].losses += matchResults[g].losses;
         });
 
         // 11차부터는 내 목표 타수와의 싸움이다 — 오늘 타수 − 내 목표 타수(보정타수)가 낮은 순서,
@@ -565,15 +566,20 @@ function processAllRoundSettlements() {
     if (maxUpset > 0) golfers.forEach(g => { if (upsetWins[g] === maxUpset) golferPhoenixWins[g] = true; });
     golferUpsetWins = upsetWins;
 
-    let maxTies = 0;
-    golfers.forEach(g => {
-        if (globalTies[g] > maxTies) maxTies = globalTies[g];
+    // 영원의 라이벌 — 실제 승·패 기록이 있는 사람 중 승수와 패수 차이가 가장 작은 사람(동률 공동 보유).
+    // 0승 0패는 경기 기록이 없는 경우와 같으므로 후보에서 뺀다.
+    const rivalCandidates = golfers.filter(g => {
+        const record = golferRivalRecordMap[g];
+        return record.wins + record.losses > 0;
     });
-    if (maxTies > 0) {
-        golfers.forEach(g => {
-            if (globalTies[g] === maxTies) {
-                golferRivalMap[g] = true;
-            }
+    if (rivalCandidates.length) {
+        const closestGap = Math.min(...rivalCandidates.map(g => {
+            const record = golferRivalRecordMap[g];
+            return Math.abs(record.wins - record.losses);
+        }));
+        rivalCandidates.forEach(g => {
+            const record = golferRivalRecordMap[g];
+            if (Math.abs(record.wins - record.losses) === closestGap) golferRivalMap[g] = true;
         });
     }
 

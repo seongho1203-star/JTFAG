@@ -498,6 +498,7 @@ let golferUptrendMap = {};
 let golferDowntrendMap = {};   
 let golferFluctuationMap = {}; 
 let golferRivalMap = {}; 
+let golferRivalRecordMap = {}; // 영원의 라이벌 — 이번 시즌 1:1 매치 승·패 합계
 let golferMaxBirdie = [];
 let golferMaxPar = [];
 let golferMaxDoublePar = [];
