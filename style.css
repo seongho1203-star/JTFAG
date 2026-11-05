@@ -2527,35 +2527,36 @@ img.jtfag-rank { aspect-ratio: 1; object-fit: contain; object-position: center; 
 
 .g3-disc { border-radius: 0; overflow: visible; background: transparent; box-shadow: none; }
 
-/* 통합 정산 요약의 독수리 전용 오로라. 그림 뒤에서만 흐르고 16초 후 정지한다. */
+/* 사용자 요청: 독수리 뒤의 금빛 오로라는 계속 흐른다. 작은 두 레이어의 transform/opacity만 움직인다. */
 .summary-item .sum-rank .rank-eagle { --summary-eagle-size:clamp(42px,13vw,56px); position:relative; isolation:isolate; }
 .summary-item .sum-rank .rank-eagle::before,
 .summary-item .sum-rank .rank-eagle::after {
-    content:''; position:absolute; z-index:0; top:-5px; left:50%;
-    width:calc(var(--summary-eagle-size) + 20px); height:calc(var(--summary-eagle-size) + 10px);
+    content:''; position:absolute; z-index:0; top:-8px; left:50%;
+    width:calc(var(--summary-eagle-size) + 24px); height:calc(var(--summary-eagle-size) + 14px);
     pointer-events:none; border-radius:46% 58% 48% 54% / 58% 45% 60% 46%;
-    -webkit-mask-image:radial-gradient(ellipse at 50% 48%,#000 20%,transparent 72%);
-    mask-image:radial-gradient(ellipse at 50% 48%,#000 20%,transparent 72%);
+    -webkit-mask-image:radial-gradient(ellipse at 50% 48%,#000 24%,transparent 76%);
+    mask-image:radial-gradient(ellipse at 50% 48%,#000 24%,transparent 76%);
 }
 .summary-item .sum-rank .rank-eagle::before {
-    background:radial-gradient(ellipse at 23% 35%,#46dbbfa6,transparent 60%),radial-gradient(ellipse at 78% 28%,#a48ae678,transparent 58%),radial-gradient(ellipse at 50% 78%,#f2ce848c,transparent 62%),radial-gradient(ellipse at 50% 45%,#64d9cc70,transparent 72%);
-    opacity:.84; transform:translateX(-50%) rotate(-8deg) scale(1);
-    animation:summary-eagle-aurora-field 8s ease-in-out 2 alternate both;
+    background:radial-gradient(ellipse at 22% 36%,#e4b13bb8,transparent 59%),radial-gradient(ellipse at 76% 28%,#ffdc82a8,transparent 59%),radial-gradient(ellipse at 48% 78%,#d9a33885,transparent 61%),radial-gradient(ellipse at 50% 45%,#f8d46e80,transparent 73%);
+    opacity:.88; transform:translateX(-50%) rotate(-12deg) scale(1);
+    animation:summary-eagle-aurora-field 7.2s ease-in-out infinite both;
 }
 .summary-item .sum-rank .rank-eagle::after {
-    background:radial-gradient(circle at 23% 24%,#fff4c9 0 1px,transparent 1.8px),radial-gradient(circle at 77% 34%,#fff 0 1px,transparent 1.8px),linear-gradient(112deg,transparent 12%,#77e5cb8c 25%,transparent 34%,#8ae6cf73 43%,#baa0ef70 54%,transparent 66%,#efd69a80 77%,transparent 87%);
-    opacity:.7; transform:translateX(-50%) skewX(-12deg) rotate(-14deg) scale(.95,1.04);
-    animation:summary-eagle-aurora-curtain 8s ease-in-out 2 alternate both;
+    background:radial-gradient(circle at 19% 26%,#fff5c8 0 1px,transparent 1.9px),radial-gradient(circle at 79% 31%,#fff8df 0 1px,transparent 1.9px),linear-gradient(110deg,transparent 12%,#d5a632a6 23%,#fff0aee0 28%,#e3b33373 33%,transparent 41%,#eabf51a6 46%,#fff7cec7 50%,transparent 58%,#d6a43280 65%,#ffeabbcc 70%,transparent 82%);
+    opacity:.85; transform:translateX(-52%) translateY(2px) skewX(-18deg) rotate(-12deg) scale(.97,1.04);
+    animation:summary-eagle-aurora-curtain 4.8s ease-in-out -1.6s infinite both;
 }
 .summary-item .sum-rank .rank-eagle > .jtfag-rank,
 .summary-item .sum-rank .rank-eagle > .rank-name { position:relative; z-index:1; }
 @keyframes summary-eagle-aurora-field {
-    0%,100% { opacity:.84; transform:translateX(-50%) rotate(-8deg) scale(1); }
-    50% { opacity:1; transform:translateX(-46%) rotate(10deg) scale(1.08,.93); }
+    0%,100% { opacity:.88; transform:translateX(-50%) rotate(-12deg) scale(1); }
+    50% { opacity:1; transform:translateX(-47%) rotate(12deg) scale(1.08,.94); }
 }
 @keyframes summary-eagle-aurora-curtain {
-    0%,100% { opacity:.7; transform:translateX(-50%) skewX(-12deg) rotate(-14deg) scale(.95,1.04); }
-    50% { opacity:.94; transform:translateX(-55%) skewX(9deg) rotate(5deg) scale(1.06,.94); }
+    0%,100% { opacity:.85; transform:translateX(-52%) translateY(2px) skewX(-18deg) rotate(-12deg) scale(.97,1.04); }
+    35% { opacity:1; transform:translateX(-44%) translateY(-4px) skewX(12deg) rotate(6deg) scale(1.03,.97); }
+    70% { opacity:.78; transform:translateX(-57%) translateY(-1px) skewX(-6deg) rotate(-3deg) scale(.96,1.07); }
 }
 @media (prefers-reduced-motion:reduce) {
     .summary-item .sum-rank .rank-eagle::before,
