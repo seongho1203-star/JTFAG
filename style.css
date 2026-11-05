@@ -2527,40 +2527,32 @@ img.jtfag-rank { aspect-ratio: 1; object-fit: contain; object-position: center; 
 
 .g3-disc { border-radius: 0; overflow: visible; background: transparent; box-shadow: none; }
 
-/* 사용자 요청: 독수리 뒤의 금빛 오로라는 계속 흐른다. 작은 두 레이어의 transform/opacity만 움직인다. */
+/* 통합 정산 요약: 전설 아이템처럼 독수리에서 금빛 광선·기운·입자가 계속 피어오른다. */
 .summary-item .sum-rank .rank-eagle { --summary-eagle-size:clamp(42px,13vw,56px); position:relative; isolation:isolate; }
-.summary-item .sum-rank .rank-eagle::before,
-.summary-item .sum-rank .rank-eagle::after {
-    content:''; position:absolute; z-index:0; top:-8px; left:50%;
-    width:calc(var(--summary-eagle-size) + 24px); height:calc(var(--summary-eagle-size) + 14px);
-    pointer-events:none; border-radius:46% 58% 48% 54% / 58% 45% 60% 46%;
-    -webkit-mask-image:radial-gradient(ellipse at 50% 48%,#000 24%,transparent 76%);
-    mask-image:radial-gradient(ellipse at 50% 48%,#000 24%,transparent 76%);
-}
-.summary-item .sum-rank .rank-eagle::before {
-    background:radial-gradient(ellipse at 22% 36%,#e4b13bb8,transparent 59%),radial-gradient(ellipse at 76% 28%,#ffdc82a8,transparent 59%),radial-gradient(ellipse at 48% 78%,#d9a33885,transparent 61%),radial-gradient(ellipse at 50% 45%,#f8d46e80,transparent 73%);
-    opacity:.88; transform:translateX(-50%) rotate(-12deg) scale(1);
-    animation:summary-eagle-aurora-field 7.2s ease-in-out infinite both;
-}
-.summary-item .sum-rank .rank-eagle::after {
-    background:radial-gradient(circle at 19% 26%,#fff5c8 0 1px,transparent 1.9px),radial-gradient(circle at 79% 31%,#fff8df 0 1px,transparent 1.9px),linear-gradient(110deg,transparent 12%,#d5a632a6 23%,#fff0aee0 28%,#e3b33373 33%,transparent 41%,#eabf51a6 46%,#fff7cec7 50%,transparent 58%,#d6a43280 65%,#ffeabbcc 70%,transparent 82%);
-    opacity:.85; transform:translateX(-52%) translateY(2px) skewX(-18deg) rotate(-12deg) scale(.97,1.04);
-    animation:summary-eagle-aurora-curtain 4.8s ease-in-out -1.6s infinite both;
-}
-.summary-item .sum-rank .rank-eagle > .jtfag-rank,
+.summary-eagle-loot { width:var(--summary-eagle-size); height:var(--summary-eagle-size); position:relative; display:inline-flex; justify-content:center; align-items:center; isolation:isolate; line-height:0; }
+.summary-eagle-loot > img.jtfag-rank { position:relative; z-index:1; }
+.summary-loot-fx { position:absolute; z-index:0; left:-25%; top:-12%; width:150%; height:125%; overflow:hidden; pointer-events:none; -webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent); mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent); }
+.summary-loot-fx * { pointer-events:none; }
 .summary-item .sum-rank .rank-eagle > .rank-name { position:relative; z-index:1; }
-@keyframes summary-eagle-aurora-field {
-    0%,100% { opacity:.88; transform:translateX(-50%) rotate(-12deg) scale(1); }
-    50% { opacity:1; transform:translateX(-47%) rotate(12deg) scale(1.08,.94); }
-}
-@keyframes summary-eagle-aurora-curtain {
-    0%,100% { opacity:.85; transform:translateX(-52%) translateY(2px) skewX(-18deg) rotate(-12deg) scale(.97,1.04); }
-    35% { opacity:1; transform:translateX(-44%) translateY(-4px) skewX(12deg) rotate(6deg) scale(1.03,.97); }
-    70% { opacity:.78; transform:translateX(-57%) translateY(-1px) skewX(-6deg) rotate(-3deg) scale(.96,1.07); }
-}
+.summary-loot-glow, .summary-loot-pool, .summary-loot-rays { transform-box:view-box; transform-origin:50% 87%; }
+.summary-loot-glow { animation:summary-loot-glow 3.6s ease-in-out infinite; }
+.summary-loot-pool { animation:summary-loot-glow 2.4s ease-in-out -.8s infinite; }
+.summary-loot-rays { animation:summary-loot-rays 3.2s ease-in-out -.7s infinite; }
+.summary-loot-plume { transform-box:fill-box; transform-origin:50% 100%; animation:summary-loot-plume 2.6s ease-out -1.3s infinite both; }
+.summary-loot-plume.right { animation-duration:3.1s; animation-delay:-.6s; }
+.summary-loot-streak, .summary-loot-spark { transform-box:fill-box; transform-origin:center; animation:summary-loot-streak var(--loot-time) linear var(--loot-delay) infinite both; }
+.summary-loot-spark { animation-name:summary-loot-spark; }
+@keyframes summary-loot-glow { 0%,100% { opacity:.55; transform:scale(.88,1); } 50% { opacity:.95; transform:scale(1.06,.95); } }
+@keyframes summary-loot-rays { 0%,100% { opacity:.45; transform:scale(.84,.8) rotate(-4deg); } 50% { opacity:1; transform:scale(1.06,1.04) rotate(4deg); } }
+@keyframes summary-loot-plume { 0% { opacity:0; transform:translateY(8px) scale(.86,.74) rotate(-5deg); } 18% { opacity:1; } 65% { opacity:.85; } 100% { opacity:0; transform:translateY(-12px) scale(1.06,1.08) rotate(6deg); } }
+@keyframes summary-loot-streak { 0% { opacity:0; transform:translateY(12px) scaleY(.55); } 16% { opacity:1; } 72% { opacity:.9; } 100% { opacity:0; transform:translateY(-54px) scaleY(1.1); } }
+@keyframes summary-loot-spark { 0% { opacity:0; transform:translate(0,9px) scale(.3); } 20% { opacity:1; transform:translate(0,-1px) scale(1); } 65% { opacity:.95; transform:translate(var(--loot-dx),-20px) scale(.85); } 100% { opacity:0; transform:translate(var(--loot-dx),-45px) scale(.15); } }
 @media (prefers-reduced-motion:reduce) {
-    .summary-item .sum-rank .rank-eagle::before,
-    .summary-item .sum-rank .rank-eagle::after { animation:none; }
+    .summary-loot-fx * { animation:none !important; }
+    .summary-loot-glow { opacity:.65; }
+    .summary-loot-rays { opacity:.4; }
+    .summary-loot-plume { opacity:.65; }
+    .summary-loot-streak, .summary-loot-spark { opacity:.7; }
 }
 
 /* 독수리 대관식 v2. 모든 모션은 유한한 transform/opacity 애니메이션이다. */

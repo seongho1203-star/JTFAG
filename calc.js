@@ -10,6 +10,29 @@ function formatFinalBalance(v) {
     return (v > 0 ? "+" : "") + (v / 10000).toFixed(1) + "만";
 }
 
+// 통합 정산 요약 전용. 원본 등급 그림을 유지하고 독수리에만 전설 아이템의 발광 효과를 붙인다.
+function summaryRankArt(rankInfo, index = 0) {
+    if (rankInfo.class !== 'rank-eagle') return rankInfo.icon;
+    const id = `summary-loot-${Math.max(0, Math.floor(Number(index) || 0))}`;
+    const sparks = [[17,85,2.1,-.2,-5],[100,80,2.7,-1.4,6],[27,70,2.5,-1.1,-7],[91,63,2.2,-.7,5],[43,75,2.8,-2.1,-4],[76,81,2.4,-1.8,7],[59,49,3.1,-1.6,2]];
+    return `<span class="summary-eagle-loot"><svg class="summary-loot-fx" viewBox="0 0 120 100" aria-hidden="true" focusable="false">
+        <defs>
+            <radialGradient id="${id}-glow"><stop stop-color="#fff5bc" stop-opacity=".95"/><stop offset=".44" stop-color="#f1c34f" stop-opacity=".6"/><stop offset="1" stop-color="#dc990b" stop-opacity="0"/></radialGradient>
+            <radialGradient id="${id}-pool"><stop stop-color="#fff6cb"/><stop offset=".38" stop-color="#f4c74c" stop-opacity=".85"/><stop offset="1" stop-color="#d9a322" stop-opacity="0"/></radialGradient>
+            <linearGradient id="${id}-beam" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#e8ad25" stop-opacity="0"/><stop offset=".28" stop-color="#ffe699" stop-opacity=".92"/><stop offset=".58" stop-color="#e5ab24" stop-opacity=".55"/><stop offset="1" stop-color="#ffe9ad" stop-opacity="0"/></linearGradient>
+            <linearGradient id="${id}-flame" x1="0" y1="1" x2=".2" y2="0"><stop stop-color="#fff4bd" stop-opacity="0"/><stop offset=".25" stop-color="#e2a21d" stop-opacity=".95"/><stop offset=".58" stop-color="#ffd76a"/><stop offset="1" stop-color="#fff3bb" stop-opacity=".08"/></linearGradient>
+            <linearGradient id="${id}-streak" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#e5ad30" stop-opacity="0"/><stop offset=".65" stop-color="#e5ad30" stop-opacity=".75"/><stop offset="1" stop-color="#fff3b5"/></linearGradient>
+        </defs>
+        <ellipse class="summary-loot-glow" cx="60" cy="58" rx="49" ry="40" fill="url(#${id}-glow)"/>
+        <ellipse class="summary-loot-pool" cx="60" cy="88" rx="46" ry="9" fill="url(#${id}-pool)"/>
+        <g class="summary-loot-rays" fill="url(#${id}-beam)"><path d="M53 90 5 8 43 72Z"/><path d="M56 88 30 0 51 64Z"/><path d="M59 88 58 0 64 71Z"/><path d="M65 90 113 4 77 73Z"/><path d="M64 89 89 0 70 66Z"/></g>
+        <g class="summary-loot-plume left"><path d="M34 92C9 79 4 53 27 20C13 48 30 49 23 66C25 77 30 84 34 92Z" fill="url(#${id}-flame)"/><path d="M32 87C15 70 12 48 26 26" fill="none" stroke="#ffe7a0" stroke-width="1.3"/></g>
+        <g class="summary-loot-plume right"><path d="M84 93C110 80 115 49 95 15C106 45 89 49 97 66C96 78 89 86 84 93Z" fill="url(#${id}-flame)"/><path d="M87 88C105 67 107 44 96 23" fill="none" stroke="#ffe9a4" stroke-width="1.2"/></g>
+        ${[[21,87,1.9,-.4],[99,89,2.3,-1.5],[38,90,2.6,-1.8],[82,91,2.1,-.8]].map(([x,y,t,d])=>`<g transform="translate(${x} ${y})"><rect class="summary-loot-streak" x="-.7" y="-20" width="1.4" height="22" rx=".7" fill="url(#${id}-streak)" style="--loot-time:${t}s;--loot-delay:${d}s"/></g>`).join('')}
+        ${sparks.map(([x,y,t,d,dx])=>`<g transform="translate(${x} ${y})"><path class="summary-loot-spark" d="M0-3 .8-.8 3 0 .8.8 0 3-.8.8-3 0-.8-.8Z" fill="#e9b12a" stroke="#fff0a2" stroke-width=".6" style="--loot-time:${t}s;--loot-delay:${d}s;--loot-dx:${dx}px"/></g>`).join('')}
+    </svg>${rankInfo.icon}</span>`;
+}
+
 // 홈의 합산 금액은 기본으로 접혀 있고(●●●●), 누르면 네 칸이 함께 펼쳐진다(사용자 요청). 앱을 열 때마다 접힌 채로 시작한다.
 let summaryTotalsShown = false;
 const SUMMARY_MASK = '●●●●';
@@ -676,7 +699,7 @@ function processAllRoundSettlements() {
             summaryGrid.innerHTML += `
                 <div class="summary-item">
                     <div class="name" role="button" tabindex="0" aria-label="${g} 명예의 전당 열기" onclick="openPersonalReport('${g}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPersonalReport('${g}');}">${g}</div>
-                    <div class="sum-rank" onclick="openPersonalReport('${g}')"><span class="rank-badge ${currentRankInfo.class}">${currentRankInfo.icon}<span class="rank-name">${currentRankInfo.name}</span></span></div>
+                    <div class="sum-rank" onclick="openPersonalReport('${g}')"><span class="rank-badge ${currentRankInfo.class}">${summaryRankArt(currentRankInfo, golfers.indexOf(g))}<span class="rank-name">${currentRankInfo.name}</span></span></div>
                     <div class="sum-details">
                         <div class="detail-line"><span class="label">계급</span> <span class="val">${rankProfitText}</span></div>
                         <div class="detail-line"><span class="label">타수</span> <span class="val">${strokeProfitText}</span></div>
