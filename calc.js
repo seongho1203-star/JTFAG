@@ -364,7 +364,6 @@ function processAllRoundSettlements() {
     golferDowntrendMap = {};
     golferFluctuationMap = {};
     golferRivalMap = {}; 
-    golferRivalRecordMap = {};
 
     // 불사조 — 직전 차수에 나보다 높은 계급이던 사람을 그 차수 1:1에서 이긴 횟수(하극상).
     const upsetWins = {};
@@ -379,7 +378,6 @@ function processAllRoundSettlements() {
         golferDowntrendMap[g] = false;
         golferFluctuationMap[g] = false;
         golferRivalMap[g] = false;
-        golferRivalRecordMap[g] = { wins: 0, losses: 0, ties: 0 };
         upsetWins[g] = 0;
     });
 
@@ -522,12 +520,6 @@ function processAllRoundSettlements() {
                 matchResults[g2].totalDiff += (g1Adjusted - g2Adjusted);
             }
         }
-
-        if (sm[r] === SEASON) golfers.forEach(g => {
-            golferRivalRecordMap[g].wins += matchResults[g].wins;
-            golferRivalRecordMap[g].losses += matchResults[g].losses;
-            golferRivalRecordMap[g].ties += matchResults[g].ties;
-        });
 
         // 11차부터는 내 목표 타수와의 싸움이다 — 오늘 타수 − 내 목표 타수(보정타수)가 낮은 순서,
         // 같으면 목표 타수가 낮은(잘 치는) 사람이 앞이다. 위 1:1 맞대결의 승수 순위와 결과가 같지만
