@@ -210,7 +210,7 @@ const BADGE_GROUPS = [
         { id: 'uptrend', kind: 'title', icon: 'up', name: '상승세', desc: '최근 경기 타수가 계속 줄어드는 중', holders: () => golfers.filter(g => golferUptrendMap[g]) },
         { id: 'rebound', kind: 'title', icon: 'rebound', name: '극적 반전', desc: '이번 차수에 직전 차수보다 타수를 가장 많이 줄임', holders: () => golfers.filter(g => golferReboundMap[g]),
           metric: g => { const d = golferReboundDiff && golferReboundDiff[g]; return d === undefined ? '-' : (d > 0 ? `${d}타 줄임` : (d < 0 ? `${-d}타 늘림` : '변동 없음')); } },
-        { id: 'rival', kind: 'title', icon: 'swords', name: '영원의 라이벌', desc: '올해 1:1 매치에서 승수와 패수 차이가 가장 적은 사람', holders: () => golfers.filter(g => golferRivalMap[g]),
+        { id: 'rival', kind: 'title', icon: 'swords', name: '영원의 라이벌', desc: '올해 1:1 전적이 서로 가장 박빙인 사람끼리', holders: () => golfers.filter(g => golferRivalMap[g]),
           metric: g => {
               const r = (golferRivalRecordMap && golferRivalRecordMap[g]) || { wins: 0, losses: 0, ties: 0 };
               const games = r.wins + r.losses + r.ties;

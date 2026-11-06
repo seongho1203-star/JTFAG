@@ -209,7 +209,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "올해 라운드별 스코어 기복이 가장 큼" });
     }
     if (golferRivalMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "올해 1:1 매치에서 승수와 패수 차이가 가장 적음" });
+        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "올해 1:1 전적이 서로 가장 박빙인 라이벌" });
     }
 
     if (myStats[g].holeInOne > 0) {
@@ -567,20 +567,26 @@ function processAllRoundSettlements() {
     if (maxUpset > 0) golfers.forEach(g => { if (upsetWins[g] === maxUpset) golferPhoenixWins[g] = true; });
     golferUpsetWins = upsetWins;
 
-    // 영원의 라이벌 — 실제 승·패 기록이 있는 사람 중 승수와 패수 차이가 가장 작은 사람(동률 공동 보유).
-    // 0승 0패는 경기 기록이 없는 경우와 같으므로 후보에서 뺀다.
-    const rivalCandidates = golfers.filter(g => {
-        const record = golferRivalRecordMap[g];
-        return record.wins + record.losses > 0;
+    // 영원의 라이벌 — 올해 1:1 전적이 가장 박빙인(승률이 50%에 가장 가까운) 두 사람이 함께 받는다.
+    // 승부가 난 경기가 RIVAL_MIN_GAMES 이상인 짝만 본다(두세 판으로 50%가 나온 짝이 받지 않게).
+    // 같은 격차의 짝이 여럿이면 그 짝들 모두. 전적은 headToHead()와 같은 셈이다(무승부는 반 승).
+    golferRivalInfo = {};
+    const seasonIdx = [];
+    for (let r = 0; r < appData.totalRounds; r++) if (sm[r] === SEASON) seasonIdx.push(r);
+    const rivalPairs = [];
+    golfers.forEach((a, i) => {
+        const rec = headToHead(a, seasonIdx);
+        golfers.slice(i + 1).forEach(b => {
+            const x = rec[b], n = x.w + x.l + x.t;
+            if (n >= RIVAL_MIN_GAMES) rivalPairs.push({ a, b, w: x.w, l: x.l, t: x.t, gap: Math.abs(x.w - x.l) / n });
+        });
     });
-    if (rivalCandidates.length) {
-        const closestGap = Math.min(...rivalCandidates.map(g => {
-            const record = golferRivalRecordMap[g];
-            return Math.abs(record.wins - record.losses);
-        }));
-        rivalCandidates.forEach(g => {
-            const record = golferRivalRecordMap[g];
-            if (Math.abs(record.wins - record.losses) === closestGap) golferRivalMap[g] = true;
+    if (rivalPairs.length) {
+        const best = Math.min(...rivalPairs.map(p => p.gap));
+        rivalPairs.filter(p => p.gap === best).forEach(p => {
+            golferRivalMap[p.a] = true; golferRivalMap[p.b] = true;
+            (golferRivalInfo[p.a] = golferRivalInfo[p.a] || []).push({ opp: p.b, w: p.w, l: p.l, t: p.t });
+            (golferRivalInfo[p.b] = golferRivalInfo[p.b] || []).push({ opp: p.a, w: p.l, l: p.w, t: p.t });
         });
     }
 
