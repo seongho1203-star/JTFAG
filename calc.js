@@ -209,7 +209,7 @@ function getGolferBadgesArray(g, overallMinAvg, overallMinScore) {
         badges.push({ html: `<div class="season-badge badge-fluctuation">🎢 기복왕</div>`, desc: "올해 라운드별 스코어 기복이 가장 큼" });
     }
     if (golferRivalMap[g]) {
-        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 영원의 라이벌</div>`, desc: "올해 1:1 전적이 서로 가장 박빙인 라이벌" });
+        badges.push({ html: `<div class="season-badge badge-rival">⚔️ 라이벌</div>`, desc: "올해 1:1 전적이 서로 가장 박빙인 라이벌" });
     }
 
     if (myStats[g].holeInOne > 0) {
