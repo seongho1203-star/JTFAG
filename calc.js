@@ -379,7 +379,7 @@ function processAllRoundSettlements() {
         golferDowntrendMap[g] = false;
         golferFluctuationMap[g] = false;
         golferRivalMap[g] = false;
-        golferRivalRecordMap[g] = { wins: 0, losses: 0 };
+        golferRivalRecordMap[g] = { wins: 0, losses: 0, ties: 0 };
         upsetWins[g] = 0;
     });
 
@@ -526,6 +526,7 @@ function processAllRoundSettlements() {
         if (sm[r] === SEASON) golfers.forEach(g => {
             golferRivalRecordMap[g].wins += matchResults[g].wins;
             golferRivalRecordMap[g].losses += matchResults[g].losses;
+            golferRivalRecordMap[g].ties += matchResults[g].ties;
         });
 
         // 11차부터는 내 목표 타수와의 싸움이다 — 오늘 타수 − 내 목표 타수(보정타수)가 낮은 순서,
