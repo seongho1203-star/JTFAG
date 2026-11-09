@@ -2343,15 +2343,6 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .fl-ctrl .fl-chips { margin: 0; gap: 5px; min-width: 0; }
 .fl-ctrl .fl-chip { padding: 5px 10px; }
 
-/* 멀리건 보상(회칙 제14조 ⑤) */
-.msn-comp .msn-head small { color: var(--text-sub); font-size: 0.66rem; font-weight: 700; }
-.msn-comp-who { font-size: 1.05rem; font-weight: 800; margin-top: 4px; word-break: keep-all; }
-.msn-comp-who i { font-style: normal; font-size: 0.64rem; font-weight: 800; color: #fff; background: var(--primary-gold); border-radius: 6px; padding: 2px 7px; margin-left: 6px; vertical-align: middle; }
-.msn-comp-sub { margin-top: 4px; font-size: 0.72rem; color: #6b7075; line-height: 1.5; word-break: keep-all; }
-.msn-comp.mine { border-color: var(--primary-gold); }
-.msn-mulligan-comp { margin: 0 0 12px; padding: 9px 11px; background: #eef3fb; border-radius: 10px; font-size: 0.8rem; font-weight: 800; color: var(--primary-gold); word-break: keep-all; }
-.msn-mulligan-comp small { display: block; margin-top: 3px; font-size: 0.66rem; font-weight: 600; color: #6b7075; }
-
 .fl-keys button.eq { background: var(--primary-gold); border-color: var(--primary-gold); color: #fff; }
 
 .fl-ctrl .fl-chip { white-space: nowrap; padding: 5px 9px; font-size: 0.72rem; }
