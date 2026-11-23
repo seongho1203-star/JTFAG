@@ -26,6 +26,11 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
 .row{display:grid;grid-template-columns:100px 1fr;gap:10px;align-items:start}
 .label{font-weight:700;color:var(--muted)}
 .value{font-weight:650;overflow-wrap:anywhere;white-space:pre-wrap}
+.cost-list{display:grid;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.cost-item{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.cost-item .value{text-align:right}
+.cost-name{color:#41516a;overflow-wrap:anywhere}
+.account-copy{border:0;background:var(--pale);color:var(--blue);border-radius:9px;padding:7px 12px;font:inherit;font-weight:750;margin-top:12px}
 .day{position:relative;padding-left:17px;border-left:2px solid #dbe7f7;margin:4px 0 0 7px}
 .day:before{content:"";position:absolute;left:-7px;top:7px;width:12px;height:12px;border-radius:50%;background:#3874c5;border:2px solid white;box-shadow:0 0 0 2px #dbe7f7}
 .date{color:var(--blue);font-size:14px;font-weight:800}
@@ -54,7 +59,7 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
   function node(tag,cls,value){var x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=value;return x;}
   function card(title){var s=node("section","card");s.appendChild(node("h2","",title));return s;}
   function row(box,label,value){if(!value)return;var r=node("div","row");r.appendChild(node("div","label",label));r.appendChild(node("div","value",value));box.appendChild(r);}
-  function dateLabel(s){if(!/^\d{4}-\\d{2}-\\d{2}$/.test(s||""))return s||"";var d=new Date(s+"T00:00:00Z");var w="일월화수목금토"[d.getUTCDay()];return (Number(s.slice(5,7))+"/"+Number(s.slice(8,10))+" ("+w+")");}
+  function dateLabel(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s||""))return s||"";var d=new Date(s+"T00:00:00Z");var w="일월화수목금토"[d.getUTCDay()];return (s.slice(0,4)+"."+Number(s.slice(5,7))+"."+Number(s.slice(8,10))+" ("+w+")");}
   function unpack(){
     var raw=location.hash.slice(1);if(!raw)return null;
     raw=raw.replace(/-/g,"+").replace(/_/g,"/");
@@ -78,18 +83,52 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
     var content=document.getElementById("content"),t=d.travel||{};
     var travel=card("✈️ 이동 · 렌터카");
     row(travel,"출발편",[t.flightOut,t.flightOutTime].filter(Boolean).join(" · "));
-    row(travel,"귀국편",[t.flightBack,t.flightBackTime].filter(Boolean).join(" · "));
+    row(travel,"항공 예약번호",t.flightRef);
+    row(travel,"복귀편",[t.flightBack,t.flightBackTime].filter(Boolean).join(" · "));
     row(travel,"수하물",t.bag);
     row(travel,"렌터카",t.car==="yes"?[t.carCo,t.carModel].filter(Boolean).join(" · ")||"사용":t.car==="no"?"미사용":"");
     row(travel,"인수 장소",t.carPick);
     row(travel,"반납 장소",t.carDrop);
     row(travel,"보험",t.carIns==="yes"?"가입":t.carIns==="no"?"미가입":"");
+    row(travel,"렌트카 예약번호",t.carRef);
     if(travel.querySelector(".row"))content.appendChild(travel);
     if(d.budget&&d.budget.perPerson){
       var budget=card("💰 예상 경비");
       row(budget,"1인 예상 금액",d.budget.perPerson);
       row(budget,"계산 인원",d.budget.people?d.budget.people+"명":"");
+      if(Array.isArray(d.budget.items)&&d.budget.items.length){
+        var list=node("div","cost-list");
+        d.budget.items.forEach(function(item){
+          var r=node("div","cost-item");
+          r.appendChild(node("span","cost-name",item.name+" · "+item.status));
+          r.appendChild(node("span","value",item.amount));
+          list.appendChild(r);
+        });
+        budget.appendChild(list);
+      }
       content.appendChild(budget);
+    }
+    if((d.budget&&d.budget.toSend)||d.payer||d.account){
+      var pay=card("💳 송금 안내");
+      if(d.budget&&d.budget.toSend)row(pay,"1인 입금액",d.budget.toSend+" (결제 완료 항목)");
+      row(pay,"총무",d.payer);
+      row(pay,"입금 계좌",d.account);
+      if(d.account){
+        var copy=node("button","account-copy","계좌 복사");copy.type="button";
+        copy.addEventListener("click",async function(){
+          var ok=false;
+          try{
+            if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(d.account);ok=true;}
+            else{
+              var box=node("textarea", "", d.account);box.value=d.account;document.body.appendChild(box);
+              box.select();ok=document.execCommand("copy");box.remove();
+            }
+          }catch(e){}
+          copy.textContent=ok?"복사했습니다":"계좌를 길게 눌러 복사해 주세요";
+        });
+        pay.appendChild(copy);
+      }
+      content.appendChild(pay);
     }
     var itinerary=card("🗓️ 날짜별 일정");
     days.forEach(function(day){
@@ -117,7 +156,7 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
     }
     if(d.memo){var memo=card("📋 공통 메모");memo.appendChild(node("div","note",d.memo));content.appendChild(memo);}
   }
-  try{var data=unpack();if(!data||data.v!==1)throw new Error("missing");render(data);}
+  try{var data=unpack();if(!data||(data.v!==1&&data.v!==2))throw new Error("missing");render(data);}
   catch(e){document.getElementById("content").appendChild(node("div","card error","공유 일정 링크가 올바르지 않습니다. 여행을 공유한 분에게 새 링크를 요청해 주세요."));}
 })();
 </script>

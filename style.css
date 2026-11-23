@@ -1196,6 +1196,8 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .trip-wx { display: flex; margin-top: 3px; padding: 0; background: none; border-radius: 0; font-size: 0.8rem; }
 .trip-wx .v { font-weight: 600; }
 .trip-actions.light { justify-content: flex-end; gap: 2px; margin-top: 6px; }
+.trip-share-actions { gap: 10px; margin: 16px 0 20px; }
+.trip-share-actions .trip-btn { min-height: 42px; font-size: 0.82rem; border-radius: 11px; }
 .trip-link { border: none; background: none; padding: 6px 8px; min-height: 30px; color: var(--primary-gold); font-family: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; }
 .trip-link + .trip-link { border-left: 1px solid var(--line); border-radius: 0; }
 .trip-link:active { opacity: 0.6; transform: none !important; }

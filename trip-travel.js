@@ -734,10 +734,13 @@ function toggleTripDay(date) {
     renderTripPage();
 }
 
-// JTFAG에 가입하지 않은 동행자도 링크에서 일정만 볼 수 있게 여행 내용 사본을 만든다.
-// 예약번호·정산 상세는 공유 데이터에 넣지 않는다.
+// 앱에 가입하지 않은 동행자에게는 읽기 쉬운 일정 글을 보낸다.
+// 웹 링크가 필요하면 별도로 사본 링크를 복사한다. 링크를 가진 사람은 예약번호와 계좌도 볼 수 있다.
 function tripShareActionHtml(trip) {
-    return `<div class="trip-actions light"><button type="button" class="trip-btn primary" onclick="shareTripDetails('${trip.id}')">🔗 앱 없이 여행 내용 공유</button></div>`;
+    return `<div class="trip-actions trip-share-actions">
+        <button type="button" class="trip-btn primary" onclick="shareTripDetails('${trip.id}')">여행 일정 공유</button>
+        <button type="button" class="trip-btn ghost" onclick="copyTripShareLink('${trip.id}')">일정 링크 복사</button>
+    </div>`;
 }
 function tripShareEncode(value) {
     const bytes = new TextEncoder().encode(JSON.stringify(value));
@@ -745,47 +748,96 @@ function tripShareEncode(value) {
     for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
-async function shareTripDetails(id) {
-    const trip = findTrip(id || tripOpenId);
-    if (!trip) { showToast('⚠️ 공유할 여행을 찾을 수 없습니다.'); return; }
+function tripSharePayload(trip) {
     const t = tripTravel(trip);
     const days = tripDays(trip).map(d => ({
         date: d.date, area: d.area || '', course: d.course || '',
         golf: noRound(d) ? false : true, tee: d.tee || '', stay: d.stay || '',
         bf: d.bf || '', memo: d.memo || ''
     }));
-    const cost = tripCosts(trip).length ? costSummary(trip) : null;
-    const payload = {
-        v: 1, title: trip.title || '여행', kind: tripKind(trip),
+    const costs = tripCosts(trip).filter(c => c.title || c.amt);
+    const cost = costs.length ? costSummary(trip) : null;
+    return {
+        v: 2, title: trip.title || '여행', kind: tripKind(trip),
         days, memo: trip.memo || '', pack: tripPack(trip),
         travel: {
             flightOut: t.flightOut, flightOutTime: t.flightOutTime,
             flightBack: t.flightBack, flightBackTime: t.flightBackTime,
             bag: bagText(t), car: t.car, carCo: t.carCo, carModel: t.carModel,
-            carPick: t.carPick, carDrop: t.carDrop, carIns: t.carIns
+            carPick: t.carPick, carDrop: t.carDrop, carIns: t.carIns,
+            flightRef: t.flightRef, carRef: t.carRef
         },
-        budget: cost ? { people: cost.people, perPerson: moneyText(cost.total, cost) } : null
+        budget: cost ? {
+            people: cost.people, perPerson: moneyText(cost.total, cost),
+            toSend: cost.byStatus.paid.krw || cost.byStatus.paid.f ? moneyText(cost.byStatus.paid, cost) : '',
+            items: costs.map(c => ({
+                name: costLabel(c), amount: moneyText(costShare(c, cost.people), { cur: cost.cur }), status: COST_STATUS[c.status]
+            }))
+        } : null,
+        payer: typeof trip.payer === 'string' ? trip.payer : '',
+        account: tripAccountText(trip)
     };
-    const url = new URL('trip-share.html', location.href);
-    url.hash = tripShareEncode(payload);
-    const share = { title: payload.title, text: `${payload.title} 여행 일정`, url: url.href };
+}
+function tripShareMessage(d) {
+    const t = d.travel, days = d.days, b = d.budget;
+    const fullDate = s => `${s.slice(0, 4)}.${+s.slice(5, 7)}.${+s.slice(8, 10)} (${isoWeekday(s)})`;
+    const lines = [`⛳ ${d.title} · 여행 일정`,
+        `${TRIP_KINDS[d.kind] || '여행'} · ${days.length ? fullDate(days[0].date) + ' ~ ' + fullDate(days[days.length - 1].date) : ''}${b ? ` · ${b.people}명` : ''}`];
+    const add = (label, value) => { if (value) lines.push(`${label}: ${value}`); };
+    lines.push('', '✈️ 이동 · 렌트카');
+    add('출발편', [t.flightOut, t.flightOutTime].filter(Boolean).join(' · '));
+    add('항공 예약번호', t.flightRef);
+    add('복귀편', [t.flightBack, t.flightBackTime].filter(Boolean).join(' · '));
+    add('수하물', t.bag);
+    if (t.car === 'yes') {
+        add('렌트카', [t.carCo, t.carModel].filter(Boolean).join(' · ') || '사용');
+        add('인수', t.carPick); add('반납', t.carDrop);
+        add('렌트카 예약번호', t.carRef);
+    } else if (t.car === 'no') lines.push('렌트카: 미사용');
+    lines.push('', '🗓️ 날짜별 일정');
+    days.forEach((day, i) => {
+        lines.push(`${i + 1}일차 ${fullDate(day.date)}${day.area ? ` · ${day.area}` : ''}`);
+        add('골프', day.golf ? day.course || '미정' : '라운드 없음');
+        if (day.golf) add('티오프', day.tee);
+        add('숙소', day.stay);
+        if (day.bf === 'yes' || day.bf === 'no') add('조식', day.bf === 'yes' ? '포함' : '불포함');
+        add('메모', day.memo);
+    });
+    if (b || d.payer || d.account) {
+        lines.push('', '💰 경비 · 송금');
+        if (b) {
+            add('1인 예상 총액', b.perPerson);
+            add('1인 입금액 (결제 완료)', b.toSend);
+            b.items.forEach(item => add(`${item.name} (${item.status})`, item.amount));
+        }
+        add('총무', d.payer); add('입금 계좌', d.account);
+    }
+    if (d.pack.length) lines.push('', '🎒 준비물', ...d.pack.map(item => `· ${item}`));
+    if (d.memo) lines.push('', '📋 공통 메모', d.memo);
+    return lines.join('\n').trim();
+}
+async function shareTripDetails(id) {
+    const trip = findTrip(id || tripOpenId);
+    if (!trip) { showToast('⚠️ 공유할 여행을 찾을 수 없습니다.'); return; }
+    const payload = tripSharePayload(trip);
+    const share = { title: `${payload.title} 여행 일정`, text: tripShareMessage(payload) };
     try {
         if (navigator.share) await navigator.share(share);
-        else { await copyTripShareUrl(url.href); showToast('✅ 공유 링크를 복사했습니다.'); }
+        else if (await copyText(share.text)) showToast('✅ 여행 일정 내용을 복사했습니다. 대화방에 붙여넣어 주세요.');
+        else showToast('⚠️ 일정 복사에 실패했습니다. 다시 눌러 주세요.');
     } catch (e) {
         if (e && e.name === 'AbortError') return;
-        try { await copyTripShareUrl(url.href); showToast('✅ 공유 링크를 복사했습니다.'); }
-        catch (_) { showToast('⚠️ 링크 복사에 실패했습니다. 다시 눌러 주세요.'); }
+        if (await copyText(share.text)) showToast('✅ 여행 일정 내용을 복사했습니다. 대화방에 붙여넣어 주세요.');
+        else showToast('⚠️ 일정 복사에 실패했습니다. 다시 눌러 주세요.');
     }
 }
-async function copyTripShareUrl(url) {
-    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(url);
-    const box = document.createElement('textarea');
-    box.value = url; box.setAttribute('readonly', '');
-    box.style.position = 'fixed'; box.style.opacity = '0';
-    document.body.appendChild(box); box.select();
-    const ok = document.execCommand('copy'); box.remove();
-    if (!ok) throw new Error('copy failed');
+async function copyTripShareLink(id) {
+    const trip = findTrip(id || tripOpenId);
+    if (!trip) { showToast('⚠️ 공유할 여행을 찾을 수 없습니다.'); return; }
+    const url = new URL('trip-share.html', location.href);
+    url.hash = tripShareEncode(tripSharePayload(trip));
+    if (await copyText(url.href)) showToast('✅ 앱 없이 볼 수 있는 일정 링크를 복사했습니다.');
+    else showToast('⚠️ 링크 복사에 실패했습니다. 다시 눌러 주세요.');
 }
 
 function renderTripPage() {
