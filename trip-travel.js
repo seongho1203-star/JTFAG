@@ -743,7 +743,7 @@ function tripShareEncode(value) {
     const bytes = new TextEncoder().encode(JSON.stringify(value));
     let binary = '';
     for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 async function shareTripDetails(id) {
     const trip = findTrip(id || tripOpenId);
