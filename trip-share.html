@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f7fb">
+<meta name="description" content="앱 설치 없이 확인하는 JTFAG 여행 일정">
+<title>공유 여행 일정</title>
+<style>
+:root{color-scheme:light;--ink:#17243a;--muted:#66758b;--line:#e4eaf2;--blue:#2458a6;--pale:#edf4ff;--bg:#f4f7fb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:16px;line-height:1.55}
+main{max-width:780px;margin:0 auto;padding:24px 16px 48px}
+.brand{display:flex;align-items:center;gap:9px;color:var(--blue);font-size:14px;font-weight:800;letter-spacing:.02em;margin:0 0 14px}
+.mark{display:grid;place-items:center;width:32px;height:32px;border-radius:11px;background:#dceaff}
+.hero,.card{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 8px 24px #243c5c0b}
+.hero{padding:24px;margin-bottom:14px}
+.kicker{font-size:14px;font-weight:750;color:var(--blue);margin:0 0 5px}
+h1{font-size:clamp(26px,6vw,36px);line-height:1.2;letter-spacing:-.04em;margin:0 0 10px;overflow-wrap:anywhere}
+.summary{color:var(--muted);font-weight:650}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.pill{padding:7px 11px;border-radius:999px;background:var(--pale);font-size:14px;font-weight:750;color:#31517f}
+.card{padding:19px;margin:12px 0}
+h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
+.rows{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:100px 1fr;gap:10px;align-items:start}
+.label{font-weight:700;color:var(--muted)}
+.value{font-weight:650;overflow-wrap:anywhere;white-space:pre-wrap}
+.day{position:relative;padding-left:17px;border-left:2px solid #dbe7f7;margin:4px 0 0 7px}
+.day:before{content:"";position:absolute;left:-7px;top:7px;width:12px;height:12px;border-radius:50%;background:#3874c5;border:2px solid white;box-shadow:0 0 0 2px #dbe7f7}
+.date{color:var(--blue);font-size:14px;font-weight:800}
+.place{font-size:19px;font-weight:800;margin:3px 0 8px;overflow-wrap:anywhere}
+.day-info{display:grid;gap:6px;color:#39485d}
+.map{display:inline-block;margin-top:8px;color:var(--blue);font-weight:750;text-decoration:none}
+.note{color:#38485e;white-space:pre-wrap;overflow-wrap:anywhere}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{padding:7px 10px;border-radius:12px;background:#f2f5f9;font-weight:650}
+.footer{color:var(--muted);font-size:14px;text-align:center;padding:15px 8px}
+.error{padding:24px;text-align:center;color:#7b3340}
+@media(max-width:480px){main{padding:18px 12px 36px}.hero,.card{border-radius:18px;padding:17px}.row{grid-template-columns:82px 1fr}}
+@media print{body{background:#fff}.hero,.card{box-shadow:none;break-inside:avoid}main{padding:0}}
+</style>
+</head>
+<body>
+<main id="app">
+  <div class="brand"><span class="mark">⛳</span><span>여행 일정 공유</span></div>
+  <section class="hero" id="hero"></section>
+  <div id="content"></div>
+  <div class="footer">이 일정은 공유한 시점의 내용입니다. 변경된 최신 일정은 여행을 만든 분에게 새 링크를 받아 주세요.</div>
+</main>
+<script>
+(function(){
+  var kindNames={domestic:"국내 여행",japan:"일본 여행",abroad:"해외 여행"};
+  function node(tag,cls,value){var x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=value;return x;}
+  function card(title){var s=node("section","card");s.appendChild(node("h2","",title));return s;}
+  function row(box,label,value){if(!value)return;var r=node("div","row");r.appendChild(node("div","label",label));r.appendChild(node("div","value",value));box.appendChild(r);}
+  function dateLabel(s){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(s||""))return s||"";var d=new Date(s+"T00:00:00Z");var w="일월화수목금토"[d.getUTCDay()];return (Number(s.slice(5,7))+"/"+Number(s.slice(8,10))+" ("+w+")");}
+  function unpack(){
+    var raw=location.hash.slice(1);if(!raw)return null;
+    raw=raw.replace(/-/g,"+").replace(/_/g,"/");
+    while(raw.length%4)raw+="=";
+    var bytes=Uint8Array.from(atob(raw),function(c){return c.charCodeAt(0);});
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  function render(d){
+    document.title=(d.title||"여행")+" · 공유 일정";
+    var days=Array.isArray(d.days)?d.days:[];
+    var rounds=days.filter(function(x){return x.golf&&x.course;}).length;
+    var first=days[0]&&days[0].date,last=days[days.length-1]&&days[days.length-1].date;
+    var hero=document.getElementById("hero");
+    hero.appendChild(node("div","kicker","JTFAG TRAVEL"));
+    hero.appendChild(node("h1","",d.title||"여행 일정"));
+    hero.appendChild(node("div","summary",(kindNames[d.kind]||"여행")+" · "+(first?dateLabel(first):"")+" ~ "+(last?dateLabel(last):"")));
+    var stats=node("div","stats");
+    stats.appendChild(node("span","pill",days.length+"일 일정"));
+    stats.appendChild(node("span","pill",rounds+"라운드"));
+    hero.appendChild(stats);
+    var content=document.getElementById("content"),t=d.travel||{};
+    var travel=card("✈️ 이동 · 렌터카");
+    row(travel,"출발편",[t.flightOut,t.flightOutTime].filter(Boolean).join(" · "));
+    row(travel,"귀국편",[t.flightBack,t.flightBackTime].filter(Boolean).join(" · "));
+    row(travel,"수하물",t.bag);
+    row(travel,"렌터카",t.car==="yes"?[t.carCo,t.carModel].filter(Boolean).join(" · ")||"사용":t.car==="no"?"미사용":"");
+    row(travel,"인수 장소",t.carPick);
+    row(travel,"반납 장소",t.carDrop);
+    row(travel,"보험",t.carIns==="yes"?"가입":t.carIns==="no"?"미가입":"");
+    if(travel.querySelector(".row"))content.appendChild(travel);
+    if(d.budget&&d.budget.perPerson){
+      var budget=card("💰 예상 경비");
+      row(budget,"1인 예상 금액",d.budget.perPerson);
+      row(budget,"계산 인원",d.budget.people?d.budget.people+"명":"");
+      content.appendChild(budget);
+    }
+    var itinerary=card("🗓️ 날짜별 일정");
+    days.forEach(function(day){
+      var section=node("div","day");
+      section.appendChild(node("div","date",dateLabel(day.date)+(day.area?" · "+day.area:"")));
+      section.appendChild(node("div","place",day.golf===false?"라운드 없음":day.course||"골프장 미정"));
+      var info=node("div","day-info");
+      if(day.golf!==false&&day.tee)info.appendChild(node("div","", "🕒 티오프 "+day.tee));
+      if(day.stay)info.appendChild(node("div","", "🏨 숙소 "+day.stay));
+      if(day.bf)info.appendChild(node("div","",day.bf==="yes"?"🍳 조식 포함":day.bf==="no"?"🍳 조식 불포함":""));
+      if(day.memo)info.appendChild(node("div","note",day.memo));
+      section.appendChild(info);
+      if(day.golf!==false&&day.course){
+        var a=node("a","map","골프장 위치 보기");
+        a.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(day.course);
+        a.target="_blank";a.rel="noopener noreferrer";section.appendChild(a);
+      }
+      itinerary.appendChild(section);
+    });
+    content.appendChild(itinerary);
+    if(Array.isArray(d.pack)&&d.pack.length){
+      var pack=card("🎒 준비물"),tags=node("div","tags");
+      d.pack.forEach(function(item){tags.appendChild(node("span","tag",item));});
+      pack.appendChild(tags);content.appendChild(pack);
+    }
+    if(d.memo){var memo=card("📋 공통 메모");memo.appendChild(node("div","note",d.memo));content.appendChild(memo);}
+  }
+  try{var data=unpack();if(!data||data.v!==1)throw new Error("missing");render(data);}
+  catch(e){document.getElementById("content").appendChild(node("div","card error","공유 일정 링크가 올바르지 않습니다. 여행을 공유한 분에게 새 링크를 요청해 주세요."));}
+})();
+</script>
+</body>
+</html>
