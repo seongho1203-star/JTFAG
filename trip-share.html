@@ -54,7 +54,7 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
   function node(tag,cls,value){var x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=value;return x;}
   function card(title){var s=node("section","card");s.appendChild(node("h2","",title));return s;}
   function row(box,label,value){if(!value)return;var r=node("div","row");r.appendChild(node("div","label",label));r.appendChild(node("div","value",value));box.appendChild(r);}
-  function dateLabel(s){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(s||""))return s||"";var d=new Date(s+"T00:00:00Z");var w="일월화수목금토"[d.getUTCDay()];return (Number(s.slice(5,7))+"/"+Number(s.slice(8,10))+" ("+w+")");}
+  function dateLabel(s){if(!/^\d{4}-\\d{2}-\\d{2}$/.test(s||""))return s||"";var d=new Date(s+"T00:00:00Z");var w="일월화수목금토"[d.getUTCDay()];return (Number(s.slice(5,7))+"/"+Number(s.slice(8,10))+" ("+w+")");}
   function unpack(){
     var raw=location.hash.slice(1);if(!raw)return null;
     raw=raw.replace(/-/g,"+").replace(/_/g,"/");
