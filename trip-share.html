@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f4f7fb">
 <meta name="description" content="앱 설치 없이 확인하는 JTFAG 여행 일정">
+<meta property="og:title" content="JTFAG 여행 일정 공유">
+<meta property="og:description" content="앱 없이 여행 일정과 예약·송금 정보를 확인하세요.">
 <title>공유 여행 일정</title>
 <style>
 :root{color-scheme:light;--ink:#17243a;--muted:#66758b;--line:#e4eaf2;--blue:#2458a6;--pale:#edf4ff;--bg:#f4f7fb}
@@ -42,6 +44,7 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
 .tag{padding:7px 10px;border-radius:12px;background:#f2f5f9;font-weight:650}
 .footer{color:var(--muted);font-size:14px;text-align:center;padding:15px 8px}
 .error{padding:24px;text-align:center;color:#7b3340}
+.loading{padding:24px;text-align:center;color:var(--muted)}
 @media(max-width:480px){main{padding:18px 12px 36px}.hero,.card{border-radius:18px;padding:17px}.row{grid-template-columns:82px 1fr}}
 @media print{body{background:#fff}.hero,.card{box-shadow:none;break-inside:avoid}main{padding:0}}
 </style>
@@ -50,11 +53,18 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
 <main id="app">
   <div class="brand"><span class="mark">⛳</span><span>여행 일정 공유</span></div>
   <section class="hero" id="hero"></section>
-  <div id="content"></div>
+  <div id="content"><div class="card loading">여행 일정을 불러오는 중입니다…</div></div>
   <div class="footer">이 일정은 공유한 시점의 내용입니다. 변경된 최신 일정은 여행을 만든 분에게 새 링크를 받아 주세요.</div>
 </main>
 <script>
-(function(){
+// 공유 화면은 로그인 없이 여행 한 건만 읽고, 링크 안의 긴 사본 데이터는 기존 링크를 위해 지원한다.
+window.golfers = ['', '', '', ''];
+window.formatNumber = function(n){return Number(n).toLocaleString('ko-KR');};
+</script>
+<script src="trip.js"></script>
+<script src="trip-travel.js"></script>
+<script>
+(async function(){
   var kindNames={domestic:"국내 여행",japan:"일본 여행",abroad:"해외 여행"};
   function node(tag,cls,value){var x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=value;return x;}
   function card(title){var s=node("section","card");s.appendChild(node("h2","",title));return s;}
@@ -66,6 +76,21 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
     while(raw.length%4)raw+="=";
     var bytes=Uint8Array.from(atob(raw),function(c){return c.charCodeAt(0);});
     return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  async function loadCurrentTrip(){
+    var p=new URLSearchParams(location.search),idx=p.get('i'),id=p.get('t');
+    if(!/^(0|[1-9]\d{0,2})$/.test(idx||'')||!/^[\w-]{1,40}$/.test(id||''))throw new Error('invalid link');
+    // PostgREST의 JSON 경로 선택으로 이 여행 한 건만 받는다. 다른 리그 자료는 응답에 넣지 않는다.
+    var base='https://xhulylksiexhtifyrokp.supabase.co';
+    var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWx5bGtzaWV4aHRpZnlyb2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODM0MTIsImV4cCI6MjEwMTY1OTQxMn0.gm2uMhOopFg1ZkAiFL-E_ZUB6jGi0Pwyj6fSvAuSmPg';
+    var url=new URL(base+'/rest/v1/jtfag_league');
+    url.searchParams.set('id','eq.1');
+    url.searchParams.set('select','shared_trip:payload->trips->'+idx);
+    var res=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store'});
+    if(!res.ok)throw new Error('fetch failed');
+    var rows=await res.json(),trip=rows[0]&&rows[0].shared_trip;
+    if(!trip||trip.id!==id)throw new Error('trip missing');
+    return tripSharePayload(trip);
   }
   function render(d){
     document.title=(d.title||"여행")+" · 공유 일정";
@@ -81,6 +106,7 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
     stats.appendChild(node("span","pill",rounds+"라운드"));
     hero.appendChild(stats);
     var content=document.getElementById("content"),t=d.travel||{};
+    content.textContent='';
     var travel=card("✈️ 이동 · 렌터카");
     row(travel,"출발편",[t.flightOut,t.flightOutTime].filter(Boolean).join(" · "));
     row(travel,"항공 예약번호",t.flightRef);
@@ -156,8 +182,17 @@ h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
     }
     if(d.memo){var memo=card("📋 공통 메모");memo.appendChild(node("div","note",d.memo));content.appendChild(memo);}
   }
-  try{var data=unpack();if(!data||(data.v!==1&&data.v!==2))throw new Error("missing");render(data);}
-  catch(e){document.getElementById("content").appendChild(node("div","card error","공유 일정 링크가 올바르지 않습니다. 여행을 공유한 분에게 새 링크를 요청해 주세요."));}
+  try{
+    var current=!!location.search;
+    var data=current?await loadCurrentTrip():unpack();
+    if(!data||(data.v!==1&&data.v!==2))throw new Error("missing");
+    render(data);
+    if(current)document.querySelector('.footer').textContent='이 페이지를 열면 최신 여행 일정이 표시됩니다.';
+  }
+  catch(e){
+    var content=document.getElementById("content");content.textContent='';
+    content.appendChild(node("div","card error","여행 일정을 불러올 수 없습니다. 여행을 공유한 분에게 새 링크를 요청해 주세요."));
+  }
 })();
 </script>
 </body>

@@ -734,19 +734,12 @@ function toggleTripDay(date) {
     renderTripPage();
 }
 
-// 앱에 가입하지 않은 동행자에게는 읽기 쉬운 일정 글을 보낸다.
-// 웹 링크가 필요하면 별도로 사본 링크를 복사한다. 링크를 가진 사람은 예약번호와 계좌도 볼 수 있다.
+// 앱에 가입하지 않은 동행자에게도 예약번호·입금 계좌를 포함한 읽기 쉬운 일정 글을 보낸다.
 function tripShareActionHtml(trip) {
     return `<div class="trip-actions trip-share-actions">
         <button type="button" class="trip-btn primary" onclick="shareTripDetails('${trip.id}')">여행 일정 공유</button>
         <button type="button" class="trip-btn ghost" onclick="copyTripShareLink('${trip.id}')">일정 링크 복사</button>
     </div>`;
-}
-function tripShareEncode(value) {
-    const bytes = new TextEncoder().encode(JSON.stringify(value));
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 function tripSharePayload(trip) {
     const t = tripTravel(trip);
@@ -834,9 +827,12 @@ async function shareTripDetails(id) {
 async function copyTripShareLink(id) {
     const trip = findTrip(id || tripOpenId);
     if (!trip) { showToast('⚠️ 공유할 여행을 찾을 수 없습니다.'); return; }
+    const index = Array.isArray(appData.trips) ? appData.trips.findIndex(t => t && t.id === trip.id) : -1;
+    if (index < 0) { showToast('⚠️ 여행 링크를 만들 수 없습니다. 다시 열어 주세요.'); return; }
     const url = new URL('trip-share.html', location.href);
-    url.hash = tripShareEncode(tripSharePayload(trip));
-    if (await copyText(url.href)) showToast('✅ 앱 없이 볼 수 있는 일정 링크를 복사했습니다.');
+    url.searchParams.set('i', String(index));
+    url.searchParams.set('t', trip.id);
+    if (await copyText(url.href)) showToast('✅ 짧은 여행 일정 링크를 복사했습니다.');
     else showToast('⚠️ 링크 복사에 실패했습니다. 다시 눌러 주세요.');
 }
 
