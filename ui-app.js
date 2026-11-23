@@ -131,6 +131,7 @@ async function checkAndGreetUser() {
             if (myName && golfers.includes(myName)) {
                 localStorage.setItem('jtfag_my_name', myName);
                 updateScoreRequestBtn();
+                if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
                 showGreeting(myName);
             } else {
                 hasGreeted = false; 
@@ -157,6 +158,7 @@ async function deleteMyName() {
     
     if (isConfirmed) {
         localStorage.removeItem('jtfag_my_name');
+        if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
         updateScoreRequestBtn();
         showToast("🗑️ 이름이 삭제되었습니다.");
         hasGreeted = false; 
@@ -337,6 +339,7 @@ function showPage(name, top) {
     });
     const sw = document.getElementById('pageSwitch');
     if (sw) sw.style.setProperty('--seg', PAGE_ORDER.indexOf(name));
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
     try { sessionStorage.setItem('jtfag_page', name); } catch (e) {}
     window.scrollTo(0, typeof top === 'number' ? top : 0);
     if (!same && name === 'detail') {

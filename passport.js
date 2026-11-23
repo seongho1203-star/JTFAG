@@ -89,6 +89,7 @@ function switchTripSection(section) {
     closePassportDetail(false);
     tripSection = section;
     renderTripPage();
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
 }
 function passportBaseKey(name) {
     const k = clubKey(String(name || '').replace(/\s*\([^()]*\)\s*$/, '')).toLocaleLowerCase('en');
@@ -396,6 +397,7 @@ function editPassportPast(mutate, msg) {
     if (mutate(list) === false) { historyStack.pop(); return false; }
     if (list.length) appData.passportPast = list; else delete appData.passportPast;
     syncToSupabase(appData);
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
     if (msg) showToast(msg);
     return true;
 }

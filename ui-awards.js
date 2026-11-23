@@ -19,6 +19,7 @@ function setBadgeView(v) {
     badgeView = v === 'trophy' ? 'trophy' : 'badges';
     badgeLastHtml = '';
     renderBadgePage();
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
 }
 function selectTrophyYear(y) { trophyYear = y; badgeLastHtml = ''; renderBadgePage(); }
 function selectTrophyPerson(n) { if (golfers.includes(n)) { trophyName = n; badgeLastHtml = ''; renderBadgePage(); } }

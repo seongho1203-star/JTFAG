@@ -498,6 +498,7 @@ function selectBadgePerson(name) {
     if (!golfers.includes(name)) return;
     badgeViewName = name;
     renderBadgePage();
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
 }
 
 // ── 뱃지 상세(아래에서 올라오는 창) ─────────────────────────

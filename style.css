@@ -1162,6 +1162,7 @@ input.course-input { background-color: var(--input-bg); border-color: var(--card
 .page-switch.drag .page-switch-thumb { transition: none; }
 .page-tab { position: relative; z-index: 1; flex: 1 1 0; height: 24px; border: none; background: none; padding: 0; color: #6b7075; font-family: inherit; font-size: 0.7rem; font-weight: 700; transition: color 0.2s; }
 .page-tab.on { color: var(--primary-gold); }
+.page-tab.has-new::after { content: ''; position: absolute; top: 1px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #df4939; box-shadow: 0 0 0 1px #ffffff; }
 .page-switch button:active { transform: none !important; opacity: 0.7 !important; }
 /* 칸이 다섯이라 좁은 폰(320px)에서 `정산·스코어`가 두 줄로 접혔다 — 한 줄로 두고 글자만 조금 줄인다 */
 .page-tab { white-space: nowrap; letter-spacing: -0.3px; }
@@ -1958,6 +1959,8 @@ button.bdg-member { font-family: inherit; color: inherit; cursor: pointer; -webk
 .passport-tabs { display: flex; justify-content: center; gap: 20px; padding: 0; margin-bottom: 12px; border-bottom: 1px solid #e4e8e2; scroll-margin-top: 80px; }
 .passport-tabs button { flex: 0 0 auto; min-width: 0; min-height: 36px; padding: 6px 2px 9px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: #858b85; font: inherit; font-size: .76rem; font-weight: 700; }
 .passport-tabs button.on { color: #184d45; border-bottom-color: #184d45; }
+.passport-tabs button.has-new { position: relative; }
+.passport-tabs button.has-new::after { content: ''; position: absolute; top: 7px; right: -8px; width: 6px; height: 6px; border-radius: 50%; background: #df4939; }
 .passport-book { position: relative; padding: 4px 12px 14px; border-radius: 18px; color: #16382f; background: #e6eee9; }
 .passport-cover { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; padding: 14px 2px 12px; color: #134238; }
 .passport-heading { min-width: 0; }

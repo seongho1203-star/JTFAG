@@ -366,6 +366,7 @@ function createTrip() {
     if (!Array.isArray(appData.trips)) appData.trips = [];
     appData.trips.push(trip);
     syncToSupabase(appData);
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
     tripOpenId = trip.id;
     tripEditing = null;
     showToast(`✅ ${title}을(를) 등록했습니다.`);
@@ -412,6 +413,7 @@ function editTrip(mutate, msg) {
     const t = findTrip(tripOpenId);
     if (mutate(t) === false) { historyStack.pop(); return false; }
     syncToSupabase(appData);
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
     if (msg) showToast(msg);
     return true;
 }
@@ -457,6 +459,7 @@ async function deleteTrip() {
     saveState();
     appData.trips = (appData.trips || []).filter(t => !t || t.id !== id);
     syncToSupabase(appData);
+    if (typeof updateNewInfoIndicators === 'function') updateNewInfoIndicators();
     showToast('🗑️ 여행을 삭제했습니다.');
     tripOpenId = (activeTrip() || allTrips()[0] || {}).id || null;
     tripEditing = null;
