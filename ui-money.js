@@ -723,36 +723,25 @@ function renderMyNextAction() {
     const me = myGolferName();
     myNextAction = null;
     if (me) {
-        let myPending = null;
-        let mismatch = null;
-        for (let r = appData.totalRounds - 1; r >= 0; r--) {
-            if (!roundScored(r)) continue;
-            const row = (appData.roundMoney || [])[r] || {};
-            const count = golfers.filter(g => moneySettled(row[g])).length;
-            if (count === golfers.length) {
-                const left = golfers.reduce((sum, g) => sum + strokeDiffOf(g, r), 0);
-                const rest = left + (left < 0 ? diffReasonTotal(r) : 0);
-                if (rest && !mismatch) mismatch = { round: r, amount: Math.abs(rest) };
-                continue;
-            }
-            if (!moneySettled(row[me]) && !myPending) myPending = { round: r, count };
-        }
+        // 홈에서는 가장 최근에 스코어가 확정된 차수의 내 입력만 안내한다.
+        // 과거 차수의 정산 차액이나 다른 회원의 미입력은 내 할 일이 아니다.
+        const round = lastScoredRound();
+        const row = round >= 0 ? ((appData.roundMoney || [])[round] || {}) : null;
+        const myPending = row && !moneySettled(row[me])
+            ? { round, count: golfers.filter(g => moneySettled(row[g])).length } : null;
         const schedule = predictionSchedule();
         const canPredict = schedule && !predictionHasStarted(schedule.round, schedule.deadline);
         const predicted = canPredict && predictionLatest(schedule.round, me);
         if (myPending) {
             myNextAction = { kind: 'money', round: myPending.round, target: 'input',
                 label: `${myPending.round + 1}차 정산 · ${myPending.count}/4명 입력 · 내 금액 입력` };
-        } else if (mismatch) {
-            myNextAction = { kind: 'money', round: mismatch.round, target: 'nearCheck',
-                label: `${mismatch.round + 1}차 정산 불일치 · 차액 ${formatNumber(mismatch.amount)}원 확인` };
         } else if (canPredict && !predicted) {
             myNextAction = { kind: 'prediction',
                 label: `${schedule.round}차 라운드 · 내 예측 참여` };
         }
     }
+    button.textContent = myNextAction ? myNextAction.label : '';
     button.hidden = !myNextAction;
-    if (myNextAction) button.textContent = myNextAction.label;
 }
 
 function openMyNextAction() {
