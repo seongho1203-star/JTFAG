@@ -724,7 +724,6 @@ function renderMyNextAction() {
     myNextAction = null;
     if (me) {
         let myPending = null;
-        let othersPending = null;
         let mismatch = null;
         for (let r = appData.totalRounds - 1; r >= 0; r--) {
             if (!roundScored(r)) continue;
@@ -737,7 +736,6 @@ function renderMyNextAction() {
                 continue;
             }
             if (!moneySettled(row[me]) && !myPending) myPending = { round: r, count };
-            if (moneySettled(row[me]) && !othersPending) othersPending = { round: r, count };
         }
         const schedule = predictionSchedule();
         const canPredict = schedule && !predictionHasStarted(schedule.round, schedule.deadline);
@@ -751,12 +749,6 @@ function renderMyNextAction() {
         } else if (canPredict && !predicted) {
             myNextAction = { kind: 'prediction',
                 label: `${schedule.round}차 라운드 · 내 예측 참여` };
-        } else if (othersPending) {
-            myNextAction = { kind: 'money', round: othersPending.round, target: 'nearCheck',
-                label: `${othersPending.round + 1}차 정산 · 내 입력 완료 · ${4 - othersPending.count}명 대기` };
-        } else if (predicted) {
-            myNextAction = { kind: 'prediction',
-                label: `${schedule.round}차 예측 완료 · ${golfers.filter(g => predictionLatest(schedule.round, g)).length}/4명 참여` };
         }
     }
     button.hidden = !myNextAction;
