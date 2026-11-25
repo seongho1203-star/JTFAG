@@ -729,15 +729,9 @@ function renderMyNextAction() {
         const row = round >= 0 ? ((appData.roundMoney || [])[round] || {}) : null;
         const myPending = row && !moneySettled(row[me])
             ? { round, count: golfers.filter(g => moneySettled(row[g])).length } : null;
-        const schedule = predictionSchedule();
-        const canPredict = schedule && !predictionHasStarted(schedule.round, schedule.deadline);
-        const predicted = canPredict && predictionLatest(schedule.round, me);
         if (myPending) {
-            myNextAction = { kind: 'money', round: myPending.round, target: 'input',
+            myNextAction = { round: myPending.round,
                 label: `${myPending.round + 1}차 정산 · ${myPending.count}/4명 입력 · 내 금액 입력` };
-        } else if (canPredict && !predicted) {
-            myNextAction = { kind: 'prediction',
-                label: `${schedule.round}차 라운드 · 내 예측 참여` };
         }
     }
     button.textContent = myNextAction ? myNextAction.label : '';
@@ -746,16 +740,10 @@ function renderMyNextAction() {
 
 function openMyNextAction() {
     if (!myNextAction) return;
-    if (myNextAction.kind === 'prediction') {
-        openPredictionPopup();
-        return;
-    }
-    const target = myNextAction.target;
     changeMoneyRound(String(myNextAction.round));
     slideToPage('detail');
     setTimeout(() => {
-        const id = target === 'input' ? `money_end_${myGolferName()}` : 'nearCheck';
-        document.getElementById(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        document.getElementById(`money_end_${myGolferName()}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }, 400);
 }
 
