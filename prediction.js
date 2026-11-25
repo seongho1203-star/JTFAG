@@ -253,6 +253,7 @@ function renderPredictionCard() {
     const draft = predictionDraft && s && predictionDraft.round === s.round && predictionDraft.player === me && !locked ? predictionDraft : null;
     clearTimeout(predictionDeadlineTimer);
     if (s && !locked) predictionDeadlineTimer = setTimeout(renderPredictionCard, Math.min(Math.max(1, s.deadline - Date.now()), 2147483647));
+    if (typeof renderMyNextAction === 'function') renderMyNextAction();
     const label = !locked ? (predictionLatest(s.round, me) ? '수정하기' : '참여하기') : round ? '결과보기' : '참여하기';
     const html = `<div class="msn-card pred-card"><div class="pred-summary"><span class="pred-title">${round ? round + '차 ' : ''}라운드 예측</span><span class="pred-status">${round ? `${entries.length}/4명 참여${locked ? ' · 마감' : ''}` : '일정 대기'}</span></div><button type="button" class="pred-participate" aria-haspopup="dialog" onclick="openPredictionPopup()">${label}</button></div>`;
     if (host._html !== html) { host.innerHTML = html; host._html = html; }

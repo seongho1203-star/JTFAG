@@ -433,7 +433,7 @@ function paintNearCheck(left) {
     const playing = golfers.some(g => !moneySettled(round[g]));
     if (playing) {
         badge.className = 'near-check none';
-        badge.textContent = '입력 중';
+        badge.textContent = `입력 중 · ${golfers.filter(g => moneySettled(round[g])).length}/4명`;
         return;
     }
 
@@ -714,6 +714,68 @@ function paintDonateSum() {
 function myGolferName() {
     const n = localStorage.getItem('jtfag_my_name');
     return golfers.includes(n) ? n : '';
+}
+
+let myNextAction = null;
+function renderMyNextAction() {
+    const button = document.getElementById('myNextAction');
+    if (!button) return;
+    const me = myGolferName();
+    myNextAction = null;
+    if (me) {
+        let myPending = null;
+        let othersPending = null;
+        let mismatch = null;
+        for (let r = appData.totalRounds - 1; r >= 0; r--) {
+            if (!roundScored(r)) continue;
+            const row = (appData.roundMoney || [])[r] || {};
+            const count = golfers.filter(g => moneySettled(row[g])).length;
+            if (count === golfers.length) {
+                const left = golfers.reduce((sum, g) => sum + strokeDiffOf(g, r), 0);
+                const rest = left + (left < 0 ? diffReasonTotal(r) : 0);
+                if (rest && !mismatch) mismatch = { round: r, amount: Math.abs(rest) };
+                continue;
+            }
+            if (!moneySettled(row[me]) && !myPending) myPending = { round: r, count };
+            if (moneySettled(row[me]) && !othersPending) othersPending = { round: r, count };
+        }
+        const schedule = predictionSchedule();
+        const canPredict = schedule && !predictionHasStarted(schedule.round, schedule.deadline);
+        const predicted = canPredict && predictionLatest(schedule.round, me);
+        if (myPending) {
+            myNextAction = { kind: 'money', round: myPending.round, target: 'input',
+                label: `${myPending.round + 1}차 정산 · ${myPending.count}/4명 입력 · 내 금액 입력` };
+        } else if (mismatch) {
+            myNextAction = { kind: 'money', round: mismatch.round, target: 'nearCheck',
+                label: `${mismatch.round + 1}차 정산 불일치 · 차액 ${formatNumber(mismatch.amount)}원 확인` };
+        } else if (canPredict && !predicted) {
+            myNextAction = { kind: 'prediction',
+                label: `${schedule.round}차 라운드 · 내 예측 참여` };
+        } else if (othersPending) {
+            myNextAction = { kind: 'money', round: othersPending.round, target: 'nearCheck',
+                label: `${othersPending.round + 1}차 정산 · 내 입력 완료 · ${4 - othersPending.count}명 대기` };
+        } else if (predicted) {
+            myNextAction = { kind: 'prediction',
+                label: `${schedule.round}차 예측 완료 · ${golfers.filter(g => predictionLatest(schedule.round, g)).length}/4명 참여` };
+        }
+    }
+    button.hidden = !myNextAction;
+    if (myNextAction) button.textContent = myNextAction.label;
+}
+
+function openMyNextAction() {
+    if (!myNextAction) return;
+    if (myNextAction.kind === 'prediction') {
+        openPredictionPopup();
+        return;
+    }
+    const target = myNextAction.target;
+    changeMoneyRound(String(myNextAction.round));
+    slideToPage('detail');
+    setTimeout(() => {
+        const id = target === 'input' ? `money_end_${myGolferName()}` : 'nearCheck';
+        document.getElementById(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 400);
 }
 
 function canEditMoney(name) {

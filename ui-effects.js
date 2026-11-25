@@ -4,6 +4,7 @@ function renderAll() {
     calculateAndRender();   // 차수별 결과 카드도 여기서(계산 뒤에) 그린다
     if (typeof noteSeasonShut === 'function') noteSeasonShut();   // 시즌이 마무리됐으면 한 번 적어 둔다(season.js)
     renderMoneyTable();
+    renderMyNextAction();
     forceTableReflow();
     jumpToLatestRound();
     renderStorageUsage();
