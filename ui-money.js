@@ -730,8 +730,14 @@ function renderMyNextAction() {
         const myPending = row && !moneySettled(row[me])
             ? { round, count: golfers.filter(g => moneySettled(row[g])).length } : null;
         if (myPending) {
-            myNextAction = { round: myPending.round,
+            myNextAction = { kind: 'money', round: myPending.round,
                 label: `${myPending.round + 1}차 정산 · ${myPending.count}/4명 입력 · 내 금액 입력` };
+        } else {
+            const mission = missionTarget();
+            if (mission && !missionEntry(mission.round, me)) {
+                myNextAction = { kind: 'mission', round: mission.round,
+                    label: `${mission.round}차 라운드 · 미션 받기` };
+            }
         }
     }
     button.textContent = myNextAction ? myNextAction.label : '';
@@ -740,6 +746,11 @@ function renderMyNextAction() {
 
 function openMyNextAction() {
     if (!myNextAction) return;
+    if (myNextAction.kind === 'mission') {
+        slideToPage('mission');
+        setTimeout(() => document.getElementById('msnDrawBtn')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400);
+        return;
+    }
     changeMoneyRound(String(myNextAction.round));
     slideToPage('detail');
     setTimeout(() => {

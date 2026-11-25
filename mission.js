@@ -736,6 +736,7 @@ function drawMission() {
     appData.missions[t.round][me] = rec;
     writeMine(m => { m.missions[t.round] = rec; });
     syncToSupabase(appData);
+    if (typeof renderMyNextAction === 'function') renderMyNextAction();
     rollMission(['msnRoll0', 'msnRoll1'], 'msnDrawBtn', '미션 뽑는 중', () =>
         showToast(`🎯 ${t.round}차 미션 · ${missionText(p.a.def, rec.ms[0])} · ${missionText(p.b.def, rec.ms[1])} (최대 ${p.a.lv + p.b.lv}점)`),
         [{ text: missionText(p.a.def, rec.ms[0]), who: false }, { text: missionText(p.b.def, rec.ms[1]), who: true }]);
@@ -801,6 +802,7 @@ async function resetMissionRound() {
     appData.missionResets[String(r)] = Math.max(at + 1, (Number(appData.missionRestores && appData.missionRestores[String(r)]) || 0) + 1);   // 취소한 초기화 시각보다 커야 다시 먹는다
     syncToSupabase(appData);
     if (typeof renderMissionPage === 'function') renderMissionPage();
+    if (typeof renderMyNextAction === 'function') renderMyNextAction();
     showToast(`🎯 ${r}차 미션을 초기화했습니다.`);
 }
 
@@ -831,6 +833,7 @@ async function restoreMissionRound() {
     appData.missionRestores[String(r)] = Math.max(v, Number(appData.missionRestores[String(r)]) || 0);
     syncToSupabase(appData);
     if (typeof renderMissionPage === 'function') renderMissionPage();
+    if (typeof renderMyNextAction === 'function') renderMyNextAction();
     showToast(`🎯 ${r}차 미션 초기화를 취소했습니다.`);
 }
 
