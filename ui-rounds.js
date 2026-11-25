@@ -686,6 +686,7 @@ function syncScheduleFromTrips() {
     const golfDays = [];
     allTrips().forEach(trip => tripDays(trip).forEach(day => {
         if (day.date < today || !String(day.course || '').trim() || noRound(day)) return;
+        if (`${trip.id}|${day.date}` === appData.ignoredTripScheduleSource) return;
         golfDays.push({ trip, day });
     }));
     golfDays.sort((a, b) => a.day.date < b.day.date ? -1 : a.day.date > b.day.date ? 1 : 0);

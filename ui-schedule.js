@@ -279,14 +279,22 @@ function openScheduleForRound(r) {
     openScheduleModal(r + 1);
 }
 
+function scheduleRoundRecorded(no) {
+    return hasHoleRecord(no - 1) || golfers.some(g => Number((((appData.scores || {})[g]) || [])[no - 1]) > 0);
+}
+
 function openScheduleModal(pickRound) {
     document.getElementById('scheduleModal').classList.add('active');
 
     // 표에서 눌러 들어왔으면 그 차수, 아니면 지난번에 잡아 둔 차수,
     // 그것도 없으면 아직 안 친 다음 차수를 미리 고른다.
     const saved = parseInt(pickRound || appData.nextRoundNo, 10);
-    const pick = (saved >= 1 && saved <= appData.totalRounds + 1) ? saved : appData.totalRounds + 1;
+    // 일정을 지워도 미리 만들어진 빈 차수는 남는다. 다시 잡을 때 그 차수를 고른다.
+    const next = appData.totalRounds > 0 && !scheduleRoundRecorded(appData.totalRounds)
+        ? appData.totalRounds : appData.totalRounds + 1;
+    const pick = (saved >= 1 && saved <= appData.totalRounds + 1) ? saved : next;
     renderScheduleRoundOptions(document.getElementById('schRound'), pick);
+    renderScheduleDeleteButton();
     // 그 차수에 잡아 둔 일정이 있으면 날짜·시각을 그대로 물려 온다(사용자 요청). 없으면 오늘 날짜.
     fillScheduleWhen(pick);
 
@@ -331,6 +339,7 @@ function fillScheduleWhen(round) {
 function onScheduleRoundChange() {
     const no = parseInt(document.getElementById('schRound').value, 10);
     if (!no) return;
+    renderScheduleDeleteButton();
     const club = roundCourseMap()[no] || (appData.courses && appData.courses[no - 1]) || '';
     const sub = subCourseOf(no - 1);
     if (parseInt(appData.nextRoundNo, 10) === no) fillScheduleWhen(no);
@@ -353,6 +362,53 @@ function lastScheduledCourse() {
 }
 
 function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('active'); }
+
+function renderScheduleDeleteButton() {
+    const button = document.getElementById('schDeleteBtn');
+    if (!button) return;
+    button.hidden = !appData.nextRoundDate || parseInt(document.getElementById('schRound').value, 10) !== parseInt(appData.nextRoundNo, 10);
+}
+
+async function deleteSchedule() {
+    const round = parseInt(document.getElementById('schRound').value, 10);
+    const text = appData.nextRoundDate;
+    const iso = appData.nextRoundISO;
+    if (!text || round !== parseInt(appData.nextRoundNo, 10)) return;
+    const confirmed = await showConfirmPrompt(
+        `<b>${round}차 일정을 삭제할까요?</b><br><span style="font-size:0.78rem;color:#6b7075;font-weight:600">차수·정산·스코어·미션·사진 기록은 유지됩니다.</span>`,
+        '일정 삭제');
+    if (!confirmed) return;
+    // 확인창을 보는 동안 다른 회원이 일정을 고쳤다면 그 변경을 삭제하지 않는다.
+    if (appData.nextRoundDate !== text || appData.nextRoundISO !== iso || parseInt(appData.nextRoundNo, 10) !== round) {
+        renderScheduleDeleteButton();
+        showToast('⚠️ 일정이 변경되었습니다. 다시 확인해 주세요.');
+        return;
+    }
+
+    saveState();
+    const source = appData.nextRoundSrc;
+    const course = lastScheduledCourse() || (source && roundCourseMap()[round]) || '';
+    // 여행에서 자동으로 가져온 일정은 같은 여행 날짜에서 곧바로 되살아나지 않게 한다.
+    if (source) appData.ignoredTripScheduleSource = source;
+    appData.nextRoundDate = '';
+    delete appData.nextRoundISO;
+    delete appData.nextRoundNo;
+    delete appData.nextRoundSrc;
+
+    // 아직 경기 기록이 없다면 일정 저장 때 함께 채운 날짜·골프장·코스도 비운다.
+    // 시작 금액이나 사진이 있어도 차수와 해당 자료는 그대로 남긴다.
+    if (!scheduleRoundRecorded(round)) {
+        if (appData.roundDates && appData.roundDates[round] === iso) delete appData.roundDates[round];
+        const clubs = roundCourseMap();
+        if (course && clubs[round] === course) delete clubs[round];
+        if (course && appData.courses && appData.courses[round - 1] === course) appData.courses[round - 1] = '';
+        delete subCourseMap()[round];
+    }
+
+    syncToSupabase(appData);
+    renderNoticeArea(); renderAll(); closeScheduleModal();
+    showToast(`✅ ${round}차 일정이 삭제되었습니다.`);
+}
 
 // 화면 문구에는 연도가 없다. 월/일만으로 실제 라운드 날짜(YYYY-MM-DD)를 정한다.
 // 이미 한 달 넘게 지난 날짜를 고르면 내년으로 본다 — 12월에 1월 일정을 잡는 경우.
