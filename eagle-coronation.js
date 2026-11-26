@@ -117,7 +117,7 @@ function showEagleCoronation(name, rounds, streak = 3) {
     const theme = EAGLE_CORONATION_THEMES[Math.min(5,streak)];
     const safeName = String(name == null ? '' : name), id = ++eagleCoronationSerial;
     const history = (Array.isArray(rounds) ? rounds : []).slice(-Math.min(streak,8));
-    const picture = typeof EAGLE_HERO_URL === 'string' && EAGLE_HERO_URL ? EAGLE_HERO_URL : 'assets/ranks/v1/eagle.webp';
+    const picture = typeof EAGLE_HERO_URL === 'string' && EAGLE_HERO_URL ? EAGLE_HERO_URL : 'assets/ranks/v1/eagle-trophy.webp';
     const overlay = document.createElement('div');
     overlay.className = `celebrate-overlay eagle-coronation ec-${theme.className}`;
     overlay.style.setProperty('--ec-accent',theme.accent); overlay.style.setProperty('--ec-light',theme.light);

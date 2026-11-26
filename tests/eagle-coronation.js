@@ -36,7 +36,7 @@ function app(options={}) {
         localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
         golfers,appData:{scores:{'신성호':[80,79,78,77,76,75],'예시':[82,81,80]}},rankedRoundsList:[0,1,2],
         golferRankHistory:{'신성호':[0,0,0],'예시':[1,1,1]},eagleStreak:r=>{let n=0;for(let i=r.length-1;i>=0&&r[i]===0;i--)n++;return n;},
-        EAGLE_HERO_URL:'assets/ranks/v1/eagle.webp'};
+        EAGLE_HERO_URL:'assets/ranks/v1/eagle-trophy.webp'};
     ctx.window=ctx;vm.createContext(ctx);
     vm.runInContext(source('ui-effects.js'),ctx);vm.runInContext(source('eagle-coronation.js'),ctx);
     const run=code=>vm.runInContext(code,ctx);run('entranceReady=true');

@@ -4,7 +4,7 @@ The four transparent WebP assets in `v1/` use the approved individual previews:
 
 | Rank index | Name | Asset |
 | --- | --- | --- |
-| 0 | 독수리 | `eagle.webp` |
+| 0 | 독수리 | `eagle-trophy.webp` |
 | 1 | 매 | `falcon.webp` |
 | 2 | 학 | `crane.webp` |
 | 3 | 참새 | `sparrow-folded.webp` |
